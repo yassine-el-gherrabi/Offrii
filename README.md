@@ -2,13 +2,13 @@
 
 **"N'oublie plus ce que tu veux acheter"**
 
-Offrii est une application mobile qui capture tes intentions d'achat a la vitesse de la pensee et te rappelle intelligemment de passer a l'action. Ni wishlist sociale, ni liste de courses, ni comparateur de prix — juste un filet de securite pour les achats que tu procrastines.
+Offrii est une application mobile qui capture tes intentions d'achat à la vitesse de la pensée et te rappelle intelligemment de passer à l'action. Ni wishlist sociale, ni liste de courses, ni comparateur de prix — juste un filet de sécurité pour les achats que tu procrastines.
 
 ## Structure monorepo
 
 ```
 offrii/
-├── offrii-api/       # Backend Rust (Actix Web + PostgreSQL)
+├── offrii-api/       # Backend Rust (Axum + PostgreSQL)
 ├── offrii-mobile/    # App mobile React Native (Expo)
 ├── docker/           # Configuration Docker (PostgreSQL, etc.)
 ├── docs/             # Documentation projet
@@ -20,14 +20,14 @@ offrii/
 
 | Composant | Technologie |
 |-----------|-------------|
-| **Backend** | Rust, Actix Web, SQLx, PostgreSQL |
+| **Backend** | Rust, Axum, SQLx, PostgreSQL |
 | **Mobile** | React Native, Expo, TypeScript |
 | **Auth** | JWT (access + refresh tokens) |
 | **Infra** | Docker, GitHub Actions |
 
-## Demarrage
+## Démarrage
 
-> Les instructions de setup seront ajoutees avec les tickets DEV-3 (API) et DEV-4 (Mobile).
+> Les instructions de setup seront ajoutées avec les tickets DEV-3 (API) et DEV-4 (Mobile).
 
 ## Licence
 
