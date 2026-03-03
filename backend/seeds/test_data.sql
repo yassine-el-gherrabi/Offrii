@@ -1,4 +1,4 @@
--- Migration 0004: Seed test data
+-- Seed: dev test data (applied via docker-compose.override.yml only)
 -- Fixed UUIDs for deterministic testing
 
 -- 1 test user (password: "password123" hashed with bcrypt)
