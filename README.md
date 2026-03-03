@@ -1,3 +1,5 @@
+[![CI](https://github.com/yassine-el-gherrabi/Offrii/actions/workflows/ci.yml/badge.svg)](https://github.com/yassine-el-gherrabi/Offrii/actions/workflows/ci.yml)
+
 # Offrii
 
 Wishlist and gift platform — create wishlists, share them, and let others contribute to your wishes.
