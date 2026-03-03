@@ -27,7 +27,33 @@ offrii/
 
 ## Démarrage
 
-> Les instructions de setup seront ajoutées avec les tickets DEV-3 (API) et DEV-4 (Mobile).
+### Prérequis
+
+- [Docker](https://docs.docker.com/get-docker/) et Docker Compose
+
+### Lancer les services
+
+```bash
+# Copier les variables d'environnement
+cp .env.example .env
+
+# Lancer PostgreSQL + Redis
+docker compose up -d
+
+# Vérifier que les services sont up
+docker compose ps
+
+# Voir les logs
+docker compose logs -f
+
+# Arrêter les services
+docker compose down
+
+# Arrêter et supprimer les volumes (reset complet)
+docker compose down -v
+```
+
+> Les instructions pour l'API (Rust) et l'app mobile (Expo) seront ajoutées avec DEV-3 et DEV-4.
 
 ## Licence
 
