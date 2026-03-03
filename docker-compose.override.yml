@@ -23,6 +23,10 @@ services:
   postgres:
     ports:
       - "5432:5432"
+    volumes:
+      - ./backend/migrations:/migrations:ro
+      - ./backend/seeds:/seeds:ro
+      - ./backend/scripts/init-dev-db.sh:/docker-entrypoint-initdb.d/99-init-dev.sh:ro
 
   redis:
     ports:
