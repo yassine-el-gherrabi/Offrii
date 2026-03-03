@@ -29,14 +29,38 @@ offrii/
 
 ## Getting Started
 
-### Prerequisites
+### Docker (recommended)
+
+```bash
+docker compose up
+```
+
+This starts the full stack with hot-reload:
+
+| Service | URL | Description |
+|---------|-----|-------------|
+| Caddy | http://localhost | Reverse proxy (API + frontend) |
+| API | http://localhost:3000 | Rust/Axum (direct access) |
+| Frontend | http://localhost:3001 | Next.js (direct access) |
+| PostgreSQL | localhost:5432 | Database (credentials in `.env`) |
+| Redis | localhost:6379 | Cache |
+
+Health check: `curl http://localhost/health`
+
+To stop: `docker compose down` (data persists in volumes).
+
+To reset everything: `docker compose down -v`
+
+### Manual setup
+
+#### Prerequisites
 
 - Rust (latest stable)
 - Node.js 22+
 - PostgreSQL 16
 - Redis 7
 
-### Backend
+#### Backend
 
 ```bash
 cd backend
@@ -46,7 +70,7 @@ cargo run -p api   # starts on http://localhost:3000
 
 Health check: `GET /health` → `200 ok`
 
-### Frontend
+#### Frontend
 
 ```bash
 cd frontend
@@ -54,7 +78,7 @@ npm install
 npm run dev        # starts on http://localhost:3001
 ```
 
-### Environment Variables
+#### Environment Variables
 
 Copy `.env.example` to `.env` and adjust values:
 
