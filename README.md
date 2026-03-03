@@ -7,7 +7,7 @@ Wishlist and gift platform — create wishlists, share them, and let others cont
 | Layer | Technology |
 |-------|-----------|
 | Backend | Rust (Axum, Tokio) |
-| Frontend | Next.js 15, TypeScript, Tailwind CSS 4, shadcn/ui |
+| Frontend | Next.js 16, TypeScript, Tailwind CSS 4, shadcn/ui |
 | Database | PostgreSQL |
 | Cache | Redis |
 
@@ -21,7 +21,7 @@ offrii/
 │   │   ├── domain/       # Business logic (zero infra deps)
 │   │   └── infra/        # Database, cache, external services
 │   └── migrations/       # SQL migrations
-└── frontend/             # Next.js 15 app
+└── frontend/             # Next.js 16 app
     ├── app/              # App Router pages
     ├── components/ui/    # shadcn/ui components
     └── lib/              # Utilities
