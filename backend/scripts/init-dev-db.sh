@@ -1,6 +1,9 @@
 #!/bin/sh
 set -e
 
+echo "NOTE: This script runs once on first boot. To re-run after migration changes: docker compose down -v && docker compose up -d"
+echo ""
+
 # Apply schema migrations in order
 for f in /migrations/*.sql; do
     echo "Applying migration: $f"
