@@ -57,7 +57,7 @@ To reset everything: `docker compose down -v`
 
 - Rust (latest stable)
 - Node.js 22+
-- PostgreSQL 16
+- PostgreSQL 17
 - Redis 7
 
 #### Backend
