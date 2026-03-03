@@ -3,7 +3,7 @@
 **"N'oublie plus ce que tu veux acheter"**
 **Version** : 1.0 — Premier Cercle (MVP)
 **Date** : 2026-03-03
-**Compliance** : RGPD + OWASP 2026
+**Compliance** : RGPD (UE 2016/679) + OWASP ASVS v4.0.3 (niveau 1) + OWASP Top 10 2021
 **Certification** : CDA — Concepteur Développeur d'Applications (RNCP37873)
 
 ---
