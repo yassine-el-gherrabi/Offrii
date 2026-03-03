@@ -192,7 +192,7 @@ Le nom "Offrii" porte en lui l'idée d'**offrir**, de **partager**. Pour le MVP 
 
 1. **Capture-First Design** : Chaque décision optimise la vitesse de capture (< 5 sec UX, < 200ms API)
 2. **Layered Architecture** : Séparation stricte handlers → services → repositories (compétence CDA)
-3. **Security by Design (OWASP 2026)** : Argon2id, JWT RS256, rate limiting, input validation, secure headers
+3. **Security by Design (OWASP ASVS v4.0.3 & Top 10 2021)** : Argon2id, JWT RS256, rate limiting, input validation, secure headers
 4. **RGPD by Design** : Données en Europe (Hetzner), chiffrement, droit à l'oubli, export, consentement
 5. **Observable by Default** : OpenTelemetry traces/metrics/logs → Grafana dashboards
 6. **Progressive Enhancement** : Modèle de données prêt pour les cercles futurs sans migration breaking
@@ -210,7 +210,7 @@ Le nom "Offrii" porte en lui l'idée d'**offrir**, de **partager**. Pour le MVP 
 | Database | **PostgreSQL 16** | Relationnelle, compétence CDA SQL |
 | Cache/Sessions | **Redis 7** | NoSQL, compétence CDA, sessions, rate limiting |
 | Auth | **JWT RS256** (jsonwebtoken) | Asymétrique = plus sécurisé que HS256 |
-| Hashing | **Argon2id** (argon2 crate) | OWASP 2026 recommended |
+| Hashing | **Argon2id** (argon2 crate) | OWASP Password Storage Cheat Sheet recommended |
 | Validation | **validator** crate | DTO validation en entrée |
 | Serialization | **serde** + serde_json | Standard Rust |
 | API Docs | **utoipa** | Génération OpenAPI/Swagger automatique |
@@ -486,9 +486,12 @@ CREATE TABLE categories (
     icon             VARCHAR(50),
     is_default       BOOLEAN DEFAULT FALSE,
     position         INTEGER DEFAULT 0,
-    created_at       TIMESTAMPTZ DEFAULT NOW(),
-    UNIQUE(user_id, name)
+    created_at       TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Index unique partiel : unicité par utilisateur (exclut les catégories par défaut où user_id IS NULL)
+CREATE UNIQUE INDEX uq_categories_user_name ON categories (user_id, name) WHERE user_id IS NOT NULL;
+CREATE UNIQUE INDEX uq_categories_default_name ON categories (name) WHERE user_id IS NULL;
 
 -- ============================================
 -- ITEMS (coeur de l'app)
@@ -568,27 +571,26 @@ POST   /auth/logout          (Bearer)                               → 204
 ### Items (Bearer required)
 ```
 GET    /items                ?status=active&sort=created_at&order=desc&category_id=xxx&page=1&per_page=50
-POST   /items                { name }                               ← Quick capture
-POST   /items                { name, url?, price?, priority?, category_id?, description? }
+POST   /items                { name, url?, price?, priority?, category_id?, description? }   ← Quick capture = envoyer uniquement name
 GET    /items/:id
-PUT    /items/:id            { ...partial update }                  ← Enrichissement
+PATCH  /items/:id            { name?, url?, price?, priority?, category_id?, description? } ← Enrichissement partiel
 PATCH  /items/:id/purchase                                          ← Marquer acheté
-PATCH  /items/:id/restore                                           ← Remettre actif
-DELETE /items/:id
+PATCH  /items/:id/restore                                           ← Restaurer (soft-deleted → active)
+DELETE /items/:id                                                    ← Soft delete (status=deleted)
 ```
 
 ### Categories (Bearer required)
 ```
 GET    /categories
 POST   /categories           { name, icon? }
-PUT    /categories/:id       { name?, icon?, position? }
+PATCH  /categories/:id       { name?, icon?, position? }
 DELETE /categories/:id
 ```
 
 ### User (Bearer required)
 ```
 GET    /users/me
-PUT    /users/me             { display_name?, reminder_freq?, reminder_time? }
+PATCH  /users/me             { display_name?, reminder_freq?, reminder_time? }
 DELETE /users/me                                                    ← RGPD suppression
 GET    /users/me/export                                             ← RGPD export
 ```
@@ -610,7 +612,7 @@ GET    /health
 
 ---
 
-## 2.8 Sécurité (OWASP 2026 + RGPD)
+## 2.8 Sécurité (OWASP ASVS v4.0.3 + RGPD)
 
 ### Authentication
 - **JWT RS256** : Clés asymétriques RSA 2048-bit minimum
@@ -618,7 +620,7 @@ GET    /health
 - **Refresh token** : TTL 7 jours, expo-secure-store + Redis
 - **Token rotation** : Nouveau refresh à chaque refresh (revoke ancien)
 
-### Password (Argon2id — OWASP 2026)
+### Password (Argon2id — OWASP Password Storage Cheat Sheet)
 - Params : m=19456 (19MB), t=2, p=1
 - Min 8 chars, pas de max restrictif
 
@@ -641,7 +643,7 @@ Permissions-Policy: camera=(), microphone=(), geolocation=()
 - `DELETE /users/me` → CASCADE suppression totale
 - `GET /users/me/export` → JSON complet
 - Minimisation des données, pas de tracking tiers
-- TLS 1.3 transit + disk encryption repos
+- TLS 1.3 en transit + chiffrement au repos
 
 ---
 
