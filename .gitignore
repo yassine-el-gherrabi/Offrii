@@ -21,6 +21,7 @@ dist/
 web-build/
 ios/
 android/
+expo-env.d.ts
 
 # Environment
 .env
@@ -43,6 +44,9 @@ docker-compose.override.yml
 
 # Build
 *.log
+
+# Test coverage
+coverage/
 
 # BMAD (workflow local)
 .bmad-task/
