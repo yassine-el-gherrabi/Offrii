@@ -4,8 +4,12 @@ CREATE OR REPLACE FUNCTION set_purchased_at()
 RETURNS TRIGGER AS $$
 BEGIN
     IF TG_OP = 'INSERT' THEN
-        IF NEW.status = 'purchased' AND NEW.purchased_at IS NULL THEN
-            NEW.purchased_at = NOW();
+        IF NEW.status = 'purchased' THEN
+            IF NEW.purchased_at IS NULL THEN
+                NEW.purchased_at = NOW();
+            END IF;
+        ELSE
+            NEW.purchased_at = NULL;
         END IF;
         RETURN NEW;
     END IF;
