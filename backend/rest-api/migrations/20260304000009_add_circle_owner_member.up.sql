@@ -2,7 +2,9 @@ CREATE OR REPLACE FUNCTION add_circle_owner_as_member()
 RETURNS TRIGGER AS $$
 BEGIN
     INSERT INTO circle_members (circle_id, user_id, role)
-    VALUES (NEW.id, NEW.owner_id, 'owner');
+    VALUES (NEW.id, NEW.owner_id, 'owner')
+    ON CONFLICT (circle_id, user_id) DO UPDATE
+        SET role = 'owner';
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
