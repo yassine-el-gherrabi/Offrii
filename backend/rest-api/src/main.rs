@@ -15,8 +15,16 @@ use rest_api::handlers::health::health_check;
 async fn main() -> anyhow::Result<()> {
     dotenvy::dotenv().ok();
 
+    let env_filter = match EnvFilter::try_from_default_env() {
+        Ok(filter) => filter,
+        Err(err) => {
+            eprintln!("Invalid RUST_LOG value: {err}. Falling back to 'info'.");
+            EnvFilter::new("info")
+        }
+    };
+
     tracing_subscriber::registry()
-        .with(EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info")))
+        .with(env_filter)
         .with(tracing_subscriber::fmt::layer().json())
         .init();
 
