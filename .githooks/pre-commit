@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+set -e
+
+check_tool() {
+    if ! command -v "$1" &> /dev/null; then
+        echo "Warning: $1 not found, skipping. Install with: cargo install $1"
+        return 1
+    fi
+}
+
+# Backend checks (only if backend files are staged)
+if git diff --cached --name-only | grep -q '^backend/'; then
+    echo "==> Backend pre-commit checks"
+    (
+        cd backend
+        echo "  cargo fmt --check"
+        cargo fmt --all -- --check
+        if check_tool cargo-sort; then
+            echo "  cargo sort --check"
+            cargo sort --workspace --check
+        fi
+        echo "  cargo clippy"
+        cargo clippy --workspace --all-targets -- -D warnings
+    )
+    echo "==> Backend checks passed"
+fi
+
+# Frontend checks (only if frontend files are staged)
+if git diff --cached --name-only | grep -q '^frontend/'; then
+    echo "==> Frontend pre-commit checks"
+    (
+        cd frontend
+        echo "  expo lint"
+        npx expo lint
+    )
+    echo "==> Frontend checks passed"
+fi
