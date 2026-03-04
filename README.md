@@ -1,5 +1,7 @@
 # Offrii
 
+[![CI](https://github.com/yassine-el-gherrabi/offrii/actions/workflows/ci.yml/badge.svg)](https://github.com/yassine-el-gherrabi/offrii/actions/workflows/ci.yml)
+
 **"N'oublie plus ce que tu veux acheter"**
 
 Offrii est une application mobile qui capture tes intentions d'achat à la vitesse de la pensée et te rappelle intelligemment de passer à l'action. Ni wishlist sociale, ni liste de courses, ni comparateur de prix — juste un filet de sécurité pour les achats que tu procrastines.
@@ -8,11 +10,10 @@ Offrii est une application mobile qui capture tes intentions d'achat à la vites
 
 ```
 offrii/
-├── offrii-api/       # Backend Rust (Axum + PostgreSQL)
-├── offrii-mobile/    # App mobile React Native (Expo)
-├── docker/           # Configuration Docker (PostgreSQL, etc.)
-├── docs/             # Documentation projet
-├── .github/workflows # CI/CD GitHub Actions
+├── backend/             # Backend Rust (Axum + PostgreSQL)
+├── frontend/            # App mobile React Native (Expo)
+├── docs/                # Documentation projet
+├── .github/workflows/   # CI/CD GitHub Actions
 └── ai-agent-guidelines/ # Guidelines agents IA
 ```
 
@@ -54,6 +55,14 @@ docker compose down -v
 ```
 
 > Les instructions pour l'API (Rust) et l'app mobile (Expo) seront ajoutées avec DEV-3 et DEV-4.
+
+### Git hooks
+
+```bash
+git config core.hooksPath .githooks
+```
+
+Le pre-commit hook lance automatiquement les checks (fmt, sort, clippy, lint) sur les fichiers staged.
 
 ## Licence
 
