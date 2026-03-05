@@ -19,6 +19,7 @@ path = "src/bin/migrate.rs"
 anyhow.workspace = true
 argon2.workspace = true
 axum.workspace = true
+chrono.workspace = true
 dotenvy.workspace = true
 jsonwebtoken.workspace = true
 rand_core.workspace = true
@@ -26,6 +27,7 @@ redis.workspace = true
 rsa.workspace = true
 serde.workspace = true
 serde_json.workspace = true
+sha2.workspace = true
 sqlx.workspace = true
 thiserror.workspace = true
 tokio.workspace = true
@@ -33,6 +35,14 @@ tower-http.workspace = true
 tracing.workspace = true
 tracing-subscriber.workspace = true
 uuid.workspace = true
+validator.workspace = true
+
+[dev-dependencies]
+http-body-util = "0.1"
+testcontainers = "0.27"
+testcontainers-modules = { version = "0.15", features = ["postgres", "redis"] }
+tokio = { version = "1", features = ["full"] }
+tower = { version = "0.5", features = ["util"] }
 
 [lints]
 workspace = true

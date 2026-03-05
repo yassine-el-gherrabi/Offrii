@@ -59,7 +59,7 @@ jobs:
       - name: Check unused dependencies
         run: cargo machete
       - name: Run tests with coverage
-        run: cargo llvm-cov nextest --workspace --fail-under-lines 5
+        run: cargo llvm-cov nextest --workspace --fail-under-lines 75
 
   frontend:
     needs: detect-changes
