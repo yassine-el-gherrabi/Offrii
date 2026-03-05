@@ -41,6 +41,7 @@ Thumbs.db
 
 # Docker
 docker-compose.override.yml
+jwt-keys/
 
 # Build
 *.log

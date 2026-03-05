@@ -11,6 +11,8 @@ services:
       - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    networks:
+      - offrii-net
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-offrii}"]
       interval: 5s
@@ -25,12 +27,71 @@ services:
       - "${REDIS_PORT:-6379}:6379"
     volumes:
       - redis_data:/data
+    networks:
+      - offrii-net
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
       timeout: 5s
       retries: 5
 
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: offrii-backend
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-offrii}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-offrii}
+      REDIS_URL: redis://redis:6379
+      API_PORT: "3000"
+      RUST_LOG: ${RUST_LOG:-rest_api=info,tower_http=info}
+      JWT_PRIVATE_KEY_FILE: /run/secrets/jwt_private_key
+      JWT_PUBLIC_KEY_FILE: /run/secrets/jwt_public_key
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - offrii-net
+    volumes:
+      - ./jwt-keys/private.pem:/run/secrets/jwt_private_key:ro
+      - ./jwt-keys/public.pem:/run/secrets/jwt_public_key:ro
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:3000/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  caddy:
+    build:
+      context: ./infra/caddy
+      dockerfile: Dockerfile
+    container_name: offrii-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      CADDY_SITE_ADDRESS: ${CADDY_SITE_ADDRESS:-http://:80}
+    volumes:
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - offrii-net
+
 volumes:
   postgres_data:
   redis_data:
+  caddy_data:
+  caddy_config:
+
+networks:
+  offrii-net:
+    driver: bridge
