@@ -48,8 +48,8 @@ impl JwtKeys {
         Ok(Self { encoding, decoding })
     }
 
-    /// Generate a fresh RSA 2048-bit key pair (dev mode).
-    pub fn generate() -> Result<Self> {
+    /// Generate a fresh RSA 2048-bit key pair (dev/test only).
+    pub(crate) fn generate() -> Result<Self> {
         use rsa::RsaPrivateKey;
         use rsa::pkcs8::{EncodePrivateKey, EncodePublicKey, LineEnding};
 
@@ -122,13 +122,30 @@ impl JwtKeys {
         self.generate_token(user_id, TokenType::Refresh, REFRESH_TOKEN_TTL_SECS)
     }
 
-    /// Validate a JWT: verify RS256 signature and expiration.
-    /// Returns decoded [`Claims`]. Does not enforce `token_type`.
-    pub fn validate_token(&self, token: &str) -> Result<Claims> {
+    /// Validate an access token: verify RS256 signature, expiration, and token type.
+    pub fn validate_access_token(&self, token: &str) -> Result<Claims> {
+        self.validate_token(token, TokenType::Access)
+    }
+
+    /// Validate a refresh token: verify RS256 signature, expiration, and token type.
+    pub fn validate_refresh_token(&self, token: &str) -> Result<Claims> {
+        self.validate_token(token, TokenType::Refresh)
+    }
+
+    fn validate_token(&self, token: &str, expected_type: TokenType) -> Result<Claims> {
         let validation = Validation::new(Algorithm::RS256);
         let token_data = decode::<Claims>(token, &self.decoding, &validation)
             .map_err(|e| anyhow::anyhow!("token validation failed: {e}"))?;
-        Ok(token_data.claims)
+
+        let claims = token_data.claims;
+        if claims.token_type != expected_type {
+            anyhow::bail!(
+                "unexpected token type: expected {expected_type:?}, got {:?}",
+                claims.token_type
+            );
+        }
+
+        Ok(claims)
     }
 
     fn generate_token(
@@ -159,23 +176,25 @@ impl JwtKeys {
 
 #[cfg(test)]
 mod tests {
+    use std::sync::OnceLock;
+
     use super::*;
 
-    fn test_keys() -> JwtKeys {
-        JwtKeys::generate().unwrap()
+    static TEST_KEYS: OnceLock<JwtKeys> = OnceLock::new();
+
+    fn test_keys() -> &'static JwtKeys {
+        TEST_KEYS.get_or_init(|| JwtKeys::generate().unwrap())
     }
 
     #[test]
     fn generate_access_token_produces_valid_jwt() {
-        let keys = test_keys();
-        let token = keys.generate_access_token(Uuid::new_v4()).unwrap();
+        let token = test_keys().generate_access_token(Uuid::new_v4()).unwrap();
         assert_eq!(token.matches('.').count(), 2);
     }
 
     #[test]
     fn generate_refresh_token_produces_valid_jwt() {
-        let keys = test_keys();
-        let token = keys.generate_refresh_token(Uuid::new_v4()).unwrap();
+        let token = test_keys().generate_refresh_token(Uuid::new_v4()).unwrap();
         assert_eq!(token.matches('.').count(), 2);
     }
 
@@ -185,7 +204,7 @@ mod tests {
         let user_id = Uuid::new_v4();
         let token = keys.generate_access_token(user_id).unwrap();
 
-        let claims = keys.validate_token(&token).unwrap();
+        let claims = keys.validate_access_token(&token).unwrap();
         assert_eq!(claims.sub, user_id.to_string());
         assert_eq!(claims.token_type, TokenType::Access);
         assert!(!claims.jti.is_empty());
@@ -199,7 +218,7 @@ mod tests {
         let user_id = Uuid::new_v4();
         let token = keys.generate_refresh_token(user_id).unwrap();
 
-        let claims = keys.validate_token(&token).unwrap();
+        let claims = keys.validate_refresh_token(&token).unwrap();
         assert_eq!(claims.sub, user_id.to_string());
         assert_eq!(claims.token_type, TokenType::Refresh);
         assert_eq!(claims.exp - claims.iat, REFRESH_TOKEN_TTL_SECS as usize);
@@ -222,16 +241,15 @@ mod tests {
         };
         let token = encode(&Header::new(Algorithm::RS256), &claims, &keys.encoding).unwrap();
 
-        assert!(keys.validate_token(&token).is_err());
+        assert!(keys.validate_access_token(&token).is_err());
     }
 
     #[test]
     fn wrong_key_pair_rejected() {
-        let keys_a = test_keys();
-        let keys_b = test_keys();
+        let keys_b = JwtKeys::generate().unwrap();
 
-        let token = keys_a.generate_access_token(Uuid::new_v4()).unwrap();
-        assert!(keys_b.validate_token(&token).is_err());
+        let token = test_keys().generate_access_token(Uuid::new_v4()).unwrap();
+        assert!(keys_b.validate_access_token(&token).is_err());
     }
 
     #[test]
@@ -242,8 +260,8 @@ mod tests {
         let t1 = keys.generate_access_token(user_id).unwrap();
         let t2 = keys.generate_access_token(user_id).unwrap();
 
-        let c1 = keys.validate_token(&t1).unwrap();
-        let c2 = keys.validate_token(&t2).unwrap();
+        let c1 = keys.validate_access_token(&t1).unwrap();
+        let c2 = keys.validate_access_token(&t2).unwrap();
         assert_ne!(c1.jti, c2.jti);
     }
 
@@ -251,7 +269,7 @@ mod tests {
     fn jti_is_valid_uuid_v4() {
         let keys = test_keys();
         let token = keys.generate_access_token(Uuid::new_v4()).unwrap();
-        let claims = keys.validate_token(&token).unwrap();
+        let claims = keys.validate_access_token(&token).unwrap();
 
         let jti_uuid = Uuid::parse_str(&claims.jti).unwrap();
         assert_eq!(jti_uuid.get_version_num(), 4);
@@ -267,13 +285,28 @@ mod tests {
         let keys = test_keys();
         let user_id = Uuid::new_v4();
 
-        let access = keys.generate_access_token(user_id).unwrap();
-        let refresh = keys.generate_refresh_token(user_id).unwrap();
+        let access_claims = keys
+            .validate_access_token(&keys.generate_access_token(user_id).unwrap())
+            .unwrap();
+        let refresh_claims = keys
+            .validate_refresh_token(&keys.generate_refresh_token(user_id).unwrap())
+            .unwrap();
+        assert_eq!(access_claims.token_type, TokenType::Access);
+        assert_eq!(refresh_claims.token_type, TokenType::Refresh);
+    }
 
-        let ac = keys.validate_token(&access).unwrap();
-        let rc = keys.validate_token(&refresh).unwrap();
-        assert_eq!(ac.token_type, TokenType::Access);
-        assert_eq!(rc.token_type, TokenType::Refresh);
+    #[test]
+    fn refresh_token_rejected_as_access() {
+        let keys = test_keys();
+        let token = keys.generate_refresh_token(Uuid::new_v4()).unwrap();
+        assert!(keys.validate_access_token(&token).is_err());
+    }
+
+    #[test]
+    fn access_token_rejected_as_refresh() {
+        let keys = test_keys();
+        let token = keys.generate_access_token(Uuid::new_v4()).unwrap();
+        assert!(keys.validate_refresh_token(&token).is_err());
     }
 
     #[test]
@@ -281,7 +314,6 @@ mod tests {
         let keys = test_keys();
         let token = keys.generate_access_token(Uuid::new_v4()).unwrap();
 
-        // Flip a character in the payload (second segment)
         let parts: Vec<&str> = token.splitn(3, '.').collect();
         let mut payload_bytes = parts[1].as_bytes().to_vec();
         payload_bytes[0] ^= 0xFF;
@@ -292,19 +324,19 @@ mod tests {
             parts[2]
         );
 
-        assert!(keys.validate_token(&tampered).is_err());
+        assert!(keys.validate_access_token(&tampered).is_err());
     }
 
     #[test]
     fn validate_empty_string_rejected() {
         let keys = test_keys();
-        assert!(keys.validate_token("").is_err());
+        assert!(keys.validate_access_token("").is_err());
     }
 
     #[test]
     fn validate_garbage_string_rejected() {
         let keys = test_keys();
-        assert!(keys.validate_token("abc.def.ghi").is_err());
+        assert!(keys.validate_access_token("abc.def.ghi").is_err());
     }
 
     #[test]
@@ -312,13 +344,13 @@ mod tests {
         let keys = test_keys();
         let user_id = Uuid::new_v4();
 
-        let access = keys.generate_access_token(user_id).unwrap();
-        let refresh = keys.generate_refresh_token(user_id).unwrap();
+        let ac = keys
+            .validate_access_token(&keys.generate_access_token(user_id).unwrap())
+            .unwrap();
+        let rc = keys
+            .validate_refresh_token(&keys.generate_refresh_token(user_id).unwrap())
+            .unwrap();
 
-        let ac = keys.validate_token(&access).unwrap();
-        let rc = keys.validate_token(&refresh).unwrap();
-
-        // sub is a parseable UUID matching the input
         assert_eq!(Uuid::parse_str(&ac.sub).unwrap(), user_id);
         assert_eq!(Uuid::parse_str(&rc.sub).unwrap(), user_id);
     }
