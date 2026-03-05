@@ -4,11 +4,19 @@ use argon2::{
     password_hash::{self, SaltString, rand_core::OsRng},
 };
 
-/// OWASP 2026 recommended Argon2id parameters
-/// m=19456 (19 MiB), t=2 iterations, p=1 parallelism
+/// OWASP 2026 recommended Argon2id parameters.
+const ARGON2_MEMORY_COST_KIB: u32 = 19456;
+const ARGON2_TIME_COST: u32 = 2;
+const ARGON2_PARALLELISM: u32 = 1;
+
 fn argon2_instance() -> Result<Argon2<'static>> {
-    let params = Params::new(19456, 2, 1, None)
-        .map_err(|e| anyhow::anyhow!("invalid Argon2id params: {e}"))?;
+    let params = Params::new(
+        ARGON2_MEMORY_COST_KIB,
+        ARGON2_TIME_COST,
+        ARGON2_PARALLELISM,
+        None,
+    )
+    .map_err(|e| anyhow::anyhow!("invalid Argon2id params: {e}"))?;
     Ok(Argon2::new(Algorithm::Argon2id, Version::V0x13, params))
 }
 
