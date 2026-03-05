@@ -1,19 +1,20 @@
 use anyhow::Result;
 use argon2::{
     Algorithm, Argon2, Params, PasswordHash, PasswordHasher, PasswordVerifier, Version,
-    password_hash::{SaltString, rand_core::OsRng},
+    password_hash::{self, SaltString, rand_core::OsRng},
 };
 
 /// OWASP 2026 recommended Argon2id parameters
 /// m=19456 (19 MiB), t=2 iterations, p=1 parallelism
-fn argon2_instance() -> Argon2<'static> {
-    let params = Params::new(19456, 2, 1, None).expect("valid OWASP Argon2id params");
-    Argon2::new(Algorithm::Argon2id, Version::V0x13, params)
+fn argon2_instance() -> Result<Argon2<'static>> {
+    let params = Params::new(19456, 2, 1, None)
+        .map_err(|e| anyhow::anyhow!("invalid Argon2id params: {e}"))?;
+    Ok(Argon2::new(Algorithm::Argon2id, Version::V0x13, params))
 }
 
 pub fn hash_password(password: &str) -> Result<String> {
     let salt = SaltString::generate(&mut OsRng);
-    let hash = argon2_instance()
+    let hash = argon2_instance()?
         .hash_password(password.as_bytes(), &salt)
         .map_err(|e| anyhow::anyhow!("failed to hash password: {e}"))?;
     Ok(hash.to_string())
@@ -22,9 +23,11 @@ pub fn hash_password(password: &str) -> Result<String> {
 pub fn verify_password(password: &str, hash: &str) -> Result<bool> {
     let parsed = PasswordHash::new(hash)
         .map_err(|e| anyhow::anyhow!("failed to parse password hash: {e}"))?;
-    Ok(argon2_instance()
-        .verify_password(password.as_bytes(), &parsed)
-        .is_ok())
+    match argon2_instance()?.verify_password(password.as_bytes(), &parsed) {
+        Ok(()) => Ok(true),
+        Err(password_hash::Error::Password) => Ok(false),
+        Err(e) => Err(anyhow::anyhow!("password verification error: {e}")),
+    }
 }
 
 #[cfg(test)]
@@ -84,6 +87,14 @@ mod tests {
     #[test]
     fn verify_rejects_invalid_hash_string() {
         let result = verify_password("password", "not-a-valid-hash");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn verify_errors_on_wrong_algorithm_hash() {
+        // Argon2d hash (not Argon2id) — should error, not silently return false
+        let argon2d_hash = "$argon2d$v=19$m=19456,t=2,p=1$c29tZXNhbHQ$dGVzdGhhc2g";
+        let result = verify_password("password", argon2d_hash);
         assert!(result.is_err());
     }
 }
