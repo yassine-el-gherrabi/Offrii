@@ -69,7 +69,9 @@ impl JwtKeys {
     }
 
     /// Load keys from `JWT_PRIVATE_KEY_FILE` / `JWT_PUBLIC_KEY_FILE` env vars.
-    /// Falls back to [`Self::generate()`] with a warning if unset.
+    ///
+    /// In **debug builds**, falls back to [`Self::generate()`] when both vars
+    /// are unset. In **release builds**, missing keys are a fatal error.
     pub fn from_env() -> Result<Self> {
         let private_path = std::env::var("JWT_PRIVATE_KEY_FILE")
             .ok()
@@ -88,17 +90,26 @@ impl JwtKeys {
                 })?;
                 Self::from_pem(&private_pem, &public_pem)
             }
-            (None, None) => {
-                tracing::warn!(
-                    "JWT_PRIVATE_KEY_FILE and JWT_PUBLIC_KEY_FILE not set; \
-                     generating ephemeral RSA key pair (NOT for production)"
-                );
-                Self::generate()
-            }
+            (None, None) => Self::dev_fallback(),
             _ => anyhow::bail!(
-                "both JWT_PRIVATE_KEY_FILE and JWT_PUBLIC_KEY_FILE must be set (only one was provided)"
+                "both JWT_PRIVATE_KEY_FILE and JWT_PUBLIC_KEY_FILE must be set \
+                 (only one was provided)"
             ),
         }
+    }
+
+    #[cfg(debug_assertions)]
+    fn dev_fallback() -> Result<Self> {
+        tracing::warn!(
+            "JWT_PRIVATE_KEY_FILE and JWT_PUBLIC_KEY_FILE not set; \
+             generating ephemeral RSA key pair (debug build only)"
+        );
+        Self::generate()
+    }
+
+    #[cfg(not(debug_assertions))]
+    fn dev_fallback() -> Result<Self> {
+        anyhow::bail!("JWT_PRIVATE_KEY_FILE and JWT_PUBLIC_KEY_FILE must be set in release builds")
     }
 
     /// Create a signed access token (15-min TTL).
