@@ -339,3 +339,56 @@ async fn multiple_sessions_logout_revokes_all() {
     let (status, _) = app.post_json("/auth/refresh", &body2).await;
     assert_eq!(status, StatusCode::UNAUTHORIZED);
 }
+
+#[tokio::test]
+async fn refresh_double_concurrent_use_401() {
+    let app = TestApp::new().await;
+    let (_, reg) = app
+        .register_user("double@example.com", "strongpass123")
+        .await;
+    let refresh = reg["tokens"]["refresh_token"].as_str().unwrap().to_string();
+
+    // First refresh succeeds
+    let body = serde_json::json!({ "refresh_token": &refresh });
+    let (status, _) = app.post_json("/auth/refresh", &body).await;
+    assert_eq!(status, StatusCode::OK);
+
+    // Second refresh with same token fails (already revoked by first)
+    let (status, resp) = app.post_json("/auth/refresh", &body).await;
+    assert_eq!(status, StatusCode::UNAUTHORIZED);
+    assert_error(&resp, "UNAUTHORIZED");
+}
+
+#[tokio::test]
+async fn logout_then_refresh_each_session_401() {
+    let app = TestApp::new().await;
+
+    // Create 3 sessions: register + 2 logins
+    app.register_user("triple@example.com", "strongpass123")
+        .await;
+
+    let login_body = serde_json::json!({
+        "email": "triple@example.com",
+        "password": "strongpass123",
+    });
+
+    let (_, s1) = app.post_json("/auth/login", &login_body).await;
+    let (_, s2) = app.post_json("/auth/login", &login_body).await;
+
+    let access = s2["tokens"]["access_token"].as_str().unwrap();
+    let refresh_1 = s1["tokens"]["refresh_token"].as_str().unwrap().to_string();
+    let refresh_2 = s2["tokens"]["refresh_token"].as_str().unwrap().to_string();
+
+    // Logout (revokes all sessions)
+    let (status, _) = app.post_with_auth("/auth/logout", access).await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+
+    // Each session's refresh token should fail
+    let body1 = serde_json::json!({ "refresh_token": refresh_1 });
+    let (status, _) = app.post_json("/auth/refresh", &body1).await;
+    assert_eq!(status, StatusCode::UNAUTHORIZED);
+
+    let body2 = serde_json::json!({ "refresh_token": refresh_2 });
+    let (status, _) = app.post_json("/auth/refresh", &body2).await;
+    assert_eq!(status, StatusCode::UNAUTHORIZED);
+}

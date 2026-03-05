@@ -145,31 +145,30 @@ impl MigrationDb {
     }
 
     async fn unique_constraint_exists(&self, table: &str, columns: &[&str]) -> bool {
-        // Check both UNIQUE constraints and UNIQUE indexes
-        for col in columns {
-            let row: (bool,) = sqlx::query_as(
-                "SELECT EXISTS (
-                    SELECT 1
-                    FROM pg_index i
-                    JOIN pg_class c ON c.oid = i.indrelid
-                    JOIN pg_attribute a ON a.attrelid = c.oid AND a.attnum = ANY(i.indkey)
-                    JOIN pg_namespace n ON n.oid = c.relnamespace
-                    WHERE n.nspname = 'public'
-                      AND c.relname = $1
-                      AND a.attname = $2
-                      AND i.indisunique = true
-                )",
-            )
-            .bind(table)
-            .bind(*col)
-            .fetch_one(&self.db)
-            .await
-            .unwrap();
-            if !row.0 {
-                return false;
-            }
-        }
-        true
+        let mut expected: Vec<&str> = columns.to_vec();
+        expected.sort();
+
+        // Fetch column sets for each unique index on the table, grouped by index OID.
+        let rows: Vec<(Vec<String>,)> = sqlx::query_as(
+            "SELECT array_agg(a.attname ORDER BY a.attname) AS cols
+                FROM pg_index i
+                JOIN pg_class c ON c.oid = i.indrelid
+                JOIN pg_namespace n ON n.oid = c.relnamespace
+                JOIN pg_attribute a ON a.attrelid = c.oid AND a.attnum = ANY(i.indkey)
+                WHERE n.nspname = 'public'
+                  AND c.relname = $1
+                  AND i.indisunique = true
+                GROUP BY i.indexrelid",
+        )
+        .bind(table)
+        .fetch_all(&self.db)
+        .await
+        .unwrap();
+
+        rows.iter().any(|(cols,)| {
+            let sorted: Vec<&str> = cols.iter().map(|s| s.as_str()).collect();
+            sorted == expected
+        })
     }
 
     /// Check a column is NOT NULL via is_nullable = 'NO'
@@ -725,5 +724,34 @@ async fn check_constraints_reject_invalid_data() {
     assert!(
         result.is_err(),
         "role='admin' should violate CHECK constraint"
+    );
+}
+
+// ===========================================================================
+// Helper correctness: composite unique constraint detection
+// ===========================================================================
+
+#[tokio::test]
+async fn unique_constraint_is_composite_not_individual() {
+    let mdb = MigrationDb::new().await;
+
+    // push_tokens has UNIQUE(user_id, token) — a composite constraint.
+    // Asking for just one column should return false: there is no single-column
+    // unique index on user_id alone.
+    assert!(
+        !mdb.unique_constraint_exists("push_tokens", &["user_id"])
+            .await,
+        "user_id alone is not uniquely constrained on push_tokens"
+    );
+    assert!(
+        !mdb.unique_constraint_exists("push_tokens", &["token"])
+            .await,
+        "token alone is not uniquely constrained on push_tokens"
+    );
+
+    // But the composite should still pass
+    assert!(
+        mdb.unique_constraint_exists("push_tokens", &["user_id", "token"])
+            .await
     );
 }

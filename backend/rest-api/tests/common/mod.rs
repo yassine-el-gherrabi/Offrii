@@ -23,8 +23,7 @@ use rest_api::repositories::refresh_token_repo::PgRefreshTokenRepo;
 use rest_api::repositories::user_repo::PgUserRepo;
 use rest_api::services::auth_service::PgAuthService;
 use rest_api::services::health_check::PgHealthCheck;
-use rest_api::services::token_cache::RedisTokenCache;
-use rest_api::traits::{AuthService, HealthCheck, RefreshTokenRepo, TokenCache, UserRepo};
+use rest_api::traits::{AuthService, HealthCheck, RefreshTokenRepo, UserRepo};
 use rest_api::utils::jwt::JwtKeys;
 
 #[allow(dead_code)]
@@ -63,13 +62,11 @@ impl TestApp {
         let user_repo: Arc<dyn UserRepo> = Arc::new(PgUserRepo::new(db.clone()));
         let refresh_token_repo: Arc<dyn RefreshTokenRepo> =
             Arc::new(PgRefreshTokenRepo::new(db.clone()));
-        let token_cache: Arc<dyn TokenCache> = Arc::new(RedisTokenCache::new(redis.clone()));
 
         let auth: Arc<dyn AuthService> = Arc::new(PgAuthService::new(
             db.clone(),
             user_repo,
             refresh_token_repo,
-            token_cache,
             jwt.clone(),
         ));
         let health: Arc<dyn HealthCheck> = Arc::new(PgHealthCheck::new(db.clone(), redis));

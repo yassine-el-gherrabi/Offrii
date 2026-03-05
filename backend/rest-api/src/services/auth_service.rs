@@ -34,7 +34,6 @@ pub struct PgAuthService {
     pool: PgPool,
     user_repo: Arc<dyn traits::UserRepo>,
     refresh_token_repo: Arc<dyn traits::RefreshTokenRepo>,
-    token_cache: Arc<dyn traits::TokenCache>,
     jwt: Arc<JwtKeys>,
 }
 
@@ -53,14 +52,12 @@ impl PgAuthService {
         pool: PgPool,
         user_repo: Arc<dyn traits::UserRepo>,
         refresh_token_repo: Arc<dyn traits::RefreshTokenRepo>,
-        token_cache: Arc<dyn traits::TokenCache>,
         jwt: Arc<JwtKeys>,
     ) -> Self {
         Self {
             pool,
             user_repo,
             refresh_token_repo,
-            token_cache,
             jwt,
         }
     }
@@ -118,9 +115,6 @@ impl traits::AuthService for PgAuthService {
             .await
             .map_err(|e| AppError::Internal(e.into()))?;
 
-        // Redis cache (best-effort)
-        self.token_cache.store(&refresh_hash, user.id).await;
-
         Ok(AuthResponse {
             tokens,
             user: UserResponse::from(&user),
@@ -160,9 +154,6 @@ impl traits::AuthService for PgAuthService {
             .await
             .map_err(AppError::Internal)?;
 
-        // Redis cache (best-effort)
-        self.token_cache.store(&refresh_hash, user.id).await;
-
         Ok(AuthResponse {
             tokens,
             user: UserResponse::from(&user),
@@ -183,29 +174,31 @@ impl traits::AuthService for PgAuthService {
 
         let old_hash = sha256_hex(raw_refresh_token);
 
-        // Check Redis first, fallback to DB
-        let cached_user_id = self.token_cache.get(&old_hash).await;
-        if cached_user_id.is_none() {
-            // Fallback to DB
-            let db_token = self
-                .refresh_token_repo
-                .find_active_by_hash(&old_hash)
-                .await
-                .map_err(AppError::Internal)?;
+        // Verify token exists and is active in DB (source of truth)
+        let db_token = self
+            .refresh_token_repo
+            .find_active_by_hash(&old_hash)
+            .await
+            .map_err(AppError::Internal)?;
 
-            if db_token.is_none() {
-                return Err(AppError::Unauthorized(
-                    "refresh token revoked or not found".into(),
-                ));
-            }
+        if db_token.is_none() {
+            return Err(AppError::Unauthorized(
+                "refresh token revoked or not found".into(),
+            ));
         }
 
-        // Revoke old token
-        self.refresh_token_repo
+        // Revoke old token; if nothing was revoked (race condition), reject
+        let revoked = self
+            .refresh_token_repo
             .revoke_by_hash(&old_hash)
             .await
             .map_err(AppError::Internal)?;
-        self.token_cache.delete(&old_hash).await;
+
+        if !revoked {
+            return Err(AppError::Unauthorized(
+                "refresh token revoked or not found".into(),
+            ));
+        }
 
         // Generate new pair
         let tokens = generate_token_pair(&self.jwt, user_id).map_err(AppError::Internal)?;
@@ -217,19 +210,14 @@ impl traits::AuthService for PgAuthService {
             .await
             .map_err(AppError::Internal)?;
 
-        self.token_cache.store(&new_hash, user_id).await;
-
         Ok(RefreshResponse { tokens })
     }
 
     async fn logout(&self, user_id: Uuid) -> Result<(), AppError> {
-        let revoked_hashes = self
-            .refresh_token_repo
+        self.refresh_token_repo
             .revoke_all_for_user(user_id)
             .await
             .map_err(AppError::Internal)?;
-
-        self.token_cache.delete_many(&revoked_hashes).await;
 
         Ok(())
     }

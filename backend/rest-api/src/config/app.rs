@@ -9,13 +9,16 @@ pub struct Config {
 
 impl Config {
     pub fn from_env() -> anyhow::Result<Self> {
+        Self::from_vars(|key| env::var(key))
+    }
+
+    pub fn from_vars(var: impl Fn(&str) -> Result<String, env::VarError>) -> anyhow::Result<Self> {
         let database_url =
-            env::var("DATABASE_URL").map_err(|_| anyhow::anyhow!("DATABASE_URL must be set"))?;
+            var("DATABASE_URL").map_err(|_| anyhow::anyhow!("DATABASE_URL must be set"))?;
 
-        let redis_url =
-            env::var("REDIS_URL").unwrap_or_else(|_| "redis://localhost:6379".to_string());
+        let redis_url = var("REDIS_URL").unwrap_or_else(|_| "redis://localhost:6379".to_string());
 
-        let api_port = env::var("API_PORT")
+        let api_port = var("API_PORT")
             .unwrap_or_else(|_| "3000".to_string())
             .parse::<u16>()
             .map_err(|_| anyhow::anyhow!("API_PORT must be a valid u16"))?;
@@ -29,97 +32,103 @@ impl Config {
 }
 
 #[cfg(test)]
-#[allow(unsafe_code)]
 mod tests {
     use super::*;
+    use std::collections::HashMap;
 
-    static ENV_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
-
-    /// # Safety
-    /// Must be called while holding ENV_LOCK — single-threaded env access.
-    unsafe fn cleanup_env() {
-        unsafe {
-            env::remove_var("DATABASE_URL");
-            env::remove_var("REDIS_URL");
-            env::remove_var("API_PORT");
-        }
+    macro_rules! vars {
+        ($($key:expr => $val:expr),* $(,)?) => {{
+            let map: HashMap<&str, &str> = HashMap::from([$(($key, $val)),*]);
+            move |key: &str| -> Result<String, env::VarError> {
+                map.get(key)
+                    .map(|v| v.to_string())
+                    .ok_or(env::VarError::NotPresent)
+            }
+        }};
     }
 
     #[test]
-    fn from_env_all_set() {
-        let _lock = ENV_LOCK.lock().unwrap();
-        unsafe {
-            cleanup_env();
-            env::set_var("DATABASE_URL", "postgres://localhost/test");
-            env::set_var("REDIS_URL", "redis://custom:1234");
-            env::set_var("API_PORT", "8080");
-        }
-
-        let cfg = Config::from_env().unwrap();
+    fn from_vars_all_set() {
+        let cfg = Config::from_vars(vars! {
+            "DATABASE_URL" => "postgres://localhost/test",
+            "REDIS_URL" => "redis://custom:1234",
+            "API_PORT" => "8080",
+        })
+        .unwrap();
         assert_eq!(cfg.database_url, "postgres://localhost/test");
         assert_eq!(cfg.redis_url, "redis://custom:1234");
         assert_eq!(cfg.api_port, 8080);
-
-        unsafe { cleanup_env() };
     }
 
     #[test]
-    fn from_env_missing_database_url() {
-        let _lock = ENV_LOCK.lock().unwrap();
-        unsafe { cleanup_env() };
-
-        let err = Config::from_env().unwrap_err();
+    fn from_vars_missing_database_url() {
+        let err = Config::from_vars(vars! {}).unwrap_err();
         assert!(
             err.to_string().contains("DATABASE_URL must be set"),
             "unexpected error: {err}"
         );
-
-        unsafe { cleanup_env() };
     }
 
     #[test]
-    fn from_env_defaults_redis_url() {
-        let _lock = ENV_LOCK.lock().unwrap();
-        unsafe {
-            cleanup_env();
-            env::set_var("DATABASE_URL", "postgres://localhost/test");
-        }
-
-        let cfg = Config::from_env().unwrap();
+    fn from_vars_defaults_redis_url() {
+        let cfg = Config::from_vars(vars! {
+            "DATABASE_URL" => "postgres://localhost/test",
+        })
+        .unwrap();
         assert_eq!(cfg.redis_url, "redis://localhost:6379");
-
-        unsafe { cleanup_env() };
     }
 
     #[test]
-    fn from_env_defaults_api_port() {
-        let _lock = ENV_LOCK.lock().unwrap();
-        unsafe {
-            cleanup_env();
-            env::set_var("DATABASE_URL", "postgres://localhost/test");
-        }
-
-        let cfg = Config::from_env().unwrap();
+    fn from_vars_defaults_api_port() {
+        let cfg = Config::from_vars(vars! {
+            "DATABASE_URL" => "postgres://localhost/test",
+        })
+        .unwrap();
         assert_eq!(cfg.api_port, 3000);
-
-        unsafe { cleanup_env() };
     }
 
     #[test]
-    fn from_env_invalid_api_port() {
-        let _lock = ENV_LOCK.lock().unwrap();
-        unsafe {
-            cleanup_env();
-            env::set_var("DATABASE_URL", "postgres://localhost/test");
-            env::set_var("API_PORT", "not_a_number");
-        }
-
-        let err = Config::from_env().unwrap_err();
+    fn from_vars_invalid_api_port() {
+        let err = Config::from_vars(vars! {
+            "DATABASE_URL" => "postgres://localhost/test",
+            "API_PORT" => "not_a_number",
+        })
+        .unwrap_err();
         assert!(
             err.to_string().contains("API_PORT must be a valid u16"),
             "unexpected error: {err}"
         );
+    }
 
-        unsafe { cleanup_env() };
+    #[test]
+    fn from_vars_empty_database_url_is_accepted() {
+        let cfg = Config::from_vars(vars! {
+            "DATABASE_URL" => "",
+        })
+        .unwrap();
+        assert_eq!(cfg.database_url, "");
+    }
+
+    #[test]
+    fn from_vars_port_zero_is_valid() {
+        let cfg = Config::from_vars(vars! {
+            "DATABASE_URL" => "postgres://localhost/test",
+            "API_PORT" => "0",
+        })
+        .unwrap();
+        assert_eq!(cfg.api_port, 0);
+    }
+
+    #[test]
+    fn from_vars_port_overflow() {
+        let err = Config::from_vars(vars! {
+            "DATABASE_URL" => "postgres://localhost/test",
+            "API_PORT" => "99999",
+        })
+        .unwrap_err();
+        assert!(
+            err.to_string().contains("API_PORT must be a valid u16"),
+            "unexpected error: {err}"
+        );
     }
 }

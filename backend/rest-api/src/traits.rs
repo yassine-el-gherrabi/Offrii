@@ -36,17 +36,7 @@ pub trait RefreshTokenRepo: Send + Sync {
 
     async fn revoke_by_hash(&self, token_hash: &str) -> Result<bool>;
 
-    async fn revoke_all_for_user(&self, user_id: Uuid) -> Result<Vec<String>>;
-}
-
-// ── Cache trait ──────────────────────────────────────────────────────
-
-#[async_trait]
-pub trait TokenCache: Send + Sync {
-    async fn store(&self, token_hash: &str, user_id: Uuid);
-    async fn get(&self, token_hash: &str) -> Option<Uuid>;
-    async fn delete(&self, token_hash: &str);
-    async fn delete_many(&self, token_hashes: &[String]);
+    async fn revoke_all_for_user(&self, user_id: Uuid) -> Result<()>;
 }
 
 // ── Service trait ────────────────────────────────────────────────────
