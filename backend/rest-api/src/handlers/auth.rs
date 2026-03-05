@@ -2,36 +2,14 @@ use axum::extract::State;
 use axum::http::StatusCode;
 use axum::routing::post;
 use axum::{Json, Router};
-use serde::Deserialize;
 use validator::Validate;
 
 use crate::AppState;
+use crate::dto::auth::{
+    AuthResponse, LoginRequest, RefreshRequest, RefreshResponse, RegisterRequest,
+};
 use crate::errors::AppError;
 use crate::middleware::AuthUser;
-use crate::services::auth_service;
-
-#[derive(Debug, Deserialize, Validate)]
-pub struct RegisterRequest {
-    #[validate(email(message = "invalid email address"))]
-    pub email: String,
-    #[validate(length(min = 8, message = "password must be at least 8 characters"))]
-    pub password: String,
-    pub display_name: Option<String>,
-}
-
-#[derive(Debug, Deserialize, Validate)]
-pub struct LoginRequest {
-    #[validate(email(message = "invalid email address"))]
-    pub email: String,
-    #[validate(length(min = 1, message = "password is required"))]
-    pub password: String,
-}
-
-#[derive(Debug, Deserialize, Validate)]
-pub struct RefreshRequest {
-    #[validate(length(min = 1, message = "refresh_token is required"))]
-    pub refresh_token: String,
-}
 
 fn validate_request(req: &impl Validate) -> Result<(), AppError> {
     req.validate()
@@ -49,18 +27,13 @@ pub fn router() -> Router<AppState> {
 async fn register(
     State(state): State<AppState>,
     Json(req): Json<RegisterRequest>,
-) -> Result<(StatusCode, Json<auth_service::AuthResponse>), AppError> {
+) -> Result<(StatusCode, Json<AuthResponse>), AppError> {
     validate_request(&req)?;
 
-    let response = auth_service::register(
-        &state.db,
-        &state.redis,
-        &state.jwt,
-        &req.email,
-        &req.password,
-        req.display_name.as_deref(),
-    )
-    .await?;
+    let response = state
+        .auth
+        .register(&req.email, &req.password, req.display_name.as_deref())
+        .await?;
 
     Ok((StatusCode::CREATED, Json(response)))
 }
@@ -68,17 +41,10 @@ async fn register(
 async fn login(
     State(state): State<AppState>,
     Json(req): Json<LoginRequest>,
-) -> Result<Json<auth_service::AuthResponse>, AppError> {
+) -> Result<Json<AuthResponse>, AppError> {
     validate_request(&req)?;
 
-    let response = auth_service::login(
-        &state.db,
-        &state.redis,
-        &state.jwt,
-        &req.email,
-        &req.password,
-    )
-    .await?;
+    let response = state.auth.login(&req.email, &req.password).await?;
 
     Ok(Json(response))
 }
@@ -86,11 +52,10 @@ async fn login(
 async fn refresh(
     State(state): State<AppState>,
     Json(req): Json<RefreshRequest>,
-) -> Result<Json<auth_service::RefreshResponse>, AppError> {
+) -> Result<Json<RefreshResponse>, AppError> {
     validate_request(&req)?;
 
-    let response =
-        auth_service::refresh(&state.db, &state.redis, &state.jwt, &req.refresh_token).await?;
+    let response = state.auth.refresh(&req.refresh_token).await?;
 
     Ok(Json(response))
 }
@@ -99,7 +64,7 @@ async fn logout(
     State(state): State<AppState>,
     auth_user: AuthUser,
 ) -> Result<StatusCode, AppError> {
-    auth_service::logout(&state.db, &state.redis, auth_user.user_id).await?;
+    state.auth.logout(auth_user.user_id).await?;
 
     Ok(StatusCode::NO_CONTENT)
 }
