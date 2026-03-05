@@ -38,7 +38,7 @@ impl traits::RefreshTokenRepo for PgRefreshTokenRepo {
         revoke_by_hash(&self.pool, token_hash).await
     }
 
-    async fn revoke_all_for_user(&self, user_id: Uuid) -> Result<Vec<String>> {
+    async fn revoke_all_for_user(&self, user_id: Uuid) -> Result<()> {
         revoke_all_for_user(&self.pool, user_id).await
     }
 }
@@ -95,22 +95,14 @@ pub(crate) async fn revoke_by_hash(exec: impl PgExecutor<'_>, token_hash: &str) 
     Ok(result.rows_affected() > 0)
 }
 
-/// Revoke all active refresh tokens for a user. Returns the hashes that were revoked.
-pub(crate) async fn revoke_all_for_user(
-    exec: impl PgExecutor<'_>,
-    user_id: Uuid,
-) -> Result<Vec<String>> {
-    let hashes: Vec<(String,)> = sqlx::query_as(
-        r#"
-        UPDATE refresh_tokens
-        SET revoked_at = NOW()
-        WHERE user_id = $1 AND revoked_at IS NULL
-        RETURNING token_hash
-        "#,
+/// Revoke all active refresh tokens for a user.
+pub(crate) async fn revoke_all_for_user(exec: impl PgExecutor<'_>, user_id: Uuid) -> Result<()> {
+    sqlx::query(
+        "UPDATE refresh_tokens SET revoked_at = NOW() WHERE user_id = $1 AND revoked_at IS NULL",
     )
     .bind(user_id)
-    .fetch_all(exec)
+    .execute(exec)
     .await?;
 
-    Ok(hashes.into_iter().map(|(h,)| h).collect())
+    Ok(())
 }

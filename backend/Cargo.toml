@@ -7,7 +7,7 @@ edition = "2024"
 version = "0.1.0"
 
 [workspace.lints.rust]
-unsafe_code = { level = "deny", priority = -10 }
+unsafe_code = { level = "forbid", priority = -10 }
 unused = { level = "deny", priority = -1 }
 unused_variables = { level = "deny" }
 
