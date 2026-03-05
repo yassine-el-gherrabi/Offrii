@@ -17,6 +17,7 @@ path = "src/bin/migrate.rs"
 
 [dependencies]
 anyhow.workspace = true
+argon2.workspace = true
 axum.workspace = true
 dotenvy.workspace = true
 redis.workspace = true
