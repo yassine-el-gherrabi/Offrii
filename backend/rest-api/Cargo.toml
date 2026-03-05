@@ -40,6 +40,7 @@ validator.workspace = true
 
 [dev-dependencies]
 http-body-util = "0.1"
+reqwest = { version = "0.12", features = ["json"] }
 testcontainers = "0.27"
 testcontainers-modules = { version = "0.15", features = ["postgres", "redis"] }
 tokio = { version = "1", features = ["full"] }
