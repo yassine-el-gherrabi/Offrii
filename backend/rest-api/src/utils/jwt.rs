@@ -88,13 +88,16 @@ impl JwtKeys {
                 })?;
                 Self::from_pem(&private_pem, &public_pem)
             }
-            _ => {
+            (None, None) => {
                 tracing::warn!(
-                    "JWT_PRIVATE_KEY_FILE and/or JWT_PUBLIC_KEY_FILE not set; \
+                    "JWT_PRIVATE_KEY_FILE and JWT_PUBLIC_KEY_FILE not set; \
                      generating ephemeral RSA key pair (NOT for production)"
                 );
                 Self::generate()
             }
+            _ => anyhow::bail!(
+                "both JWT_PRIVATE_KEY_FILE and JWT_PUBLIC_KEY_FILE must be set (only one was provided)"
+            ),
         }
     }
 
