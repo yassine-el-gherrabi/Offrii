@@ -1,7 +1,6 @@
 use anyhow::Result;
 use async_trait::async_trait;
 use sqlx::{PgExecutor, PgPool};
-use uuid::Uuid;
 
 use crate::models::User;
 use crate::traits;
@@ -32,10 +31,6 @@ impl traits::UserRepo for PgUserRepo {
     async fn find_by_email(&self, email: &str) -> Result<Option<User>> {
         find_by_email(&self.pool, email).await
     }
-
-    async fn find_by_id(&self, user_id: Uuid) -> Result<Option<User>> {
-        find_by_id(&self.pool, user_id).await
-    }
 }
 
 // ── Free functions (kept pub(crate) for transactional use) ───────────
@@ -50,7 +45,8 @@ pub(crate) async fn create_user(
         r#"
         INSERT INTO users (email, password_hash, display_name)
         VALUES ($1, $2, $3)
-        RETURNING *
+        RETURNING id, email, password_hash, display_name,
+                  reminder_freq, reminder_time, created_at, updated_at
         "#,
     )
     .bind(email)
@@ -63,19 +59,14 @@ pub(crate) async fn create_user(
 }
 
 pub(crate) async fn find_by_email(exec: impl PgExecutor<'_>, email: &str) -> Result<Option<User>> {
-    let user = sqlx::query_as::<_, User>("SELECT * FROM users WHERE email = $1")
-        .bind(email)
-        .fetch_optional(exec)
-        .await?;
-
-    Ok(user)
-}
-
-pub(crate) async fn find_by_id(exec: impl PgExecutor<'_>, user_id: Uuid) -> Result<Option<User>> {
-    let user = sqlx::query_as::<_, User>("SELECT * FROM users WHERE id = $1")
-        .bind(user_id)
-        .fetch_optional(exec)
-        .await?;
+    let user = sqlx::query_as::<_, User>(
+        "SELECT id, email, password_hash, display_name, \
+         reminder_freq, reminder_time, created_at, updated_at \
+         FROM users WHERE email = $1",
+    )
+    .bind(email)
+    .fetch_optional(exec)
+    .await?;
 
     Ok(user)
 }

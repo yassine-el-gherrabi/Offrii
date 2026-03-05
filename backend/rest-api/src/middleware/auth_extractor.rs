@@ -11,6 +11,15 @@ pub struct AuthUser {
     pub user_id: Uuid,
 }
 
+/// Parse a Bearer token from the Authorization header value (case-insensitive scheme).
+fn parse_bearer_token(header_value: &str) -> Result<&str, AppError> {
+    header_value
+        .split_once(' ')
+        .filter(|(scheme, _)| scheme.eq_ignore_ascii_case("bearer"))
+        .map(|(_, token)| token)
+        .ok_or_else(|| AppError::Unauthorized("invalid authorization header format".into()))
+}
+
 impl FromRequestParts<AppState> for AuthUser {
     type Rejection = AppError;
 
@@ -24,9 +33,7 @@ impl FromRequestParts<AppState> for AuthUser {
             .and_then(|v| v.to_str().ok())
             .ok_or_else(|| AppError::Unauthorized("missing authorization header".into()))?;
 
-        let token = header
-            .strip_prefix("Bearer ")
-            .ok_or_else(|| AppError::Unauthorized("invalid authorization header format".into()))?;
+        let token = parse_bearer_token(header)?;
 
         let claims = state
             .jwt
@@ -39,5 +46,54 @@ impl FromRequestParts<AppState> for AuthUser {
             .map_err(|_| AppError::Unauthorized("invalid token subject".into()))?;
 
         Ok(AuthUser { user_id })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parse_bearer_valid() {
+        assert_eq!(parse_bearer_token("Bearer abc").unwrap(), "abc");
+    }
+
+    #[test]
+    fn parse_bearer_lowercase() {
+        assert_eq!(parse_bearer_token("bearer abc").unwrap(), "abc");
+    }
+
+    #[test]
+    fn parse_bearer_uppercase() {
+        assert_eq!(parse_bearer_token("BEARER abc").unwrap(), "abc");
+    }
+
+    #[test]
+    fn parse_bearer_mixed_case() {
+        assert_eq!(parse_bearer_token("BeArEr abc").unwrap(), "abc");
+    }
+
+    #[test]
+    fn parse_bearer_missing_scheme() {
+        assert!(parse_bearer_token("abc").is_err());
+    }
+
+    #[test]
+    fn parse_bearer_wrong_scheme() {
+        assert!(parse_bearer_token("Basic abc").is_err());
+    }
+
+    #[test]
+    fn parse_bearer_empty() {
+        assert!(parse_bearer_token("").is_err());
+    }
+
+    #[test]
+    fn parse_bearer_preserves_token_content() {
+        let token = "eyJhbGciOiJSUzI1NiJ9.eyJzdWIiOiIxIn0.sig";
+        assert_eq!(
+            parse_bearer_token(&format!("Bearer {token}")).unwrap(),
+            token
+        );
     }
 }

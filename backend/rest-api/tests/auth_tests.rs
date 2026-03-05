@@ -392,3 +392,169 @@ async fn logout_then_refresh_each_session_401() {
     let (status, _) = app.post_json("/auth/refresh", &body2).await;
     assert_eq!(status, StatusCode::UNAUTHORIZED);
 }
+
+// ---------------------------------------------------------------------------
+// Expired token
+// ---------------------------------------------------------------------------
+
+#[tokio::test]
+async fn refresh_expired_token_401() {
+    let app = TestApp::new().await;
+    let (_, reg) = app
+        .register_user("expired@example.com", "strongpass123")
+        .await;
+    let refresh = reg["tokens"]["refresh_token"].as_str().unwrap().to_string();
+
+    // Manually expire the token in DB
+    sqlx::query("UPDATE refresh_tokens SET expires_at = NOW() - INTERVAL '1 hour'")
+        .execute(&app.db)
+        .await
+        .unwrap();
+
+    let body = serde_json::json!({ "refresh_token": refresh });
+    let (status, body) = app.post_json("/auth/refresh", &body).await;
+    assert_eq!(status, StatusCode::UNAUTHORIZED);
+    assert_error(&body, "UNAUTHORIZED");
+}
+
+// ---------------------------------------------------------------------------
+// Concurrent refresh
+// ---------------------------------------------------------------------------
+
+#[tokio::test]
+async fn refresh_truly_concurrent_one_wins_one_loses() {
+    let app = TestApp::new().await;
+    let (_, reg) = app
+        .register_user("concurrent@example.com", "strongpass123")
+        .await;
+    let refresh = reg["tokens"]["refresh_token"].as_str().unwrap().to_string();
+
+    let body = serde_json::json!({ "refresh_token": &refresh });
+
+    // Fire two concurrent refreshes with the same token
+    let (resp1, resp2) = tokio::join!(
+        app.post_json("/auth/refresh", &body),
+        app.post_json("/auth/refresh", &body),
+    );
+
+    let statuses = [resp1.0, resp2.0];
+    // Exactly one should succeed, the other should fail
+    assert!(
+        statuses.contains(&StatusCode::OK),
+        "expected one 200, got {statuses:?}"
+    );
+    assert!(
+        statuses.contains(&StatusCode::UNAUTHORIZED),
+        "expected one 401, got {statuses:?}"
+    );
+}
+
+// ---------------------------------------------------------------------------
+// Max refresh tokens
+// ---------------------------------------------------------------------------
+
+#[tokio::test]
+async fn login_enforces_max_refresh_tokens() {
+    let app = TestApp::new().await;
+    app.register_user("maxrt@example.com", "strongpass123")
+        .await;
+
+    let login_body = serde_json::json!({
+        "email": "maxrt@example.com",
+        "password": "strongpass123",
+    });
+
+    // Login 7 more times (register created 1, so 8 total)
+    for _ in 0..7 {
+        let (status, _) = app.post_json("/auth/login", &login_body).await;
+        assert_eq!(status, StatusCode::OK);
+    }
+
+    // Should only have at most 5 active refresh tokens
+    let count: (i64,) = sqlx::query_as(
+        "SELECT COUNT(*) FROM refresh_tokens \
+         WHERE user_id = (SELECT id FROM users WHERE email = 'maxrt@example.com') \
+         AND revoked_at IS NULL",
+    )
+    .fetch_one(&app.db)
+    .await
+    .unwrap();
+
+    assert!(
+        count.0 <= 5,
+        "expected at most 5 active refresh tokens, got {}",
+        count.0
+    );
+}
+
+// ---------------------------------------------------------------------------
+// Email normalization
+// ---------------------------------------------------------------------------
+
+#[tokio::test]
+async fn register_normalizes_email() {
+    let app = TestApp::new().await;
+
+    let (status, _) = app
+        .register_user("Alice@Example.COM", "strongpass123")
+        .await;
+    assert_eq!(status, StatusCode::CREATED);
+
+    // Login with normalized email should work
+    let body = serde_json::json!({
+        "email": "alice@example.com",
+        "password": "strongpass123",
+    });
+    let (status, _) = app.post_json("/auth/login", &body).await;
+    assert_eq!(status, StatusCode::OK);
+}
+
+// ---------------------------------------------------------------------------
+// Input validation edge cases
+// ---------------------------------------------------------------------------
+
+#[tokio::test]
+async fn register_password_too_long_400() {
+    let app = TestApp::new().await;
+    let long_password = "a".repeat(129);
+
+    let (status, body) = app
+        .register_user("longpw@example.com", &long_password)
+        .await;
+
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    assert_error(&body, "BAD_REQUEST");
+}
+
+#[tokio::test]
+async fn register_display_name_too_long_400() {
+    let app = TestApp::new().await;
+    let long_name = "a".repeat(101);
+
+    let (status, body) = app
+        .register_user_with_name("longname@example.com", "strongpass123", &long_name)
+        .await;
+
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    assert_error(&body, "BAD_REQUEST");
+}
+
+// ---------------------------------------------------------------------------
+// Bearer case-insensitive
+// ---------------------------------------------------------------------------
+
+#[tokio::test]
+async fn logout_with_lowercase_bearer_204() {
+    let app = TestApp::new().await;
+    let (_, reg) = app
+        .register_user("lowerbearer@example.com", "strongpass123")
+        .await;
+    let access = reg["tokens"]["access_token"].as_str().unwrap();
+
+    // Send with lowercase "bearer"
+    let (status, _) = app
+        .post_with_raw_auth("/auth/logout", &format!("bearer {access}"))
+        .await;
+
+    assert_eq!(status, StatusCode::NO_CONTENT);
+}

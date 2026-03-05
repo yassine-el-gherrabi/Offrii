@@ -19,8 +19,6 @@ pub trait UserRepo: Send + Sync {
     ) -> Result<User>;
 
     async fn find_by_email(&self, email: &str) -> Result<Option<User>>;
-
-    async fn find_by_id(&self, user_id: Uuid) -> Result<Option<User>>;
 }
 
 #[async_trait]
@@ -32,11 +30,16 @@ pub trait RefreshTokenRepo: Send + Sync {
         expires_at: DateTime<Utc>,
     ) -> Result<RefreshToken>;
 
-    async fn find_active_by_hash(&self, token_hash: &str) -> Result<Option<RefreshToken>>;
-
     async fn revoke_by_hash(&self, token_hash: &str) -> Result<bool>;
 
     async fn revoke_all_for_user(&self, user_id: Uuid) -> Result<()>;
+
+    async fn revoke_excess_for_user(&self, user_id: Uuid, keep: i64) -> Result<()>;
+}
+
+#[async_trait]
+pub trait CategoryRepo: Send + Sync {
+    async fn copy_defaults_for_user(&self, user_id: Uuid) -> Result<u64>;
 }
 
 // ── Service trait ────────────────────────────────────────────────────

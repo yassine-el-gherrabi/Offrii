@@ -1,6 +1,30 @@
 use anyhow::Result;
-use sqlx::PgExecutor;
+use async_trait::async_trait;
+use sqlx::{PgExecutor, PgPool};
 use uuid::Uuid;
+
+use crate::traits;
+
+// ── Concrete implementation ──────────────────────────────────────────
+
+pub struct PgCategoryRepo {
+    pool: PgPool,
+}
+
+impl PgCategoryRepo {
+    pub fn new(pool: PgPool) -> Self {
+        Self { pool }
+    }
+}
+
+#[async_trait]
+impl traits::CategoryRepo for PgCategoryRepo {
+    async fn copy_defaults_for_user(&self, user_id: Uuid) -> Result<u64> {
+        copy_defaults_for_user(&self.pool, user_id).await
+    }
+}
+
+// ── Free functions (kept pub(crate) for transactional use) ───────────
 
 /// Copy the default categories (user_id IS NULL) to the given user.
 pub(crate) async fn copy_defaults_for_user(

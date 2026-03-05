@@ -22,6 +22,12 @@ pub enum TokenType {
     Refresh,
 }
 
+/// JWT issuer identifier.
+const JWT_ISSUER: &str = "offrii-api";
+
+/// JWT audience identifier.
+const JWT_AUDIENCE: &str = "offrii-app";
+
 /// JWT claims payload.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Claims {
@@ -30,6 +36,8 @@ pub struct Claims {
     pub iat: usize,
     pub jti: String,
     pub token_type: TokenType,
+    pub iss: String,
+    pub aud: String,
 }
 
 /// Holds the RSA encoding (private) and decoding (public) keys for JWT operations.
@@ -49,7 +57,7 @@ impl JwtKeys {
     }
 
     /// Generate a fresh RSA 2048-bit key pair (dev/test only).
-    pub(crate) fn generate() -> Result<Self> {
+    pub fn generate() -> Result<Self> {
         use rsa::RsaPrivateKey;
         use rsa::pkcs8::{EncodePrivateKey, EncodePublicKey, LineEnding};
 
@@ -133,7 +141,10 @@ impl JwtKeys {
     }
 
     fn validate_token(&self, token: &str, expected_type: TokenType) -> Result<Claims> {
-        let validation = Validation::new(Algorithm::RS256);
+        let mut validation = Validation::new(Algorithm::RS256);
+        validation.set_issuer(&[JWT_ISSUER]);
+        validation.set_audience(&[JWT_AUDIENCE]);
+
         let token_data = decode::<Claims>(token, &self.decoding, &validation)
             .map_err(|e| anyhow::anyhow!("token validation failed: {e}"))?;
 
@@ -166,6 +177,8 @@ impl JwtKeys {
             iat,
             jti: Uuid::new_v4().to_string(),
             token_type,
+            iss: JWT_ISSUER.to_string(),
+            aud: JWT_AUDIENCE.to_string(),
         };
 
         let header = Header::new(Algorithm::RS256);
@@ -238,6 +251,8 @@ mod tests {
             iat: (now - 180) as usize,
             jti: Uuid::new_v4().to_string(),
             token_type: TokenType::Access,
+            iss: JWT_ISSUER.to_string(),
+            aud: JWT_AUDIENCE.to_string(),
         };
         let token = encode(&Header::new(Algorithm::RS256), &claims, &keys.encoding).unwrap();
 

@@ -1,7 +1,9 @@
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 use validator::Validate;
 
-use crate::models::UserResponse;
+use crate::models::User;
 
 // ── Request DTOs ─────────────────────────────────────────────────────
 
@@ -9,8 +11,13 @@ use crate::models::UserResponse;
 pub struct RegisterRequest {
     #[validate(email(message = "invalid email address"))]
     pub email: String,
-    #[validate(length(min = 8, message = "password must be at least 8 characters"))]
+    #[validate(length(
+        min = 8,
+        max = 128,
+        message = "password must be between 8 and 128 characters"
+    ))]
     pub password: String,
+    #[validate(length(max = 100, message = "display name must be at most 100 characters"))]
     pub display_name: Option<String>,
 }
 
@@ -30,7 +37,7 @@ pub struct RefreshRequest {
 
 // ── Response DTOs ────────────────────────────────────────────────────
 
-#[derive(Serialize)]
+#[derive(Debug, Clone, Serialize)]
 pub struct TokenPair {
     pub access_token: String,
     pub refresh_token: String,
@@ -38,13 +45,34 @@ pub struct TokenPair {
     pub expires_in: u64,
 }
 
-#[derive(Serialize)]
+#[derive(Debug, Clone, Serialize)]
 pub struct AuthResponse {
     pub tokens: TokenPair,
     pub user: UserResponse,
 }
 
-#[derive(Serialize)]
+#[derive(Debug, Clone, Serialize)]
 pub struct RefreshResponse {
     pub tokens: TokenPair,
+}
+
+// ── User response DTO ───────────────────────────────────────────────
+
+#[derive(Debug, Clone, Serialize)]
+pub struct UserResponse {
+    pub id: Uuid,
+    pub email: String,
+    pub display_name: Option<String>,
+    pub created_at: DateTime<Utc>,
+}
+
+impl From<&User> for UserResponse {
+    fn from(u: &User) -> Self {
+        Self {
+            id: u.id,
+            email: u.email.clone(),
+            display_name: u.display_name.clone(),
+            created_at: u.created_at,
+        }
+    }
 }

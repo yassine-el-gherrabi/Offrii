@@ -56,7 +56,7 @@ impl TestApp {
         sqlx::migrate!("./migrations").run(&db).await.unwrap();
 
         let redis = create_redis_client(&redis_url).unwrap();
-        let jwt = Arc::new(JwtKeys::from_env().unwrap());
+        let jwt = Arc::new(JwtKeys::generate().unwrap());
 
         // Wire DI
         let user_repo: Arc<dyn UserRepo> = Arc::new(PgUserRepo::new(db.clone()));
@@ -239,7 +239,13 @@ impl TestApp {
         if bytes.is_empty() {
             (status, Value::Null)
         } else {
-            (status, serde_json::from_slice(&bytes).unwrap())
+            match serde_json::from_slice(&bytes) {
+                Ok(v) => (status, v),
+                Err(_) => (
+                    status,
+                    Value::String(String::from_utf8_lossy(&bytes).into()),
+                ),
+            }
         }
     }
 }
