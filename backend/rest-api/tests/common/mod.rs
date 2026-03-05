@@ -19,8 +19,15 @@ use rest_api::AppState;
 use rest_api::config::database::{create_pg_pool, create_redis_client};
 use rest_api::handlers::auth;
 use rest_api::handlers::health::health_check;
+use rest_api::repositories::refresh_token_repo::PgRefreshTokenRepo;
+use rest_api::repositories::user_repo::PgUserRepo;
+use rest_api::services::auth_service::PgAuthService;
+use rest_api::services::health_check::PgHealthCheck;
+use rest_api::services::token_cache::RedisTokenCache;
+use rest_api::traits::{AuthService, HealthCheck, RefreshTokenRepo, TokenCache, UserRepo};
 use rest_api::utils::jwt::JwtKeys;
 
+#[allow(dead_code)]
 pub struct TestApp {
     _pg_container: ContainerAsync<Postgres>,
     _redis_container: ContainerAsync<Redis>,
@@ -52,11 +59,22 @@ impl TestApp {
         let redis = create_redis_client(&redis_url).unwrap();
         let jwt = Arc::new(JwtKeys::from_env().unwrap());
 
-        let state = AppState {
-            db: db.clone(),
-            redis,
-            jwt,
-        };
+        // Wire DI
+        let user_repo: Arc<dyn UserRepo> = Arc::new(PgUserRepo::new(db.clone()));
+        let refresh_token_repo: Arc<dyn RefreshTokenRepo> =
+            Arc::new(PgRefreshTokenRepo::new(db.clone()));
+        let token_cache: Arc<dyn TokenCache> = Arc::new(RedisTokenCache::new(redis.clone()));
+
+        let auth: Arc<dyn AuthService> = Arc::new(PgAuthService::new(
+            db.clone(),
+            user_repo,
+            refresh_token_repo,
+            token_cache,
+            jwt.clone(),
+        ));
+        let health: Arc<dyn HealthCheck> = Arc::new(PgHealthCheck::new(db.clone(), redis));
+
+        let state = AppState { auth, jwt, health };
 
         let router = Router::new()
             .route("/health", get(health_check))
@@ -230,6 +248,7 @@ impl TestApp {
 }
 
 /// Assert that the response body has the expected `error.code` and a non-empty `error.message`.
+#[allow(dead_code)]
 pub fn assert_error(body: &Value, expected_code: &str) {
     assert_eq!(
         body["error"]["code"].as_str(),

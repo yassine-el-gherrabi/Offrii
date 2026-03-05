@@ -1,36 +1,19 @@
 use std::sync::Arc;
 
 use anyhow::Result;
+use async_trait::async_trait;
 use chrono::{Duration, Utc};
 use sqlx::PgPool;
 use uuid::Uuid;
 
+use crate::dto::auth::{AuthResponse, RefreshResponse, TokenPair};
 use crate::errors::AppError;
 use crate::models::{User, UserResponse};
 use crate::repositories::{category_repo, refresh_token_repo, user_repo};
-use crate::services::token_cache;
+use crate::traits;
 use crate::utils::hash;
 use crate::utils::jwt::{JwtKeys, REFRESH_TOKEN_TTL_SECS};
 use crate::utils::token_hash::sha256_hex;
-
-#[derive(serde::Serialize)]
-pub struct TokenPair {
-    pub access_token: String,
-    pub refresh_token: String,
-    pub token_type: &'static str,
-    pub expires_in: u64,
-}
-
-#[derive(serde::Serialize)]
-pub struct AuthResponse {
-    pub tokens: TokenPair,
-    pub user: UserResponse,
-}
-
-#[derive(serde::Serialize)]
-pub struct RefreshResponse {
-    pub tokens: TokenPair,
-}
 
 fn generate_token_pair(jwt: &JwtKeys, user_id: Uuid) -> Result<TokenPair> {
     let access_token = jwt.generate_access_token(user_id)?;
@@ -43,161 +26,211 @@ fn generate_token_pair(jwt: &JwtKeys, user_id: Uuid) -> Result<TokenPair> {
     })
 }
 
-pub async fn register(
-    db: &PgPool,
-    redis: &redis::Client,
-    jwt: &Arc<JwtKeys>,
-    email: &str,
-    password: &str,
-    display_name: Option<&str>,
-) -> Result<AuthResponse, AppError> {
-    // Check email uniqueness
-    if user_repo::find_by_email(db, email).await?.is_some() {
-        return Err(AppError::Conflict("email already registered".into()));
+// ── Concrete implementation ──────────────────────────────────────────
+
+pub struct PgAuthService {
+    /// Held for `register()`'s multi-step transaction only.
+    /// Non-transactional DB access goes through the injected trait objects.
+    pool: PgPool,
+    user_repo: Arc<dyn traits::UserRepo>,
+    refresh_token_repo: Arc<dyn traits::RefreshTokenRepo>,
+    token_cache: Arc<dyn traits::TokenCache>,
+    jwt: Arc<JwtKeys>,
+}
+
+/// Check if a sqlx database error is a unique-constraint violation (PG code 23505).
+fn is_unique_violation(err: &anyhow::Error) -> bool {
+    err.downcast_ref::<sqlx::Error>()
+        .and_then(|e| match e {
+            sqlx::Error::Database(db_err) => db_err.code().map(|c| c == "23505"),
+            _ => None,
+        })
+        .unwrap_or(false)
+}
+
+impl PgAuthService {
+    pub fn new(
+        pool: PgPool,
+        user_repo: Arc<dyn traits::UserRepo>,
+        refresh_token_repo: Arc<dyn traits::RefreshTokenRepo>,
+        token_cache: Arc<dyn traits::TokenCache>,
+        jwt: Arc<JwtKeys>,
+    ) -> Self {
+        Self {
+            pool,
+            user_repo,
+            refresh_token_repo,
+            token_cache,
+            jwt,
+        }
+    }
+}
+
+#[async_trait]
+impl traits::AuthService for PgAuthService {
+    async fn register(
+        &self,
+        email: &str,
+        password: &str,
+        display_name: Option<&str>,
+    ) -> Result<AuthResponse, AppError> {
+        // Hash password on blocking thread (CPU-bound)
+        let password_owned = password.to_string();
+        let password_hash =
+            tokio::task::spawn_blocking(move || hash::hash_password(&password_owned))
+                .await
+                .map_err(|e| AppError::Internal(anyhow::anyhow!("spawn_blocking join error: {e}")))?
+                .map_err(AppError::Internal)?;
+
+        // Transaction: create user + copy categories + insert refresh token
+        // Uses free functions directly on &mut *tx for atomicity
+        let mut tx = self
+            .pool
+            .begin()
+            .await
+            .map_err(|e| AppError::Internal(e.into()))?;
+
+        // The DB unique constraint on `email` is the real guard against duplicates.
+        // No TOCTOU pre-check needed — we catch the violation directly.
+        let user = user_repo::create_user(&mut *tx, email, &password_hash, display_name)
+            .await
+            .map_err(|e| {
+                if is_unique_violation(&e) {
+                    AppError::Conflict("email already registered".into())
+                } else {
+                    AppError::Internal(e)
+                }
+            })?;
+
+        category_repo::copy_defaults_for_user(&mut *tx, user.id)
+            .await
+            .map_err(AppError::Internal)?;
+
+        let tokens = generate_token_pair(&self.jwt, user.id).map_err(AppError::Internal)?;
+        let refresh_hash = sha256_hex(&tokens.refresh_token);
+        let expires_at = Utc::now() + Duration::seconds(REFRESH_TOKEN_TTL_SECS as i64);
+
+        refresh_token_repo::insert(&mut *tx, user.id, &refresh_hash, expires_at)
+            .await
+            .map_err(AppError::Internal)?;
+
+        tx.commit()
+            .await
+            .map_err(|e| AppError::Internal(e.into()))?;
+
+        // Redis cache (best-effort)
+        self.token_cache.store(&refresh_hash, user.id).await;
+
+        Ok(AuthResponse {
+            tokens,
+            user: UserResponse::from(&user),
+        })
     }
 
-    // Hash password on blocking thread (CPU-bound)
-    let password_owned = password.to_string();
-    let password_hash = tokio::task::spawn_blocking(move || hash::hash_password(&password_owned))
+    async fn login(&self, email: &str, password: &str) -> Result<AuthResponse, AppError> {
+        let invalid_credentials = || AppError::Unauthorized("invalid email or password".into());
+
+        let user: User = self
+            .user_repo
+            .find_by_email(email)
+            .await
+            .map_err(AppError::Internal)?
+            .ok_or_else(invalid_credentials)?;
+
+        // Verify password on blocking thread
+        let password_owned = password.to_string();
+        let hash_owned = user.password_hash.clone();
+        let valid = tokio::task::spawn_blocking(move || {
+            hash::verify_password(&password_owned, &hash_owned)
+        })
         .await
         .map_err(|e| AppError::Internal(anyhow::anyhow!("spawn_blocking join error: {e}")))?
         .map_err(AppError::Internal)?;
 
-    // Transaction: create user + copy categories + insert refresh token
-    let mut tx = db.begin().await.map_err(|e| AppError::Internal(e.into()))?;
-
-    let user = user_repo::create_user(&mut *tx, email, &password_hash, display_name)
-        .await
-        .map_err(AppError::Internal)?;
-
-    category_repo::copy_defaults_for_user(&mut *tx, user.id)
-        .await
-        .map_err(AppError::Internal)?;
-
-    let tokens = generate_token_pair(jwt, user.id).map_err(AppError::Internal)?;
-    let refresh_hash = sha256_hex(&tokens.refresh_token);
-    let expires_at = Utc::now() + Duration::seconds(REFRESH_TOKEN_TTL_SECS as i64);
-
-    refresh_token_repo::insert(&mut *tx, user.id, &refresh_hash, expires_at)
-        .await
-        .map_err(AppError::Internal)?;
-
-    tx.commit()
-        .await
-        .map_err(|e| AppError::Internal(e.into()))?;
-
-    // Redis cache (best-effort)
-    token_cache::store(redis, &refresh_hash, user.id).await;
-
-    Ok(AuthResponse {
-        tokens,
-        user: UserResponse::from(&user),
-    })
-}
-
-pub async fn login(
-    db: &PgPool,
-    redis: &redis::Client,
-    jwt: &Arc<JwtKeys>,
-    email: &str,
-    password: &str,
-) -> Result<AuthResponse, AppError> {
-    let invalid_credentials = || AppError::Unauthorized("invalid email or password".into());
-
-    let user: User = user_repo::find_by_email(db, email)
-        .await
-        .map_err(AppError::Internal)?
-        .ok_or_else(invalid_credentials)?;
-
-    // Verify password on blocking thread
-    let password_owned = password.to_string();
-    let hash_owned = user.password_hash.clone();
-    let valid =
-        tokio::task::spawn_blocking(move || hash::verify_password(&password_owned, &hash_owned))
-            .await
-            .map_err(|e| AppError::Internal(anyhow::anyhow!("spawn_blocking join error: {e}")))?
-            .map_err(AppError::Internal)?;
-
-    if !valid {
-        return Err(invalid_credentials());
-    }
-
-    let tokens = generate_token_pair(jwt, user.id).map_err(AppError::Internal)?;
-    let refresh_hash = sha256_hex(&tokens.refresh_token);
-    let expires_at = Utc::now() + Duration::seconds(REFRESH_TOKEN_TTL_SECS as i64);
-
-    refresh_token_repo::insert(db, user.id, &refresh_hash, expires_at)
-        .await
-        .map_err(AppError::Internal)?;
-
-    // Redis cache (best-effort)
-    token_cache::store(redis, &refresh_hash, user.id).await;
-
-    Ok(AuthResponse {
-        tokens,
-        user: UserResponse::from(&user),
-    })
-}
-
-pub async fn refresh(
-    db: &PgPool,
-    redis: &redis::Client,
-    jwt: &Arc<JwtKeys>,
-    raw_refresh_token: &str,
-) -> Result<RefreshResponse, AppError> {
-    // Validate the JWT structure of the refresh token
-    let claims = jwt
-        .validate_refresh_token(raw_refresh_token)
-        .map_err(|_| AppError::Unauthorized("invalid or expired refresh token".into()))?;
-
-    let user_id: Uuid = claims
-        .sub
-        .parse()
-        .map_err(|_| AppError::Unauthorized("invalid token subject".into()))?;
-
-    let old_hash = sha256_hex(raw_refresh_token);
-
-    // Check Redis first, fallback to DB
-    let cached_user_id = token_cache::get(redis, &old_hash).await;
-    if cached_user_id.is_none() {
-        // Fallback to DB
-        let db_token = refresh_token_repo::find_active_by_hash(db, &old_hash)
-            .await
-            .map_err(AppError::Internal)?;
-
-        if db_token.is_none() {
-            return Err(AppError::Unauthorized(
-                "refresh token revoked or not found".into(),
-            ));
+        if !valid {
+            return Err(invalid_credentials());
         }
+
+        let tokens = generate_token_pair(&self.jwt, user.id).map_err(AppError::Internal)?;
+        let refresh_hash = sha256_hex(&tokens.refresh_token);
+        let expires_at = Utc::now() + Duration::seconds(REFRESH_TOKEN_TTL_SECS as i64);
+
+        self.refresh_token_repo
+            .insert(user.id, &refresh_hash, expires_at)
+            .await
+            .map_err(AppError::Internal)?;
+
+        // Redis cache (best-effort)
+        self.token_cache.store(&refresh_hash, user.id).await;
+
+        Ok(AuthResponse {
+            tokens,
+            user: UserResponse::from(&user),
+        })
     }
 
-    // Revoke old token
-    refresh_token_repo::revoke_by_hash(db, &old_hash)
-        .await
-        .map_err(AppError::Internal)?;
-    token_cache::delete(redis, &old_hash).await;
+    async fn refresh(&self, raw_refresh_token: &str) -> Result<RefreshResponse, AppError> {
+        // Validate the JWT structure of the refresh token
+        let claims = self
+            .jwt
+            .validate_refresh_token(raw_refresh_token)
+            .map_err(|_| AppError::Unauthorized("invalid or expired refresh token".into()))?;
 
-    // Generate new pair
-    let tokens = generate_token_pair(jwt, user_id).map_err(AppError::Internal)?;
-    let new_hash = sha256_hex(&tokens.refresh_token);
-    let expires_at = Utc::now() + Duration::seconds(REFRESH_TOKEN_TTL_SECS as i64);
+        let user_id: Uuid = claims
+            .sub
+            .parse()
+            .map_err(|_| AppError::Unauthorized("invalid token subject".into()))?;
 
-    refresh_token_repo::insert(db, user_id, &new_hash, expires_at)
-        .await
-        .map_err(AppError::Internal)?;
+        let old_hash = sha256_hex(raw_refresh_token);
 
-    token_cache::store(redis, &new_hash, user_id).await;
+        // Check Redis first, fallback to DB
+        let cached_user_id = self.token_cache.get(&old_hash).await;
+        if cached_user_id.is_none() {
+            // Fallback to DB
+            let db_token = self
+                .refresh_token_repo
+                .find_active_by_hash(&old_hash)
+                .await
+                .map_err(AppError::Internal)?;
 
-    Ok(RefreshResponse { tokens })
-}
+            if db_token.is_none() {
+                return Err(AppError::Unauthorized(
+                    "refresh token revoked or not found".into(),
+                ));
+            }
+        }
 
-pub async fn logout(db: &PgPool, redis: &redis::Client, user_id: Uuid) -> Result<(), AppError> {
-    let revoked_hashes = refresh_token_repo::revoke_all_for_user(db, user_id)
-        .await
-        .map_err(AppError::Internal)?;
+        // Revoke old token
+        self.refresh_token_repo
+            .revoke_by_hash(&old_hash)
+            .await
+            .map_err(AppError::Internal)?;
+        self.token_cache.delete(&old_hash).await;
 
-    token_cache::delete_many(redis, &revoked_hashes).await;
+        // Generate new pair
+        let tokens = generate_token_pair(&self.jwt, user_id).map_err(AppError::Internal)?;
+        let new_hash = sha256_hex(&tokens.refresh_token);
+        let expires_at = Utc::now() + Duration::seconds(REFRESH_TOKEN_TTL_SECS as i64);
 
-    Ok(())
+        self.refresh_token_repo
+            .insert(user_id, &new_hash, expires_at)
+            .await
+            .map_err(AppError::Internal)?;
+
+        self.token_cache.store(&new_hash, user_id).await;
+
+        Ok(RefreshResponse { tokens })
+    }
+
+    async fn logout(&self, user_id: Uuid) -> Result<(), AppError> {
+        let revoked_hashes = self
+            .refresh_token_repo
+            .revoke_all_for_user(user_id)
+            .await
+            .map_err(AppError::Internal)?;
+
+        self.token_cache.delete_many(&revoked_hashes).await;
+
+        Ok(())
+    }
 }

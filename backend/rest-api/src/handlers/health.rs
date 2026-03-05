@@ -3,30 +3,20 @@ use std::time::Duration;
 use axum::Json;
 use axum::extract::State;
 use axum::http::StatusCode;
-use serde::Serialize;
 use tokio::time::timeout;
 
 use crate::AppState;
+use crate::dto::health::HealthResponse;
 
 const HEALTH_CHECK_TIMEOUT: Duration = Duration::from_secs(5);
 
-#[derive(Serialize)]
-pub struct HealthResponse {
-    pub status: String,
-    pub db: String,
-    pub redis: String,
-}
-
 #[tracing::instrument(skip(state))]
 pub async fn health_check(State(state): State<AppState>) -> (StatusCode, Json<HealthResponse>) {
-    let db_ok = timeout(
-        HEALTH_CHECK_TIMEOUT,
-        sqlx::query("SELECT 1").fetch_one(&state.db),
-    )
-    .await
-    .is_ok_and(|r| r.is_ok());
+    let db_ok = timeout(HEALTH_CHECK_TIMEOUT, state.health.check_db())
+        .await
+        .unwrap_or(false);
 
-    let redis_ok = timeout(HEALTH_CHECK_TIMEOUT, check_redis(&state.redis))
+    let redis_ok = timeout(HEALTH_CHECK_TIMEOUT, state.health.check_cache())
         .await
         .unwrap_or(false);
 
@@ -52,16 +42,6 @@ fn build_response(db_ok: bool, redis_ok: bool) -> (StatusCode, HealthResponse) {
 
 fn connection_status(ok: bool) -> String {
     if ok { "connected" } else { "disconnected" }.to_string()
-}
-
-async fn check_redis(client: &redis::Client) -> bool {
-    let Ok(mut conn) = client.get_multiplexed_async_connection().await else {
-        return false;
-    };
-    redis::cmd("PING")
-        .query_async::<String>(&mut conn)
-        .await
-        .is_ok()
 }
 
 #[cfg(test)]

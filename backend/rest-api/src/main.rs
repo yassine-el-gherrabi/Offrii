@@ -13,6 +13,12 @@ use rest_api::config::app::Config;
 use rest_api::config::database::{create_pg_pool, create_redis_client};
 use rest_api::handlers::auth;
 use rest_api::handlers::health::health_check;
+use rest_api::repositories::refresh_token_repo::PgRefreshTokenRepo;
+use rest_api::repositories::user_repo::PgUserRepo;
+use rest_api::services::auth_service::PgAuthService;
+use rest_api::services::health_check::PgHealthCheck;
+use rest_api::services::token_cache::RedisTokenCache;
+use rest_api::traits::{AuthService, HealthCheck, RefreshTokenRepo, TokenCache, UserRepo};
 use rest_api::utils::jwt::JwtKeys;
 
 #[tokio::main]
@@ -40,7 +46,22 @@ async fn main() -> anyhow::Result<()> {
     let redis = create_redis_client(&config.redis_url)?;
     let jwt = Arc::new(JwtKeys::from_env()?);
 
-    let state = AppState { db, redis, jwt };
+    // Wire DI
+    let user_repo: Arc<dyn UserRepo> = Arc::new(PgUserRepo::new(db.clone()));
+    let refresh_token_repo: Arc<dyn RefreshTokenRepo> =
+        Arc::new(PgRefreshTokenRepo::new(db.clone()));
+    let token_cache: Arc<dyn TokenCache> = Arc::new(RedisTokenCache::new(redis.clone()));
+
+    let auth: Arc<dyn AuthService> = Arc::new(PgAuthService::new(
+        db.clone(),
+        user_repo,
+        refresh_token_repo,
+        token_cache,
+        jwt.clone(),
+    ));
+    let health: Arc<dyn HealthCheck> = Arc::new(PgHealthCheck::new(db, redis));
+
+    let state = AppState { auth, jwt, health };
 
     let app = Router::new()
         .route("/health", get(health_check))
