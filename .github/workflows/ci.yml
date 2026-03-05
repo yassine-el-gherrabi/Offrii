@@ -59,7 +59,7 @@ jobs:
       - name: Check unused dependencies
         run: cargo machete
       - name: Run tests with coverage
-        run: cargo llvm-cov nextest --workspace --fail-under-lines 75 --ignore-filename-regex "(main|migrate)\.rs$" -- --slow-timeout 120s
+        run: cargo llvm-cov nextest --workspace --fail-under-lines 75 --ignore-filename-regex "(main|migrate)\.rs$"
 
   frontend:
     needs: detect-changes
