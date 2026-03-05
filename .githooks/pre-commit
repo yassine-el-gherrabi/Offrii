@@ -32,6 +32,8 @@ if git diff --cached --name-only | grep -q '^frontend/'; then
         cd frontend
         echo "  expo lint"
         npx expo lint
+        echo "  tsc --noEmit"
+        npx tsc --noEmit
     )
     echo "==> Frontend checks passed"
 fi
