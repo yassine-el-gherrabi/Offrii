@@ -24,6 +24,7 @@ pub fn router() -> Router<AppState> {
         .route("/logout", post(logout))
 }
 
+#[tracing::instrument(skip(state, req))]
 async fn register(
     State(state): State<AppState>,
     Json(req): Json<RegisterRequest>,
@@ -38,6 +39,7 @@ async fn register(
     Ok((StatusCode::CREATED, Json(response)))
 }
 
+#[tracing::instrument(skip(state, req))]
 async fn login(
     State(state): State<AppState>,
     Json(req): Json<LoginRequest>,
@@ -49,6 +51,7 @@ async fn login(
     Ok(Json(response))
 }
 
+#[tracing::instrument(skip(state, req))]
 async fn refresh(
     State(state): State<AppState>,
     Json(req): Json<RefreshRequest>,
@@ -60,6 +63,7 @@ async fn refresh(
     Ok(Json(response))
 }
 
+#[tracing::instrument(skip(state, auth_user))]
 async fn logout(
     State(state): State<AppState>,
     auth_user: AuthUser,

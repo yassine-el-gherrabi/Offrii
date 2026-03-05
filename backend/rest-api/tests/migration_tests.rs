@@ -1,8 +1,11 @@
 use sqlx::PgPool;
+use sqlx::migrate::Migrator;
 use testcontainers::ContainerAsync;
 use testcontainers::ImageExt;
 use testcontainers::runners::AsyncRunner;
 use testcontainers_modules::postgres::Postgres;
+
+static MIGRATOR: Migrator = sqlx::migrate!("./migrations");
 
 // ---------------------------------------------------------------------------
 // MigrationDb – lightweight helper (Postgres only, no Redis/Router)
@@ -26,7 +29,7 @@ impl MigrationDb {
         let url = format!("postgres://postgres:postgres@{host}:{port}/postgres");
 
         let db = PgPool::connect(&url).await.unwrap();
-        sqlx::migrate!("./migrations").run(&db).await.unwrap();
+        MIGRATOR.run(&db).await.unwrap();
 
         Self {
             _pg_container: pg_container,
@@ -752,6 +755,70 @@ async fn unique_constraint_is_composite_not_individual() {
     // But the composite should still pass
     assert!(
         mdb.unique_constraint_exists("push_tokens", &["user_id", "token"])
+            .await
+    );
+}
+
+// ===========================================================================
+// Down-migration: up → down → up roundtrip
+// ===========================================================================
+
+#[tokio::test]
+async fn down_migrations_then_re_up_succeeds() {
+    let pg_container = Postgres::default()
+        .with_tag("16-alpine")
+        .start()
+        .await
+        .unwrap();
+
+    let host = pg_container.get_host().await.unwrap();
+    let port = pg_container.get_host_port_ipv4(5432).await.unwrap();
+    let url = format!("postgres://postgres:postgres@{host}:{port}/postgres");
+    let db = PgPool::connect(&url).await.unwrap();
+
+    // Step 1: Apply all migrations UP
+    MIGRATOR.run(&db).await.unwrap();
+
+    // Step 2: Undo all migrations (one by one, from newest to oldest)
+    for _ in MIGRATOR.migrations.iter().rev() {
+        MIGRATOR.undo(&db, 1).await.unwrap();
+    }
+
+    // Step 3: Verify all tables are gone
+    let table_count: (i64,) = sqlx::query_as(
+        "SELECT COUNT(*) FROM information_schema.tables \
+         WHERE table_schema = 'public' AND table_type = 'BASE TABLE' \
+         AND table_name != '_sqlx_migrations'",
+    )
+    .fetch_one(&db)
+    .await
+    .unwrap();
+    assert_eq!(
+        table_count.0, 0,
+        "all tables should be dropped after full undo, found {}",
+        table_count.0
+    );
+
+    // Step 4: Re-apply all migrations UP
+    MIGRATOR.run(&db).await.unwrap();
+
+    // Step 5: Verify key tables exist again
+    let mdb = MigrationDb {
+        _pg_container: pg_container,
+        db,
+    };
+    assert!(mdb.table_exists("users").await);
+    assert!(mdb.table_exists("categories").await);
+    assert!(mdb.table_exists("items").await);
+    assert!(mdb.table_exists("refresh_tokens").await);
+    assert!(mdb.table_exists("circles").await);
+    assert!(mdb.table_exists("circle_members").await);
+    assert!(mdb.table_exists("push_tokens").await);
+
+    // Verify constraints survive roundtrip
+    assert!(mdb.unique_constraint_exists("users", &["email"]).await);
+    assert!(
+        mdb.unique_constraint_exists("refresh_tokens", &["token_hash"])
             .await
     );
 }
