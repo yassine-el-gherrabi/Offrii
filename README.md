@@ -62,7 +62,7 @@ docker compose down -v
 git config core.hooksPath .githooks
 ```
 
-Le pre-commit hook lance automatiquement les checks (fmt, sort, clippy, lint) sur les fichiers staged.
+Le pre-commit hook lance automatiquement les checks (fmt, sort, clippy, lint) sur les fichiers staged, et exécute une vérification de types TypeScript (`npx tsc --noEmit`) lorsque des fichiers frontend sont stagés.
 
 ## Licence
 
