@@ -331,20 +331,6 @@ impl traits::ItemService for PgItemService {
             ));
         }
 
-        // Guard: reject idempotent status transitions (e.g. purchased → purchased)
-        if let Some(s) = status {
-            let current = self
-                .item_repo
-                .find_by_id(id, user_id)
-                .await
-                .map_err(AppError::Internal)?
-                .ok_or_else(|| AppError::NotFound("item not found".into()))?;
-
-            if current.status == s {
-                return Err(AppError::Conflict(format!("item is already '{s}'")));
-            }
-        }
-
         if let Some(Some(cid)) = category_id {
             self.validate_category_ownership(cid, user_id).await?;
         }
@@ -377,8 +363,30 @@ impl traits::ItemService for PgItemService {
                 status,
             )
             .await
-            .map_err(AppError::Internal)?
-            .ok_or_else(|| AppError::NotFound("item not found".into()))?;
+            .map_err(AppError::Internal)?;
+
+        // When status is provided, the repo adds `AND status != $new_status`
+        // to the WHERE clause. Zero rows can mean either "not found" or
+        // "already has that status". Disambiguate only on the error path.
+        let item = match item {
+            Some(item) => item,
+            None if status.is_some() => {
+                if self
+                    .item_repo
+                    .find_by_id(id, user_id)
+                    .await
+                    .map_err(AppError::Internal)?
+                    .is_some()
+                {
+                    return Err(AppError::Conflict(format!(
+                        "item is already '{}'",
+                        status.unwrap()
+                    )));
+                }
+                return Err(AppError::NotFound("item not found".into()));
+            }
+            None => return Err(AppError::NotFound("item not found".into())),
+        };
 
         // Invalidate list cache
         self.bump_version(user_id).await;
