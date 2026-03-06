@@ -989,6 +989,38 @@ async fn update_non_status_fields_on_purchased_item_200() {
     assert_eq!(updated["status"], "purchased");
 }
 
+#[tokio::test]
+async fn update_name_and_same_status_409() {
+    let app = TestApp::new().await;
+    let token = app.setup_user_token(TEST_EMAIL, TEST_PASSWORD).await;
+
+    let item = app
+        .create_item(&token, &serde_json::json!({ "name": "mixed" }))
+        .await;
+    let id = item["id"].as_str().unwrap();
+
+    // Mark purchased
+    let (status, _) = app
+        .put_json_with_auth(
+            &format!("/items/{id}"),
+            &serde_json::json!({ "status": "purchased" }),
+            &token,
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK);
+
+    // Send name + same status — entire request should be rejected with 409
+    let (status, resp) = app
+        .put_json_with_auth(
+            &format!("/items/{id}"),
+            &serde_json::json!({ "name": "renamed", "status": "purchased" }),
+            &token,
+        )
+        .await;
+    assert_eq!(status, StatusCode::CONFLICT);
+    assert_error(&resp, "CONFLICT");
+}
+
 // ── Delete ──────────────────────────────────────────────────────────
 
 #[tokio::test]
