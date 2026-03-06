@@ -1,0 +1,14 @@
+use chrono::{DateTime, Utc};
+use sqlx::FromRow;
+use uuid::Uuid;
+
+#[derive(Debug, FromRow)]
+pub struct Category {
+    pub id: Uuid,
+    pub user_id: Option<Uuid>,
+    pub name: String,
+    pub icon: Option<String>,
+    pub is_default: bool,
+    pub position: i32,
+    pub created_at: DateTime<Utc>,
+}

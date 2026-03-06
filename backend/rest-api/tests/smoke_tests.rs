@@ -356,3 +356,124 @@ async fn smoke_full_items_crud_flow() {
         .unwrap();
     assert_eq!(resp.status(), 404);
 }
+
+#[tokio::test]
+async fn smoke_full_categories_crud_flow() {
+    let app = SmokeTestApp::new().await;
+    let password = common::TEST_PASSWORD;
+
+    // ── Step 0: Register and get access token ───────────────────
+    let resp = app
+        .client
+        .post(app.url("/auth/register"))
+        .json(&serde_json::json!({
+            "email": "categories-smoke@example.com",
+            "password": password,
+        }))
+        .send()
+        .await
+        .expect("register failed");
+    assert_eq!(resp.status(), 201);
+    let reg: serde_json::Value = resp.json().await.unwrap();
+    let token = reg["tokens"]["access_token"].as_str().unwrap();
+
+    // ── Step 1: List defaults (6) ─────────────────────────────
+    let resp = app
+        .client
+        .get(app.url("/categories"))
+        .bearer_auth(token)
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), 200);
+    let list: serde_json::Value = resp.json().await.unwrap();
+    assert_eq!(list.as_array().unwrap().len(), 6);
+
+    // ── Step 2: Create "Voyages" with icon ────────────────────
+    let resp = app
+        .client
+        .post(app.url("/categories"))
+        .bearer_auth(token)
+        .json(&serde_json::json!({ "name": "Voyages", "icon": "plane" }))
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), 201);
+    let cat: serde_json::Value = resp.json().await.unwrap();
+    let cat_id = cat["id"].as_str().unwrap();
+    assert_eq!(cat["name"], "Voyages");
+    assert_eq!(cat["icon"], "plane");
+    assert_eq!(cat["is_default"], false);
+
+    // ── Step 3: List → 7 ─────────────────────────────────────
+    let resp = app
+        .client
+        .get(app.url("/categories"))
+        .bearer_auth(token)
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), 200);
+    let list: serde_json::Value = resp.json().await.unwrap();
+    assert_eq!(list.as_array().unwrap().len(), 7);
+
+    // ── Step 4: Update "Voyages" → "Travel" ───────────────────
+    let resp = app
+        .client
+        .put(app.url(&format!("/categories/{cat_id}")))
+        .bearer_auth(token)
+        .json(&serde_json::json!({ "name": "Travel" }))
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), 200);
+    let updated: serde_json::Value = resp.json().await.unwrap();
+    assert_eq!(updated["name"], "Travel");
+
+    // ── Step 5: Delete "Travel" ───────────────────────────────
+    let resp = app
+        .client
+        .delete(app.url(&format!("/categories/{cat_id}")))
+        .bearer_auth(token)
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), 204);
+
+    // ── Step 6: List → back to 6 ─────────────────────────────
+    let resp = app
+        .client
+        .get(app.url("/categories"))
+        .bearer_auth(token)
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), 200);
+    let list: serde_json::Value = resp.json().await.unwrap();
+    assert_eq!(list.as_array().unwrap().len(), 6);
+
+    // ── Step 7: Delete default → 400 ─────────────────────────
+    let default_id = list.as_array().unwrap()[0]["id"].as_str().unwrap();
+    let resp = app
+        .client
+        .delete(app.url(&format!("/categories/{default_id}")))
+        .bearer_auth(token)
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), 400);
+
+    // ── Step 8: Update default name → 200 ────────────────────
+    let resp = app
+        .client
+        .put(app.url(&format!("/categories/{default_id}")))
+        .bearer_auth(token)
+        .json(&serde_json::json!({ "name": "Renamed Default" }))
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), 200);
+    let renamed: serde_json::Value = resp.json().await.unwrap();
+    assert_eq!(renamed["name"], "Renamed Default");
+    assert_eq!(renamed["is_default"], true);
+}
