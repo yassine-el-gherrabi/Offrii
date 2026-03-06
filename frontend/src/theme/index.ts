@@ -6,6 +6,8 @@ export const colors = {
   accent: '#FFC312',       // Or Celebration
   background: '#FFF5F5',   // Rose Murmure
   surface: '#FFFFFF',
+  inputBackground: '#FFFFFF',
+  inputBorder: '#E5E7EB',
   text: '#1F2937',
   textSecondary: '#6B7280',
   error: '#EF4444',

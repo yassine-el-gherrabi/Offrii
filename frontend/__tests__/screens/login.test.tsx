@@ -21,6 +21,7 @@ jest.mock('@/src/stores/auth', () => ({
 
 import LoginScreen from '@/app/(auth)/login';
 import { ApiRequestError } from '@/src/api/client';
+import { ROUTES } from '@/src/constants/routes';
 
 function renderLogin() {
   return render(
@@ -72,7 +73,7 @@ describe('LoginScreen', () => {
 
     await waitFor(() => {
       expect(mockLogin).toHaveBeenCalledWith('test@example.com', 'password123');
-      expect(mockReplace).toHaveBeenCalledWith('/(tabs)/capture');
+      expect(mockReplace).toHaveBeenCalledWith(ROUTES.HOME);
     });
   });
 
@@ -86,6 +87,47 @@ describe('LoginScreen', () => {
 
     await waitFor(() => {
       expect(screen.getByText('Email ou mot de passe incorrect')).toBeTruthy();
+    });
+  });
+
+  it('shows network error on status 0', async () => {
+    mockLogin.mockRejectedValueOnce(new ApiRequestError('Network error', 0));
+    renderLogin();
+
+    fireEvent.changeText(screen.getByTestId('email-input'), 'test@example.com');
+    fireEvent.changeText(screen.getByTestId('password-input'), 'password123');
+    fireEvent.press(screen.getByTestId('login-button'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Connexion au serveur impossible')).toBeTruthy();
+    });
+  });
+
+  it('shows unexpected error for non-API errors', async () => {
+    mockLogin.mockRejectedValueOnce(new Error('something broke'));
+    renderLogin();
+
+    fireEvent.changeText(screen.getByTestId('email-input'), 'test@example.com');
+    fireEvent.changeText(screen.getByTestId('password-input'), 'password123');
+    fireEvent.press(screen.getByTestId('login-button'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Une erreur inattendue est survenue')).toBeTruthy();
+    });
+  });
+
+  it('clears email error on input change', async () => {
+    renderLogin();
+    fireEvent.press(screen.getByTestId('login-button'));
+
+    await waitFor(() => {
+      expect(screen.getByText("L'email est requis")).toBeTruthy();
+    });
+
+    fireEvent.changeText(screen.getByTestId('email-input'), 'a');
+
+    await waitFor(() => {
+      expect(screen.queryByText("L'email est requis")).toBeNull();
     });
   });
 

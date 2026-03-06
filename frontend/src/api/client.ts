@@ -30,9 +30,13 @@ apiClient.interceptors.request.use((config) => {
 apiClient.interceptors.response.use(
   (response) => response,
   (error: AxiosError<ApiError>) => {
+    if (!error.response) {
+      // Network error (timeout, DNS, ECONNREFUSED) — no HTTP response received
+      return Promise.reject(new ApiRequestError('Network error', 0));
+    }
     const message =
-      error.response?.data?.error?.message ?? error.message ?? 'An unexpected error occurred';
-    return Promise.reject(new ApiRequestError(message, error.response?.status));
+      error.response.data?.error?.message ?? error.message ?? 'An unexpected error occurred';
+    return Promise.reject(new ApiRequestError(message, error.response.status));
   },
 );
 

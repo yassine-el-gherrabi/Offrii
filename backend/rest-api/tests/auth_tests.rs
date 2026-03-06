@@ -55,6 +55,17 @@ async fn register_bad_email_400() {
 }
 
 #[tokio::test]
+async fn register_common_password_400() {
+    let app = TestApp::new().await;
+
+    let (status, body) = app.register_user("user@example.com", "password").await;
+
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    assert_error(&body, "BAD_REQUEST");
+    assert_eq!(body["error"]["message"], "password_common");
+}
+
+#[tokio::test]
 async fn register_short_password_400() {
     let app = TestApp::new().await;
 

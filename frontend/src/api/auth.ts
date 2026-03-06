@@ -26,8 +26,6 @@ export async function refresh(refreshToken: string): Promise<RefreshResponse> {
   return data;
 }
 
-export async function logout(accessToken: string): Promise<void> {
-  await apiClient.post('/auth/logout', null, {
-    headers: { Authorization: `Bearer ${accessToken}` },
-  });
+export async function logout(): Promise<void> {
+  await apiClient.post('/auth/logout');
 }

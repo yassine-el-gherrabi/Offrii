@@ -1,0 +1,63 @@
+{
+  "auth": {
+    "login": {
+      "title": "Bon retour parmi nous",
+      "emailLabel": "Email",
+      "passwordLabel": "Mot de passe",
+      "submit": "Se connecter",
+      "noAccount": "Pas encore de compte ? ",
+      "createAccount": "Créer un compte",
+      "invalidCredentials": "Email ou mot de passe incorrect",
+      "showPassword": "Afficher le mot de passe",
+      "hidePassword": "Masquer le mot de passe"
+    },
+    "register": {
+      "title": "Rejoins l'aventure Offrii",
+      "emailLabel": "Email",
+      "passwordLabel": "Mot de passe",
+      "confirmPasswordLabel": "Confirmer le mot de passe",
+      "displayNameLabel": "Prénom (optionnel)",
+      "passwordHint": "8 caractères minimum",
+      "displayNameMax": "100 caractères maximum",
+      "submit": "S'inscrire",
+      "hasAccount": "Déjà un compte ? ",
+      "login": "Se connecter",
+      "emailTaken": "Cet email est déjà utilisé",
+      "showPassword": "Afficher le mot de passe",
+      "hidePassword": "Masquer le mot de passe",
+      "passwordStrength": {
+        "weak": "Faible",
+        "good": "Correct",
+        "strong": "Fort"
+      }
+    },
+    "validation": {
+      "emailRequired": "L'email est requis",
+      "emailInvalid": "Format d'email invalide",
+      "passwordRequired": "Le mot de passe est requis",
+      "passwordMinLength": "8 caractères minimum",
+      "passwordMismatch": "Les mots de passe ne correspondent pas",
+      "passwordCommon": "Ce mot de passe est trop courant",
+      "passwordBreached": "Ce mot de passe figure dans une fuite de données"
+    },
+    "errors": {
+      "unexpected": "Une erreur inattendue est survenue",
+      "networkError": "Connexion au serveur impossible"
+    }
+  },
+  "tabs": {
+    "capture": "Capturer",
+    "list": "Mes offres",
+    "profile": "Profil"
+  },
+  "capture": {
+    "title": "Capturer une offre"
+  },
+  "list": {
+    "title": "Mes offres"
+  },
+  "profile": {
+    "title": "Profil",
+    "logout": "Se déconnecter"
+  }
+}

@@ -10,34 +10,40 @@ import { TextInput, Button, Text, HelperText } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 
 import { useAuthStore } from '@/src/stores/auth';
 import { colors, spacing, borderRadius } from '@/src/theme';
 import { ApiRequestError } from '@/src/api/client';
+import { ROUTES } from '@/src/constants/routes';
+import PasswordStrengthIndicator from '@/src/components/PasswordStrengthIndicator';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function RegisterScreen() {
+  const { t } = useTranslation();
   const register = useAuthStore((s) => s.register);
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [emailError, setEmailError] = useState('');
   const [passwordError, setPasswordError] = useState('');
+  const [confirmPasswordError, setConfirmPasswordError] = useState('');
   const [displayNameError, setDisplayNameError] = useState('');
   const [apiError, setApiError] = useState('');
 
   function validateEmail(): boolean {
     if (!email.trim()) {
-      setEmailError('L\'email est requis');
+      setEmailError(t('auth.validation.emailRequired'));
       return false;
     }
     if (!EMAIL_REGEX.test(email.trim())) {
-      setEmailError('Format d\'email invalide');
+      setEmailError(t('auth.validation.emailInvalid'));
       return false;
     }
     setEmailError('');
@@ -46,20 +52,29 @@ export default function RegisterScreen() {
 
   function validatePassword(): boolean {
     if (!password) {
-      setPasswordError('Le mot de passe est requis');
+      setPasswordError(t('auth.validation.passwordRequired'));
       return false;
     }
     if (password.length < 8) {
-      setPasswordError('8 caractères minimum');
+      setPasswordError(t('auth.validation.passwordMinLength'));
       return false;
     }
     setPasswordError('');
     return true;
   }
 
+  function validateConfirmPassword(): boolean {
+    if (confirmPassword !== password) {
+      setConfirmPasswordError(t('auth.validation.passwordMismatch'));
+      return false;
+    }
+    setConfirmPasswordError('');
+    return true;
+  }
+
   function validateDisplayName(): boolean {
     if (displayName.length > 100) {
-      setDisplayNameError('100 caractères maximum');
+      setDisplayNameError(t('auth.register.displayNameMax'));
       return false;
     }
     setDisplayNameError('');
@@ -70,20 +85,31 @@ export default function RegisterScreen() {
     setApiError('');
     const emailValid = validateEmail();
     const passwordValid = validatePassword();
+    const confirmValid = validateConfirmPassword();
     const nameValid = validateDisplayName();
-    if (!emailValid || !passwordValid || !nameValid) return;
+    if (!emailValid || !passwordValid || !confirmValid || !nameValid) return;
 
     setIsSubmitting(true);
     try {
       await register(email.trim(), password, displayName.trim() || undefined);
-      router.replace('/(tabs)/capture');
+      router.replace(ROUTES.HOME);
     } catch (error) {
       if (error instanceof ApiRequestError && error.status === 409) {
-        setEmailError('Cet email est déjà utilisé');
+        setEmailError(t('auth.register.emailTaken'));
+      } else if (error instanceof ApiRequestError && error.status === 400) {
+        if (error.message.includes('common')) {
+          setPasswordError(t('auth.validation.passwordCommon'));
+        } else if (error.message.includes('breach')) {
+          setPasswordError(t('auth.validation.passwordBreached'));
+        } else {
+          setApiError(error.message);
+        }
+      } else if (error instanceof ApiRequestError && error.status === 0) {
+        setApiError(t('auth.errors.networkError'));
       } else if (error instanceof ApiRequestError) {
         setApiError(error.message);
       } else {
-        setApiError('Une erreur inattendue est survenue');
+        setApiError(t('auth.errors.unexpected'));
       }
     } finally {
       setIsSubmitting(false);
@@ -111,7 +137,7 @@ export default function RegisterScreen() {
 
           {/* Title */}
           <Text variant="headlineMedium" style={styles.title}>
-            {"Rejoins l'aventure"}{'\n'}{"Offrii ! 🎉"}
+            {t('auth.register.title')}
           </Text>
 
           {/* API error banner */}
@@ -123,7 +149,7 @@ export default function RegisterScreen() {
 
           {/* Email */}
           <TextInput
-            label="Email"
+            label={t('auth.register.emailLabel')}
             value={email}
             onChangeText={(v) => {
               setEmail(v);
@@ -135,7 +161,8 @@ export default function RegisterScreen() {
             autoCapitalize="none"
             autoComplete="email"
             error={!!emailError}
-            left={<TextInput.Icon icon="email-outline" />}
+            outlineColor={colors.inputBorder}
+            activeOutlineColor={colors.primary}
             style={styles.input}
             outlineStyle={styles.inputOutline}
             testID="email-input"
@@ -146,7 +173,7 @@ export default function RegisterScreen() {
 
           {/* Password */}
           <TextInput
-            label="Mot de passe"
+            label={t('auth.register.passwordLabel')}
             value={password}
             onChangeText={(v) => {
               setPassword(v);
@@ -156,11 +183,14 @@ export default function RegisterScreen() {
             mode="outlined"
             secureTextEntry={!showPassword}
             error={!!passwordError}
-            left={<TextInput.Icon icon="lock-outline" />}
+            maxLength={128}
+            outlineColor={colors.inputBorder}
+            activeOutlineColor={colors.primary}
             right={
               <TextInput.Icon
                 icon={showPassword ? 'eye-off-outline' : 'eye-outline'}
                 onPress={() => setShowPassword(!showPassword)}
+                accessibilityLabel={showPassword ? t('auth.register.hidePassword') : t('auth.register.showPassword')}
                 testID="toggle-password"
               />
             }
@@ -168,17 +198,40 @@ export default function RegisterScreen() {
             outlineStyle={styles.inputOutline}
             testID="password-input"
           />
-          <HelperText
-            type={passwordError ? 'error' : 'info'}
-            visible={!!passwordError || password.length === 0}
-            testID="password-helper"
-          >
-            {passwordError || '8 caractères minimum'}
+          {passwordError ? (
+            <HelperText type="error" visible testID="password-error">
+              {passwordError}
+            </HelperText>
+          ) : (
+            <PasswordStrengthIndicator password={password} />
+          )}
+
+          {/* Confirm password */}
+          <TextInput
+            label={t('auth.register.confirmPasswordLabel')}
+            value={confirmPassword}
+            onChangeText={(v) => {
+              setConfirmPassword(v);
+              if (confirmPasswordError) setConfirmPasswordError('');
+            }}
+            onBlur={validateConfirmPassword}
+            mode="outlined"
+            secureTextEntry={!showPassword}
+            error={!!confirmPasswordError}
+            maxLength={128}
+            outlineColor={colors.inputBorder}
+            activeOutlineColor={colors.primary}
+            style={styles.input}
+            outlineStyle={styles.inputOutline}
+            testID="confirm-password-input"
+          />
+          <HelperText type="error" visible={!!confirmPasswordError} testID="confirm-password-error">
+            {confirmPasswordError}
           </HelperText>
 
           {/* Display name */}
           <TextInput
-            label="Prénom (optionnel)"
+            label={t('auth.register.displayNameLabel')}
             value={displayName}
             onChangeText={(v) => {
               setDisplayName(v);
@@ -189,7 +242,8 @@ export default function RegisterScreen() {
             autoCapitalize="words"
             autoComplete="given-name"
             error={!!displayNameError}
-            left={<TextInput.Icon icon="emoticon-happy-outline" />}
+            outlineColor={colors.inputBorder}
+            activeOutlineColor={colors.primary}
             style={styles.input}
             outlineStyle={styles.inputOutline}
             testID="displayname-input"
@@ -209,18 +263,18 @@ export default function RegisterScreen() {
             labelStyle={styles.buttonLabel}
             testID="register-button"
           >
-            {"S'inscrire"}
+            {t('auth.register.submit')}
           </Button>
 
           {/* Link to login */}
           <View style={styles.linkRow}>
-            <Text style={styles.linkText}>Déjà un compte ? </Text>
+            <Text style={styles.linkText}>{t('auth.register.hasAccount')}</Text>
             <Text
               style={styles.link}
               onPress={() => router.push('/(auth)/login')}
               testID="goto-login"
             >
-              Se connecter
+              {t('auth.register.login')}
             </Text>
           </View>
         </ScrollView>
@@ -265,14 +319,14 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   input: {
-    backgroundColor: colors.surface,
+    backgroundColor: colors.inputBackground,
   },
   inputOutline: {
-    borderRadius: borderRadius.md,
+    borderRadius: borderRadius.sm,
   },
   button: {
     marginTop: spacing.sm,
-    borderRadius: borderRadius.lg,
+    borderRadius: borderRadius.sm,
     backgroundColor: colors.primary,
   },
   buttonContent: {
@@ -291,7 +345,7 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   link: {
-    color: colors.secondary,
+    color: colors.primary,
     fontWeight: '600',
   },
 });

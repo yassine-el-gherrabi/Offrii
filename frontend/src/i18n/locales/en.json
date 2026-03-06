@@ -1,0 +1,63 @@
+{
+  "auth": {
+    "login": {
+      "title": "Welcome back",
+      "emailLabel": "Email",
+      "passwordLabel": "Password",
+      "submit": "Sign in",
+      "noAccount": "Don't have an account? ",
+      "createAccount": "Create one",
+      "invalidCredentials": "Invalid email or password",
+      "showPassword": "Show password",
+      "hidePassword": "Hide password"
+    },
+    "register": {
+      "title": "Join the Offrii adventure",
+      "emailLabel": "Email",
+      "passwordLabel": "Password",
+      "confirmPasswordLabel": "Confirm password",
+      "displayNameLabel": "First name (optional)",
+      "passwordHint": "8 characters minimum",
+      "displayNameMax": "100 characters maximum",
+      "submit": "Sign up",
+      "hasAccount": "Already have an account? ",
+      "login": "Sign in",
+      "emailTaken": "This email is already taken",
+      "showPassword": "Show password",
+      "hidePassword": "Hide password",
+      "passwordStrength": {
+        "weak": "Weak",
+        "good": "Good",
+        "strong": "Strong"
+      }
+    },
+    "validation": {
+      "emailRequired": "Email is required",
+      "emailInvalid": "Invalid email format",
+      "passwordRequired": "Password is required",
+      "passwordMinLength": "8 characters minimum",
+      "passwordMismatch": "Passwords do not match",
+      "passwordCommon": "This password is too common",
+      "passwordBreached": "This password was found in a data breach"
+    },
+    "errors": {
+      "unexpected": "An unexpected error occurred",
+      "networkError": "Unable to connect to server"
+    }
+  },
+  "tabs": {
+    "capture": "Capture",
+    "list": "My offers",
+    "profile": "Profile"
+  },
+  "capture": {
+    "title": "Capture an offer"
+  },
+  "list": {
+    "title": "My offers"
+  },
+  "profile": {
+    "title": "Profile",
+    "logout": "Sign out"
+  }
+}

@@ -10,14 +10,17 @@ import { TextInput, Button, Text, HelperText } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 
 import { useAuthStore } from '@/src/stores/auth';
 import { colors, spacing, borderRadius } from '@/src/theme';
 import { ApiRequestError } from '@/src/api/client';
+import { ROUTES } from '@/src/constants/routes';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function LoginScreen() {
+  const { t } = useTranslation();
   const login = useAuthStore((s) => s.login);
 
   const [email, setEmail] = useState('');
@@ -31,11 +34,11 @@ export default function LoginScreen() {
 
   function validateEmail(): boolean {
     if (!email.trim()) {
-      setEmailError('L\'email est requis');
+      setEmailError(t('auth.validation.emailRequired'));
       return false;
     }
     if (!EMAIL_REGEX.test(email.trim())) {
-      setEmailError('Format d\'email invalide');
+      setEmailError(t('auth.validation.emailInvalid'));
       return false;
     }
     setEmailError('');
@@ -44,7 +47,7 @@ export default function LoginScreen() {
 
   function validatePassword(): boolean {
     if (!password) {
-      setPasswordError('Le mot de passe est requis');
+      setPasswordError(t('auth.validation.passwordRequired'));
       return false;
     }
     setPasswordError('');
@@ -60,14 +63,16 @@ export default function LoginScreen() {
     setIsSubmitting(true);
     try {
       await login(email.trim(), password);
-      router.replace('/(tabs)/capture');
+      router.replace(ROUTES.HOME);
     } catch (error) {
       if (error instanceof ApiRequestError && error.status === 401) {
-        setApiError('Email ou mot de passe incorrect');
+        setApiError(t('auth.login.invalidCredentials'));
+      } else if (error instanceof ApiRequestError && error.status === 0) {
+        setApiError(t('auth.errors.networkError'));
       } else if (error instanceof ApiRequestError) {
         setApiError(error.message);
       } else {
-        setApiError('Une erreur inattendue est survenue');
+        setApiError(t('auth.errors.unexpected'));
       }
     } finally {
       setIsSubmitting(false);
@@ -95,7 +100,7 @@ export default function LoginScreen() {
 
           {/* Title */}
           <Text variant="headlineMedium" style={styles.title}>
-            Bon retour parmi{'\n'}nous ! 👋
+            {t('auth.login.title')}
           </Text>
 
           {/* API error banner */}
@@ -107,7 +112,7 @@ export default function LoginScreen() {
 
           {/* Email */}
           <TextInput
-            label="Email"
+            label={t('auth.login.emailLabel')}
             value={email}
             onChangeText={(v) => {
               setEmail(v);
@@ -119,7 +124,8 @@ export default function LoginScreen() {
             autoCapitalize="none"
             autoComplete="email"
             error={!!emailError}
-            left={<TextInput.Icon icon="email-outline" />}
+            outlineColor={colors.inputBorder}
+            activeOutlineColor={colors.primary}
             style={styles.input}
             outlineStyle={styles.inputOutline}
             testID="email-input"
@@ -130,7 +136,7 @@ export default function LoginScreen() {
 
           {/* Password */}
           <TextInput
-            label="Mot de passe"
+            label={t('auth.login.passwordLabel')}
             value={password}
             onChangeText={(v) => {
               setPassword(v);
@@ -140,11 +146,13 @@ export default function LoginScreen() {
             mode="outlined"
             secureTextEntry={!showPassword}
             error={!!passwordError}
-            left={<TextInput.Icon icon="lock-outline" />}
+            outlineColor={colors.inputBorder}
+            activeOutlineColor={colors.primary}
             right={
               <TextInput.Icon
                 icon={showPassword ? 'eye-off-outline' : 'eye-outline'}
                 onPress={() => setShowPassword(!showPassword)}
+                accessibilityLabel={showPassword ? t('auth.login.hidePassword') : t('auth.login.showPassword')}
                 testID="toggle-password"
               />
             }
@@ -167,18 +175,18 @@ export default function LoginScreen() {
             labelStyle={styles.buttonLabel}
             testID="login-button"
           >
-            Se connecter
+            {t('auth.login.submit')}
           </Button>
 
           {/* Link to register */}
           <View style={styles.linkRow}>
-            <Text style={styles.linkText}>Pas encore de compte ? </Text>
+            <Text style={styles.linkText}>{t('auth.login.noAccount')}</Text>
             <Text
               style={styles.link}
               onPress={() => router.push('/(auth)/register')}
               testID="goto-register"
             >
-              Créer un compte
+              {t('auth.login.createAccount')}
             </Text>
           </View>
         </ScrollView>
@@ -223,14 +231,14 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   input: {
-    backgroundColor: colors.surface,
+    backgroundColor: colors.inputBackground,
   },
   inputOutline: {
-    borderRadius: borderRadius.md,
+    borderRadius: borderRadius.sm,
   },
   button: {
     marginTop: spacing.sm,
-    borderRadius: borderRadius.lg,
+    borderRadius: borderRadius.sm,
     backgroundColor: colors.primary,
   },
   buttonContent: {
@@ -249,7 +257,7 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   link: {
-    color: colors.secondary,
+    color: colors.primary,
     fontWeight: '600',
   },
 });

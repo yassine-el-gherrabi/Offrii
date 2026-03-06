@@ -1,10 +1,13 @@
 import { View, StyleSheet } from 'react-native';
 import { Text } from 'react-native-paper';
+import { useTranslation } from 'react-i18next';
 
 export default function CaptureScreen() {
+  const { t } = useTranslation();
+
   return (
     <View style={styles.container}>
-      <Text variant="headlineMedium">Capturer une offre</Text>
+      <Text variant="headlineMedium">{t('capture.title')}</Text>
     </View>
   );
 }
