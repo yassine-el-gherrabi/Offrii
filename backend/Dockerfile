@@ -13,7 +13,7 @@ RUN mkdir -p rest-api/src rest-api/src/bin \
     && echo "fn main() {}" > rest-api/src/main.rs \
     && echo "fn main() {}" > rest-api/src/bin/migrate.rs \
     && echo "" > rest-api/src/lib.rs \
-    && cargo build --release --workspace 2>/dev/null || true \
+    && cargo build --release --workspace 2>&1 || true \
     && rm -rf rest-api/src
 
 COPY rest-api/ rest-api/
@@ -31,12 +31,14 @@ RUN groupadd --gid 1000 appuser \
 
 COPY --from=builder /build/target/release/rest-api /usr/local/bin/rest-api
 COPY --from=builder /build/target/release/migrate  /usr/local/bin/migrate
-COPY rest-api/migrations /app/migrations
 COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
 WORKDIR /app
 USER appuser
 EXPOSE 3000
+
+HEALTHCHECK --interval=10s --timeout=5s --retries=5 --start-period=30s \
+    CMD curl -sf http://localhost:3000/health/live || exit 1
 
 ENTRYPOINT ["docker-entrypoint.sh"]

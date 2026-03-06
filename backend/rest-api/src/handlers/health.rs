@@ -3,12 +3,17 @@ use std::time::Duration;
 use axum::Json;
 use axum::extract::State;
 use axum::http::StatusCode;
+use axum::response::IntoResponse;
 use tokio::time::timeout;
 
 use crate::AppState;
 use crate::dto::health::HealthResponse;
 
 const HEALTH_CHECK_TIMEOUT: Duration = Duration::from_secs(5);
+
+pub async fn health_live() -> impl IntoResponse {
+    Json(serde_json::json!({"status": "ok"}))
+}
 
 #[tracing::instrument(skip(state))]
 pub async fn health_check(State(state): State<AppState>) -> (StatusCode, Json<HealthResponse>) {

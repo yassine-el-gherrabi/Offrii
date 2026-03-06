@@ -12,7 +12,7 @@ use rest_api::AppState;
 use rest_api::config::app::Config;
 use rest_api::config::database::{create_pg_pool, create_redis_client};
 use rest_api::handlers::auth;
-use rest_api::handlers::health::health_check;
+use rest_api::handlers::health::{health_check, health_live};
 use rest_api::repositories::refresh_token_repo::PgRefreshTokenRepo;
 use rest_api::repositories::user_repo::PgUserRepo;
 use rest_api::services::auth_service::PgAuthService;
@@ -62,6 +62,8 @@ async fn main() -> anyhow::Result<()> {
 
     let app = Router::new()
         .route("/health", get(health_check))
+        .route("/health/live", get(health_live))
+        .route("/health/ready", get(health_check))
         .nest("/auth", auth::router())
         .layer(TraceLayer::new_for_http())
         .with_state(state);

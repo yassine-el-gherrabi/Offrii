@@ -1,5 +1,5 @@
 #!/bin/sh
-set -e
+set -eu
 echo "Running migrations..."
 migrate
 echo "Starting API server..."
