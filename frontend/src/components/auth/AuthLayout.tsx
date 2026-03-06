@@ -61,6 +61,7 @@ export function AuthLayout({
             <Text
               style={authStyles.link}
               onPress={onLinkPress}
+              accessibilityRole="link"
               testID={linkTestID}
             >
               {linkAction}

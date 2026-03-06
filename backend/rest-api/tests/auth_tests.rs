@@ -469,12 +469,12 @@ async fn login_enforces_max_refresh_tokens() {
     }
 
     // Should only have at most 5 active refresh tokens
-    let count: (i64,) = sqlx::query_as(&format!(
+    let count: (i64,) = sqlx::query_as(
         "SELECT COUNT(*) FROM refresh_tokens \
-             WHERE user_id = (SELECT id FROM users WHERE email = '{}') \
-             AND revoked_at IS NULL",
-        TEST_EMAIL
-    ))
+         WHERE user_id = (SELECT id FROM users WHERE email = $1) \
+         AND revoked_at IS NULL",
+    )
+    .bind(TEST_EMAIL)
     .fetch_one(&app.db)
     .await
     .unwrap();

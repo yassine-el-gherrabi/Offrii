@@ -66,7 +66,7 @@ export default function LoginScreen() {
       apiError={apiError}
       linkText={t('auth.login.noAccount')}
       linkAction={t('auth.login.createAccount')}
-      onLinkPress={() => router.push('/(auth)/register')}
+      onLinkPress={() => router.push(ROUTES.REGISTER)}
       linkTestID="goto-register"
     >
       <TextInput

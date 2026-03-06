@@ -20,7 +20,7 @@ jest.mock('react-native-safe-area-context', () => {
   };
 });
 
-// Mock react-i18next — return translation keys directly for predictable test assertions
+// Mock react-i18next — resolve keys from French translations, falling back to the key itself
 jest.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (key) => {

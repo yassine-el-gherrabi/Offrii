@@ -33,8 +33,8 @@ export const useAuthStore = create<AuthState>((set, get) => {
     onRefreshFailure: () => {
       // Clear state without calling API (we're already in a failed auth state)
       set({ accessToken: null, user: null, isAuthenticated: false });
-      SecureStore.deleteItemAsync(REFRESH_TOKEN_KEY);
-      SecureStore.deleteItemAsync(USER_DATA_KEY);
+      void SecureStore.deleteItemAsync(REFRESH_TOKEN_KEY);
+      void SecureStore.deleteItemAsync(USER_DATA_KEY);
     },
   });
 
