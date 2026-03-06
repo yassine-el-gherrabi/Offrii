@@ -58,6 +58,11 @@ jobs:
         run: cargo clippy --workspace --all-targets -- -D warnings
       - name: Check unused dependencies
         run: cargo machete
+      - name: Pre-pull testcontainers images
+        run: |
+          docker pull postgres:16-alpine &
+          docker pull redis:7 &
+          wait
       - name: Run tests with coverage
         run: cargo llvm-cov nextest --workspace --fail-under-lines 75 --ignore-filename-regex "(main|migrate)\.rs$"
 
