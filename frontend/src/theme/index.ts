@@ -1,9 +1,10 @@
 import { MD3LightTheme } from 'react-native-paper';
 
 export const colors = {
-  primary: '#6366F1',
-  secondary: '#EC4899',
-  background: '#FAFAFA',
+  primary: '#FF6B6B',      // Corail Generous
+  secondary: '#6C5CE7',    // Violet Surprise
+  accent: '#FFC312',       // Or Celebration
+  background: '#FFF5F5',   // Rose Murmure
   surface: '#FFFFFF',
   text: '#1F2937',
   textSecondary: '#6B7280',
@@ -21,6 +22,13 @@ export const spacing = {
   md: 16,
   lg: 24,
   xl: 32,
+} as const;
+
+export const borderRadius = {
+  sm: 12,
+  md: 16,
+  lg: 28,
+  full: 9999,
 } as const;
 
 export const typography = {
