@@ -1,6 +1,6 @@
 use anyhow::Result;
 use async_trait::async_trait;
-use sqlx::{PgExecutor, PgPool, QueryBuilder, Row};
+use sqlx::{PgExecutor, PgPool, QueryBuilder};
 use uuid::Uuid;
 
 use crate::models::Category;
@@ -35,14 +35,8 @@ impl traits::CategoryRepo for PgCategoryRepo {
         find_by_id(&self.pool, id, user_id).await
     }
 
-    async fn create(
-        &self,
-        user_id: Uuid,
-        name: &str,
-        icon: Option<&str>,
-        position: i32,
-    ) -> Result<Category> {
-        create(&self.pool, user_id, name, icon, position).await
+    async fn create(&self, user_id: Uuid, name: &str, icon: Option<&str>) -> Result<Category> {
+        create(&self.pool, user_id, name, icon).await
     }
 
     async fn update(
@@ -58,10 +52,6 @@ impl traits::CategoryRepo for PgCategoryRepo {
 
     async fn delete(&self, id: Uuid, user_id: Uuid) -> Result<bool> {
         delete(&self.pool, id, user_id).await
-    }
-
-    async fn next_position(&self, user_id: Uuid) -> Result<i32> {
-        next_position(&self.pool, user_id).await
     }
 }
 
@@ -122,18 +112,16 @@ pub(crate) async fn create(
     user_id: Uuid,
     name: &str,
     icon: Option<&str>,
-    position: i32,
 ) -> Result<Category> {
     let sql = format!(
         "INSERT INTO categories (user_id, name, icon, position) \
-         VALUES ($1, $2, $3, $4) \
+         VALUES ($1, $2, $3, (SELECT COALESCE(MAX(position), 0) + 1 FROM categories WHERE user_id = $1)) \
          RETURNING {CAT_COLS}"
     );
     let cat = sqlx::query_as::<_, Category>(&sql)
         .bind(user_id)
         .bind(name)
         .bind(icon)
-        .bind(position)
         .fetch_one(exec)
         .await?;
 
@@ -184,14 +172,4 @@ pub(crate) async fn delete(exec: impl PgExecutor<'_>, id: Uuid, user_id: Uuid) -
             .await?;
 
     Ok(result.rows_affected() > 0)
-}
-
-pub(crate) async fn next_position(exec: impl PgExecutor<'_>, user_id: Uuid) -> Result<i32> {
-    let row =
-        sqlx::query("SELECT COALESCE(MAX(position), 0) + 1 FROM categories WHERE user_id = $1")
-            .bind(user_id)
-            .fetch_one(exec)
-            .await?;
-
-    Ok(row.get(0))
 }
