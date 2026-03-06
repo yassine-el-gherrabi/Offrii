@@ -70,17 +70,17 @@ pub struct ItemResponse {
     pub updated_at: DateTime<Utc>,
 }
 
-impl From<&Item> for ItemResponse {
-    fn from(i: &Item) -> Self {
+impl From<Item> for ItemResponse {
+    fn from(i: Item) -> Self {
         Self {
             id: i.id,
-            name: i.name.clone(),
-            description: i.description.clone(),
-            url: i.url.clone(),
+            name: i.name,
+            description: i.description,
+            url: i.url,
             estimated_price: i.estimated_price,
             priority: i.priority,
             category_id: i.category_id,
-            status: i.status.clone(),
+            status: i.status,
             purchased_at: i.purchased_at,
             created_at: i.created_at,
             updated_at: i.updated_at,
