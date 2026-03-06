@@ -8,6 +8,9 @@ use common::{TestApp, assert_error};
 /// Using a random string avoids flaky CI failures when HIBP API is reachable.
 const TEST_PASSWORD: &str = "xK9mQ2vL7nB4pR8sW3";
 
+/// Default test email. Each test gets its own container so no collision risk.
+const TEST_EMAIL: &str = "test@example.com";
+
 // ---------------------------------------------------------------------------
 // Register
 // ---------------------------------------------------------------------------
@@ -16,14 +19,14 @@ const TEST_PASSWORD: &str = "xK9mQ2vL7nB4pR8sW3";
 async fn register_success_201() {
     let app = TestApp::new().await;
 
-    let (status, body) = app.register_user("alice@example.com", TEST_PASSWORD).await;
+    let (status, body) = app.register_user(TEST_EMAIL, TEST_PASSWORD).await;
 
     assert_eq!(status, StatusCode::CREATED);
     assert!(body["tokens"]["access_token"].is_string());
     assert!(body["tokens"]["refresh_token"].is_string());
     assert_eq!(body["tokens"]["token_type"], "Bearer");
     assert!(body["tokens"]["expires_in"].is_u64());
-    assert_eq!(body["user"]["email"], "alice@example.com");
+    assert_eq!(body["user"]["email"], TEST_EMAIL);
     assert!(body["user"]["id"].is_string());
     assert!(body["user"]["created_at"].is_string());
 
@@ -39,8 +42,8 @@ async fn register_success_201() {
 async fn register_duplicate_email_409() {
     let app = TestApp::new().await;
 
-    app.register_user("dup@example.com", TEST_PASSWORD).await;
-    let (status, body) = app.register_user("dup@example.com", TEST_PASSWORD).await;
+    app.setup_user(TEST_EMAIL, TEST_PASSWORD).await;
+    let (status, body) = app.register_user(TEST_EMAIL, TEST_PASSWORD).await;
 
     assert_eq!(status, StatusCode::CONFLICT);
     assert_error(&body, "CONFLICT");
@@ -60,7 +63,7 @@ async fn register_bad_email_400() {
 async fn register_common_password_400() {
     let app = TestApp::new().await;
 
-    let (status, body) = app.register_user("user@example.com", "password").await;
+    let (status, body) = app.register_user(TEST_EMAIL, "password").await;
 
     assert_eq!(status, StatusCode::BAD_REQUEST);
     assert_error(&body, "BAD_REQUEST");
@@ -71,7 +74,7 @@ async fn register_common_password_400() {
 async fn register_short_password_400() {
     let app = TestApp::new().await;
 
-    let (status, body) = app.register_user("user@example.com", "short").await;
+    let (status, body) = app.register_user(TEST_EMAIL, "short").await;
 
     assert_eq!(status, StatusCode::BAD_REQUEST);
     assert_error(&body, "BAD_REQUEST");
@@ -82,7 +85,7 @@ async fn register_with_display_name_201() {
     let app = TestApp::new().await;
 
     let (status, body) = app
-        .register_user_with_name("named@example.com", TEST_PASSWORD, "Alice")
+        .register_user_with_name(TEST_EMAIL, TEST_PASSWORD, "Alice")
         .await;
 
     assert_eq!(status, StatusCode::CREATED);
@@ -107,7 +110,7 @@ async fn register_missing_content_type_415() {
     let app = TestApp::new().await;
 
     let valid_json = serde_json::json!({
-        "email": "test@example.com",
+        "email": TEST_EMAIL,
         "password": TEST_PASSWORD
     });
     let (status, _) = app
@@ -128,10 +131,10 @@ async fn register_missing_content_type_415() {
 #[tokio::test]
 async fn login_success_200() {
     let app = TestApp::new().await;
-    app.register_user("bob@example.com", TEST_PASSWORD).await;
+    app.setup_user(TEST_EMAIL, TEST_PASSWORD).await;
 
     let body = serde_json::json!({
-        "email": "bob@example.com",
+        "email": TEST_EMAIL,
         "password": TEST_PASSWORD,
     });
     let (status, resp) = app.post_json("/auth/login", &body).await;
@@ -141,7 +144,7 @@ async fn login_success_200() {
     assert!(resp["tokens"]["refresh_token"].is_string());
     assert_eq!(resp["tokens"]["token_type"], "Bearer");
     assert!(resp["tokens"]["expires_in"].is_u64());
-    assert_eq!(resp["user"]["email"], "bob@example.com");
+    assert_eq!(resp["user"]["email"], TEST_EMAIL);
     assert!(resp["user"]["id"].is_string());
     assert!(resp["user"]["created_at"].is_string());
 }
@@ -149,10 +152,10 @@ async fn login_success_200() {
 #[tokio::test]
 async fn login_wrong_password_401() {
     let app = TestApp::new().await;
-    app.register_user("carol@example.com", TEST_PASSWORD).await;
+    app.setup_user(TEST_EMAIL, TEST_PASSWORD).await;
 
     let body = serde_json::json!({
-        "email": "carol@example.com",
+        "email": TEST_EMAIL,
         "password": "wrongpassword",
     });
     let (status, body) = app.post_json("/auth/login", &body).await;
@@ -182,7 +185,7 @@ async fn login_nonexistent_email_401() {
 #[tokio::test]
 async fn refresh_success_200() {
     let app = TestApp::new().await;
-    let (_, reg) = app.register_user("dan@example.com", TEST_PASSWORD).await;
+    let reg = app.setup_user(TEST_EMAIL, TEST_PASSWORD).await;
     let old_access = reg["tokens"]["access_token"].as_str().unwrap().to_string();
     let old_refresh = reg["tokens"]["refresh_token"].as_str().unwrap().to_string();
 
@@ -205,7 +208,7 @@ async fn refresh_success_200() {
 #[tokio::test]
 async fn refresh_old_token_revoked_401() {
     let app = TestApp::new().await;
-    let (_, reg) = app.register_user("eve@example.com", TEST_PASSWORD).await;
+    let reg = app.setup_user(TEST_EMAIL, TEST_PASSWORD).await;
     let old_refresh = reg["tokens"]["refresh_token"].as_str().unwrap().to_string();
 
     // First refresh succeeds
@@ -233,9 +236,7 @@ async fn refresh_invalid_token_401() {
 #[tokio::test]
 async fn refresh_with_access_token_type_401() {
     let app = TestApp::new().await;
-    let (_, reg) = app
-        .register_user("typemix@example.com", TEST_PASSWORD)
-        .await;
+    let reg = app.setup_user(TEST_EMAIL, TEST_PASSWORD).await;
     let access_token = reg["tokens"]["access_token"].as_str().unwrap();
 
     // Send an access token where a refresh token is expected
@@ -253,7 +254,7 @@ async fn refresh_with_access_token_type_401() {
 #[tokio::test]
 async fn logout_success_204() {
     let app = TestApp::new().await;
-    let (_, reg) = app.register_user("frank@example.com", TEST_PASSWORD).await;
+    let reg = app.setup_user(TEST_EMAIL, TEST_PASSWORD).await;
     let access = reg["tokens"]["access_token"].as_str().unwrap();
 
     let (status, body) = app.post_with_auth("/auth/logout", access).await;
@@ -274,7 +275,7 @@ async fn logout_without_auth_401() {
 #[tokio::test]
 async fn logout_revokes_all_refresh_tokens() {
     let app = TestApp::new().await;
-    let (_, reg) = app.register_user("grace@example.com", TEST_PASSWORD).await;
+    let reg = app.setup_user(TEST_EMAIL, TEST_PASSWORD).await;
     let access = reg["tokens"]["access_token"].as_str().unwrap();
     let refresh = reg["tokens"]["refresh_token"].as_str().unwrap().to_string();
 
@@ -291,7 +292,7 @@ async fn logout_revokes_all_refresh_tokens() {
 #[tokio::test]
 async fn logout_without_bearer_prefix_401() {
     let app = TestApp::new().await;
-    let (_, reg) = app.register_user("prefix@example.com", TEST_PASSWORD).await;
+    let reg = app.setup_user(TEST_EMAIL, TEST_PASSWORD).await;
     let access = reg["tokens"]["access_token"].as_str().unwrap();
 
     // Send token WITHOUT "Bearer " prefix
@@ -314,21 +315,22 @@ async fn multiple_sessions_logout_revokes_all() {
     let app = TestApp::new().await;
 
     // Register creates session 1
-    let (_, reg) = app.register_user("multi@example.com", TEST_PASSWORD).await;
-    let refresh_1 = reg["tokens"]["refresh_token"].as_str().unwrap().to_string();
+    app.setup_user(TEST_EMAIL, TEST_PASSWORD).await;
 
-    // Login creates session 2
+    // Login creates session 2 (also get refresh_1 from a fresh login)
     let login_body = serde_json::json!({
-        "email": "multi@example.com",
+        "email": TEST_EMAIL,
         "password": TEST_PASSWORD,
     });
-    let (status, login_resp) = app.post_json("/auth/login", &login_body).await;
+
+    let (status, s1) = app.post_json("/auth/login", &login_body).await;
     assert_eq!(status, StatusCode::OK);
-    let access_2 = login_resp["tokens"]["access_token"].as_str().unwrap();
-    let refresh_2 = login_resp["tokens"]["refresh_token"]
-        .as_str()
-        .unwrap()
-        .to_string();
+    let refresh_1 = s1["tokens"]["refresh_token"].as_str().unwrap().to_string();
+
+    let (status, s2) = app.post_json("/auth/login", &login_body).await;
+    assert_eq!(status, StatusCode::OK);
+    let access_2 = s2["tokens"]["access_token"].as_str().unwrap();
+    let refresh_2 = s2["tokens"]["refresh_token"].as_str().unwrap().to_string();
 
     // Logout using session 2 access token (revokes ALL refresh tokens for user)
     let (status, _) = app.post_with_auth("/auth/logout", access_2).await;
@@ -347,7 +349,7 @@ async fn multiple_sessions_logout_revokes_all() {
 #[tokio::test]
 async fn refresh_double_concurrent_use_401() {
     let app = TestApp::new().await;
-    let (_, reg) = app.register_user("double@example.com", TEST_PASSWORD).await;
+    let reg = app.setup_user(TEST_EMAIL, TEST_PASSWORD).await;
     let refresh = reg["tokens"]["refresh_token"].as_str().unwrap().to_string();
 
     // First refresh succeeds
@@ -366,10 +368,10 @@ async fn logout_then_refresh_each_session_401() {
     let app = TestApp::new().await;
 
     // Create 3 sessions: register + 2 logins
-    app.register_user("triple@example.com", TEST_PASSWORD).await;
+    app.setup_user(TEST_EMAIL, TEST_PASSWORD).await;
 
     let login_body = serde_json::json!({
-        "email": "triple@example.com",
+        "email": TEST_EMAIL,
         "password": TEST_PASSWORD,
     });
 
@@ -401,9 +403,7 @@ async fn logout_then_refresh_each_session_401() {
 #[tokio::test]
 async fn refresh_expired_token_401() {
     let app = TestApp::new().await;
-    let (_, reg) = app
-        .register_user("expired@example.com", TEST_PASSWORD)
-        .await;
+    let reg = app.setup_user(TEST_EMAIL, TEST_PASSWORD).await;
     let refresh = reg["tokens"]["refresh_token"].as_str().unwrap().to_string();
 
     // Manually expire the token in DB
@@ -425,9 +425,7 @@ async fn refresh_expired_token_401() {
 #[tokio::test]
 async fn refresh_truly_concurrent_one_wins_one_loses() {
     let app = TestApp::new().await;
-    let (_, reg) = app
-        .register_user("concurrent@example.com", TEST_PASSWORD)
-        .await;
+    let reg = app.setup_user(TEST_EMAIL, TEST_PASSWORD).await;
     let refresh = reg["tokens"]["refresh_token"].as_str().unwrap().to_string();
 
     let body = serde_json::json!({ "refresh_token": &refresh });
@@ -457,10 +455,10 @@ async fn refresh_truly_concurrent_one_wins_one_loses() {
 #[tokio::test]
 async fn login_enforces_max_refresh_tokens() {
     let app = TestApp::new().await;
-    app.register_user("maxrt@example.com", TEST_PASSWORD).await;
+    app.setup_user(TEST_EMAIL, TEST_PASSWORD).await;
 
     let login_body = serde_json::json!({
-        "email": "maxrt@example.com",
+        "email": TEST_EMAIL,
         "password": TEST_PASSWORD,
     });
 
@@ -471,11 +469,12 @@ async fn login_enforces_max_refresh_tokens() {
     }
 
     // Should only have at most 5 active refresh tokens
-    let count: (i64,) = sqlx::query_as(
+    let count: (i64,) = sqlx::query_as(&format!(
         "SELECT COUNT(*) FROM refresh_tokens \
-         WHERE user_id = (SELECT id FROM users WHERE email = 'maxrt@example.com') \
-         AND revoked_at IS NULL",
-    )
+             WHERE user_id = (SELECT id FROM users WHERE email = '{}') \
+             AND revoked_at IS NULL",
+        TEST_EMAIL
+    ))
     .fetch_one(&app.db)
     .await
     .unwrap();
@@ -516,9 +515,7 @@ async fn register_password_too_long_400() {
     let app = TestApp::new().await;
     let long_password = "a".repeat(129);
 
-    let (status, body) = app
-        .register_user("longpw@example.com", &long_password)
-        .await;
+    let (status, body) = app.register_user(TEST_EMAIL, &long_password).await;
 
     assert_eq!(status, StatusCode::BAD_REQUEST);
     assert_error(&body, "BAD_REQUEST");
@@ -530,7 +527,7 @@ async fn register_display_name_too_long_400() {
     let long_name = "a".repeat(101);
 
     let (status, body) = app
-        .register_user_with_name("longname@example.com", TEST_PASSWORD, &long_name)
+        .register_user_with_name(TEST_EMAIL, TEST_PASSWORD, &long_name)
         .await;
 
     assert_eq!(status, StatusCode::BAD_REQUEST);
@@ -544,9 +541,7 @@ async fn register_display_name_too_long_400() {
 #[tokio::test]
 async fn logout_with_lowercase_bearer_204() {
     let app = TestApp::new().await;
-    let (_, reg) = app
-        .register_user("lowerbearer@example.com", TEST_PASSWORD)
-        .await;
+    let reg = app.setup_user(TEST_EMAIL, TEST_PASSWORD).await;
     let access = reg["tokens"]["access_token"].as_str().unwrap();
 
     // Send with lowercase "bearer"
