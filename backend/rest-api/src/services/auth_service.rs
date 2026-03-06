@@ -13,6 +13,7 @@ use crate::repositories::{category_repo, refresh_token_repo, user_repo};
 use crate::traits;
 use crate::utils::hash;
 use crate::utils::jwt::{JwtKeys, REFRESH_TOKEN_TTL_SECS};
+use crate::utils::password_policy::{self, PasswordPolicyViolation};
 use crate::utils::token_hash::sha256_hex;
 
 /// Maximum number of active refresh tokens kept per user.
@@ -87,6 +88,19 @@ impl traits::AuthService for PgAuthService {
         display_name: Option<&str>,
     ) -> Result<AuthResponse, AppError> {
         let email = email.trim().to_lowercase();
+
+        // OWASP password policy: length, common passwords, breach check
+        password_policy::check(password)
+            .await
+            .map_err(|v| match v {
+                PasswordPolicyViolation::Common => AppError::BadRequest("password_common".into()),
+                PasswordPolicyViolation::Breached => {
+                    AppError::BadRequest("password_breached".into())
+                }
+                PasswordPolicyViolation::TooShort | PasswordPolicyViolation::TooLong => {
+                    AppError::BadRequest("password_length".into())
+                }
+            })?;
 
         // Hash password on blocking thread (CPU-bound)
         let password_owned = password.to_string();

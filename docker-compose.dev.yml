@@ -1,0 +1,44 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    container_name: offrii-backend-dev
+    volumes:
+      - ./backend:/app
+      - backend_cargo_registry:/usr/local/cargo/registry
+      - backend_target:/app/target
+      - ./jwt-keys/private.pem:/run/secrets/jwt_private_key:ro
+      - ./jwt-keys/public.pem:/run/secrets/jwt_public_key:ro
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-offrii}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-offrii}
+      REDIS_URL: redis://redis:6379
+      API_PORT: "3000"
+      RUST_LOG: rest_api=debug,tower_http=debug
+      JWT_PRIVATE_KEY_FILE: /run/secrets/jwt_private_key
+      JWT_PUBLIC_KEY_FILE: /run/secrets/jwt_public_key
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - offrii-net
+    # No healthcheck in dev (backend restarts often)
+    healthcheck:
+      test: ["CMD-SHELL", "true"]
+      interval: 5s
+      timeout: 2s
+      retries: 1
+
+  # Caddy starts without waiting for backend healthcheck
+  caddy:
+    depends_on:
+      backend:
+        condition: service_started
+
+volumes:
+  backend_cargo_registry:
+  backend_target:

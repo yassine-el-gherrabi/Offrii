@@ -81,4 +81,4 @@ jobs:
       - name: Type check
         run: npx tsc --noEmit
       - name: Run tests with coverage
-        run: npx jest --coverage --coverageThreshold='{"global":{"lines":5}}'
+        run: npx jest --coverage --coverageThreshold='{"global":{"lines":60}}'

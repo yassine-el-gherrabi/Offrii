@@ -74,7 +74,7 @@ services:
       - "443:443/udp"
     environment:
       CADDY_SITE_ADDRESS: ${CADDY_SITE_ADDRESS:-http://:80}
-      CORS_ORIGIN: ${CORS_ORIGIN:-*}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:19006,http://localhost:8081}
     volumes:
       - caddy_data:/data
       - caddy_config:/config

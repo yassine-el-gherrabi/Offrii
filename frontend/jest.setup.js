@@ -19,3 +19,27 @@ jest.mock('react-native-safe-area-context', () => {
     initialWindowMetrics: { frame, insets },
   };
 });
+
+// Mock react-i18next — return translation keys directly for predictable test assertions
+jest.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key) => {
+      // Load the French translations and resolve nested keys
+      const fr = require('./src/i18n/locales/fr.json');
+      const parts = key.split('.');
+      let value = fr;
+      for (const part of parts) {
+        value = value?.[part];
+      }
+      return value ?? key;
+    },
+    i18n: { changeLanguage: jest.fn(), language: 'fr' },
+  }),
+  initReactI18next: { type: '3rdParty', init: jest.fn() },
+}));
+
+// Mock expo-localization
+jest.mock('expo-localization', () => ({
+  getLocales: () => [{ languageCode: 'fr' }],
+  getCalendars: () => [{}],
+}));

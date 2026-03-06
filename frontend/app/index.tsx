@@ -1,5 +1,6 @@
 import { Redirect } from 'expo-router';
 import { useAuthStore } from '@/src/stores/auth';
+import { ROUTES } from '@/src/constants/routes';
 
 export default function Index() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
@@ -7,5 +8,5 @@ export default function Index() {
 
   if (isLoading) return null;
 
-  return <Redirect href={isAuthenticated ? '/(tabs)/capture' : '/(auth)/login'} />;
+  return <Redirect href={isAuthenticated ? ROUTES.HOME : ROUTES.LOGIN} />;
 }

@@ -30,6 +30,13 @@ const mockGetItem = SecureStore.getItemAsync as jest.MockedFunction<typeof Secur
 const mockSetItem = SecureStore.setItemAsync as jest.MockedFunction<typeof SecureStore.setItemAsync>;
 const mockDeleteItem = SecureStore.deleteItemAsync as jest.MockedFunction<typeof SecureStore.deleteItemAsync>;
 
+const MOCK_USER = {
+  id: 'user-1',
+  email: 'test@example.com',
+  display_name: 'Test',
+  created_at: '2025-01-01T00:00:00Z',
+};
+
 const MOCK_AUTH_RESPONSE = {
   tokens: {
     access_token: 'access_123',
@@ -37,12 +44,7 @@ const MOCK_AUTH_RESPONSE = {
     token_type: 'Bearer',
     expires_in: 900,
   },
-  user: {
-    id: 'user-1',
-    email: 'test@example.com',
-    display_name: 'Test',
-    created_at: '2025-01-01T00:00:00Z',
-  },
+  user: MOCK_USER,
 };
 
 function resetStore() {
@@ -73,6 +75,7 @@ describe('useAuthStore', () => {
       expect(state.user?.email).toBe('test@example.com');
       expect(state.isAuthenticated).toBe(true);
       expect(mockSetItem).toHaveBeenCalledWith('offrii_refresh_token', 'refresh_123');
+      expect(mockSetItem).toHaveBeenCalledWith('offrii_user_data', JSON.stringify(MOCK_USER));
     });
 
     it('propagates API errors', async () => {
@@ -98,15 +101,15 @@ describe('useAuthStore', () => {
       expect(state.accessToken).toBe('access_123');
       expect(state.isAuthenticated).toBe(true);
       expect(mockRegister).toHaveBeenCalledWith('test@example.com', 'password123', 'Test');
+      expect(mockSetItem).toHaveBeenCalledWith('offrii_user_data', JSON.stringify(MOCK_USER));
     });
   });
 
   describe('logout', () => {
     it('clears state and SecureStore', async () => {
-      // Set up authenticated state
       useAuthStore.setState({
         accessToken: 'access_123',
-        user: MOCK_AUTH_RESPONSE.user,
+        user: MOCK_USER,
         isAuthenticated: true,
       });
       mockLogout.mockResolvedValueOnce(undefined);
@@ -120,12 +123,16 @@ describe('useAuthStore', () => {
       expect(state.user).toBeNull();
       expect(state.isAuthenticated).toBe(false);
       expect(mockDeleteItem).toHaveBeenCalledWith('offrii_refresh_token');
+      expect(mockDeleteItem).toHaveBeenCalledWith('offrii_user_data');
+      expect(mockLogout).toHaveBeenCalled();
     });
   });
 
   describe('restoreSession', () => {
-    it('refreshes token when stored', async () => {
-      mockGetItem.mockResolvedValueOnce('old_refresh');
+    it('refreshes token and restores cached user', async () => {
+      mockGetItem
+        .mockResolvedValueOnce('old_refresh')
+        .mockResolvedValueOnce(JSON.stringify(MOCK_USER));
       mockRefresh.mockResolvedValueOnce({
         tokens: {
           access_token: 'new_access',
@@ -141,6 +148,7 @@ describe('useAuthStore', () => {
 
       const state = useAuthStore.getState();
       expect(state.accessToken).toBe('new_access');
+      expect(state.user).toEqual(MOCK_USER);
       expect(state.isAuthenticated).toBe(true);
       expect(state.isLoading).toBe(false);
       expect(mockSetItem).toHaveBeenCalledWith('offrii_refresh_token', 'new_refresh');
@@ -158,7 +166,7 @@ describe('useAuthStore', () => {
       expect(state.isLoading).toBe(false);
     });
 
-    it('clears token on refresh failure', async () => {
+    it('clears tokens on refresh failure', async () => {
       mockGetItem.mockResolvedValueOnce('expired_refresh');
       mockRefresh.mockRejectedValueOnce(new Error('token expired'));
 
@@ -170,6 +178,7 @@ describe('useAuthStore', () => {
       expect(state.isAuthenticated).toBe(false);
       expect(state.isLoading).toBe(false);
       expect(mockDeleteItem).toHaveBeenCalledWith('offrii_refresh_token');
+      expect(mockDeleteItem).toHaveBeenCalledWith('offrii_user_data');
     });
   });
 });

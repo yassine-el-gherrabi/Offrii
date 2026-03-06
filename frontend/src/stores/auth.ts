@@ -1,4 +1,3 @@
-import { Platform } from 'react-native';
 import { create } from 'zustand';
 import * as SecureStore from 'expo-secure-store';
 import * as authApi from '@/src/api/auth';
@@ -6,30 +5,7 @@ import { setTokenGetter } from '@/src/api/client';
 import type { UserResponse } from '@/src/types/auth';
 
 const REFRESH_TOKEN_KEY = 'offrii_refresh_token';
-
-// expo-secure-store is not available on web — fall back to localStorage
-const tokenStorage = {
-  async get(key: string): Promise<string | null> {
-    if (Platform.OS === 'web') {
-      return localStorage.getItem(key);
-    }
-    return SecureStore.getItemAsync(key);
-  },
-  async set(key: string, value: string): Promise<void> {
-    if (Platform.OS === 'web') {
-      localStorage.setItem(key, value);
-      return;
-    }
-    await SecureStore.setItemAsync(key, value);
-  },
-  async remove(key: string): Promise<void> {
-    if (Platform.OS === 'web') {
-      localStorage.removeItem(key);
-      return;
-    }
-    await SecureStore.deleteItemAsync(key);
-  },
-};
+const USER_DATA_KEY = 'offrii_user_data';
 
 interface AuthState {
   accessToken: string | null;
@@ -55,38 +31,49 @@ export const useAuthStore = create<AuthState>((set, get) => {
 
     login: async (email, password) => {
       const { tokens, user } = await authApi.login(email, password);
-      await tokenStorage.set(REFRESH_TOKEN_KEY, tokens.refresh_token);
+      await SecureStore.setItemAsync(REFRESH_TOKEN_KEY, tokens.refresh_token);
+      await SecureStore.setItemAsync(USER_DATA_KEY, JSON.stringify(user));
       set({ accessToken: tokens.access_token, user, isAuthenticated: true });
     },
 
     register: async (email, password, displayName?) => {
       const { tokens, user } = await authApi.register(email, password, displayName);
-      await tokenStorage.set(REFRESH_TOKEN_KEY, tokens.refresh_token);
+      await SecureStore.setItemAsync(REFRESH_TOKEN_KEY, tokens.refresh_token);
+      await SecureStore.setItemAsync(USER_DATA_KEY, JSON.stringify(user));
       set({ accessToken: tokens.access_token, user, isAuthenticated: true });
     },
 
     logout: async () => {
-      const { accessToken } = get();
       set({ accessToken: null, user: null, isAuthenticated: false });
-      await tokenStorage.remove(REFRESH_TOKEN_KEY);
-      if (accessToken) {
-        // Fire-and-forget — don't block logout on API
-        authApi.logout(accessToken).catch(() => {});
-      }
+      await SecureStore.deleteItemAsync(REFRESH_TOKEN_KEY);
+      await SecureStore.deleteItemAsync(USER_DATA_KEY);
+      // Fire-and-forget — don't block logout on API
+      authApi.logout().catch(() => {});
     },
 
     restoreSession: async () => {
       try {
-        const refreshToken = await tokenStorage.get(REFRESH_TOKEN_KEY);
+        const refreshToken = await SecureStore.getItemAsync(REFRESH_TOKEN_KEY);
         if (!refreshToken) {
           set({ isLoading: false });
           return;
         }
+
+        // Restore cached user data immediately
+        const userJson = await SecureStore.getItemAsync(USER_DATA_KEY);
+        const cachedUser: UserResponse | null = userJson ? JSON.parse(userJson) : null;
+
         const { tokens } = await authApi.refresh(refreshToken);
-        await tokenStorage.set(REFRESH_TOKEN_KEY, tokens.refresh_token);
-        set({ accessToken: tokens.access_token, isAuthenticated: true, isLoading: false });
+        await SecureStore.setItemAsync(REFRESH_TOKEN_KEY, tokens.refresh_token);
+        set({
+          accessToken: tokens.access_token,
+          user: cachedUser,
+          isAuthenticated: true,
+          isLoading: false,
+        });
       } catch {
-        await tokenStorage.remove(REFRESH_TOKEN_KEY);
+        await SecureStore.deleteItemAsync(REFRESH_TOKEN_KEY);
+        await SecureStore.deleteItemAsync(USER_DATA_KEY);
         set({ isLoading: false });
       }
     },

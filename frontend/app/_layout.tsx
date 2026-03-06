@@ -5,6 +5,7 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import 'react-native-reanimated';
+import '@/src/i18n';
 
 import { paperTheme } from '@/src/theme';
 import { useAuthStore } from '@/src/stores/auth';
