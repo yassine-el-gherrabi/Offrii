@@ -243,17 +243,16 @@ impl traits::ItemService for PgItemService {
             ));
         }
 
-        // Try Redis cache (fail-open)
-        let ver = self.get_version(user_id).await;
+        // Try Redis cache (fail-open). Treat missing version key as 0 so the
+        // cache can be hit even before the first mutation.
+        let ver = self.get_version(user_id).await.unwrap_or(0);
         let query_hash = hash_query(query, sort, order, page, per_page);
 
-        if let Some(v) = ver {
-            let cache_key = format!("items:{user_id}:v{v}:{query_hash}");
-            if let Some(cached) = self.get_cached_list(&cache_key).await
-                && let Ok(resp) = serde_json::from_str::<ItemsListResponse>(&cached)
-            {
-                return Ok(resp);
-            }
+        let cache_key = format!("items:{user_id}:v{ver}:{query_hash}");
+        if let Some(cached) = self.get_cached_list(&cache_key).await
+            && let Ok(resp) = serde_json::from_str::<ItemsListResponse>(&cached)
+        {
+            return Ok(resp);
         }
 
         // Cache miss → query DB
@@ -288,9 +287,7 @@ impl traits::ItemService for PgItemService {
             per_page,
         };
 
-        // Cache the result (fail-open)
-        let ver = ver.unwrap_or(0);
-        let cache_key = format!("items:{user_id}:v{ver}:{query_hash}");
+        // Cache the result (fail-open) — reuse the same cache_key from the read path
         if let Ok(serialized) = serde_json::to_string(&response) {
             self.set_cached_list(&cache_key, &serialized).await;
         }

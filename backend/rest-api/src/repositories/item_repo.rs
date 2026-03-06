@@ -206,14 +206,12 @@ pub(crate) async fn list(
     // Defense-in-depth: validate sort/order even though service layer whitelists them.
     const REPO_ALLOWED_SORTS: &[&str] = &["created_at", "priority", "name"];
     const REPO_ALLOWED_ORDERS: &[&str] = &["asc", "desc"];
-    assert!(
-        REPO_ALLOWED_SORTS.contains(&sort),
-        "invalid sort column: {sort}"
-    );
-    assert!(
-        REPO_ALLOWED_ORDERS.contains(&order),
-        "invalid order direction: {order}"
-    );
+    if !REPO_ALLOWED_SORTS.contains(&sort) {
+        anyhow::bail!("invalid sort column: {sort}");
+    }
+    if !REPO_ALLOWED_ORDERS.contains(&order) {
+        anyhow::bail!("invalid order direction: {order}");
+    }
 
     qb.push(" ORDER BY ");
     qb.push(sort);

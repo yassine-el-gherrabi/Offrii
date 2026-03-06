@@ -16,9 +16,10 @@
 		-Server
 	}
 
-	# CORS (public API for mobile app)
+	# CORS – mobile API uses Bearer tokens (no cookies), so * is safe.
+	# In production set CORS_ORIGIN to your domain (single origin only).
 	header {
-		Access-Control-Allow-Origin   "{$CORS_ORIGIN:http://localhost:8081}"
+		Access-Control-Allow-Origin   "{$CORS_ORIGIN:*}"
 		Access-Control-Allow-Methods  "GET, POST, PUT, PATCH, DELETE, OPTIONS"
 		Access-Control-Allow-Headers  "Authorization, Content-Type, Accept"
 		Access-Control-Expose-Headers "X-Request-Id"
