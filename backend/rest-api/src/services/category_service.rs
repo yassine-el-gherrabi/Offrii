@@ -145,15 +145,9 @@ impl traits::CategoryService for PgCategoryService {
         name: &str,
         icon: Option<&str>,
     ) -> Result<CategoryResponse, AppError> {
-        let position = self
-            .category_repo
-            .next_position(user_id)
-            .await
-            .map_err(AppError::Internal)?;
-
         let cat = self
             .category_repo
-            .create(user_id, name, icon, position)
+            .create(user_id, name, icon)
             .await
             .map_err(|e| {
                 if is_unique_violation(&e) {

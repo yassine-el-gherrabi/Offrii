@@ -47,13 +47,7 @@ pub trait CategoryRepo: Send + Sync {
 
     async fn find_by_id(&self, id: Uuid, user_id: Uuid) -> Result<Option<Category>>;
 
-    async fn create(
-        &self,
-        user_id: Uuid,
-        name: &str,
-        icon: Option<&str>,
-        position: i32,
-    ) -> Result<Category>;
+    async fn create(&self, user_id: Uuid, name: &str, icon: Option<&str>) -> Result<Category>;
 
     async fn update(
         &self,
@@ -65,8 +59,6 @@ pub trait CategoryRepo: Send + Sync {
     ) -> Result<Option<Category>>;
 
     async fn delete(&self, id: Uuid, user_id: Uuid) -> Result<bool>;
-
-    async fn next_position(&self, user_id: Uuid) -> Result<i32>;
 }
 
 #[allow(clippy::too_many_arguments)]
