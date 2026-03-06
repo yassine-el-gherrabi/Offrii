@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { AxiosError, AxiosRequestConfig, InternalAxiosRequestConfig } from 'axios';
+import type { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { API_BASE_URL } from '@/src/constants/api';
 import type { ApiError } from '@/src/types/auth';
 
@@ -48,10 +48,10 @@ apiClient.interceptors.request.use((config) => {
 // --- Response interceptor with 401 refresh logic ---
 
 let isRefreshing = false;
-let failedQueue: Array<{
+let failedQueue: {
   resolve: (token: string) => void;
   reject: (error: unknown) => void;
-}> = [];
+}[] = [];
 
 function processQueue(error: unknown, token: string | null) {
   failedQueue.forEach(({ resolve, reject }) => {
