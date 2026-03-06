@@ -88,6 +88,8 @@ async fn update_item(
             req.url.as_deref(),
             req.estimated_price,
             req.priority,
+            // Option<Uuid> → Option<Option<Uuid>>: Some(uuid) = set, None = no change.
+            // Clearing category (explicit null) is not supported yet in the DTO.
             req.category_id.map(Some),
             req.status.as_deref(),
         )
