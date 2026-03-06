@@ -10,7 +10,7 @@ import '@/src/i18n';
 import { paperTheme } from '@/src/theme';
 import { useAuthStore } from '@/src/stores/auth';
 
-SplashScreen.preventAutoHideAsync();
+void SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const isLoading = useAuthStore((s) => s.isLoading);
