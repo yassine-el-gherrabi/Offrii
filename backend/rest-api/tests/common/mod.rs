@@ -176,6 +176,18 @@ impl TestApp {
         self.post_json("/auth/register", &body).await
     }
 
+    /// Register a user, asserting that registration succeeds (201).
+    /// Use this when registration is a precondition, not the focus of the test.
+    pub async fn setup_user(&self, email: &str, password: &str) -> Value {
+        let (status, body) = self.register_user(email, password).await;
+        assert_eq!(
+            status,
+            StatusCode::CREATED,
+            "precondition failed: registration should return 201, got {status}: {body}"
+        );
+        body
+    }
+
     pub async fn register_user_with_name(
         &self,
         email: &str,

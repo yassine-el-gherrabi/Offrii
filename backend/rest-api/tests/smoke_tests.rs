@@ -84,8 +84,8 @@ async fn smoke_health_returns_200_with_json_shape() {
 #[tokio::test]
 async fn smoke_full_auth_flow() {
     let app = SmokeTestApp::new().await;
-    let email = "smoketest@example.com";
-    let password = "strongpass123";
+    let email = "test@example.com";
+    let password = "xK9mQ2vL7nB4pR8sW3";
 
     // ── Step 1: Register ──────────────────────────────────────────
     let resp = app
