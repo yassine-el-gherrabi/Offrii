@@ -297,8 +297,8 @@ pub(crate) async fn update(
     qb.push(" AND status != 'deleted'");
 
     // Atomic guard: reject update if item already has the target status.
-    // The UPDATE matches 0 rows when status == new status, letting the
-    // service layer disambiguate 404 vs 409 without a TOCTOU window.
+    // The UPDATE matches 0 rows when status == new status, helping the
+    // service layer disambiguate 404 vs 409 while reducing TOCTOU risk.
     if let Some(s) = status {
         qb.push(" AND status != ");
         qb.push_bind(s);

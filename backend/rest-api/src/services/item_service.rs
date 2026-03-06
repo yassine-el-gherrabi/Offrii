@@ -370,22 +370,21 @@ impl traits::ItemService for PgItemService {
         // "already has that status". Disambiguate only on the error path.
         let item = match item {
             Some(item) => item,
-            None if status.is_some() => {
-                if self
-                    .item_repo
-                    .find_by_id(id, user_id)
-                    .await
-                    .map_err(AppError::Internal)?
-                    .is_some()
+            None => {
+                if let Some(new_status) = status
+                    && self
+                        .item_repo
+                        .find_by_id(id, user_id)
+                        .await
+                        .map_err(AppError::Internal)?
+                        .is_some()
                 {
                     return Err(AppError::Conflict(format!(
-                        "item is already '{}'",
-                        status.unwrap()
+                        "item is already '{new_status}'"
                     )));
                 }
                 return Err(AppError::NotFound("item not found".into()));
             }
-            None => return Err(AppError::NotFound("item not found".into())),
         };
 
         // Invalidate list cache
