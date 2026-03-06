@@ -331,6 +331,20 @@ impl traits::ItemService for PgItemService {
             ));
         }
 
+        // Guard: reject idempotent status transitions (e.g. purchased → purchased)
+        if let Some(s) = status {
+            let current = self
+                .item_repo
+                .find_by_id(id, user_id)
+                .await
+                .map_err(AppError::Internal)?
+                .ok_or_else(|| AppError::NotFound("item not found".into()))?;
+
+            if current.status == s {
+                return Err(AppError::Conflict(format!("item is already '{s}'")));
+            }
+        }
+
         if let Some(Some(cid)) = category_id {
             self.validate_category_ownership(cid, user_id).await?;
         }

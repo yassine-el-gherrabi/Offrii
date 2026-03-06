@@ -832,6 +832,163 @@ async fn update_item_without_auth_401() {
     assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
 }
 
+// ── Status transition guards ─────────────────────────────────────────
+
+#[tokio::test]
+async fn purchase_already_purchased_409() {
+    let app = TestApp::new().await;
+    let token = app.setup_user_token(TEST_EMAIL, TEST_PASSWORD).await;
+
+    let item = app
+        .create_item(&token, &serde_json::json!({ "name": "gadget" }))
+        .await;
+    let id = item["id"].as_str().unwrap();
+
+    // First purchase — should succeed
+    let (status, _) = app
+        .put_json_with_auth(
+            &format!("/items/{id}"),
+            &serde_json::json!({ "status": "purchased" }),
+            &token,
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK);
+
+    // Second purchase — should be 409
+    let (status, resp) = app
+        .put_json_with_auth(
+            &format!("/items/{id}"),
+            &serde_json::json!({ "status": "purchased" }),
+            &token,
+        )
+        .await;
+    assert_eq!(status, StatusCode::CONFLICT);
+    assert_error(&resp, "CONFLICT");
+}
+
+#[tokio::test]
+async fn restore_already_active_409() {
+    let app = TestApp::new().await;
+    let token = app.setup_user_token(TEST_EMAIL, TEST_PASSWORD).await;
+
+    let item = app
+        .create_item(&token, &serde_json::json!({ "name": "already active" }))
+        .await;
+    let id = item["id"].as_str().unwrap();
+
+    // Item is already active — setting active again should be 409
+    let (status, resp) = app
+        .put_json_with_auth(
+            &format!("/items/{id}"),
+            &serde_json::json!({ "status": "active" }),
+            &token,
+        )
+        .await;
+    assert_eq!(status, StatusCode::CONFLICT);
+    assert_error(&resp, "CONFLICT");
+}
+
+#[tokio::test]
+async fn purchase_then_restore_then_purchase_200() {
+    let app = TestApp::new().await;
+    let token = app.setup_user_token(TEST_EMAIL, TEST_PASSWORD).await;
+
+    let item = app
+        .create_item(&token, &serde_json::json!({ "name": "cycle" }))
+        .await;
+    let id = item["id"].as_str().unwrap();
+
+    // active → purchased
+    let (status, _) = app
+        .put_json_with_auth(
+            &format!("/items/{id}"),
+            &serde_json::json!({ "status": "purchased" }),
+            &token,
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK);
+
+    // purchased → active (restore)
+    let (status, restored) = app
+        .put_json_with_auth(
+            &format!("/items/{id}"),
+            &serde_json::json!({ "status": "active" }),
+            &token,
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(restored["status"], "active");
+    assert!(restored["purchased_at"].is_null());
+
+    // active → purchased (again)
+    let (status, repurchased) = app
+        .put_json_with_auth(
+            &format!("/items/{id}"),
+            &serde_json::json!({ "status": "purchased" }),
+            &token,
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(repurchased["status"], "purchased");
+    assert!(repurchased["purchased_at"].is_string());
+}
+
+#[tokio::test]
+async fn purchase_deleted_item_404() {
+    let app = TestApp::new().await;
+    let token = app.setup_user_token(TEST_EMAIL, TEST_PASSWORD).await;
+
+    let item = app
+        .create_item(&token, &serde_json::json!({ "name": "to delete" }))
+        .await;
+    let id = item["id"].as_str().unwrap();
+
+    app.delete_with_auth(&format!("/items/{id}"), &token).await;
+
+    let (status, resp) = app
+        .put_json_with_auth(
+            &format!("/items/{id}"),
+            &serde_json::json!({ "status": "purchased" }),
+            &token,
+        )
+        .await;
+    assert_eq!(status, StatusCode::NOT_FOUND);
+    assert_error(&resp, "NOT_FOUND");
+}
+
+#[tokio::test]
+async fn update_non_status_fields_on_purchased_item_200() {
+    let app = TestApp::new().await;
+    let token = app.setup_user_token(TEST_EMAIL, TEST_PASSWORD).await;
+
+    let item = app
+        .create_item(&token, &serde_json::json!({ "name": "original" }))
+        .await;
+    let id = item["id"].as_str().unwrap();
+
+    // Mark purchased
+    let (status, _) = app
+        .put_json_with_auth(
+            &format!("/items/{id}"),
+            &serde_json::json!({ "status": "purchased" }),
+            &token,
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK);
+
+    // Update only non-status fields — should not trigger guard
+    let (status, updated) = app
+        .put_json_with_auth(
+            &format!("/items/{id}"),
+            &serde_json::json!({ "name": "renamed" }),
+            &token,
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(updated["name"], "renamed");
+    assert_eq!(updated["status"], "purchased");
+}
+
 // ── Delete ──────────────────────────────────────────────────────────
 
 #[tokio::test]

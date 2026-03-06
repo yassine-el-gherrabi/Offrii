@@ -273,6 +273,45 @@ async fn smoke_full_items_crud_flow() {
         "purchased_at should be set"
     );
 
+    // ── Step 5b: Re-purchase should be 409 ──────────────────────
+    let resp = app
+        .client
+        .put(app.url(&format!("/items/{item_id}")))
+        .bearer_auth(token)
+        .json(&serde_json::json!({ "status": "purchased" }))
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), 409, "re-purchase should return 409 Conflict");
+
+    // ── Step 5c: Restore to active ────────────────────────────
+    let resp = app
+        .client
+        .put(app.url(&format!("/items/{item_id}")))
+        .bearer_auth(token)
+        .json(&serde_json::json!({ "status": "active" }))
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), 200, "restore should return 200 OK");
+    let restored: serde_json::Value = resp.json().await.unwrap();
+    assert_eq!(restored["status"], "active");
+    assert!(
+        restored["purchased_at"].is_null(),
+        "purchased_at should be cleared after restore"
+    );
+
+    // Re-purchase so subsequent steps still work with purchased state
+    let resp = app
+        .client
+        .put(app.url(&format!("/items/{item_id}")))
+        .bearer_auth(token)
+        .json(&serde_json::json!({ "status": "purchased" }))
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), 200);
+
     // ── Step 6: List with status filter ─────────────────────────
     let resp = app
         .client
