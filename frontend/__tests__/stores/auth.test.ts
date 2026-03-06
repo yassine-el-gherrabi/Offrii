@@ -17,6 +17,7 @@ jest.mock('@/src/api/auth', () => ({
 
 jest.mock('@/src/api/client', () => ({
   setTokenGetter: jest.fn(),
+  setRefreshHandlers: jest.fn(),
 }));
 
 import { useAuthStore } from '@/src/stores/auth';
@@ -106,7 +107,7 @@ describe('useAuthStore', () => {
   });
 
   describe('logout', () => {
-    it('clears state and SecureStore', async () => {
+    it('calls API before clearing state and SecureStore', async () => {
       useAuthStore.setState({
         accessToken: 'access_123',
         user: MOCK_USER,
@@ -118,13 +119,33 @@ describe('useAuthStore', () => {
         await useAuthStore.getState().logout();
       });
 
+      // API should have been called
+      expect(mockLogout).toHaveBeenCalled();
+
       const state = useAuthStore.getState();
       expect(state.accessToken).toBeNull();
       expect(state.user).toBeNull();
       expect(state.isAuthenticated).toBe(false);
       expect(mockDeleteItem).toHaveBeenCalledWith('offrii_refresh_token');
       expect(mockDeleteItem).toHaveBeenCalledWith('offrii_user_data');
-      expect(mockLogout).toHaveBeenCalled();
+    });
+
+    it('clears state even if API call fails', async () => {
+      useAuthStore.setState({
+        accessToken: 'access_123',
+        user: MOCK_USER,
+        isAuthenticated: true,
+      });
+      mockLogout.mockRejectedValueOnce(new Error('network error'));
+
+      await act(async () => {
+        await useAuthStore.getState().logout();
+      });
+
+      const state = useAuthStore.getState();
+      expect(state.accessToken).toBeNull();
+      expect(state.isAuthenticated).toBe(false);
+      expect(mockDeleteItem).toHaveBeenCalledWith('offrii_refresh_token');
     });
   });
 

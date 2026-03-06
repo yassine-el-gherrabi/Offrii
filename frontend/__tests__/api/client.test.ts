@@ -5,13 +5,13 @@ jest.mock('@/src/constants/api', () => ({
   API_BASE_URL: 'http://test-api.local',
 }));
 
-import { apiClient, setTokenGetter, ApiRequestError } from '@/src/api/client';
+import { apiClient, setTokenGetter, setRefreshHandlers, ApiRequestError } from '@/src/api/client';
 
 const mock = new MockAdapter(apiClient);
 
 beforeEach(() => {
   mock.reset();
-  setTokenGetter(null as unknown as () => string | null);
+  setTokenGetter(() => null);
 });
 
 describe('apiClient', () => {
@@ -84,6 +84,84 @@ describe('apiClient', () => {
         expect((e as ApiRequestError).status).toBe(500);
         expect((e as ApiRequestError).message).toBe('Server broke');
       }
+    });
+  });
+
+  describe('401 refresh interceptor', () => {
+    const mockHandlers = {
+      getRefreshToken: jest.fn(),
+      onRefreshSuccess: jest.fn(),
+      onRefreshFailure: jest.fn(),
+    };
+
+    beforeEach(() => {
+      mockHandlers.getRefreshToken.mockReset();
+      mockHandlers.onRefreshSuccess.mockReset();
+      mockHandlers.onRefreshFailure.mockReset();
+      setRefreshHandlers(mockHandlers);
+      setTokenGetter(() => 'old-access-token');
+    });
+
+    it('refreshes token and retries on 401', async () => {
+      mockHandlers.getRefreshToken.mockResolvedValue('refresh-token-123');
+      mockHandlers.onRefreshSuccess.mockResolvedValue(undefined);
+
+      // First call returns 401, refresh succeeds, retry succeeds
+      mock
+        .onGet('/protected')
+        .replyOnce(401, { error: { code: 'UNAUTHORIZED', message: 'expired' } });
+      mock.onPost('/auth/refresh').replyOnce(200, {
+        tokens: {
+          access_token: 'new-access-token',
+          refresh_token: 'new-refresh-token',
+          token_type: 'Bearer',
+          expires_in: 900,
+        },
+      });
+      mock.onGet('/protected').replyOnce(200, { data: 'success' });
+
+      const response = await apiClient.get('/protected');
+
+      expect(response.data).toEqual({ data: 'success' });
+      expect(mockHandlers.getRefreshToken).toHaveBeenCalled();
+      expect(mockHandlers.onRefreshSuccess).toHaveBeenCalledWith(
+        'new-access-token',
+        'new-refresh-token',
+      );
+    });
+
+    it('calls onRefreshFailure when refresh fails', async () => {
+      mockHandlers.getRefreshToken.mockResolvedValue('refresh-token-123');
+
+      mock
+        .onGet('/protected')
+        .replyOnce(401, { error: { code: 'UNAUTHORIZED', message: 'expired' } });
+      mock
+        .onPost('/auth/refresh')
+        .replyOnce(401, { error: { code: 'UNAUTHORIZED', message: 'invalid refresh' } });
+
+      await expect(apiClient.get('/protected')).rejects.toThrow('Session expired');
+      expect(mockHandlers.onRefreshFailure).toHaveBeenCalled();
+    });
+
+    it('calls onRefreshFailure when no refresh token available', async () => {
+      mockHandlers.getRefreshToken.mockResolvedValue(null);
+
+      mock
+        .onGet('/protected')
+        .replyOnce(401, { error: { code: 'UNAUTHORIZED', message: 'expired' } });
+
+      await expect(apiClient.get('/protected')).rejects.toThrow('Session expired');
+      expect(mockHandlers.onRefreshFailure).toHaveBeenCalled();
+    });
+
+    it('does not refresh on auth endpoint 401s', async () => {
+      mock.onPost('/auth/login').reply(401, {
+        error: { code: 'INVALID_CREDENTIALS', message: 'Bad password' },
+      });
+
+      await expect(apiClient.post('/auth/login')).rejects.toThrow('Bad password');
+      expect(mockHandlers.getRefreshToken).not.toHaveBeenCalled();
     });
   });
 });

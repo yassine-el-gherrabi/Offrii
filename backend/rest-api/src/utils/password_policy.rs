@@ -15,10 +15,11 @@ pub enum PasswordPolicyViolation {
 /// 2. Common passwords (top 10k)
 /// 3. HIBP breached-passwords database
 pub async fn check(password: &str) -> Result<(), PasswordPolicyViolation> {
-    if password.len() < 8 {
+    let char_count = password.chars().count();
+    if char_count < 8 {
         return Err(PasswordPolicyViolation::TooShort);
     }
-    if password.len() > 128 {
+    if char_count > 128 {
         return Err(PasswordPolicyViolation::TooLong);
     }
 
@@ -65,5 +66,34 @@ mod tests {
         // This random string is not common and unlikely to be breached
         // HIBP call may fail-open in CI which is fine
         assert_eq!(check("xK9mQ2vL7nB4pR8sW3").await, Ok(()));
+    }
+
+    #[tokio::test]
+    async fn multibyte_password_counts_chars_not_bytes() {
+        // "héllo🌍wd" = 9 chars but 14 bytes — should pass the >=8 char check
+        assert_ne!(
+            check("héllo🌍wd").await,
+            Err(PasswordPolicyViolation::TooShort)
+        );
+    }
+
+    #[tokio::test]
+    async fn multibyte_short_password_rejected() {
+        // "à🌍🎉" = 3 chars — should be rejected as too short
+        assert_eq!(check("à🌍🎉").await, Err(PasswordPolicyViolation::TooShort));
+    }
+
+    #[tokio::test]
+    async fn boundary_exactly_8_chars_accepted() {
+        assert_ne!(
+            check("abcdefgh").await,
+            Err(PasswordPolicyViolation::TooShort)
+        );
+    }
+
+    #[tokio::test]
+    async fn boundary_exactly_128_chars_accepted() {
+        let pass = "a".repeat(128);
+        assert_ne!(check(&pass).await, Err(PasswordPolicyViolation::TooLong));
     }
 }
