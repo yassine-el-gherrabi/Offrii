@@ -7,6 +7,10 @@ use uuid::Uuid;
 use crate::models::Item;
 use crate::traits;
 
+/// Shared column list for all item queries (avoids duplication).
+const ITEM_COLS: &str = "id, user_id, name, description, url, estimated_price, \
+                         priority, category_id, status, purchased_at, created_at, updated_at";
+
 // ── Concrete implementation ──────────────────────────────────────────
 
 pub struct PgItemRepo {
@@ -125,23 +129,21 @@ pub(crate) async fn create(
     priority: i16,
     category_id: Option<Uuid>,
 ) -> Result<Item> {
-    let item = sqlx::query_as::<_, Item>(
-        r#"
-        INSERT INTO items (user_id, name, description, url, estimated_price, priority, category_id)
-        VALUES ($1, $2, $3, $4, $5, $6, $7)
-        RETURNING id, user_id, name, description, url, estimated_price,
-                  priority, category_id, status, purchased_at, created_at, updated_at
-        "#,
-    )
-    .bind(user_id)
-    .bind(name)
-    .bind(description)
-    .bind(url)
-    .bind(estimated_price)
-    .bind(priority)
-    .bind(category_id)
-    .fetch_one(exec)
-    .await?;
+    let sql = format!(
+        "INSERT INTO items (user_id, name, description, url, estimated_price, priority, category_id) \
+         VALUES ($1, $2, $3, $4, $5, $6, $7) \
+         RETURNING {ITEM_COLS}"
+    );
+    let item = sqlx::query_as::<_, Item>(&sql)
+        .bind(user_id)
+        .bind(name)
+        .bind(description)
+        .bind(url)
+        .bind(estimated_price)
+        .bind(priority)
+        .bind(category_id)
+        .fetch_one(exec)
+        .await?;
 
     Ok(item)
 }
@@ -151,18 +153,14 @@ pub(crate) async fn find_by_id(
     id: Uuid,
     user_id: Uuid,
 ) -> Result<Option<Item>> {
-    let item = sqlx::query_as::<_, Item>(
-        r#"
-        SELECT id, user_id, name, description, url, estimated_price,
-               priority, category_id, status, purchased_at, created_at, updated_at
-        FROM items
-        WHERE id = $1 AND user_id = $2 AND status != 'deleted'
-        "#,
-    )
-    .bind(id)
-    .bind(user_id)
-    .fetch_optional(exec)
-    .await?;
+    let sql = format!(
+        "SELECT {ITEM_COLS} FROM items WHERE id = $1 AND user_id = $2 AND status != 'deleted'"
+    );
+    let item = sqlx::query_as::<_, Item>(&sql)
+        .bind(id)
+        .bind(user_id)
+        .fetch_optional(exec)
+        .await?;
 
     Ok(item)
 }
@@ -200,15 +198,23 @@ pub(crate) async fn list(
     limit: i64,
     offset: i64,
 ) -> Result<Vec<Item>> {
-    let mut qb: QueryBuilder<'_, sqlx::Postgres> = QueryBuilder::new(
-        "SELECT id, user_id, name, description, url, estimated_price, \
-         priority, category_id, status, purchased_at, created_at, updated_at \
-         FROM items",
-    );
+    let select = format!("SELECT {ITEM_COLS} FROM items");
+    let mut qb: QueryBuilder<'_, sqlx::Postgres> = QueryBuilder::new(select);
 
     push_list_where(&mut qb, user_id, status, category_id);
 
-    // sort and order are validated at the service layer (whitelist)
+    // Defense-in-depth: validate sort/order even though service layer whitelists them.
+    const REPO_ALLOWED_SORTS: &[&str] = &["created_at", "priority", "name"];
+    const REPO_ALLOWED_ORDERS: &[&str] = &["asc", "desc"];
+    assert!(
+        REPO_ALLOWED_SORTS.contains(&sort),
+        "invalid sort column: {sort}"
+    );
+    assert!(
+        REPO_ALLOWED_ORDERS.contains(&order),
+        "invalid order direction: {order}"
+    );
+
     qb.push(" ORDER BY ");
     qb.push(sort);
     qb.push(" ");
@@ -291,10 +297,7 @@ pub(crate) async fn update(
     qb.push(" AND user_id = ");
     qb.push_bind(user_id);
     qb.push(" AND status != 'deleted'");
-    qb.push(
-        " RETURNING id, user_id, name, description, url, estimated_price, \
-         priority, category_id, status, purchased_at, created_at, updated_at",
-    );
+    qb.push(format!(" RETURNING {ITEM_COLS}"));
 
     let item = qb.build_query_as::<Item>().fetch_optional(exec).await?;
 

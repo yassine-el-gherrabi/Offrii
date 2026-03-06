@@ -21,6 +21,9 @@ const ALLOWED_ORDERS: &[&str] = &["asc", "desc"];
 const DEFAULT_PER_PAGE: i64 = 50;
 const MAX_PER_PAGE: i64 = 100;
 
+/// Maximum page number to prevent huge OFFSET scans.
+const MAX_PAGE: i64 = 1000;
+
 /// Redis cache TTL for list responses (seconds).
 const LIST_CACHE_TTL_SECS: i64 = 300;
 
@@ -44,6 +47,7 @@ impl PgItemService {
     /// Increment the version counter for a user's items cache. Returns the new version.
     async fn bump_version(&self, user_id: Uuid) -> Option<i64> {
         let Ok(mut conn) = self.redis.get_multiplexed_async_connection().await else {
+            tracing::warn!(%user_id, "redis unavailable – cannot bump cache version");
             return None;
         };
         let ver_key = format!("items:{user_id}:ver");
@@ -57,6 +61,7 @@ impl PgItemService {
     /// Get the current version counter for a user's items cache.
     async fn get_version(&self, user_id: Uuid) -> Option<i64> {
         let Ok(mut conn) = self.redis.get_multiplexed_async_connection().await else {
+            tracing::warn!(%user_id, "redis unavailable – skipping cache read");
             return None;
         };
         let ver_key = format!("items:{user_id}:ver");
@@ -71,6 +76,7 @@ impl PgItemService {
     /// Try to get a cached list response.
     async fn get_cached_list(&self, cache_key: &str) -> Option<String> {
         let Ok(mut conn) = self.redis.get_multiplexed_async_connection().await else {
+            tracing::warn!(cache_key, "redis unavailable – cache miss by default");
             return None;
         };
         redis::cmd("GET")
@@ -84,6 +90,7 @@ impl PgItemService {
     /// Cache a list response.
     async fn set_cached_list(&self, cache_key: &str, value: &str) {
         let Ok(mut conn) = self.redis.get_multiplexed_async_connection().await else {
+            tracing::warn!(cache_key, "redis unavailable – cannot cache list response");
             return;
         };
         let _: Result<(), _> = redis::cmd("SET")
@@ -178,7 +185,7 @@ impl traits::ItemService for PgItemService {
         // Invalidate list cache
         self.bump_version(user_id).await;
 
-        Ok(ItemResponse::from(&item))
+        Ok(ItemResponse::from(item))
     }
 
     #[tracing::instrument(skip(self))]
@@ -190,7 +197,7 @@ impl traits::ItemService for PgItemService {
             .map_err(AppError::Internal)?
             .ok_or_else(|| AppError::NotFound("item not found".into()))?;
 
-        Ok(ItemResponse::from(&item))
+        Ok(ItemResponse::from(item))
     }
 
     #[tracing::instrument(skip(self))]
@@ -220,6 +227,11 @@ impl traits::ItemService for PgItemService {
             .unwrap_or(DEFAULT_PER_PAGE)
             .clamp(1, MAX_PER_PAGE);
         let page = query.page.unwrap_or(1).max(1);
+        if page > MAX_PAGE {
+            return Err(AppError::BadRequest(format!(
+                "page must be at most {MAX_PAGE}"
+            )));
+        }
         let offset = (page - 1) * per_page;
 
         if let Some(ref s) = query.status
@@ -270,7 +282,7 @@ impl traits::ItemService for PgItemService {
         )?;
 
         let response = ItemsListResponse {
-            items: items.iter().map(ItemResponse::from).collect(),
+            items: items.into_iter().map(ItemResponse::from).collect(),
             total,
             page,
             per_page,
@@ -360,7 +372,7 @@ impl traits::ItemService for PgItemService {
         // Invalidate list cache
         self.bump_version(user_id).await;
 
-        Ok(ItemResponse::from(&item))
+        Ok(ItemResponse::from(item))
     }
 
     #[tracing::instrument(skip(self))]

@@ -84,6 +84,8 @@ async fn create_item_missing_name_422() {
         .unwrap();
 
     let resp = app.router.clone().oneshot(req).await.unwrap();
+    // 422 comes from Axum's Json<T> deserialization rejection, not our AppError,
+    // so the body shape differs from assert_error expectations.
     assert_eq!(resp.status(), StatusCode::UNPROCESSABLE_ENTITY);
 }
 
@@ -580,8 +582,8 @@ async fn update_item_200() {
     let id = item["id"].as_str().unwrap();
     let original_updated_at = item["updated_at"].as_str().unwrap().to_string();
 
-    // Small delay to ensure updated_at changes
-    tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+    // Delay so the DB trigger's NOW() advances past the original timestamp.
+    tokio::time::sleep(std::time::Duration::from_millis(200)).await;
 
     let (status, updated) = app
         .put_json_with_auth(
