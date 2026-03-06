@@ -22,15 +22,18 @@ use tower_http::trace::TraceLayer;
 use rest_api::AppState;
 use rest_api::config::database::{create_pg_pool, create_redis_client};
 use rest_api::handlers::health::health_check;
-use rest_api::handlers::{auth, items};
+use rest_api::handlers::{auth, categories, items};
+use rest_api::repositories::category_repo::PgCategoryRepo;
 use rest_api::repositories::item_repo::PgItemRepo;
 use rest_api::repositories::refresh_token_repo::PgRefreshTokenRepo;
 use rest_api::repositories::user_repo::PgUserRepo;
 use rest_api::services::auth_service::PgAuthService;
+use rest_api::services::category_service::PgCategoryService;
 use rest_api::services::health_check::PgHealthCheck;
 use rest_api::services::item_service::PgItemService;
 use rest_api::traits::{
-    AuthService, HealthCheck, ItemRepo, ItemService, RefreshTokenRepo, UserRepo,
+    AuthService, CategoryRepo, CategoryService, HealthCheck, ItemRepo, ItemService,
+    RefreshTokenRepo, UserRepo,
 };
 use rest_api::utils::jwt::JwtKeys;
 
@@ -80,6 +83,9 @@ impl TestApp {
         let item_repo: Arc<dyn ItemRepo> = Arc::new(PgItemRepo::new(db.clone()));
         let items: Arc<dyn ItemService> =
             Arc::new(PgItemService::new(db.clone(), item_repo, redis.clone()));
+        let category_repo: Arc<dyn CategoryRepo> = Arc::new(PgCategoryRepo::new(db.clone()));
+        let categories: Arc<dyn CategoryService> =
+            Arc::new(PgCategoryService::new(category_repo, redis.clone()));
         let health: Arc<dyn HealthCheck> = Arc::new(PgHealthCheck::new(db.clone(), redis));
 
         let state = AppState {
@@ -87,12 +93,14 @@ impl TestApp {
             jwt,
             health,
             items,
+            categories,
         };
 
         let router = Router::new()
             .route("/health", get(health_check))
             .nest("/auth", auth::router())
             .nest("/items", items::router())
+            .nest("/categories", categories::router())
             .layer(TraceLayer::new_for_http())
             .with_state(state);
 
@@ -308,6 +316,18 @@ impl TestApp {
             status,
             StatusCode::CREATED,
             "precondition failed: create_item should return 201, got {status}: {resp}"
+        );
+        resp
+    }
+
+    /// Create a category for a user, returning the category response body.
+    /// Asserts 201 status.
+    pub async fn create_category(&self, token: &str, body: &Value) -> Value {
+        let (status, resp) = self.post_json_with_auth("/categories", body, token).await;
+        assert_eq!(
+            status,
+            StatusCode::CREATED,
+            "precondition failed: create_category should return 201, got {status}: {resp}"
         );
         resp
     }

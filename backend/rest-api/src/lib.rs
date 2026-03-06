@@ -19,4 +19,5 @@ pub struct AppState {
     pub jwt: Arc<JwtKeys>,
     pub health: Arc<dyn traits::HealthCheck>,
     pub items: Arc<dyn traits::ItemService>,
+    pub categories: Arc<dyn traits::CategoryService>,
 }

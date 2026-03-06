@@ -12,15 +12,18 @@ use rest_api::AppState;
 use rest_api::config::app::Config;
 use rest_api::config::database::{create_pg_pool, create_redis_client};
 use rest_api::handlers::health::{health_check, health_live};
-use rest_api::handlers::{auth, items};
+use rest_api::handlers::{auth, categories, items};
+use rest_api::repositories::category_repo::PgCategoryRepo;
 use rest_api::repositories::item_repo::PgItemRepo;
 use rest_api::repositories::refresh_token_repo::PgRefreshTokenRepo;
 use rest_api::repositories::user_repo::PgUserRepo;
 use rest_api::services::auth_service::PgAuthService;
+use rest_api::services::category_service::PgCategoryService;
 use rest_api::services::health_check::PgHealthCheck;
 use rest_api::services::item_service::PgItemService;
 use rest_api::traits::{
-    AuthService, HealthCheck, ItemRepo, ItemService, RefreshTokenRepo, UserRepo,
+    AuthService, CategoryRepo, CategoryService, HealthCheck, ItemRepo, ItemService,
+    RefreshTokenRepo, UserRepo,
 };
 use rest_api::utils::jwt::JwtKeys;
 
@@ -63,6 +66,9 @@ async fn main() -> anyhow::Result<()> {
     let item_repo: Arc<dyn ItemRepo> = Arc::new(PgItemRepo::new(db.clone()));
     let items: Arc<dyn ItemService> =
         Arc::new(PgItemService::new(db.clone(), item_repo, redis.clone()));
+    let category_repo: Arc<dyn CategoryRepo> = Arc::new(PgCategoryRepo::new(db.clone()));
+    let categories: Arc<dyn CategoryService> =
+        Arc::new(PgCategoryService::new(category_repo, redis.clone()));
     let health: Arc<dyn HealthCheck> = Arc::new(PgHealthCheck::new(db, redis));
 
     let state = AppState {
@@ -70,6 +76,7 @@ async fn main() -> anyhow::Result<()> {
         jwt,
         health,
         items,
+        categories,
     };
 
     let app = Router::new()
@@ -78,6 +85,7 @@ async fn main() -> anyhow::Result<()> {
         .route("/health/ready", get(health_check))
         .nest("/auth", auth::router())
         .nest("/items", items::router())
+        .nest("/categories", categories::router())
         .layer(TraceLayer::new_for_http())
         .with_state(state);
 

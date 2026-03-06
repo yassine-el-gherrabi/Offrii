@@ -4,9 +4,10 @@ use chrono::{DateTime, Utc};
 use uuid::Uuid;
 
 use crate::dto::auth::{AuthResponse, RefreshResponse};
+use crate::dto::categories::CategoryResponse;
 use crate::dto::items::{ItemResponse, ItemsListResponse, ListItemsQuery};
 use crate::errors::AppError;
-use crate::models::{Item, RefreshToken, User};
+use crate::models::{Category, Item, RefreshToken, User};
 
 // ── Repository traits ────────────────────────────────────────────────
 
@@ -41,6 +42,31 @@ pub trait RefreshTokenRepo: Send + Sync {
 #[async_trait]
 pub trait CategoryRepo: Send + Sync {
     async fn copy_defaults_for_user(&self, user_id: Uuid) -> Result<u64>;
+
+    async fn list_by_user(&self, user_id: Uuid) -> Result<Vec<Category>>;
+
+    async fn find_by_id(&self, id: Uuid, user_id: Uuid) -> Result<Option<Category>>;
+
+    async fn create(
+        &self,
+        user_id: Uuid,
+        name: &str,
+        icon: Option<&str>,
+        position: i32,
+    ) -> Result<Category>;
+
+    async fn update(
+        &self,
+        id: Uuid,
+        user_id: Uuid,
+        name: Option<&str>,
+        icon: Option<&str>,
+        position: Option<i32>,
+    ) -> Result<Option<Category>>;
+
+    async fn delete(&self, id: Uuid, user_id: Uuid) -> Result<bool>;
+
+    async fn next_position(&self, user_id: Uuid) -> Result<i32>;
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -147,6 +173,29 @@ pub trait ItemService: Send + Sync {
     ) -> Result<ItemResponse, AppError>;
 
     async fn delete_item(&self, id: Uuid, user_id: Uuid) -> Result<(), AppError>;
+}
+
+#[async_trait]
+pub trait CategoryService: Send + Sync {
+    async fn list_categories(&self, user_id: Uuid) -> Result<Vec<CategoryResponse>, AppError>;
+
+    async fn create_category(
+        &self,
+        user_id: Uuid,
+        name: &str,
+        icon: Option<&str>,
+    ) -> Result<CategoryResponse, AppError>;
+
+    async fn update_category(
+        &self,
+        id: Uuid,
+        user_id: Uuid,
+        name: Option<&str>,
+        icon: Option<&str>,
+        position: Option<i32>,
+    ) -> Result<CategoryResponse, AppError>;
+
+    async fn delete_category(&self, id: Uuid, user_id: Uuid) -> Result<(), AppError>;
 }
 
 // ── Health trait ─────────────────────────────────────────────────────
