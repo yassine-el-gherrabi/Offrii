@@ -12,14 +12,16 @@
 		X-XSS-Protection          "0"
 		Referrer-Policy            "strict-origin-when-cross-origin"
 		Permissions-Policy         "camera=(), microphone=(), geolocation=()"
+		Content-Security-Policy   "default-src 'none'; frame-ancestors 'none'"
 		-Server
 	}
 
 	# CORS (public API for mobile app)
 	header {
-		Access-Control-Allow-Origin   "*"
+		Access-Control-Allow-Origin   "{$CORS_ORIGIN:*}"
 		Access-Control-Allow-Methods  "GET, POST, PUT, PATCH, DELETE, OPTIONS"
 		Access-Control-Allow-Headers  "Authorization, Content-Type, Accept"
+		Access-Control-Expose-Headers "X-Request-Id"
 		Access-Control-Max-Age        "86400"
 	}
 
@@ -49,7 +51,7 @@
 
 	# Reverse proxy to backend
 	reverse_proxy backend:3000 {
-		health_uri      /health
+		health_uri      /health/ready
 		health_interval 30s
 		health_timeout  5s
 	}

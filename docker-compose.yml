@@ -7,8 +7,6 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-offrii}
       POSTGRES_USER: ${POSTGRES_USER:-offrii}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
-    ports:
-      - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
@@ -23,8 +21,6 @@ services:
     image: redis:8-alpine
     container_name: offrii-redis
     restart: unless-stopped
-    ports:
-      - "${REDIS_PORT:-6379}:6379"
     volumes:
       - redis_data:/data
     networks:
@@ -55,11 +51,12 @@ services:
         condition: service_healthy
     networks:
       - offrii-net
+    # DEV ONLY: In production, use Docker Swarm secrets or external secret manager
     volumes:
       - ./jwt-keys/private.pem:/run/secrets/jwt_private_key:ro
       - ./jwt-keys/public.pem:/run/secrets/jwt_public_key:ro
     healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:3000/health || exit 1"]
+      test: ["CMD-SHELL", "curl -sf http://localhost:3000/health/live || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -77,6 +74,7 @@ services:
       - "443:443/udp"
     environment:
       CADDY_SITE_ADDRESS: ${CADDY_SITE_ADDRESS:-http://:80}
+      CORS_ORIGIN: ${CORS_ORIGIN:-*}
     volumes:
       - caddy_data:/data
       - caddy_config:/config
