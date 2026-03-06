@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import * as SecureStore from 'expo-secure-store';
 import * as authApi from '@/src/api/auth';
-import { setTokenGetter } from '@/src/api/client';
+import { setTokenGetter, setRefreshHandlers } from '@/src/api/client';
 import type { UserResponse } from '@/src/types/auth';
 
 const REFRESH_TOKEN_KEY = 'offrii_refresh_token';
@@ -22,6 +22,21 @@ interface AuthState {
 export const useAuthStore = create<AuthState>((set, get) => {
   // Wire token getter to avoid circular imports
   setTokenGetter(() => get().accessToken);
+
+  // Wire refresh handlers for 401 interceptor
+  setRefreshHandlers({
+    getRefreshToken: () => SecureStore.getItemAsync(REFRESH_TOKEN_KEY),
+    onRefreshSuccess: async (accessToken, refreshToken) => {
+      await SecureStore.setItemAsync(REFRESH_TOKEN_KEY, refreshToken);
+      set({ accessToken, isAuthenticated: true });
+    },
+    onRefreshFailure: () => {
+      // Clear state without calling API (we're already in a failed auth state)
+      set({ accessToken: null, user: null, isAuthenticated: false });
+      SecureStore.deleteItemAsync(REFRESH_TOKEN_KEY);
+      SecureStore.deleteItemAsync(USER_DATA_KEY);
+    },
+  });
 
   return {
     accessToken: null,
@@ -44,11 +59,15 @@ export const useAuthStore = create<AuthState>((set, get) => {
     },
 
     logout: async () => {
+      // Call API BEFORE clearing state so the access token is still available
+      try {
+        await authApi.logout();
+      } catch {
+        // Best-effort — don't block logout on API failure
+      }
       set({ accessToken: null, user: null, isAuthenticated: false });
       await SecureStore.deleteItemAsync(REFRESH_TOKEN_KEY);
       await SecureStore.deleteItemAsync(USER_DATA_KEY);
-      // Fire-and-forget — don't block logout on API
-      authApi.logout().catch(() => {});
     },
 
     restoreSession: async () => {

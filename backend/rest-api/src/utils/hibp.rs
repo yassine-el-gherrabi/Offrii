@@ -1,6 +1,15 @@
+use std::sync::LazyLock;
 use std::time::Duration;
 
 use sha1::{Digest, Sha1};
+
+static HTTP_CLIENT: LazyLock<reqwest::Client> = LazyLock::new(|| {
+    reqwest::Client::builder()
+        .timeout(Duration::from_secs(5))
+        .user_agent("offrii-backend/0.1")
+        .build()
+        .expect("Failed to build HTTP client")
+});
 
 /// Check if a password appears in the Have I Been Pwned breached-passwords database
 /// using the k-Anonymity range API.
@@ -13,11 +22,9 @@ pub async fn is_breached(password: &str) -> anyhow::Result<bool> {
 
     let url = format!("https://api.pwnedpasswords.com/range/{prefix}");
 
-    let response = match reqwest::Client::new()
+    let response = match HTTP_CLIENT
         .get(&url)
         .header("Add-Padding", "true")
-        .header("User-Agent", "offrii-backend/0.1")
-        .timeout(Duration::from_secs(5))
         .send()
         .await
     {

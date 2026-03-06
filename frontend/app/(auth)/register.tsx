@@ -1,24 +1,15 @@
 import { useState } from 'react';
-import {
-  View,
-  StyleSheet,
-  KeyboardAvoidingView,
-  ScrollView,
-  Platform,
-} from 'react-native';
-import { TextInput, Button, Text, HelperText } from 'react-native-paper';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { TextInput, Button, HelperText } from 'react-native-paper';
 import { router } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 
 import { useAuthStore } from '@/src/stores/auth';
-import { colors, spacing, borderRadius } from '@/src/theme';
+import { colors } from '@/src/theme';
 import { ApiRequestError } from '@/src/api/client';
 import { ROUTES } from '@/src/constants/routes';
+import { AuthLayout, authStyles } from '@/src/components/auth';
+import { validateEmail, validatePasswordMinLength } from '@/src/utils/validation';
 import PasswordStrengthIndicator from '@/src/components/PasswordStrengthIndicator';
-
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function RegisterScreen() {
   const { t } = useTranslation();
@@ -37,33 +28,19 @@ export default function RegisterScreen() {
   const [displayNameError, setDisplayNameError] = useState('');
   const [apiError, setApiError] = useState('');
 
-  function validateEmail(): boolean {
-    if (!email.trim()) {
-      setEmailError(t('auth.validation.emailRequired'));
-      return false;
-    }
-    if (!EMAIL_REGEX.test(email.trim())) {
-      setEmailError(t('auth.validation.emailInvalid'));
-      return false;
-    }
-    setEmailError('');
-    return true;
+  function handleValidateEmail(): boolean {
+    const error = validateEmail(email, t);
+    setEmailError(error ?? '');
+    return !error;
   }
 
-  function validatePassword(): boolean {
-    if (!password) {
-      setPasswordError(t('auth.validation.passwordRequired'));
-      return false;
-    }
-    if (password.length < 8) {
-      setPasswordError(t('auth.validation.passwordMinLength'));
-      return false;
-    }
-    setPasswordError('');
-    return true;
+  function handleValidatePassword(): boolean {
+    const error = validatePasswordMinLength(password, t);
+    setPasswordError(error ?? '');
+    return !error;
   }
 
-  function validateConfirmPassword(): boolean {
+  function handleValidateConfirmPassword(): boolean {
     if (confirmPassword !== password) {
       setConfirmPasswordError(t('auth.validation.passwordMismatch'));
       return false;
@@ -72,7 +49,7 @@ export default function RegisterScreen() {
     return true;
   }
 
-  function validateDisplayName(): boolean {
+  function handleValidateDisplayName(): boolean {
     if (displayName.length > 100) {
       setDisplayNameError(t('auth.register.displayNameMax'));
       return false;
@@ -83,10 +60,10 @@ export default function RegisterScreen() {
 
   async function handleRegister() {
     setApiError('');
-    const emailValid = validateEmail();
-    const passwordValid = validatePassword();
-    const confirmValid = validateConfirmPassword();
-    const nameValid = validateDisplayName();
+    const emailValid = handleValidateEmail();
+    const passwordValid = handleValidatePassword();
+    const confirmValid = handleValidateConfirmPassword();
+    const nameValid = handleValidateDisplayName();
     if (!emailValid || !passwordValid || !confirmValid || !nameValid) return;
 
     setIsSubmitting(true);
@@ -117,235 +94,127 @@ export default function RegisterScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.safe}>
-      <KeyboardAvoidingView
-        style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    <AuthLayout
+      title={t('auth.register.title')}
+      apiError={apiError}
+      linkText={t('auth.register.hasAccount')}
+      linkAction={t('auth.register.login')}
+      onLinkPress={() => router.push('/(auth)/login')}
+      linkTestID="goto-login"
+    >
+      <TextInput
+        label={t('auth.register.emailLabel')}
+        value={email}
+        onChangeText={(v) => {
+          setEmail(v);
+          if (emailError) setEmailError('');
+        }}
+        onBlur={handleValidateEmail}
+        mode="outlined"
+        keyboardType="email-address"
+        autoCapitalize="none"
+        autoComplete="email"
+        error={!!emailError}
+        outlineColor={colors.inputBorder}
+        activeOutlineColor={colors.primary}
+        style={authStyles.input}
+        outlineStyle={authStyles.inputOutline}
+        testID="email-input"
+      />
+      <HelperText type="error" visible={!!emailError} testID="email-error">
+        {emailError}
+      </HelperText>
+
+      <TextInput
+        label={t('auth.register.passwordLabel')}
+        value={password}
+        onChangeText={(v) => {
+          setPassword(v);
+          if (passwordError) setPasswordError('');
+        }}
+        onBlur={handleValidatePassword}
+        mode="outlined"
+        secureTextEntry={!showPassword}
+        error={!!passwordError}
+        maxLength={128}
+        outlineColor={colors.inputBorder}
+        activeOutlineColor={colors.primary}
+        right={
+          <TextInput.Icon
+            icon={showPassword ? 'eye-off-outline' : 'eye-outline'}
+            onPress={() => setShowPassword(!showPassword)}
+            accessibilityLabel={showPassword ? t('auth.register.hidePassword') : t('auth.register.showPassword')}
+            testID="toggle-password"
+          />
+        }
+        style={authStyles.input}
+        outlineStyle={authStyles.inputOutline}
+        testID="password-input"
+      />
+      {passwordError ? (
+        <HelperText type="error" visible testID="password-error">
+          {passwordError}
+        </HelperText>
+      ) : (
+        <PasswordStrengthIndicator password={password} />
+      )}
+
+      <TextInput
+        label={t('auth.register.confirmPasswordLabel')}
+        value={confirmPassword}
+        onChangeText={(v) => {
+          setConfirmPassword(v);
+          if (confirmPasswordError) setConfirmPasswordError('');
+        }}
+        onBlur={handleValidateConfirmPassword}
+        mode="outlined"
+        secureTextEntry={!showPassword}
+        error={!!confirmPasswordError}
+        maxLength={128}
+        outlineColor={colors.inputBorder}
+        activeOutlineColor={colors.primary}
+        style={authStyles.input}
+        outlineStyle={authStyles.inputOutline}
+        testID="confirm-password-input"
+      />
+      <HelperText type="error" visible={!!confirmPasswordError} testID="confirm-password-error">
+        {confirmPasswordError}
+      </HelperText>
+
+      <TextInput
+        label={t('auth.register.displayNameLabel')}
+        value={displayName}
+        onChangeText={(v) => {
+          setDisplayName(v);
+          if (displayNameError) setDisplayNameError('');
+        }}
+        onBlur={handleValidateDisplayName}
+        mode="outlined"
+        autoCapitalize="words"
+        autoComplete="given-name"
+        error={!!displayNameError}
+        outlineColor={colors.inputBorder}
+        activeOutlineColor={colors.primary}
+        style={authStyles.input}
+        outlineStyle={authStyles.inputOutline}
+        testID="displayname-input"
+      />
+      <HelperText type="error" visible={!!displayNameError} testID="displayname-error">
+        {displayNameError}
+      </HelperText>
+
+      <Button
+        mode="contained"
+        onPress={handleRegister}
+        loading={isSubmitting}
+        disabled={isSubmitting}
+        style={authStyles.button}
+        contentStyle={authStyles.buttonContent}
+        labelStyle={authStyles.buttonLabel}
+        testID="register-button"
       >
-        <ScrollView
-          contentContainerStyle={styles.scroll}
-          keyboardShouldPersistTaps="handled"
-        >
-          {/* Logo */}
-          <View style={styles.logoContainer}>
-            <MaterialCommunityIcons
-              name="gift-outline"
-              size={64}
-              color={colors.primary}
-            />
-          </View>
-
-          {/* Title */}
-          <Text variant="headlineMedium" style={styles.title}>
-            {t('auth.register.title')}
-          </Text>
-
-          {/* API error banner */}
-          {apiError ? (
-            <View style={styles.errorBanner}>
-              <Text style={styles.errorBannerText}>{apiError}</Text>
-            </View>
-          ) : null}
-
-          {/* Email */}
-          <TextInput
-            label={t('auth.register.emailLabel')}
-            value={email}
-            onChangeText={(v) => {
-              setEmail(v);
-              if (emailError) setEmailError('');
-            }}
-            onBlur={validateEmail}
-            mode="outlined"
-            keyboardType="email-address"
-            autoCapitalize="none"
-            autoComplete="email"
-            error={!!emailError}
-            outlineColor={colors.inputBorder}
-            activeOutlineColor={colors.primary}
-            style={styles.input}
-            outlineStyle={styles.inputOutline}
-            testID="email-input"
-          />
-          <HelperText type="error" visible={!!emailError} testID="email-error">
-            {emailError}
-          </HelperText>
-
-          {/* Password */}
-          <TextInput
-            label={t('auth.register.passwordLabel')}
-            value={password}
-            onChangeText={(v) => {
-              setPassword(v);
-              if (passwordError) setPasswordError('');
-            }}
-            onBlur={validatePassword}
-            mode="outlined"
-            secureTextEntry={!showPassword}
-            error={!!passwordError}
-            maxLength={128}
-            outlineColor={colors.inputBorder}
-            activeOutlineColor={colors.primary}
-            right={
-              <TextInput.Icon
-                icon={showPassword ? 'eye-off-outline' : 'eye-outline'}
-                onPress={() => setShowPassword(!showPassword)}
-                accessibilityLabel={showPassword ? t('auth.register.hidePassword') : t('auth.register.showPassword')}
-                testID="toggle-password"
-              />
-            }
-            style={styles.input}
-            outlineStyle={styles.inputOutline}
-            testID="password-input"
-          />
-          {passwordError ? (
-            <HelperText type="error" visible testID="password-error">
-              {passwordError}
-            </HelperText>
-          ) : (
-            <PasswordStrengthIndicator password={password} />
-          )}
-
-          {/* Confirm password */}
-          <TextInput
-            label={t('auth.register.confirmPasswordLabel')}
-            value={confirmPassword}
-            onChangeText={(v) => {
-              setConfirmPassword(v);
-              if (confirmPasswordError) setConfirmPasswordError('');
-            }}
-            onBlur={validateConfirmPassword}
-            mode="outlined"
-            secureTextEntry={!showPassword}
-            error={!!confirmPasswordError}
-            maxLength={128}
-            outlineColor={colors.inputBorder}
-            activeOutlineColor={colors.primary}
-            style={styles.input}
-            outlineStyle={styles.inputOutline}
-            testID="confirm-password-input"
-          />
-          <HelperText type="error" visible={!!confirmPasswordError} testID="confirm-password-error">
-            {confirmPasswordError}
-          </HelperText>
-
-          {/* Display name */}
-          <TextInput
-            label={t('auth.register.displayNameLabel')}
-            value={displayName}
-            onChangeText={(v) => {
-              setDisplayName(v);
-              if (displayNameError) setDisplayNameError('');
-            }}
-            onBlur={validateDisplayName}
-            mode="outlined"
-            autoCapitalize="words"
-            autoComplete="given-name"
-            error={!!displayNameError}
-            outlineColor={colors.inputBorder}
-            activeOutlineColor={colors.primary}
-            style={styles.input}
-            outlineStyle={styles.inputOutline}
-            testID="displayname-input"
-          />
-          <HelperText type="error" visible={!!displayNameError} testID="displayname-error">
-            {displayNameError}
-          </HelperText>
-
-          {/* Submit */}
-          <Button
-            mode="contained"
-            onPress={handleRegister}
-            loading={isSubmitting}
-            disabled={isSubmitting}
-            style={styles.button}
-            contentStyle={styles.buttonContent}
-            labelStyle={styles.buttonLabel}
-            testID="register-button"
-          >
-            {t('auth.register.submit')}
-          </Button>
-
-          {/* Link to login */}
-          <View style={styles.linkRow}>
-            <Text style={styles.linkText}>{t('auth.register.hasAccount')}</Text>
-            <Text
-              style={styles.link}
-              onPress={() => router.push('/(auth)/login')}
-              testID="goto-login"
-            >
-              {t('auth.register.login')}
-            </Text>
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+        {t('auth.register.submit')}
+      </Button>
+    </AuthLayout>
   );
 }
-
-const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  flex: {
-    flex: 1,
-  },
-  scroll: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.xl,
-  },
-  logoContainer: {
-    alignItems: 'center',
-    marginBottom: spacing.md,
-  },
-  title: {
-    textAlign: 'center',
-    fontWeight: '700',
-    color: colors.text,
-    marginBottom: spacing.lg,
-  },
-  errorBanner: {
-    backgroundColor: '#FEE2E2',
-    borderRadius: borderRadius.sm,
-    padding: spacing.md,
-    marginBottom: spacing.md,
-  },
-  errorBannerText: {
-    color: colors.error,
-    textAlign: 'center',
-    fontSize: 14,
-  },
-  input: {
-    backgroundColor: colors.inputBackground,
-  },
-  inputOutline: {
-    borderRadius: borderRadius.sm,
-  },
-  button: {
-    marginTop: spacing.sm,
-    borderRadius: borderRadius.sm,
-    backgroundColor: colors.primary,
-  },
-  buttonContent: {
-    paddingVertical: spacing.sm,
-  },
-  buttonLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  linkRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginTop: spacing.lg,
-  },
-  linkText: {
-    color: colors.textSecondary,
-  },
-  link: {
-    color: colors.primary,
-    fontWeight: '600',
-  },
-});
