@@ -1,5 +1,9 @@
 use std::sync::Arc;
 
+/// Non-breached password that passes OWASP policy checks, shared across all test modules.
+#[allow(dead_code)]
+pub const TEST_PASSWORD: &str = "Str0ng!P@ssw0rd#2026x";
+
 use axum::Router;
 use axum::body::Body;
 use axum::http::{Request, StatusCode, header};
@@ -17,13 +21,17 @@ use tower_http::trace::TraceLayer;
 
 use rest_api::AppState;
 use rest_api::config::database::{create_pg_pool, create_redis_client};
-use rest_api::handlers::auth;
 use rest_api::handlers::health::health_check;
+use rest_api::handlers::{auth, items};
+use rest_api::repositories::item_repo::PgItemRepo;
 use rest_api::repositories::refresh_token_repo::PgRefreshTokenRepo;
 use rest_api::repositories::user_repo::PgUserRepo;
 use rest_api::services::auth_service::PgAuthService;
 use rest_api::services::health_check::PgHealthCheck;
-use rest_api::traits::{AuthService, HealthCheck, RefreshTokenRepo, UserRepo};
+use rest_api::services::item_service::PgItemService;
+use rest_api::traits::{
+    AuthService, HealthCheck, ItemRepo, ItemService, RefreshTokenRepo, UserRepo,
+};
 use rest_api::utils::jwt::JwtKeys;
 
 #[allow(dead_code)]
@@ -69,13 +77,22 @@ impl TestApp {
             refresh_token_repo,
             jwt.clone(),
         ));
+        let item_repo: Arc<dyn ItemRepo> = Arc::new(PgItemRepo::new(db.clone()));
+        let items: Arc<dyn ItemService> =
+            Arc::new(PgItemService::new(db.clone(), item_repo, redis.clone()));
         let health: Arc<dyn HealthCheck> = Arc::new(PgHealthCheck::new(db.clone(), redis));
 
-        let state = AppState { auth, jwt, health };
+        let state = AppState {
+            auth,
+            jwt,
+            health,
+            items,
+        };
 
         let router = Router::new()
             .route("/health", get(health_check))
             .nest("/auth", auth::router())
+            .nest("/items", items::router())
             .layer(TraceLayer::new_for_http())
             .with_state(state);
 
@@ -200,6 +217,108 @@ impl TestApp {
             "display_name": display_name,
         });
         self.post_json("/auth/register", &body).await
+    }
+
+    pub async fn get_with_auth(&self, uri: &str, token: &str) -> (StatusCode, Value) {
+        let req = Request::builder()
+            .method("GET")
+            .uri(uri)
+            .header(header::AUTHORIZATION, format!("Bearer {token}"))
+            .body(Body::empty())
+            .unwrap();
+
+        let resp = self.router.clone().oneshot(req).await.unwrap();
+        let status = resp.status();
+        let bytes = resp.into_body().collect().await.unwrap().to_bytes();
+
+        if bytes.is_empty() {
+            (status, Value::Null)
+        } else {
+            (status, serde_json::from_slice(&bytes).unwrap())
+        }
+    }
+
+    pub async fn put_json_with_auth(
+        &self,
+        uri: &str,
+        body: &Value,
+        token: &str,
+    ) -> (StatusCode, Value) {
+        let req = Request::builder()
+            .method("PUT")
+            .uri(uri)
+            .header(header::CONTENT_TYPE, "application/json")
+            .header(header::AUTHORIZATION, format!("Bearer {token}"))
+            .body(Body::from(serde_json::to_vec(body).unwrap()))
+            .unwrap();
+
+        let resp = self.router.clone().oneshot(req).await.unwrap();
+        let status = resp.status();
+        let bytes = resp.into_body().collect().await.unwrap().to_bytes();
+
+        if bytes.is_empty() {
+            (status, Value::Null)
+        } else {
+            (status, serde_json::from_slice(&bytes).unwrap())
+        }
+    }
+
+    pub async fn delete_with_auth(&self, uri: &str, token: &str) -> (StatusCode, Value) {
+        let req = Request::builder()
+            .method("DELETE")
+            .uri(uri)
+            .header(header::AUTHORIZATION, format!("Bearer {token}"))
+            .body(Body::empty())
+            .unwrap();
+
+        let resp = self.router.clone().oneshot(req).await.unwrap();
+        let status = resp.status();
+        let bytes = resp.into_body().collect().await.unwrap().to_bytes();
+
+        if bytes.is_empty() {
+            (status, Value::Null)
+        } else {
+            (status, serde_json::from_slice(&bytes).unwrap())
+        }
+    }
+
+    pub async fn get_no_auth(&self, uri: &str) -> (StatusCode, Value) {
+        let req = Request::builder()
+            .method("GET")
+            .uri(uri)
+            .body(Body::empty())
+            .unwrap();
+
+        let resp = self.router.clone().oneshot(req).await.unwrap();
+        let status = resp.status();
+        let bytes = resp.into_body().collect().await.unwrap().to_bytes();
+
+        if bytes.is_empty() {
+            (status, Value::Null)
+        } else {
+            (status, serde_json::from_slice(&bytes).unwrap())
+        }
+    }
+
+    /// Create an item for a user, returning the item response body.
+    /// Asserts 201 status.
+    pub async fn create_item(&self, token: &str, body: &Value) -> Value {
+        let (status, resp) = self.post_json_with_auth("/items", body, token).await;
+        assert_eq!(
+            status,
+            StatusCode::CREATED,
+            "precondition failed: create_item should return 201, got {status}: {resp}"
+        );
+        resp
+    }
+
+    /// Register a user and return the access token.
+    pub async fn setup_user_token(&self, email: &str, password: &str) -> String {
+        let body = self.setup_user(email, password).await;
+        body["tokens"]["access_token"]
+            .as_str()
+            .expect("access_token should be a string")
+            .to_string()
     }
 
     pub async fn post_raw(

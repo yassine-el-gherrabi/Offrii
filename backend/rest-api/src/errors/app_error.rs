@@ -18,6 +18,9 @@ pub enum AppError {
 
     #[error("bad request: {0}")]
     BadRequest(String),
+
+    #[error("not found: {0}")]
+    NotFound(String),
 }
 
 impl IntoResponse for AppError {
@@ -39,6 +42,7 @@ impl IntoResponse for AppError {
             AppError::Unauthorized(msg) => (StatusCode::UNAUTHORIZED, "UNAUTHORIZED", msg.clone()),
             AppError::Conflict(msg) => (StatusCode::CONFLICT, "CONFLICT", msg.clone()),
             AppError::BadRequest(msg) => (StatusCode::BAD_REQUEST, "BAD_REQUEST", msg.clone()),
+            AppError::NotFound(msg) => (StatusCode::NOT_FOUND, "NOT_FOUND", msg.clone()),
         };
 
         let body = json!({

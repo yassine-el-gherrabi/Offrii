@@ -18,4 +18,5 @@ pub struct AppState {
     pub auth: Arc<dyn traits::AuthService>,
     pub jwt: Arc<JwtKeys>,
     pub health: Arc<dyn traits::HealthCheck>,
+    pub items: Arc<dyn traits::ItemService>,
 }

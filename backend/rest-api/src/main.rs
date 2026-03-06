@@ -11,13 +11,17 @@ use tracing_subscriber::util::SubscriberInitExt as _;
 use rest_api::AppState;
 use rest_api::config::app::Config;
 use rest_api::config::database::{create_pg_pool, create_redis_client};
-use rest_api::handlers::auth;
 use rest_api::handlers::health::{health_check, health_live};
+use rest_api::handlers::{auth, items};
+use rest_api::repositories::item_repo::PgItemRepo;
 use rest_api::repositories::refresh_token_repo::PgRefreshTokenRepo;
 use rest_api::repositories::user_repo::PgUserRepo;
 use rest_api::services::auth_service::PgAuthService;
 use rest_api::services::health_check::PgHealthCheck;
-use rest_api::traits::{AuthService, HealthCheck, RefreshTokenRepo, UserRepo};
+use rest_api::services::item_service::PgItemService;
+use rest_api::traits::{
+    AuthService, HealthCheck, ItemRepo, ItemService, RefreshTokenRepo, UserRepo,
+};
 use rest_api::utils::jwt::JwtKeys;
 
 #[tokio::main]
@@ -56,15 +60,24 @@ async fn main() -> anyhow::Result<()> {
         refresh_token_repo,
         jwt.clone(),
     ));
+    let item_repo: Arc<dyn ItemRepo> = Arc::new(PgItemRepo::new(db.clone()));
+    let items: Arc<dyn ItemService> =
+        Arc::new(PgItemService::new(db.clone(), item_repo, redis.clone()));
     let health: Arc<dyn HealthCheck> = Arc::new(PgHealthCheck::new(db, redis));
 
-    let state = AppState { auth, jwt, health };
+    let state = AppState {
+        auth,
+        jwt,
+        health,
+        items,
+    };
 
     let app = Router::new()
         .route("/health", get(health_check))
         .route("/health/live", get(health_live))
         .route("/health/ready", get(health_check))
         .nest("/auth", auth::router())
+        .nest("/items", items::router())
         .layer(TraceLayer::new_for_http())
         .with_state(state);
 

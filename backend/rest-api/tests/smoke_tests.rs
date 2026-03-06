@@ -176,3 +176,144 @@ async fn smoke_full_auth_flow() {
 
     assert_eq!(resp.status(), 204, "logout should return 204 No Content");
 }
+
+#[tokio::test]
+async fn smoke_full_items_crud_flow() {
+    let app = SmokeTestApp::new().await;
+    let password = common::TEST_PASSWORD;
+
+    // ── Step 0: Register and get access token ───────────────────
+    let resp = app
+        .client
+        .post(app.url("/auth/register"))
+        .json(&serde_json::json!({
+            "email": "items-smoke@example.com",
+            "password": password,
+        }))
+        .send()
+        .await
+        .expect("register failed");
+    assert_eq!(resp.status(), 201);
+    let reg: serde_json::Value = resp.json().await.unwrap();
+    let token = reg["tokens"]["access_token"].as_str().unwrap();
+
+    // ── Step 1: List items (empty) ──────────────────────────────
+    let resp = app
+        .client
+        .get(app.url("/items"))
+        .bearer_auth(token)
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), 200);
+    let list: serde_json::Value = resp.json().await.unwrap();
+    assert_eq!(list["total"], 0);
+    assert_eq!(list["items"].as_array().unwrap().len(), 0);
+
+    // ── Step 2: Create item (quick capture) ─────────────────────
+    let resp = app
+        .client
+        .post(app.url("/items"))
+        .bearer_auth(token)
+        .json(&serde_json::json!({ "name": "Smoke item" }))
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), 201);
+    let item: serde_json::Value = resp.json().await.unwrap();
+    let item_id = item["id"].as_str().expect("item id should be a string");
+    assert_eq!(item["name"], "Smoke item");
+    assert_eq!(item["status"], "active");
+    assert_eq!(item["priority"], 2); // default
+
+    // ── Step 3: Get item by id ──────────────────────────────────
+    let resp = app
+        .client
+        .get(app.url(&format!("/items/{item_id}")))
+        .bearer_auth(token)
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), 200);
+    let fetched: serde_json::Value = resp.json().await.unwrap();
+    assert_eq!(fetched["id"], item_id);
+    assert_eq!(fetched["name"], "Smoke item");
+
+    // ── Step 4: Update item ─────────────────────────────────────
+    let resp = app
+        .client
+        .put(app.url(&format!("/items/{item_id}")))
+        .bearer_auth(token)
+        .json(&serde_json::json!({
+            "name": "Updated smoke item",
+            "priority": 1,
+        }))
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), 200);
+    let updated: serde_json::Value = resp.json().await.unwrap();
+    assert_eq!(updated["name"], "Updated smoke item");
+    assert_eq!(updated["priority"], 1);
+
+    // ── Step 5: Mark purchased ──────────────────────────────────
+    let resp = app
+        .client
+        .put(app.url(&format!("/items/{item_id}")))
+        .bearer_auth(token)
+        .json(&serde_json::json!({ "status": "purchased" }))
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), 200);
+    let purchased: serde_json::Value = resp.json().await.unwrap();
+    assert_eq!(purchased["status"], "purchased");
+    assert!(
+        purchased["purchased_at"].is_string(),
+        "purchased_at should be set"
+    );
+
+    // ── Step 6: List with status filter ─────────────────────────
+    let resp = app
+        .client
+        .get(app.url("/items?status=purchased"))
+        .bearer_auth(token)
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), 200);
+    let list: serde_json::Value = resp.json().await.unwrap();
+    assert_eq!(list["total"], 1);
+    assert_eq!(list["items"][0]["id"], item_id);
+
+    // ── Step 7: Delete item (soft-delete) ───────────────────────
+    let resp = app
+        .client
+        .delete(app.url(&format!("/items/{item_id}")))
+        .bearer_auth(token)
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), 204);
+
+    // ── Step 8: Verify deleted — not in list, not gettable ──────
+    let resp = app
+        .client
+        .get(app.url("/items"))
+        .bearer_auth(token)
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), 200);
+    let list: serde_json::Value = resp.json().await.unwrap();
+    assert_eq!(list["total"], 0);
+
+    let resp = app
+        .client
+        .get(app.url(&format!("/items/{item_id}")))
+        .bearer_auth(token)
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), 404);
+}
