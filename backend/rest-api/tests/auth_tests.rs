@@ -2,11 +2,7 @@ mod common;
 
 use axum::http::StatusCode;
 
-use common::{TestApp, assert_error};
-
-/// Test password unlikely to appear in HIBP breach database.
-/// Using a random string avoids flaky CI failures when HIBP API is reachable.
-const TEST_PASSWORD: &str = "xK9mQ2vL7nB4pR8sW3";
+use common::{TEST_PASSWORD, TestApp, assert_error};
 
 /// Default test email. Each test gets its own container so no collision risk.
 const TEST_EMAIL: &str = "test@example.com";
