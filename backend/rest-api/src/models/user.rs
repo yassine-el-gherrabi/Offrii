@@ -10,6 +10,9 @@ pub struct User {
     pub display_name: Option<String>,
     pub reminder_freq: String,
     pub reminder_time: NaiveTime,
+    pub timezone: String,
+    pub utc_reminder_hour: i16,
+    pub locale: String,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }

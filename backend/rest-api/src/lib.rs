@@ -2,6 +2,7 @@ pub mod config;
 pub mod dto;
 pub mod errors;
 pub mod handlers;
+pub mod jobs;
 pub mod middleware;
 pub mod models;
 pub mod repositories;
@@ -20,4 +21,6 @@ pub struct AppState {
     pub health: Arc<dyn traits::HealthCheck>,
     pub items: Arc<dyn traits::ItemService>,
     pub categories: Arc<dyn traits::CategoryService>,
+    pub users: Arc<dyn traits::UserService>,
+    pub push_tokens: Arc<dyn traits::PushTokenService>,
 }

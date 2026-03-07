@@ -1,5 +1,6 @@
 use anyhow::Result;
 use async_trait::async_trait;
+use chrono::{DateTime, Utc};
 use rust_decimal::Decimal;
 use sqlx::{PgExecutor, PgPool, QueryBuilder, Row};
 use uuid::Uuid;
@@ -113,6 +114,14 @@ impl traits::ItemRepo for PgItemRepo {
 
     async fn soft_delete(&self, id: Uuid, user_id: Uuid) -> Result<bool> {
         soft_delete(&self.pool, id, user_id).await
+    }
+
+    async fn find_active_older_than(
+        &self,
+        user_id: Uuid,
+        cutoff: DateTime<Utc>,
+    ) -> Result<Vec<Item>> {
+        find_active_older_than(&self.pool, user_id, cutoff).await
     }
 }
 
@@ -325,4 +334,22 @@ pub(crate) async fn soft_delete(
     .await?;
 
     Ok(result.rows_affected() > 0)
+}
+
+pub(crate) async fn find_active_older_than(
+    exec: impl PgExecutor<'_>,
+    user_id: Uuid,
+    cutoff: DateTime<Utc>,
+) -> Result<Vec<Item>> {
+    let sql = format!(
+        "SELECT {ITEM_COLS} FROM items \
+         WHERE user_id = $1 AND status = 'active' AND created_at < $2"
+    );
+    let items = sqlx::query_as::<_, Item>(&sql)
+        .bind(user_id)
+        .bind(cutoff)
+        .fetch_all(exec)
+        .await?;
+
+    Ok(items)
 }
