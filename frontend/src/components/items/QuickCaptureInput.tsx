@@ -60,7 +60,7 @@ export function QuickCaptureInput({ onSubmit, isSubmitting }: QuickCaptureInputP
     try {
       await onSubmit(trimmed);
       setText('');
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
       playSuccessAnimation();
     } catch {
       // Error handled by parent

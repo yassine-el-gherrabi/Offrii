@@ -47,13 +47,18 @@ describe('ageColor', () => {
 });
 
 describe('formatRelativeDate', () => {
-  it('formats today as 0j', () => {
+  it('formats today as 0j by default', () => {
     const today = new Date().toISOString();
     expect(formatRelativeDate(today)).toBe('0j');
   });
 
-  it('formats with j suffix', () => {
+  it('formats with j suffix by default', () => {
     const fiveDaysAgo = new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString();
     expect(formatRelativeDate(fiveDaysAgo)).toBe('5j');
+  });
+
+  it('accepts a custom suffix', () => {
+    const today = new Date().toISOString();
+    expect(formatRelativeDate(today, 'd')).toBe('0d');
   });
 });

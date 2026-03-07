@@ -33,7 +33,7 @@ export function SwipeableRow({ onSwipeLeft, onSwipeRight, children }: SwipeableR
   );
 
   const handleSwipeOpen = (direction: 'left' | 'right') => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
     swipeableRef.current?.close();
     if (direction === 'right') onSwipeRight();
     else onSwipeLeft();

@@ -69,6 +69,7 @@ export default function CaptureScreen() {
         priority,
         description: notes || undefined,
       });
+      setErrorMessage('');
       resetDetails();
     } catch {
       setErrorMessage(t('capture.errors.saveFailed'));
@@ -250,7 +251,7 @@ export default function CaptureScreen() {
         visible={!!errorMessage}
         onDismiss={() => setErrorMessage('')}
         duration={3000}
-        action={{ label: 'OK', onPress: () => setErrorMessage('') }}
+        action={{ label: t('common.ok'), onPress: () => setErrorMessage('') }}
       >
         {errorMessage}
       </Snackbar>

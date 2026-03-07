@@ -50,6 +50,7 @@ export default function ListScreen() {
   const setSortOrder = useItemStore((s) => s.setSortOrder);
   const deleteItem = useItemStore((s) => s.deleteItem);
   const markPurchased = useItemStore((s) => s.markPurchased);
+  const clearError = useItemStore((s) => s.clearError);
 
   const categories = useCategoryStore((s) => s.categories);
   const fetchCategories = useCategoryStore((s) => s.fetchCategories);
@@ -238,7 +239,7 @@ export default function ListScreen() {
 
       <Snackbar
         visible={!!snackMessage}
-        onDismiss={() => setSnackMessage('')}
+        onDismiss={() => { setSnackMessage(''); clearError(); }}
         duration={3000}
       >
         {snackMessage}

@@ -19,7 +19,7 @@ export function AgeBadge({ createdAt, size = 'small' }: AgeBadgeProps) {
     <View testID="age-badge" style={styles.container}>
       <View style={[styles.badge, { backgroundColor: color }]}>
         <Text style={styles.badgeText} testID="age-badge-text">
-          {formatRelativeDate(createdAt)}
+          {formatRelativeDate(createdAt, t('dates.daySuffix'))}
         </Text>
       </View>
       {size === 'medium' && (

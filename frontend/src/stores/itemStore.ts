@@ -33,6 +33,7 @@ interface ItemState {
   deleteItem: (id: string) => Promise<void>;
   markPurchased: (id: string) => Promise<void>;
 
+  clearError: () => void;
   setStatusFilter: (s: ItemStatus) => void;
   setCategoryFilter: (id: string | null) => void;
   setSortField: (f: SortField) => void;
@@ -107,12 +108,12 @@ export const useItemStore = create<ItemState>((set, get) => ({
         page: nextPage,
         per_page: perPage,
       });
-      set({
-        items: [...items, ...result.items],
+      set((state) => ({
+        items: [...state.items, ...result.items],
         total: result.total,
         page: nextPage,
         isLoading: false,
-      });
+      }));
     } catch (e) {
       const message = e instanceof Error ? e.message : 'Failed to load more items';
       set({ error: message, isLoading: false });
@@ -162,11 +163,15 @@ export const useItemStore = create<ItemState>((set, get) => ({
     try {
       await itemsApi.deleteItem(id);
     } catch (e) {
-      // Revert on failure — append to current list (position may have changed)
+      // Revert on failure — append only if not already back (e.g. via concurrent refresh)
       const message = e instanceof Error ? e.message : 'Failed to delete item';
       set((state) => ({
-        items: [...state.items, removed],
-        total: state.total + 1,
+        items: state.items.some((item) => item.id === removed.id)
+          ? state.items
+          : [...state.items, removed],
+        total: state.items.some((item) => item.id === removed.id)
+          ? state.total
+          : state.total + 1,
         error: message,
       }));
       throw e;
@@ -199,6 +204,7 @@ export const useItemStore = create<ItemState>((set, get) => ({
     }
   },
 
+  clearError: () => set({ error: null }),
   setStatusFilter: (s) => {
     set({ statusFilter: s });
     void get().fetchItems();
