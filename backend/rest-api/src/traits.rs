@@ -1,13 +1,15 @@
 use anyhow::Result;
 use async_trait::async_trait;
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, NaiveTime, Utc};
 use uuid::Uuid;
 
 use crate::dto::auth::{AuthResponse, RefreshResponse};
 use crate::dto::categories::CategoryResponse;
 use crate::dto::items::{ItemResponse, ItemsListResponse, ListItemsQuery};
+use crate::dto::push_tokens::PushTokenResponse;
+use crate::dto::users::UserProfileResponse;
 use crate::errors::AppError;
-use crate::models::{Category, Item, RefreshToken, User};
+use crate::models::{Category, Item, PushToken, RefreshToken, User};
 
 // ── Repository traits ────────────────────────────────────────────────
 
@@ -21,6 +23,24 @@ pub trait UserRepo: Send + Sync {
     ) -> Result<User>;
 
     async fn find_by_email(&self, email: &str) -> Result<Option<User>>;
+
+    async fn find_by_id(&self, id: Uuid) -> Result<Option<User>>;
+
+    #[allow(clippy::too_many_arguments)]
+    async fn update_profile(
+        &self,
+        id: Uuid,
+        display_name: Option<&str>,
+        reminder_freq: Option<&str>,
+        reminder_time: Option<NaiveTime>,
+        timezone: Option<&str>,
+        utc_reminder_hour: Option<i16>,
+        locale: Option<&str>,
+    ) -> Result<Option<User>>;
+
+    async fn delete_user(&self, id: Uuid) -> Result<bool>;
+
+    async fn find_eligible_for_reminder(&self, utc_hour: i16) -> Result<Vec<User>>;
 }
 
 #[async_trait]
@@ -109,9 +129,24 @@ pub trait ItemRepo: Send + Sync {
     ) -> Result<Option<Item>>;
 
     async fn soft_delete(&self, id: Uuid, user_id: Uuid) -> Result<bool>;
+
+    async fn find_active_older_than(
+        &self,
+        user_id: Uuid,
+        cutoff: DateTime<Utc>,
+    ) -> Result<Vec<Item>>;
 }
 
-// ── Service trait ────────────────────────────────────────────────────
+#[async_trait]
+pub trait PushTokenRepo: Send + Sync {
+    async fn upsert(&self, user_id: Uuid, token: &str, platform: &str) -> Result<PushToken>;
+
+    async fn delete_by_token(&self, user_id: Uuid, token: &str) -> Result<bool>;
+
+    async fn find_by_user(&self, user_id: Uuid) -> Result<Vec<PushToken>>;
+}
+
+// ── Service traits ──────────────────────────────────────────────────
 
 #[async_trait]
 pub trait AuthService: Send + Sync {
@@ -188,6 +223,36 @@ pub trait CategoryService: Send + Sync {
     ) -> Result<CategoryResponse, AppError>;
 
     async fn delete_category(&self, id: Uuid, user_id: Uuid) -> Result<(), AppError>;
+}
+
+#[async_trait]
+pub trait UserService: Send + Sync {
+    async fn get_profile(&self, user_id: Uuid) -> Result<UserProfileResponse, AppError>;
+
+    async fn update_profile(
+        &self,
+        user_id: Uuid,
+        req: &crate::dto::users::UpdateProfileRequest,
+    ) -> Result<UserProfileResponse, AppError>;
+
+    async fn delete_account(&self, user_id: Uuid) -> Result<(), AppError>;
+}
+
+#[async_trait]
+pub trait PushTokenService: Send + Sync {
+    async fn register_token(
+        &self,
+        user_id: Uuid,
+        token: &str,
+        platform: &str,
+    ) -> Result<PushTokenResponse, AppError>;
+
+    async fn unregister_token(&self, user_id: Uuid, token: &str) -> Result<(), AppError>;
+}
+
+#[async_trait]
+pub trait ReminderService: Send + Sync {
+    async fn execute_hourly_tick(&self);
 }
 
 // ── Health trait ─────────────────────────────────────────────────────

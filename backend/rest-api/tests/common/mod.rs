@@ -22,18 +22,21 @@ use tower_http::trace::TraceLayer;
 use rest_api::AppState;
 use rest_api::config::database::{create_pg_pool, create_redis_client};
 use rest_api::handlers::health::health_check;
-use rest_api::handlers::{auth, categories, items};
+use rest_api::handlers::{auth, categories, items, push_tokens, users};
 use rest_api::repositories::category_repo::PgCategoryRepo;
 use rest_api::repositories::item_repo::PgItemRepo;
+use rest_api::repositories::push_token_repo::PgPushTokenRepo;
 use rest_api::repositories::refresh_token_repo::PgRefreshTokenRepo;
 use rest_api::repositories::user_repo::PgUserRepo;
 use rest_api::services::auth_service::PgAuthService;
 use rest_api::services::category_service::PgCategoryService;
 use rest_api::services::health_check::PgHealthCheck;
 use rest_api::services::item_service::PgItemService;
+use rest_api::services::push_token_service::PgPushTokenService;
+use rest_api::services::user_service::PgUserService;
 use rest_api::traits::{
-    AuthService, CategoryRepo, CategoryService, HealthCheck, ItemRepo, ItemService,
-    RefreshTokenRepo, UserRepo,
+    AuthService, CategoryRepo, CategoryService, HealthCheck, ItemRepo, ItemService, PushTokenRepo,
+    PushTokenService, RefreshTokenRepo, UserRepo, UserService,
 };
 use rest_api::utils::jwt::JwtKeys;
 
@@ -69,14 +72,14 @@ impl TestApp {
         let redis = create_redis_client(&redis_url).unwrap();
         let jwt = Arc::new(JwtKeys::generate().unwrap());
 
-        // Wire DI
+        // Wire DI — clone user_repo before it's consumed by auth
         let user_repo: Arc<dyn UserRepo> = Arc::new(PgUserRepo::new(db.clone()));
         let refresh_token_repo: Arc<dyn RefreshTokenRepo> =
             Arc::new(PgRefreshTokenRepo::new(db.clone()));
 
         let auth: Arc<dyn AuthService> = Arc::new(PgAuthService::new(
             db.clone(),
-            user_repo,
+            user_repo.clone(),
             refresh_token_repo,
             jwt.clone(),
         ));
@@ -86,7 +89,13 @@ impl TestApp {
         let category_repo: Arc<dyn CategoryRepo> = Arc::new(PgCategoryRepo::new(db.clone()));
         let categories: Arc<dyn CategoryService> =
             Arc::new(PgCategoryService::new(category_repo, redis.clone()));
-        let health: Arc<dyn HealthCheck> = Arc::new(PgHealthCheck::new(db.clone(), redis));
+        let health: Arc<dyn HealthCheck> = Arc::new(PgHealthCheck::new(db.clone(), redis.clone()));
+
+        // New services
+        let push_token_repo: Arc<dyn PushTokenRepo> = Arc::new(PgPushTokenRepo::new(db.clone()));
+        let user_svc: Arc<dyn UserService> = Arc::new(PgUserService::new(user_repo));
+        let push_token_svc: Arc<dyn PushTokenService> =
+            Arc::new(PgPushTokenService::new(push_token_repo));
 
         let state = AppState {
             auth,
@@ -94,6 +103,8 @@ impl TestApp {
             health,
             items,
             categories,
+            users: user_svc,
+            push_tokens: push_token_svc,
         };
 
         let router = Router::new()
@@ -101,6 +112,8 @@ impl TestApp {
             .nest("/auth", auth::router())
             .nest("/items", items::router())
             .nest("/categories", categories::router())
+            .nest("/users", users::router())
+            .nest("/push-tokens", push_tokens::router())
             .layer(TraceLayer::new_for_http())
             .with_state(state);
 
@@ -254,6 +267,31 @@ impl TestApp {
     ) -> (StatusCode, Value) {
         let req = Request::builder()
             .method("PUT")
+            .uri(uri)
+            .header(header::CONTENT_TYPE, "application/json")
+            .header(header::AUTHORIZATION, format!("Bearer {token}"))
+            .body(Body::from(serde_json::to_vec(body).unwrap()))
+            .unwrap();
+
+        let resp = self.router.clone().oneshot(req).await.unwrap();
+        let status = resp.status();
+        let bytes = resp.into_body().collect().await.unwrap().to_bytes();
+
+        if bytes.is_empty() {
+            (status, Value::Null)
+        } else {
+            (status, serde_json::from_slice(&bytes).unwrap())
+        }
+    }
+
+    pub async fn patch_json_with_auth(
+        &self,
+        uri: &str,
+        body: &Value,
+        token: &str,
+    ) -> (StatusCode, Value) {
+        let req = Request::builder()
+            .method("PATCH")
             .uri(uri)
             .header(header::CONTENT_TYPE, "application/json")
             .header(header::AUTHORIZATION, format!("Bearer {token}"))

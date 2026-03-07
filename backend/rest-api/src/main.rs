@@ -3,6 +3,7 @@ use std::sync::Arc;
 use axum::Router;
 use axum::routing::get;
 use tokio::net::TcpListener;
+use tokio_cron_scheduler::{Job, JobScheduler};
 use tower_http::trace::TraceLayer;
 use tracing_subscriber::EnvFilter;
 use tracing_subscriber::layer::SubscriberExt as _;
@@ -12,18 +13,22 @@ use rest_api::AppState;
 use rest_api::config::app::Config;
 use rest_api::config::database::{create_pg_pool, create_redis_client};
 use rest_api::handlers::health::{health_check, health_live};
-use rest_api::handlers::{auth, categories, items};
+use rest_api::handlers::{auth, categories, items, push_tokens, users};
 use rest_api::repositories::category_repo::PgCategoryRepo;
 use rest_api::repositories::item_repo::PgItemRepo;
+use rest_api::repositories::push_token_repo::PgPushTokenRepo;
 use rest_api::repositories::refresh_token_repo::PgRefreshTokenRepo;
 use rest_api::repositories::user_repo::PgUserRepo;
 use rest_api::services::auth_service::PgAuthService;
 use rest_api::services::category_service::PgCategoryService;
 use rest_api::services::health_check::PgHealthCheck;
 use rest_api::services::item_service::PgItemService;
+use rest_api::services::push_token_service::PgPushTokenService;
+use rest_api::services::reminder_service::PgReminderService;
+use rest_api::services::user_service::PgUserService;
 use rest_api::traits::{
-    AuthService, CategoryRepo, CategoryService, HealthCheck, ItemRepo, ItemService,
-    RefreshTokenRepo, UserRepo,
+    AuthService, CategoryRepo, CategoryService, HealthCheck, ItemRepo, ItemService, PushTokenRepo,
+    PushTokenService, RefreshTokenRepo, ReminderService, UserRepo, UserService,
 };
 use rest_api::utils::jwt::JwtKeys;
 
@@ -52,24 +57,42 @@ async fn main() -> anyhow::Result<()> {
     let redis = create_redis_client(&config.redis_url)?;
     let jwt = Arc::new(JwtKeys::from_env()?);
 
-    // Wire DI
+    // Wire DI — clone user_repo before it's consumed by auth
     let user_repo: Arc<dyn UserRepo> = Arc::new(PgUserRepo::new(db.clone()));
     let refresh_token_repo: Arc<dyn RefreshTokenRepo> =
         Arc::new(PgRefreshTokenRepo::new(db.clone()));
 
     let auth: Arc<dyn AuthService> = Arc::new(PgAuthService::new(
         db.clone(),
-        user_repo,
+        user_repo.clone(),
         refresh_token_repo,
         jwt.clone(),
     ));
     let item_repo: Arc<dyn ItemRepo> = Arc::new(PgItemRepo::new(db.clone()));
-    let items: Arc<dyn ItemService> =
-        Arc::new(PgItemService::new(db.clone(), item_repo, redis.clone()));
+    let items: Arc<dyn ItemService> = Arc::new(PgItemService::new(
+        db.clone(),
+        item_repo.clone(),
+        redis.clone(),
+    ));
     let category_repo: Arc<dyn CategoryRepo> = Arc::new(PgCategoryRepo::new(db.clone()));
     let categories: Arc<dyn CategoryService> =
         Arc::new(PgCategoryService::new(category_repo, redis.clone()));
-    let health: Arc<dyn HealthCheck> = Arc::new(PgHealthCheck::new(db, redis));
+    let health: Arc<dyn HealthCheck> = Arc::new(PgHealthCheck::new(db.clone(), redis.clone()));
+
+    // New services
+    let push_token_repo: Arc<dyn PushTokenRepo> = Arc::new(PgPushTokenRepo::new(db.clone()));
+    let user_svc: Arc<dyn UserService> = Arc::new(PgUserService::new(user_repo.clone()));
+    let push_token_svc: Arc<dyn PushTokenService> =
+        Arc::new(PgPushTokenService::new(push_token_repo.clone()));
+
+    // Reminder service (not in AppState — used only by the CRON job)
+    let reminder_svc: Arc<dyn ReminderService> = Arc::new(PgReminderService::new(
+        user_repo,
+        item_repo,
+        push_token_repo,
+        redis.clone(),
+        reqwest::Client::new(),
+    ));
 
     let state = AppState {
         auth,
@@ -77,6 +100,8 @@ async fn main() -> anyhow::Result<()> {
         health,
         items,
         categories,
+        users: user_svc,
+        push_tokens: push_token_svc,
     };
 
     let app = Router::new()
@@ -86,8 +111,24 @@ async fn main() -> anyhow::Result<()> {
         .nest("/auth", auth::router())
         .nest("/items", items::router())
         .nest("/categories", categories::router())
+        .nest("/users", users::router())
+        .nest("/push-tokens", push_tokens::router())
         .layer(TraceLayer::new_for_http())
         .with_state(state);
+
+    // CRON scheduler: run reminder job every hour at minute 0
+    let sched = JobScheduler::new().await?;
+    let reminder_redis = redis;
+    sched
+        .add(Job::new_async("0 0 * * * *", move |_, _| {
+            let svc = reminder_svc.clone();
+            let r = reminder_redis.clone();
+            Box::pin(async move {
+                rest_api::jobs::reminder_job::run(svc, r).await;
+            })
+        })?)
+        .await?;
+    sched.start().await?;
 
     let addr = format!("0.0.0.0:{}", config.api_port);
     let listener = TcpListener::bind(&addr).await?;

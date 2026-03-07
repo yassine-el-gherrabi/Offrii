@@ -204,7 +204,7 @@ async fn migration_001_creates_users_table() {
     let mdb = MigrationDb::new().await;
 
     assert!(mdb.table_exists("users").await);
-    assert_eq!(mdb.column_count("users").await, 8);
+    assert_eq!(mdb.column_count("users").await, 11);
 
     // Column types & nullability
     mdb.assert_not_null("users", "id").await;
@@ -213,6 +213,9 @@ async fn migration_001_creates_users_table() {
     mdb.assert_nullable("users", "display_name").await;
     mdb.assert_not_null("users", "reminder_freq").await;
     mdb.assert_not_null("users", "reminder_time").await;
+    mdb.assert_not_null("users", "timezone").await;
+    mdb.assert_not_null("users", "utc_reminder_hour").await;
+    mdb.assert_not_null("users", "locale").await;
     mdb.assert_not_null("users", "created_at").await;
     mdb.assert_not_null("users", "updated_at").await;
 
@@ -652,13 +655,13 @@ async fn check_constraints_reject_invalid_data() {
     // -- users: invalid reminder_freq ----------------------------------------
     let result = sqlx::query(
         "INSERT INTO users (email, password_hash, reminder_freq)
-         VALUES ('bad_freq@test.com', 'hash', 'never')",
+         VALUES ('bad_freq@test.com', 'hash', 'hourly')",
     )
     .execute(&mdb.db)
     .await;
     assert!(
         result.is_err(),
-        "reminder_freq='never' should violate CHECK constraint"
+        "reminder_freq='hourly' should violate CHECK constraint"
     );
 
     // -- items: invalid priority (0) -----------------------------------------
