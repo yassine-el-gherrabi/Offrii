@@ -129,6 +129,17 @@ pub(crate) async fn update_profile(
     utc_reminder_hour: Option<i16>,
     locale: Option<&str>,
 ) -> Result<Option<User>> {
+    // If nothing to update, short-circuit with a SELECT instead of invalid SQL
+    if display_name.is_none()
+        && reminder_freq.is_none()
+        && reminder_time.is_none()
+        && timezone.is_none()
+        && utc_reminder_hour.is_none()
+        && locale.is_none()
+    {
+        return find_by_id(exec, id).await;
+    }
+
     let mut qb: QueryBuilder<'_, sqlx::Postgres> = QueryBuilder::new("UPDATE users SET ");
     let mut separated = qb.separated(", ");
 

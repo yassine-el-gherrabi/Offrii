@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
-use chrono::{TimeDelta, Utc};
+use chrono::{TimeDelta, Timelike, Utc};
 use redis::AsyncCommands;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -157,12 +157,14 @@ impl PgReminderService {
         let tokens = match self.push_token_repo.find_by_user(user_id).await {
             Ok(t) => t,
             Err(e) => {
+                let _: Result<(), _> = conn.del(&redis_key).await;
                 tracing::error!(user_id = %user_id, error = %e, "failed to fetch push tokens");
                 return;
             }
         };
 
         if tokens.is_empty() {
+            let _: Result<(), _> = conn.del(&redis_key).await;
             tracing::debug!(user_id = %user_id, "no push tokens registered");
             return;
         }
@@ -259,8 +261,6 @@ impl traits::ReminderService for PgReminderService {
         tracing::info!(hour = current_hour, "reminder tick completed");
     }
 }
-
-use chrono::Timelike;
 
 #[cfg(test)]
 mod tests {
