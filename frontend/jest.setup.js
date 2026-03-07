@@ -43,3 +43,24 @@ jest.mock('expo-localization', () => ({
   getLocales: () => [{ languageCode: 'fr' }],
   getCalendars: () => [{}],
 }));
+
+// Mock expo-haptics
+jest.mock('expo-haptics', () => ({
+  notificationAsync: jest.fn(),
+  impactAsync: jest.fn(),
+  NotificationFeedbackType: { Success: 'success', Warning: 'warning', Error: 'error' },
+  ImpactFeedbackStyle: { Light: 'light', Medium: 'medium', Heavy: 'heavy' },
+}));
+
+// Mock react-native-gesture-handler
+jest.mock('react-native-gesture-handler', () => {
+  const { View } = require('react-native');
+  return {
+    Swipeable: View,
+    GestureHandlerRootView: View,
+    PanGestureHandler: View,
+    TapGestureHandler: View,
+    State: {},
+    Directions: {},
+  };
+});
