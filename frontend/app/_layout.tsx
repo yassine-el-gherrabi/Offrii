@@ -30,7 +30,7 @@ export default function RootLayout() {
 
   useEffect(() => {
     const subscription = setupNotificationResponseListener(router);
-    handleInitialNotification(router);
+    void handleInitialNotification(router).catch(() => {});
     return () => subscription.remove();
   }, [router]);
 

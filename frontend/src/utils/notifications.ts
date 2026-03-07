@@ -29,6 +29,11 @@ export async function registerForPushNotifications(): Promise<void> {
   if (finalStatus !== 'granted') return;
 
   const projectId = Constants.expoConfig?.extra?.eas?.projectId;
+  if (!projectId) {
+    console.warn('[notifications] Expo projectId is missing; skipping push token registration.');
+    return;
+  }
+
   const { data: token } = await Notifications.getExpoPushTokenAsync({
     projectId,
   });
@@ -40,6 +45,9 @@ export async function registerForPushNotifications(): Promise<void> {
       sound: 'default',
     });
   }
+
+  const storedToken = await SecureStore.getItemAsync(PUSH_TOKEN_KEY);
+  if (storedToken === token) return;
 
   await pushTokensApi.registerPushToken(token, Platform.OS);
   await SecureStore.setItemAsync(PUSH_TOKEN_KEY, token);
@@ -55,11 +63,10 @@ export async function unregisterPushNotifications(): Promise<void> {
 
   try {
     await pushTokensApi.unregisterPushToken(token);
+    await SecureStore.deleteItemAsync(PUSH_TOKEN_KEY);
   } catch {
-    // Best-effort — don't block logout on API failure
+    // Best-effort — keep local token for retry if backend call fails
   }
-
-  await SecureStore.deleteItemAsync(PUSH_TOKEN_KEY);
 }
 
 /**
