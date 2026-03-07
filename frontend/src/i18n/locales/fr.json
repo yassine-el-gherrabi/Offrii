@@ -51,10 +51,88 @@
     "profile": "Profil"
   },
   "capture": {
-    "title": "Capturer une offre"
+    "title": "Capturer une offre",
+    "placeholder": "Qu'est-ce qui te fait envie ?",
+    "addDetails": "+ Détails",
+    "hideDetails": "- Détails",
+    "priceLabel": "Prix estimé",
+    "urlLabel": "URL / Lien",
+    "categoryLabel": "Catégorie",
+    "priorityLabel": "Priorité",
+    "notesLabel": "Notes / Description",
+    "submit": "Enregistrer",
+    "success": "Ajouté !",
+    "priority": {
+      "low": "Basse",
+      "medium": "Moyenne",
+      "high": "Haute"
+    },
+    "errors": {
+      "nameRequired": "Le nom est requis",
+      "saveFailed": "Impossible d'enregistrer"
+    }
   },
   "list": {
-    "title": "Mes offres"
+    "title": "Mes offres",
+    "backTitle": "Retour",
+    "active": "Actifs",
+    "purchased": "Achetés",
+    "sortBy": "Trier par",
+    "sort": {
+      "name": "Nom",
+      "created_at": "Date de création",
+      "updated_at": "Dernière modification",
+      "priority": "Priorité"
+    },
+    "allCategories": "Toutes",
+    "empty": {
+      "activeTitle": "Aucun article",
+      "activeSubtitle": "Capture ta première offre !",
+      "purchasedTitle": "Aucun article acheté"
+    },
+    "swipe": {
+      "purchased": "Acheté",
+      "delete": "Supprimer"
+    },
+    "deleteConfirm": {
+      "title": "Supprimer cet article ?",
+      "message": "Cette action est irréversible.",
+      "cancel": "Annuler",
+      "confirm": "Supprimer"
+    },
+    "errors": {
+      "loadFailed": "Impossible de charger les articles",
+      "deleteFailed": "Impossible de supprimer",
+      "purchaseFailed": "Impossible de marquer comme acheté"
+    }
+  },
+  "detail": {
+    "title": "Détail de l'article",
+    "nameLabel": "Nom",
+    "priceLabel": "Prix estimé",
+    "urlLabel": "URL / Lien",
+    "openUrl": "Ouvrir",
+    "categoryLabel": "Catégorie",
+    "priorityLabel": "Priorité",
+    "notesLabel": "Notes / Description",
+    "since": "depuis {{count}} jours",
+    "markPurchased": "Marquer comme acheté",
+    "markActive": "Réactiver",
+    "delete": "Supprimer",
+    "save": "Enregistrer",
+    "saved": "Enregistré !",
+    "errors": {
+      "notFound": "Article introuvable",
+      "saveFailed": "Impossible d'enregistrer",
+      "statusFailed": "Impossible de changer le statut",
+      "deleteFailed": "Impossible de supprimer",
+      "invalidUrl": "Impossible d'ouvrir ce lien"
+    }
+  },
+  "common": {
+    "retry": "Réessayer",
+    "loading": "Chargement...",
+    "back": "Retour"
   },
   "profile": {
     "title": "Profil",

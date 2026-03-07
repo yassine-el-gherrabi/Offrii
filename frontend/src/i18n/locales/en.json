@@ -51,10 +51,88 @@
     "profile": "Profile"
   },
   "capture": {
-    "title": "Capture an offer"
+    "title": "Capture an offer",
+    "placeholder": "What catches your eye?",
+    "addDetails": "+ Details",
+    "hideDetails": "- Details",
+    "priceLabel": "Estimated price",
+    "urlLabel": "URL / Link",
+    "categoryLabel": "Category",
+    "priorityLabel": "Priority",
+    "notesLabel": "Notes / Description",
+    "submit": "Save",
+    "success": "Added!",
+    "priority": {
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High"
+    },
+    "errors": {
+      "nameRequired": "Name is required",
+      "saveFailed": "Unable to save"
+    }
   },
   "list": {
-    "title": "My offers"
+    "title": "My offers",
+    "backTitle": "Back",
+    "active": "Active",
+    "purchased": "Purchased",
+    "sortBy": "Sort by",
+    "sort": {
+      "name": "Name",
+      "created_at": "Date created",
+      "updated_at": "Last modified",
+      "priority": "Priority"
+    },
+    "allCategories": "All",
+    "empty": {
+      "activeTitle": "No items",
+      "activeSubtitle": "Capture your first offer!",
+      "purchasedTitle": "No purchased items"
+    },
+    "swipe": {
+      "purchased": "Purchased",
+      "delete": "Delete"
+    },
+    "deleteConfirm": {
+      "title": "Delete this item?",
+      "message": "This action cannot be undone.",
+      "cancel": "Cancel",
+      "confirm": "Delete"
+    },
+    "errors": {
+      "loadFailed": "Unable to load items",
+      "deleteFailed": "Unable to delete",
+      "purchaseFailed": "Unable to mark as purchased"
+    }
+  },
+  "detail": {
+    "title": "Item detail",
+    "nameLabel": "Name",
+    "priceLabel": "Estimated price",
+    "urlLabel": "URL / Link",
+    "openUrl": "Open",
+    "categoryLabel": "Category",
+    "priorityLabel": "Priority",
+    "notesLabel": "Notes / Description",
+    "since": "for {{count}} days",
+    "markPurchased": "Mark as purchased",
+    "markActive": "Reactivate",
+    "delete": "Delete",
+    "save": "Save",
+    "saved": "Saved!",
+    "errors": {
+      "notFound": "Item not found",
+      "saveFailed": "Unable to save",
+      "statusFailed": "Unable to change status",
+      "deleteFailed": "Unable to delete",
+      "invalidUrl": "Unable to open this link"
+    }
+  },
+  "common": {
+    "retry": "Retry",
+    "loading": "Loading...",
+    "back": "Back"
   },
   "profile": {
     "title": "Profile",

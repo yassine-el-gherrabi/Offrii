@@ -20,7 +20,7 @@ export default function TabLayout() {
         options={{
           title: t('tabs.capture'),
           tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="camera-plus" size={size} color={color} />
+            <MaterialCommunityIcons name="lightning-bolt" size={size} color={color} />
           ),
         }}
       />
