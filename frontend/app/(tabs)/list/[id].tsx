@@ -70,7 +70,8 @@ export default function ItemDetailScreen() {
         if (cancelled) return;
         setItem(data);
         setName(data.name);
-        setPrice(data.estimated_price ? parseFloat(data.estimated_price).toString() : '');
+        const parsed = data.estimated_price ? parseFloat(data.estimated_price) : NaN;
+        setPrice(!isNaN(parsed) ? parsed.toString() : '');
         setUrl(data.url ?? '');
         setSelectedCategoryId(data.category_id);
         setPriority(data.priority as ItemPriority);

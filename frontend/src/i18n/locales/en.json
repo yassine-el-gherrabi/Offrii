@@ -129,7 +129,11 @@
       "invalidUrl": "Unable to open this link"
     }
   },
+  "dates": {
+    "daySuffix": "d"
+  },
   "common": {
+    "ok": "OK",
     "retry": "Retry",
     "loading": "Loading...",
     "back": "Back"

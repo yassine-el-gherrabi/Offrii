@@ -13,6 +13,6 @@ export function ageColor(days: number): string {
   return colors.ageOld;
 }
 
-export function formatRelativeDate(isoDate: string): string {
-  return `${daysAgo(isoDate)}j`;
+export function formatRelativeDate(isoDate: string, suffix = 'j'): string {
+  return `${daysAgo(isoDate)}${suffix}`;
 }
