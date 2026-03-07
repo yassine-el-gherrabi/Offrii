@@ -1,4 +1,5 @@
 use std::sync::{Arc, LazyLock};
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use anyhow::Result;
 use async_trait::async_trait;
@@ -12,7 +13,7 @@ use crate::models::User;
 use crate::repositories::{category_repo, refresh_token_repo, user_repo};
 use crate::traits;
 use crate::utils::hash;
-use crate::utils::jwt::{JwtKeys, REFRESH_TOKEN_TTL_SECS};
+use crate::utils::jwt::{ACCESS_TOKEN_TTL_SECS, JwtKeys, REFRESH_TOKEN_TTL_SECS};
 use crate::utils::password_policy::{self, PasswordPolicyViolation};
 use crate::utils::token_hash::sha256_hex;
 
@@ -27,14 +28,14 @@ static DUMMY_HASH: LazyLock<String> = LazyLock::new(|| {
     hash::hash_password("timing-safe-dummy").expect("failed to generate dummy hash")
 });
 
-fn generate_token_pair(jwt: &JwtKeys, user_id: Uuid) -> Result<TokenPair> {
-    let access_token = jwt.generate_access_token(user_id)?;
-    let refresh_token = jwt.generate_refresh_token(user_id)?;
+fn generate_token_pair(jwt: &JwtKeys, user_id: Uuid, token_version: i32) -> Result<TokenPair> {
+    let access_token = jwt.generate_access_token(user_id, token_version)?;
+    let refresh_token = jwt.generate_refresh_token(user_id, token_version)?;
     Ok(TokenPair {
         access_token,
         refresh_token,
         token_type: "Bearer",
-        expires_in: crate::utils::jwt::ACCESS_TOKEN_TTL_SECS,
+        expires_in: ACCESS_TOKEN_TTL_SECS,
     })
 }
 
@@ -50,6 +51,7 @@ pub struct PgAuthService {
     user_repo: Arc<dyn traits::UserRepo>,
     refresh_token_repo: Arc<dyn traits::RefreshTokenRepo>,
     jwt: Arc<JwtKeys>,
+    redis: redis::Client,
 }
 
 /// Check if a sqlx database error is a unique-constraint violation (PG code 23505).
@@ -68,12 +70,14 @@ impl PgAuthService {
         user_repo: Arc<dyn traits::UserRepo>,
         refresh_token_repo: Arc<dyn traits::RefreshTokenRepo>,
         jwt: Arc<JwtKeys>,
+        redis: redis::Client,
     ) -> Self {
         Self {
             pool,
             user_repo,
             refresh_token_repo,
             jwt,
+            redis,
         }
     }
 }
@@ -131,7 +135,8 @@ impl traits::AuthService for PgAuthService {
             .await
             .map_err(AppError::Internal)?;
 
-        let tokens = generate_token_pair(&self.jwt, user.id).map_err(AppError::Internal)?;
+        let tokens = generate_token_pair(&self.jwt, user.id, user.token_version)
+            .map_err(AppError::Internal)?;
         let refresh_hash = sha256_hex(&tokens.refresh_token);
 
         refresh_token_repo::insert(&mut *tx, user.id, &refresh_hash, refresh_expires_at())
@@ -179,7 +184,8 @@ impl traits::AuthService for PgAuthService {
             _ => return Err(invalid_credentials()),
         };
 
-        let tokens = generate_token_pair(&self.jwt, user.id).map_err(AppError::Internal)?;
+        let tokens = generate_token_pair(&self.jwt, user.id, user.token_version)
+            .map_err(AppError::Internal)?;
         let refresh_hash = sha256_hex(&tokens.refresh_token);
 
         self.refresh_token_repo
@@ -211,6 +217,18 @@ impl traits::AuthService for PgAuthService {
             .parse()
             .map_err(|_| AppError::Unauthorized("invalid token subject".into()))?;
 
+        // Fetch user for current token_version (defense-in-depth)
+        let user = self
+            .user_repo
+            .find_by_id(user_id)
+            .await
+            .map_err(AppError::Internal)?
+            .ok_or_else(|| AppError::Unauthorized("user not found".into()))?;
+
+        if claims.token_version < user.token_version {
+            return Err(AppError::Unauthorized("token version revoked".into()));
+        }
+
         let old_hash = sha256_hex(raw_refresh_token);
 
         let mut tx = self
@@ -230,7 +248,8 @@ impl traits::AuthService for PgAuthService {
             ));
         }
 
-        let tokens = generate_token_pair(&self.jwt, user_id).map_err(AppError::Internal)?;
+        let tokens = generate_token_pair(&self.jwt, user_id, user.token_version)
+            .map_err(AppError::Internal)?;
         let new_hash = sha256_hex(&tokens.refresh_token);
 
         refresh_token_repo::insert(&mut *tx, user_id, &new_hash, refresh_expires_at())
@@ -245,7 +264,65 @@ impl traits::AuthService for PgAuthService {
     }
 
     #[tracing::instrument(skip(self))]
-    async fn logout(&self, user_id: Uuid) -> Result<(), AppError> {
+    async fn logout(&self, user_id: Uuid, jti: &str, token_exp: usize) -> Result<(), AppError> {
+        // 1. Revoke all refresh tokens (existing behaviour)
+        self.refresh_token_repo
+            .revoke_all_for_user(user_id)
+            .await
+            .map_err(AppError::Internal)?;
+
+        // 2. Blacklist the access-token JTI in Redis for its remaining TTL
+        let now = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_secs() as usize;
+        let remaining_ttl = token_exp
+            .saturating_sub(now)
+            .min(ACCESS_TOKEN_TTL_SECS as usize);
+
+        if remaining_ttl > 0 {
+            if let Ok(mut conn) = self.redis.get_multiplexed_async_connection().await {
+                let key = format!("blacklist:{jti}");
+                let _: Result<(), _> = redis::cmd("SET")
+                    .arg(&key)
+                    .arg("1")
+                    .arg("EX")
+                    .arg(remaining_ttl)
+                    .arg("NX")
+                    .query_async(&mut conn)
+                    .await;
+            } else {
+                tracing::warn!("redis unavailable – skipping JTI blacklist on logout");
+            }
+        }
+
+        Ok(())
+    }
+
+    #[tracing::instrument(skip(self))]
+    async fn invalidate_all_tokens(&self, user_id: Uuid) -> Result<(), AppError> {
+        // 1. Bump token_version in DB
+        let new_version = self
+            .user_repo
+            .increment_token_version(user_id)
+            .await
+            .map_err(AppError::Internal)?;
+
+        // 2. Broadcast new version via Redis (fail-open)
+        if let Ok(mut conn) = self.redis.get_multiplexed_async_connection().await {
+            let key = format!("tkver:{user_id}");
+            let _: Result<(), _> = redis::cmd("SET")
+                .arg(&key)
+                .arg(new_version)
+                .arg("EX")
+                .arg(ACCESS_TOKEN_TTL_SECS)
+                .query_async(&mut conn)
+                .await;
+        } else {
+            tracing::warn!("redis unavailable – skipping tkver broadcast");
+        }
+
+        // 3. Revoke all refresh tokens
         self.refresh_token_repo
             .revoke_all_for_user(user_id)
             .await

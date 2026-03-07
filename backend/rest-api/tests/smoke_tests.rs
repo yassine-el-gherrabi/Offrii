@@ -175,6 +175,21 @@ async fn smoke_full_auth_flow() {
         .expect("logout request failed");
 
     assert_eq!(resp.status(), 204, "logout should return 204 No Content");
+
+    // ── Step 5: Blacklisted token rejected ─────────────────────
+    let resp = app
+        .client
+        .get(app.url("/categories"))
+        .header("Authorization", format!("Bearer {refreshed_access}"))
+        .send()
+        .await
+        .expect("post-logout request failed");
+
+    assert_eq!(
+        resp.status(),
+        401,
+        "access token should be rejected after logout"
+    );
 }
 
 #[tokio::test]

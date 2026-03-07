@@ -10,7 +10,8 @@ use crate::traits;
 /// Shared column list for all user queries (avoids duplication).
 const USER_COLS: &str = "id, email, password_hash, display_name, \
                          reminder_freq, reminder_time, timezone, \
-                         utc_reminder_hour, locale, created_at, updated_at";
+                         utc_reminder_hour, locale, token_version, \
+                         created_at, updated_at";
 
 // ── Concrete implementation ──────────────────────────────────────────
 
@@ -72,6 +73,10 @@ impl traits::UserRepo for PgUserRepo {
 
     async fn find_eligible_for_reminder(&self, utc_hour: i16) -> Result<Vec<User>> {
         find_eligible_for_reminder(&self.pool, utc_hour).await
+    }
+
+    async fn increment_token_version(&self, id: Uuid) -> Result<i32> {
+        increment_token_version(&self.pool, id).await
     }
 }
 
@@ -202,4 +207,16 @@ pub(crate) async fn find_eligible_for_reminder(
         .await?;
 
     Ok(users)
+}
+
+pub(crate) async fn increment_token_version(exec: impl PgExecutor<'_>, id: Uuid) -> Result<i32> {
+    let row: (i32,) = sqlx::query_as(
+        "UPDATE users SET token_version = token_version + 1 \
+         WHERE id = $1 RETURNING token_version",
+    )
+    .bind(id)
+    .fetch_one(exec)
+    .await?;
+
+    Ok(row.0)
 }

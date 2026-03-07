@@ -547,3 +547,230 @@ async fn logout_with_lowercase_bearer_204() {
 
     assert_eq!(status, StatusCode::NO_CONTENT);
 }
+
+// ---------------------------------------------------------------------------
+// JTI Blacklist (access token revocation on logout)
+// ---------------------------------------------------------------------------
+
+#[tokio::test]
+async fn logout_blacklists_access_token_401() {
+    let app = TestApp::new().await;
+    let reg = app.setup_user(TEST_EMAIL, TEST_PASSWORD).await;
+    let access = reg["tokens"]["access_token"].as_str().unwrap();
+
+    // Logout — should blacklist the JTI
+    let (status, _) = app.post_with_auth("/auth/logout", access).await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+
+    // Using the same access token should now fail with "token has been revoked"
+    let (status, body) = app.get_with_auth("/categories", access).await;
+    assert_eq!(status, StatusCode::UNAUTHORIZED);
+    assert_error(&body, "UNAUTHORIZED");
+    assert_eq!(
+        body["error"]["message"].as_str().unwrap(),
+        "token has been revoked",
+    );
+}
+
+#[tokio::test]
+async fn logout_only_blacklists_own_token() {
+    let app = TestApp::new().await;
+    app.setup_user(TEST_EMAIL, TEST_PASSWORD).await;
+
+    let login_body = serde_json::json!({
+        "email": TEST_EMAIL,
+        "password": TEST_PASSWORD,
+    });
+
+    // Create two sessions
+    let (_, s1) = app.post_json("/auth/login", &login_body).await;
+    let (_, s2) = app.post_json("/auth/login", &login_body).await;
+
+    let access_a = s1["tokens"]["access_token"].as_str().unwrap();
+    let access_b = s2["tokens"]["access_token"].as_str().unwrap().to_string();
+
+    // Logout session A
+    let (status, _) = app.post_with_auth("/auth/logout", access_a).await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+
+    // Session A access token should be rejected
+    let (status, _) = app.get_with_auth("/categories", access_a).await;
+    assert_eq!(status, StatusCode::UNAUTHORIZED);
+
+    // Session B access token should still work
+    let (status, _) = app.get_with_auth("/categories", &access_b).await;
+    assert_eq!(status, StatusCode::OK);
+}
+
+#[tokio::test]
+async fn double_logout_second_attempt_401() {
+    let app = TestApp::new().await;
+    let reg = app.setup_user(TEST_EMAIL, TEST_PASSWORD).await;
+    let access = reg["tokens"]["access_token"].as_str().unwrap();
+
+    // First logout succeeds
+    let (status, _) = app.post_with_auth("/auth/logout", access).await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+
+    // Second logout with same token should fail — JTI is blacklisted
+    let (status, body) = app.post_with_auth("/auth/logout", access).await;
+    assert_eq!(status, StatusCode::UNAUTHORIZED);
+    assert_error(&body, "UNAUTHORIZED");
+    assert_eq!(
+        body["error"]["message"].as_str().unwrap(),
+        "token has been revoked",
+    );
+}
+
+#[tokio::test]
+async fn logout_blacklists_token_across_endpoints() {
+    let app = TestApp::new().await;
+    let reg = app.setup_user(TEST_EMAIL, TEST_PASSWORD).await;
+    let access = reg["tokens"]["access_token"].as_str().unwrap();
+
+    let (status, _) = app.post_with_auth("/auth/logout", access).await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+
+    // Blacklisted token should be rejected on every protected endpoint
+    let (status, _) = app.get_with_auth("/categories", access).await;
+    assert_eq!(status, StatusCode::UNAUTHORIZED);
+
+    let (status, _) = app.get_with_auth("/items", access).await;
+    assert_eq!(status, StatusCode::UNAUTHORIZED);
+
+    let (status, _) = app.get_with_auth("/users/me", access).await;
+    assert_eq!(status, StatusCode::UNAUTHORIZED);
+}
+
+// ---------------------------------------------------------------------------
+// Token versioning (mass revocation)
+// ---------------------------------------------------------------------------
+
+#[tokio::test]
+async fn token_version_bump_rejects_refresh_with_stale_version() {
+    let app = TestApp::new().await;
+    let reg = app.setup_user(TEST_EMAIL, TEST_PASSWORD).await;
+    let refresh = reg["tokens"]["refresh_token"].as_str().unwrap().to_string();
+
+    // Bump token_version in DB (simulates invalidate_all_tokens)
+    sqlx::query("UPDATE users SET token_version = token_version + 1 WHERE email = $1")
+        .bind(TEST_EMAIL)
+        .execute(&app.db)
+        .await
+        .unwrap();
+
+    // Refresh with old token_version (1) should fail — DB is now at 2
+    let body = serde_json::json!({ "refresh_token": refresh });
+    let (status, resp) = app.post_json("/auth/refresh", &body).await;
+    assert_eq!(status, StatusCode::UNAUTHORIZED);
+    assert_error(&resp, "UNAUTHORIZED");
+    assert_eq!(
+        resp["error"]["message"].as_str().unwrap(),
+        "token version revoked",
+    );
+}
+
+#[tokio::test]
+async fn token_version_bump_rejects_access_via_redis() {
+    let app = TestApp::new().await;
+    let reg = app.setup_user(TEST_EMAIL, TEST_PASSWORD).await;
+    let access = reg["tokens"]["access_token"].as_str().unwrap();
+    let user_id = reg["user"]["id"].as_str().unwrap();
+
+    // Simulate invalidate_all_tokens: bump DB + set Redis tkver key
+    sqlx::query("UPDATE users SET token_version = token_version + 1 WHERE email = $1")
+        .bind(TEST_EMAIL)
+        .execute(&app.db)
+        .await
+        .unwrap();
+
+    let mut conn = app.redis.get_multiplexed_async_connection().await.unwrap();
+    let key = format!("tkver:{user_id}");
+    redis::cmd("SET")
+        .arg(&key)
+        .arg(2)
+        .arg("EX")
+        .arg(900)
+        .query_async::<()>(&mut conn)
+        .await
+        .unwrap();
+
+    // Access token was issued with version=1, Redis says version=2 → rejected
+    let (status, body) = app.get_with_auth("/categories", access).await;
+    assert_eq!(status, StatusCode::UNAUTHORIZED);
+    assert_error(&body, "UNAUTHORIZED");
+    assert_eq!(
+        body["error"]["message"].as_str().unwrap(),
+        "token version revoked",
+    );
+}
+
+#[tokio::test]
+async fn new_login_after_version_bump_succeeds() {
+    let app = TestApp::new().await;
+    app.setup_user(TEST_EMAIL, TEST_PASSWORD).await;
+
+    // Bump token_version
+    sqlx::query("UPDATE users SET token_version = token_version + 1 WHERE email = $1")
+        .bind(TEST_EMAIL)
+        .execute(&app.db)
+        .await
+        .unwrap();
+
+    // New login should succeed and issue tokens with new version
+    let login_body = serde_json::json!({
+        "email": TEST_EMAIL,
+        "password": TEST_PASSWORD,
+    });
+    let (status, resp) = app.post_json("/auth/login", &login_body).await;
+    assert_eq!(status, StatusCode::OK);
+
+    // New access token should work
+    let new_access = resp["tokens"]["access_token"].as_str().unwrap();
+    let (status, _) = app.get_with_auth("/categories", new_access).await;
+    assert_eq!(status, StatusCode::OK);
+
+    // New refresh token should work
+    let new_refresh = resp["tokens"]["refresh_token"].as_str().unwrap();
+    let body = serde_json::json!({ "refresh_token": new_refresh });
+    let (status, _) = app.post_json("/auth/refresh", &body).await;
+    assert_eq!(status, StatusCode::OK);
+}
+
+#[tokio::test]
+async fn version_bump_does_not_affect_other_users() {
+    let app = TestApp::new().await;
+
+    // User A
+    let reg_a = app.setup_user("alice@example.com", TEST_PASSWORD).await;
+
+    // User B
+    let reg_b = app.setup_user("bob@example.com", TEST_PASSWORD).await;
+    let access_b = reg_b["tokens"]["access_token"]
+        .as_str()
+        .unwrap()
+        .to_string();
+
+    // Bump only user A's token_version
+    sqlx::query("UPDATE users SET token_version = token_version + 1 WHERE email = $1")
+        .bind("alice@example.com")
+        .execute(&app.db)
+        .await
+        .unwrap();
+
+    // User B should be unaffected
+    let (status, _) = app.get_with_auth("/categories", &access_b).await;
+    assert_eq!(status, StatusCode::OK);
+
+    // User A's refresh should fail (stale version)
+    let refresh_a = reg_a["tokens"]["refresh_token"].as_str().unwrap();
+    let body = serde_json::json!({ "refresh_token": refresh_a });
+    let (status, _) = app.post_json("/auth/refresh", &body).await;
+    assert_eq!(status, StatusCode::UNAUTHORIZED);
+
+    // User B's refresh should still work
+    let refresh_b = reg_b["tokens"]["refresh_token"].as_str().unwrap();
+    let body = serde_json::json!({ "refresh_token": refresh_b });
+    let (status, _) = app.post_json("/auth/refresh", &body).await;
+    assert_eq!(status, StatusCode::OK);
+}

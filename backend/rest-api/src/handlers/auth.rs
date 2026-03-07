@@ -68,7 +68,10 @@ async fn logout(
     State(state): State<AppState>,
     auth_user: AuthUser,
 ) -> Result<StatusCode, AppError> {
-    state.auth.logout(auth_user.user_id).await?;
+    state
+        .auth
+        .logout(auth_user.user_id, &auth_user.jti, auth_user.exp)
+        .await?;
 
     Ok(StatusCode::NO_CONTENT)
 }

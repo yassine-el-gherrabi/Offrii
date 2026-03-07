@@ -204,7 +204,7 @@ async fn migration_001_creates_users_table() {
     let mdb = MigrationDb::new().await;
 
     assert!(mdb.table_exists("users").await);
-    assert_eq!(mdb.column_count("users").await, 11);
+    assert_eq!(mdb.column_count("users").await, 12);
 
     // Column types & nullability
     mdb.assert_not_null("users", "id").await;
@@ -216,6 +216,7 @@ async fn migration_001_creates_users_table() {
     mdb.assert_not_null("users", "timezone").await;
     mdb.assert_not_null("users", "utc_reminder_hour").await;
     mdb.assert_not_null("users", "locale").await;
+    mdb.assert_not_null("users", "token_version").await;
     mdb.assert_not_null("users", "created_at").await;
     mdb.assert_not_null("users", "updated_at").await;
 
