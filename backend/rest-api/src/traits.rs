@@ -41,6 +41,8 @@ pub trait UserRepo: Send + Sync {
     async fn delete_user(&self, id: Uuid) -> Result<bool>;
 
     async fn find_eligible_for_reminder(&self, utc_hour: i16) -> Result<Vec<User>>;
+
+    async fn increment_token_version(&self, id: Uuid) -> Result<i32>;
 }
 
 #[async_trait]
@@ -161,7 +163,9 @@ pub trait AuthService: Send + Sync {
 
     async fn refresh(&self, raw_refresh_token: &str) -> Result<RefreshResponse, AppError>;
 
-    async fn logout(&self, user_id: Uuid) -> Result<(), AppError>;
+    async fn logout(&self, user_id: Uuid, jti: &str, token_exp: usize) -> Result<(), AppError>;
+
+    async fn invalidate_all_tokens(&self, user_id: Uuid) -> Result<(), AppError>;
 }
 
 #[allow(clippy::too_many_arguments)]

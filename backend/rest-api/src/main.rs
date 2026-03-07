@@ -67,6 +67,7 @@ async fn main() -> anyhow::Result<()> {
         user_repo.clone(),
         refresh_token_repo,
         jwt.clone(),
+        redis.clone(),
     ));
     let item_repo: Arc<dyn ItemRepo> = Arc::new(PgItemRepo::new(db.clone()));
     let items: Arc<dyn ItemService> = Arc::new(PgItemService::new(
@@ -97,6 +98,7 @@ async fn main() -> anyhow::Result<()> {
     let state = AppState {
         auth,
         jwt,
+        redis: redis.clone(),
         health,
         items,
         categories,

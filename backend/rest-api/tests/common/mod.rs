@@ -46,6 +46,7 @@ pub struct TestApp {
     _redis_container: ContainerAsync<Redis>,
     pub router: Router,
     pub db: PgPool,
+    pub redis: redis::Client,
 }
 
 #[allow(dead_code)]
@@ -82,6 +83,7 @@ impl TestApp {
             user_repo.clone(),
             refresh_token_repo,
             jwt.clone(),
+            redis.clone(),
         ));
         let item_repo: Arc<dyn ItemRepo> = Arc::new(PgItemRepo::new(db.clone()));
         let items: Arc<dyn ItemService> =
@@ -97,9 +99,11 @@ impl TestApp {
         let push_token_svc: Arc<dyn PushTokenService> =
             Arc::new(PgPushTokenService::new(push_token_repo));
 
+        let redis_for_app = redis.clone();
         let state = AppState {
             auth,
             jwt,
+            redis: redis_for_app,
             health,
             items,
             categories,
@@ -122,6 +126,7 @@ impl TestApp {
             _redis_container: redis_container,
             router,
             db,
+            redis,
         }
     }
 

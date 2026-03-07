@@ -18,6 +18,7 @@ use crate::utils::jwt::JwtKeys;
 pub struct AppState {
     pub auth: Arc<dyn traits::AuthService>,
     pub jwt: Arc<JwtKeys>,
+    pub redis: redis::Client,
     pub health: Arc<dyn traits::HealthCheck>,
     pub items: Arc<dyn traits::ItemService>,
     pub categories: Arc<dyn traits::CategoryService>,

@@ -38,6 +38,12 @@ pub struct Claims {
     pub token_type: TokenType,
     pub iss: String,
     pub aud: String,
+    #[serde(default = "default_token_version")]
+    pub token_version: i32,
+}
+
+fn default_token_version() -> i32 {
+    1
 }
 
 /// Holds the RSA encoding (private) and decoding (public) keys for JWT operations.
@@ -121,13 +127,23 @@ impl JwtKeys {
     }
 
     /// Create a signed access token (15-min TTL).
-    pub fn generate_access_token(&self, user_id: Uuid) -> Result<String> {
-        self.generate_token(user_id, TokenType::Access, ACCESS_TOKEN_TTL_SECS)
+    pub fn generate_access_token(&self, user_id: Uuid, token_version: i32) -> Result<String> {
+        self.generate_token(
+            user_id,
+            TokenType::Access,
+            ACCESS_TOKEN_TTL_SECS,
+            token_version,
+        )
     }
 
     /// Create a signed refresh token (7-day TTL).
-    pub fn generate_refresh_token(&self, user_id: Uuid) -> Result<String> {
-        self.generate_token(user_id, TokenType::Refresh, REFRESH_TOKEN_TTL_SECS)
+    pub fn generate_refresh_token(&self, user_id: Uuid, token_version: i32) -> Result<String> {
+        self.generate_token(
+            user_id,
+            TokenType::Refresh,
+            REFRESH_TOKEN_TTL_SECS,
+            token_version,
+        )
     }
 
     /// Validate an access token: verify RS256 signature, expiration, and token type.
@@ -164,6 +180,7 @@ impl JwtKeys {
         user_id: Uuid,
         token_type: TokenType,
         ttl_secs: u64,
+        token_version: i32,
     ) -> Result<String> {
         let now = SystemTime::now()
             .duration_since(UNIX_EPOCH)
@@ -179,6 +196,7 @@ impl JwtKeys {
             token_type,
             iss: JWT_ISSUER.to_string(),
             aud: JWT_AUDIENCE.to_string(),
+            token_version,
         };
 
         let header = Header::new(Algorithm::RS256);
@@ -201,13 +219,17 @@ mod tests {
 
     #[test]
     fn generate_access_token_produces_valid_jwt() {
-        let token = test_keys().generate_access_token(Uuid::new_v4()).unwrap();
+        let token = test_keys()
+            .generate_access_token(Uuid::new_v4(), 1)
+            .unwrap();
         assert_eq!(token.matches('.').count(), 2);
     }
 
     #[test]
     fn generate_refresh_token_produces_valid_jwt() {
-        let token = test_keys().generate_refresh_token(Uuid::new_v4()).unwrap();
+        let token = test_keys()
+            .generate_refresh_token(Uuid::new_v4(), 1)
+            .unwrap();
         assert_eq!(token.matches('.').count(), 2);
     }
 
@@ -215,7 +237,7 @@ mod tests {
     fn valid_access_token_validates_with_correct_claims() {
         let keys = test_keys();
         let user_id = Uuid::new_v4();
-        let token = keys.generate_access_token(user_id).unwrap();
+        let token = keys.generate_access_token(user_id, 1).unwrap();
 
         let claims = keys.validate_access_token(&token).unwrap();
         assert_eq!(claims.sub, user_id.to_string());
@@ -223,13 +245,14 @@ mod tests {
         assert!(!claims.jti.is_empty());
         assert!(claims.iat <= claims.exp);
         assert_eq!(claims.exp - claims.iat, ACCESS_TOKEN_TTL_SECS as usize);
+        assert_eq!(claims.token_version, 1);
     }
 
     #[test]
     fn valid_refresh_token_validates_with_correct_claims() {
         let keys = test_keys();
         let user_id = Uuid::new_v4();
-        let token = keys.generate_refresh_token(user_id).unwrap();
+        let token = keys.generate_refresh_token(user_id, 1).unwrap();
 
         let claims = keys.validate_refresh_token(&token).unwrap();
         assert_eq!(claims.sub, user_id.to_string());
@@ -253,6 +276,7 @@ mod tests {
             token_type: TokenType::Access,
             iss: JWT_ISSUER.to_string(),
             aud: JWT_AUDIENCE.to_string(),
+            token_version: 1,
         };
         let token = encode(&Header::new(Algorithm::RS256), &claims, &keys.encoding).unwrap();
 
@@ -263,7 +287,9 @@ mod tests {
     fn wrong_key_pair_rejected() {
         let keys_b = JwtKeys::generate().unwrap();
 
-        let token = test_keys().generate_access_token(Uuid::new_v4()).unwrap();
+        let token = test_keys()
+            .generate_access_token(Uuid::new_v4(), 1)
+            .unwrap();
         assert!(keys_b.validate_access_token(&token).is_err());
     }
 
@@ -272,8 +298,8 @@ mod tests {
         let keys = test_keys();
         let user_id = Uuid::new_v4();
 
-        let t1 = keys.generate_access_token(user_id).unwrap();
-        let t2 = keys.generate_access_token(user_id).unwrap();
+        let t1 = keys.generate_access_token(user_id, 1).unwrap();
+        let t2 = keys.generate_access_token(user_id, 1).unwrap();
 
         let c1 = keys.validate_access_token(&t1).unwrap();
         let c2 = keys.validate_access_token(&t2).unwrap();
@@ -283,7 +309,7 @@ mod tests {
     #[test]
     fn jti_is_valid_uuid_v4() {
         let keys = test_keys();
-        let token = keys.generate_access_token(Uuid::new_v4()).unwrap();
+        let token = keys.generate_access_token(Uuid::new_v4(), 1).unwrap();
         let claims = keys.validate_access_token(&token).unwrap();
 
         let jti_uuid = Uuid::parse_str(&claims.jti).unwrap();
@@ -301,10 +327,10 @@ mod tests {
         let user_id = Uuid::new_v4();
 
         let access_claims = keys
-            .validate_access_token(&keys.generate_access_token(user_id).unwrap())
+            .validate_access_token(&keys.generate_access_token(user_id, 1).unwrap())
             .unwrap();
         let refresh_claims = keys
-            .validate_refresh_token(&keys.generate_refresh_token(user_id).unwrap())
+            .validate_refresh_token(&keys.generate_refresh_token(user_id, 1).unwrap())
             .unwrap();
         assert_eq!(access_claims.token_type, TokenType::Access);
         assert_eq!(refresh_claims.token_type, TokenType::Refresh);
@@ -313,21 +339,21 @@ mod tests {
     #[test]
     fn refresh_token_rejected_as_access() {
         let keys = test_keys();
-        let token = keys.generate_refresh_token(Uuid::new_v4()).unwrap();
+        let token = keys.generate_refresh_token(Uuid::new_v4(), 1).unwrap();
         assert!(keys.validate_access_token(&token).is_err());
     }
 
     #[test]
     fn access_token_rejected_as_refresh() {
         let keys = test_keys();
-        let token = keys.generate_access_token(Uuid::new_v4()).unwrap();
+        let token = keys.generate_access_token(Uuid::new_v4(), 1).unwrap();
         assert!(keys.validate_refresh_token(&token).is_err());
     }
 
     #[test]
     fn tampered_payload_rejected() {
         let keys = test_keys();
-        let token = keys.generate_access_token(Uuid::new_v4()).unwrap();
+        let token = keys.generate_access_token(Uuid::new_v4(), 1).unwrap();
 
         let parts: Vec<&str> = token.splitn(3, '.').collect();
         let mut payload_bytes = parts[1].as_bytes().to_vec();
@@ -355,15 +381,69 @@ mod tests {
     }
 
     #[test]
+    fn token_version_round_trips_correctly() {
+        let keys = test_keys();
+        let user_id = Uuid::new_v4();
+
+        let token_v3 = keys.generate_access_token(user_id, 3).unwrap();
+        let claims = keys.validate_access_token(&token_v3).unwrap();
+        assert_eq!(claims.token_version, 3);
+
+        let token_v42 = keys.generate_refresh_token(user_id, 42).unwrap();
+        let claims = keys.validate_refresh_token(&token_v42).unwrap();
+        assert_eq!(claims.token_version, 42);
+    }
+
+    #[test]
+    fn token_version_defaults_for_legacy_tokens() {
+        // Tokens without token_version claim should default to 1 (backward compat)
+        let keys = test_keys();
+        let now = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_secs();
+
+        // Build a token manually WITHOUT the token_version field
+        #[derive(Serialize)]
+        struct LegacyClaims {
+            sub: String,
+            exp: usize,
+            iat: usize,
+            jti: String,
+            token_type: TokenType,
+            iss: String,
+            aud: String,
+            // no token_version
+        }
+
+        let legacy = LegacyClaims {
+            sub: Uuid::new_v4().to_string(),
+            exp: (now + 900) as usize,
+            iat: now as usize,
+            jti: Uuid::new_v4().to_string(),
+            token_type: TokenType::Access,
+            iss: JWT_ISSUER.to_string(),
+            aud: JWT_AUDIENCE.to_string(),
+        };
+        let token = encode(&Header::new(Algorithm::RS256), &legacy, &keys.encoding).unwrap();
+
+        let claims = keys.validate_access_token(&token).unwrap();
+        assert_eq!(
+            claims.token_version, 1,
+            "missing token_version should default to 1"
+        );
+    }
+
+    #[test]
     fn sub_contains_exact_user_id() {
         let keys = test_keys();
         let user_id = Uuid::new_v4();
 
         let ac = keys
-            .validate_access_token(&keys.generate_access_token(user_id).unwrap())
+            .validate_access_token(&keys.generate_access_token(user_id, 1).unwrap())
             .unwrap();
         let rc = keys
-            .validate_refresh_token(&keys.generate_refresh_token(user_id).unwrap())
+            .validate_refresh_token(&keys.generate_refresh_token(user_id, 1).unwrap())
             .unwrap();
 
         assert_eq!(Uuid::parse_str(&ac.sub).unwrap(), user_id);

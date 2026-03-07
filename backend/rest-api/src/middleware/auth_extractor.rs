@@ -9,6 +9,8 @@ use crate::errors::AppError;
 #[derive(Debug, Clone)]
 pub struct AuthUser {
     pub user_id: Uuid,
+    pub jti: String,
+    pub exp: usize,
 }
 
 /// Parse a Bearer token from the Authorization header value (case-insensitive scheme).
@@ -45,7 +47,37 @@ impl FromRequestParts<AppState> for AuthUser {
             .parse()
             .map_err(|_| AppError::Unauthorized("invalid token subject".into()))?;
 
-        Ok(AuthUser { user_id })
+        // Redis-based revocation checks (fail-open if Redis unavailable)
+        if let Ok(mut conn) = state.redis.get_multiplexed_async_connection().await {
+            // Pipeline: check JTI blacklist + token version in one round-trip
+            let blacklist_key = format!("blacklist:{}", claims.jti);
+            let tkver_key = format!("tkver:{user_id}");
+
+            let result: Result<(i64, Option<i32>), _> = redis::pipe()
+                .cmd("EXISTS")
+                .arg(&blacklist_key)
+                .cmd("GET")
+                .arg(&tkver_key)
+                .query_async(&mut conn)
+                .await;
+
+            if let Ok((blacklisted, cached_version)) = result {
+                if blacklisted == 1 {
+                    return Err(AppError::Unauthorized("token has been revoked".into()));
+                }
+                if let Some(ver) = cached_version
+                    && claims.token_version < ver
+                {
+                    return Err(AppError::Unauthorized("token version revoked".into()));
+                }
+            }
+        }
+
+        Ok(AuthUser {
+            user_id,
+            jti: claims.jti,
+            exp: claims.exp,
+        })
     }
 }
 
