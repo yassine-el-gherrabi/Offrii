@@ -131,10 +131,12 @@ async fn patch_profile_without_auth_401() {
     let app = TestApp::new().await;
 
     let patch_body = serde_json::json!({ "display_name": "Hacker" });
-    let (status, _) = app.post_json("/users/me", &patch_body).await;
+    let (status, body) = app
+        .patch_json_with_auth("/users/me", &patch_body, "invalid-token")
+        .await;
 
-    // POST on a PATCH-only route without auth → 401 or 405, either way blocked
-    assert_ne!(status, StatusCode::OK);
+    assert_eq!(status, StatusCode::UNAUTHORIZED);
+    assert_error(&body, "UNAUTHORIZED");
 }
 
 #[tokio::test]

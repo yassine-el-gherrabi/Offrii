@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
-use chrono::NaiveTime;
+use chrono::{NaiveTime, Timelike};
 use chrono_tz::Tz;
 use uuid::Uuid;
 
@@ -136,8 +136,6 @@ fn compute_utc_hour(local_time: NaiveTime, timezone: &str) -> Result<i16, AppErr
     let utc_dt = local_dt.with_timezone(&chrono::Utc);
     Ok(utc_dt.time().hour() as i16)
 }
-
-use chrono::Timelike;
 
 #[cfg(test)]
 mod tests {
