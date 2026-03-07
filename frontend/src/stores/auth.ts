@@ -2,6 +2,10 @@ import { create } from 'zustand';
 import * as SecureStore from 'expo-secure-store';
 import * as authApi from '@/src/api/auth';
 import { setTokenGetter, setRefreshHandlers } from '@/src/api/client';
+import {
+  registerForPushNotifications,
+  unregisterPushNotifications,
+} from '@/src/utils/notifications';
 import type { UserResponse } from '@/src/types/auth';
 
 const REFRESH_TOKEN_KEY = 'offrii_refresh_token';
@@ -49,6 +53,7 @@ export const useAuthStore = create<AuthState>((set, get) => {
       await SecureStore.setItemAsync(REFRESH_TOKEN_KEY, tokens.refresh_token);
       await SecureStore.setItemAsync(USER_DATA_KEY, JSON.stringify(user));
       set({ accessToken: tokens.access_token, user, isAuthenticated: true });
+      registerForPushNotifications().catch(() => {});
     },
 
     register: async (email, password, displayName?) => {
@@ -56,9 +61,16 @@ export const useAuthStore = create<AuthState>((set, get) => {
       await SecureStore.setItemAsync(REFRESH_TOKEN_KEY, tokens.refresh_token);
       await SecureStore.setItemAsync(USER_DATA_KEY, JSON.stringify(user));
       set({ accessToken: tokens.access_token, user, isAuthenticated: true });
+      registerForPushNotifications().catch(() => {});
     },
 
     logout: async () => {
+      // Unregister push token before clearing state (best-effort)
+      try {
+        await unregisterPushNotifications();
+      } catch {
+        // Don't block logout if push cleanup fails
+      }
       // Call API BEFORE clearing state so the access token is still available
       try {
         await authApi.logout();
@@ -90,6 +102,7 @@ export const useAuthStore = create<AuthState>((set, get) => {
           isAuthenticated: true,
           isLoading: false,
         });
+        registerForPushNotifications().catch(() => {});
       } catch {
         await SecureStore.deleteItemAsync(REFRESH_TOKEN_KEY);
         await SecureStore.deleteItemAsync(USER_DATA_KEY);
