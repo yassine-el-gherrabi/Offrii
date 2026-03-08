@@ -295,7 +295,7 @@ async fn migration_003_creates_items_table() {
     let mdb = MigrationDb::new().await;
 
     assert!(mdb.table_exists("items").await);
-    assert_eq!(mdb.column_count("items").await, 12);
+    assert_eq!(mdb.column_count("items").await, 14);
 
     mdb.assert_not_null("items", "id").await;
     mdb.assert_not_null("items", "user_id").await;
@@ -309,6 +309,8 @@ async fn migration_003_creates_items_table() {
     mdb.assert_nullable("items", "purchased_at").await;
     mdb.assert_not_null("items", "created_at").await;
     mdb.assert_not_null("items", "updated_at").await;
+    mdb.assert_nullable("items", "claimed_by").await;
+    mdb.assert_nullable("items", "claimed_at").await;
 
     // defaults
     let (_, _, default) = mdb.column_info("items", "priority").await.unwrap();
@@ -325,11 +327,13 @@ async fn migration_003_creates_items_table() {
     // FKs
     assert!(mdb.fk_exists("items", "user_id").await);
     assert!(mdb.fk_exists("items", "category_id").await);
+    assert!(mdb.fk_exists("items", "claimed_by").await);
 
     // Indexes
     assert!(mdb.index_exists("idx_items_user_status").await);
     assert!(mdb.index_exists("idx_items_user_priority").await);
     assert!(mdb.index_exists("idx_items_created_at").await);
+    assert!(mdb.index_exists("idx_items_claimed_by").await);
 
     // Trigger
     assert!(mdb.trigger_exists("trg_items_updated_at").await);

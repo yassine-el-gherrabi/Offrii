@@ -27,6 +27,7 @@ async fn create_item_quick_capture_201() {
     assert!(item["purchased_at"].is_null());
     assert!(item["created_at"].is_string());
     assert!(item["updated_at"].is_string());
+    assert_eq!(item["is_claimed"], false);
 }
 
 #[tokio::test]
@@ -1118,6 +1119,492 @@ async fn delete_item_without_auth_401() {
 
     let resp = app.router.clone().oneshot(req).await.unwrap();
     assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
+}
+
+// ── Claim ───────────────────────────────────────────────────────────
+
+#[tokio::test]
+async fn claim_item_204() {
+    let app = TestApp::new().await;
+    let owner_token = app
+        .setup_user_token("claim-owner@example.com", TEST_PASSWORD)
+        .await;
+    let claimer_token = app
+        .setup_user_token("claim-claimer@example.com", TEST_PASSWORD)
+        .await;
+
+    let item = app
+        .create_item(&owner_token, &serde_json::json!({ "name": "gift" }))
+        .await;
+    let id = item["id"].as_str().unwrap();
+
+    let (status, _) = app
+        .post_with_auth(&format!("/items/{id}/claim"), &claimer_token)
+        .await;
+
+    assert_eq!(status, StatusCode::NO_CONTENT);
+}
+
+#[tokio::test]
+async fn claim_own_item_400() {
+    let app = TestApp::new().await;
+    let token = app
+        .setup_user_token("claim-self@example.com", TEST_PASSWORD)
+        .await;
+
+    let item = app
+        .create_item(&token, &serde_json::json!({ "name": "my item" }))
+        .await;
+    let id = item["id"].as_str().unwrap();
+
+    let (status, resp) = app
+        .post_with_auth(&format!("/items/{id}/claim"), &token)
+        .await;
+
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    assert_error(&resp, "BAD_REQUEST");
+}
+
+#[tokio::test]
+async fn claim_nonexistent_item_404() {
+    let app = TestApp::new().await;
+    let token = app
+        .setup_user_token("claim-noexist@example.com", TEST_PASSWORD)
+        .await;
+
+    let fake_id = uuid::Uuid::new_v4();
+    let (status, resp) = app
+        .post_with_auth(&format!("/items/{fake_id}/claim"), &token)
+        .await;
+
+    assert_eq!(status, StatusCode::NOT_FOUND);
+    assert_error(&resp, "NOT_FOUND");
+}
+
+#[tokio::test]
+async fn claim_already_claimed_409() {
+    let app = TestApp::new().await;
+    let owner_token = app
+        .setup_user_token("claim-double-owner@example.com", TEST_PASSWORD)
+        .await;
+    let claimer1_token = app
+        .setup_user_token("claim-double-1@example.com", TEST_PASSWORD)
+        .await;
+    let claimer2_token = app
+        .setup_user_token("claim-double-2@example.com", TEST_PASSWORD)
+        .await;
+
+    let item = app
+        .create_item(&owner_token, &serde_json::json!({ "name": "contested" }))
+        .await;
+    let id = item["id"].as_str().unwrap();
+
+    // First claim succeeds
+    let (status, _) = app
+        .post_with_auth(&format!("/items/{id}/claim"), &claimer1_token)
+        .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+
+    // Second claim should be 409
+    let (status, resp) = app
+        .post_with_auth(&format!("/items/{id}/claim"), &claimer2_token)
+        .await;
+    assert_eq!(status, StatusCode::CONFLICT);
+    assert_error(&resp, "CONFLICT");
+}
+
+#[tokio::test]
+async fn claim_purchased_item_400() {
+    let app = TestApp::new().await;
+    let owner_token = app
+        .setup_user_token("claim-purch-owner@example.com", TEST_PASSWORD)
+        .await;
+    let claimer_token = app
+        .setup_user_token("claim-purch-claimer@example.com", TEST_PASSWORD)
+        .await;
+
+    let item = app
+        .create_item(&owner_token, &serde_json::json!({ "name": "bought" }))
+        .await;
+    let id = item["id"].as_str().unwrap();
+
+    // Mark purchased
+    app.put_json_with_auth(
+        &format!("/items/{id}"),
+        &serde_json::json!({ "status": "purchased" }),
+        &owner_token,
+    )
+    .await;
+
+    let (status, resp) = app
+        .post_with_auth(&format!("/items/{id}/claim"), &claimer_token)
+        .await;
+
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    assert_error(&resp, "BAD_REQUEST");
+}
+
+#[tokio::test]
+async fn claim_deleted_item_404() {
+    let app = TestApp::new().await;
+    let owner_token = app
+        .setup_user_token("claim-del-owner@example.com", TEST_PASSWORD)
+        .await;
+    let claimer_token = app
+        .setup_user_token("claim-del-claimer@example.com", TEST_PASSWORD)
+        .await;
+
+    let item = app
+        .create_item(&owner_token, &serde_json::json!({ "name": "deleted" }))
+        .await;
+    let id = item["id"].as_str().unwrap();
+
+    app.delete_with_auth(&format!("/items/{id}"), &owner_token)
+        .await;
+
+    let (status, resp) = app
+        .post_with_auth(&format!("/items/{id}/claim"), &claimer_token)
+        .await;
+
+    assert_eq!(status, StatusCode::NOT_FOUND);
+    assert_error(&resp, "NOT_FOUND");
+}
+
+#[tokio::test]
+async fn claim_unauthenticated_401() {
+    let app = TestApp::new().await;
+    let token = app
+        .setup_user_token("claim-unauth@example.com", TEST_PASSWORD)
+        .await;
+
+    let item = app
+        .create_item(&token, &serde_json::json!({ "name": "x" }))
+        .await;
+    let id = item["id"].as_str().unwrap();
+
+    let (status, _) = app.post_empty(&format!("/items/{id}/claim")).await;
+
+    assert_eq!(status, StatusCode::UNAUTHORIZED);
+}
+
+// ── Unclaim ─────────────────────────────────────────────────────────
+
+#[tokio::test]
+async fn unclaim_item_204() {
+    let app = TestApp::new().await;
+    let owner_token = app
+        .setup_user_token("unclaim-owner@example.com", TEST_PASSWORD)
+        .await;
+    let claimer_token = app
+        .setup_user_token("unclaim-claimer@example.com", TEST_PASSWORD)
+        .await;
+
+    let item = app
+        .create_item(&owner_token, &serde_json::json!({ "name": "gift" }))
+        .await;
+    let id = item["id"].as_str().unwrap();
+
+    app.post_with_auth(&format!("/items/{id}/claim"), &claimer_token)
+        .await;
+
+    let (status, _) = app
+        .delete_with_auth(&format!("/items/{id}/claim"), &claimer_token)
+        .await;
+
+    assert_eq!(status, StatusCode::NO_CONTENT);
+}
+
+#[tokio::test]
+async fn unclaim_not_claimer_401() {
+    let app = TestApp::new().await;
+    let owner_token = app
+        .setup_user_token("unclaim-nc-owner@example.com", TEST_PASSWORD)
+        .await;
+    let claimer_token = app
+        .setup_user_token("unclaim-nc-claimer@example.com", TEST_PASSWORD)
+        .await;
+    let other_token = app
+        .setup_user_token("unclaim-nc-other@example.com", TEST_PASSWORD)
+        .await;
+
+    let item = app
+        .create_item(&owner_token, &serde_json::json!({ "name": "reserved" }))
+        .await;
+    let id = item["id"].as_str().unwrap();
+
+    app.post_with_auth(&format!("/items/{id}/claim"), &claimer_token)
+        .await;
+
+    let (status, resp) = app
+        .delete_with_auth(&format!("/items/{id}/claim"), &other_token)
+        .await;
+
+    assert_eq!(status, StatusCode::UNAUTHORIZED);
+    assert_error(&resp, "UNAUTHORIZED");
+}
+
+#[tokio::test]
+async fn unclaim_not_claimed_409() {
+    let app = TestApp::new().await;
+    let owner_token = app
+        .setup_user_token("unclaim-notcl-owner@example.com", TEST_PASSWORD)
+        .await;
+    let other_token = app
+        .setup_user_token("unclaim-notcl-other@example.com", TEST_PASSWORD)
+        .await;
+
+    let item = app
+        .create_item(&owner_token, &serde_json::json!({ "name": "unclaimed" }))
+        .await;
+    let id = item["id"].as_str().unwrap();
+
+    let (status, resp) = app
+        .delete_with_auth(&format!("/items/{id}/claim"), &other_token)
+        .await;
+
+    assert_eq!(status, StatusCode::CONFLICT);
+    assert_error(&resp, "CONFLICT");
+}
+
+#[tokio::test]
+async fn unclaim_nonexistent_404() {
+    let app = TestApp::new().await;
+    let token = app
+        .setup_user_token("unclaim-noexist@example.com", TEST_PASSWORD)
+        .await;
+
+    let fake_id = uuid::Uuid::new_v4();
+    let (status, resp) = app
+        .delete_with_auth(&format!("/items/{fake_id}/claim"), &token)
+        .await;
+
+    assert_eq!(status, StatusCode::NOT_FOUND);
+    assert_error(&resp, "NOT_FOUND");
+}
+
+#[tokio::test]
+async fn unclaim_unauthenticated_401() {
+    let app = TestApp::new().await;
+    let token = app
+        .setup_user_token("unclaim-unauth@example.com", TEST_PASSWORD)
+        .await;
+
+    let item = app
+        .create_item(&token, &serde_json::json!({ "name": "x" }))
+        .await;
+    let id = item["id"].as_str().unwrap();
+
+    let req = axum::http::Request::builder()
+        .method("DELETE")
+        .uri(format!("/items/{id}/claim"))
+        .body(axum::body::Body::empty())
+        .unwrap();
+
+    let resp = app.router.clone().oneshot(req).await.unwrap();
+    assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
+}
+
+// ── Claim integrity ─────────────────────────────────────────────────
+
+#[tokio::test]
+async fn claim_sets_is_claimed_true() {
+    let app = TestApp::new().await;
+    let owner_token = app
+        .setup_user_token("claim-flag-owner@example.com", TEST_PASSWORD)
+        .await;
+    let claimer_token = app
+        .setup_user_token("claim-flag-claimer@example.com", TEST_PASSWORD)
+        .await;
+
+    let item = app
+        .create_item(&owner_token, &serde_json::json!({ "name": "flagtest" }))
+        .await;
+    let id = item["id"].as_str().unwrap();
+
+    app.post_with_auth(&format!("/items/{id}/claim"), &claimer_token)
+        .await;
+
+    let (status, fetched) = app
+        .get_with_auth(&format!("/items/{id}"), &owner_token)
+        .await;
+
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(fetched["is_claimed"], true);
+}
+
+#[tokio::test]
+async fn unclaim_resets_is_claimed_false() {
+    let app = TestApp::new().await;
+    let owner_token = app
+        .setup_user_token("unclaim-flag-owner@example.com", TEST_PASSWORD)
+        .await;
+    let claimer_token = app
+        .setup_user_token("unclaim-flag-claimer@example.com", TEST_PASSWORD)
+        .await;
+
+    let item = app
+        .create_item(&owner_token, &serde_json::json!({ "name": "flagtest2" }))
+        .await;
+    let id = item["id"].as_str().unwrap();
+
+    app.post_with_auth(&format!("/items/{id}/claim"), &claimer_token)
+        .await;
+    app.delete_with_auth(&format!("/items/{id}/claim"), &claimer_token)
+        .await;
+
+    let (status, fetched) = app
+        .get_with_auth(&format!("/items/{id}"), &owner_token)
+        .await;
+
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(fetched["is_claimed"], false);
+}
+
+#[tokio::test]
+async fn claim_then_unclaim_then_reclaim() {
+    let app = TestApp::new().await;
+    let owner_token = app
+        .setup_user_token("reclaim-owner@example.com", TEST_PASSWORD)
+        .await;
+    let claimer_token = app
+        .setup_user_token("reclaim-claimer@example.com", TEST_PASSWORD)
+        .await;
+
+    let item = app
+        .create_item(&owner_token, &serde_json::json!({ "name": "recycle" }))
+        .await;
+    let id = item["id"].as_str().unwrap();
+
+    // Claim
+    let (status, _) = app
+        .post_with_auth(&format!("/items/{id}/claim"), &claimer_token)
+        .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+
+    // Unclaim
+    let (status, _) = app
+        .delete_with_auth(&format!("/items/{id}/claim"), &claimer_token)
+        .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+
+    // Reclaim
+    let (status, _) = app
+        .post_with_auth(&format!("/items/{id}/claim"), &claimer_token)
+        .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+
+    let (_, fetched) = app
+        .get_with_auth(&format!("/items/{id}"), &owner_token)
+        .await;
+    assert_eq!(fetched["is_claimed"], true);
+}
+
+#[tokio::test]
+async fn new_item_is_claimed_false() {
+    let app = TestApp::new().await;
+    let token = app
+        .setup_user_token("newitem-claim@example.com", TEST_PASSWORD)
+        .await;
+
+    let item = app
+        .create_item(&token, &serde_json::json!({ "name": "fresh" }))
+        .await;
+
+    assert_eq!(item["is_claimed"], false);
+}
+
+#[tokio::test]
+async fn claim_same_claimer_twice_409() {
+    let app = TestApp::new().await;
+    let owner_token = app
+        .setup_user_token("claim-idem-owner@example.com", TEST_PASSWORD)
+        .await;
+    let claimer_token = app
+        .setup_user_token("claim-idem-claimer@example.com", TEST_PASSWORD)
+        .await;
+
+    let item = app
+        .create_item(&owner_token, &serde_json::json!({ "name": "idem" }))
+        .await;
+    let id = item["id"].as_str().unwrap();
+
+    // First claim
+    let (status, _) = app
+        .post_with_auth(&format!("/items/{id}/claim"), &claimer_token)
+        .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+
+    // Same claimer again → 409
+    let (status, resp) = app
+        .post_with_auth(&format!("/items/{id}/claim"), &claimer_token)
+        .await;
+    assert_eq!(status, StatusCode::CONFLICT);
+    assert_error(&resp, "CONFLICT");
+}
+
+#[tokio::test]
+async fn claim_then_owner_deletes_item() {
+    let app = TestApp::new().await;
+    let owner_token = app
+        .setup_user_token("claim-then-del-owner@example.com", TEST_PASSWORD)
+        .await;
+    let claimer_token = app
+        .setup_user_token("claim-then-del-claimer@example.com", TEST_PASSWORD)
+        .await;
+
+    let item = app
+        .create_item(&owner_token, &serde_json::json!({ "name": "doomed" }))
+        .await;
+    let id = item["id"].as_str().unwrap();
+
+    // Claim
+    let (status, _) = app
+        .post_with_auth(&format!("/items/{id}/claim"), &claimer_token)
+        .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+
+    // Owner deletes
+    let (status, _) = app
+        .delete_with_auth(&format!("/items/{id}"), &owner_token)
+        .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+
+    // Unclaim should now 404
+    let (status, resp) = app
+        .delete_with_auth(&format!("/items/{id}/claim"), &claimer_token)
+        .await;
+    assert_eq!(status, StatusCode::NOT_FOUND);
+    assert_error(&resp, "NOT_FOUND");
+}
+
+#[tokio::test]
+async fn is_claimed_visible_in_list_endpoint() {
+    let app = TestApp::new().await;
+    let owner_token = app
+        .setup_user_token("claim-list-owner@example.com", TEST_PASSWORD)
+        .await;
+    let claimer_token = app
+        .setup_user_token("claim-list-claimer@example.com", TEST_PASSWORD)
+        .await;
+
+    let item = app
+        .create_item(&owner_token, &serde_json::json!({ "name": "listcheck" }))
+        .await;
+    let id = item["id"].as_str().unwrap();
+
+    // Before claim — list shows is_claimed: false
+    let (_, body) = app.get_with_auth("/items", &owner_token).await;
+    let items = body["items"].as_array().unwrap();
+    assert_eq!(items[0]["is_claimed"], false);
+
+    // Claim
+    app.post_with_auth(&format!("/items/{id}/claim"), &claimer_token)
+        .await;
+
+    // After claim — list shows is_claimed: true
+    let (_, body) = app.get_with_auth("/items", &owner_token).await;
+    let items = body["items"].as_array().unwrap();
+    assert_eq!(items[0]["is_claimed"], true);
 }
 
 // ── Cache consistency ───────────────────────────────────────────────

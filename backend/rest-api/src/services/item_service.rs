@@ -410,4 +410,82 @@ impl traits::ItemService for PgItemService {
 
         Ok(())
     }
+
+    #[tracing::instrument(skip(self))]
+    async fn claim_item(&self, item_id: Uuid, claimer_id: Uuid) -> Result<(), AppError> {
+        let claimed = self
+            .item_repo
+            .claim_item(item_id, claimer_id)
+            .await
+            .map_err(AppError::Internal)?;
+
+        if claimed {
+            // Invalidate cache for the item owner
+            if let Some(item) = self
+                .item_repo
+                .find_by_id_any_user(item_id)
+                .await
+                .map_err(AppError::Internal)?
+            {
+                self.bump_version(item.user_id).await;
+            }
+            return Ok(());
+        }
+
+        // Disambiguate: why did 0 rows match?
+        match self
+            .item_repo
+            .find_by_id_any_user(item_id)
+            .await
+            .map_err(AppError::Internal)?
+        {
+            None => Err(AppError::NotFound("item not found".into())),
+            Some(item) if item.user_id == claimer_id => {
+                Err(AppError::BadRequest("cannot claim your own item".into()))
+            }
+            Some(item) if item.claimed_by.is_some() => {
+                Err(AppError::Conflict("item already claimed".into()))
+            }
+            Some(_) => Err(AppError::BadRequest("item is not active".into())),
+        }
+    }
+
+    #[tracing::instrument(skip(self))]
+    async fn unclaim_item(&self, item_id: Uuid, claimer_id: Uuid) -> Result<(), AppError> {
+        let unclaimed = self
+            .item_repo
+            .unclaim_item(item_id, claimer_id)
+            .await
+            .map_err(AppError::Internal)?;
+
+        if unclaimed {
+            // Invalidate cache for the item owner
+            if let Some(item) = self
+                .item_repo
+                .find_by_id_any_user(item_id)
+                .await
+                .map_err(AppError::Internal)?
+            {
+                self.bump_version(item.user_id).await;
+            }
+            return Ok(());
+        }
+
+        // Disambiguate: why did 0 rows match?
+        match self
+            .item_repo
+            .find_by_id_any_user(item_id)
+            .await
+            .map_err(AppError::Internal)?
+        {
+            None => Err(AppError::NotFound("item not found".into())),
+            Some(item) if item.claimed_by.is_none() => {
+                Err(AppError::Conflict("item is not claimed".into()))
+            }
+            Some(item) if item.claimed_by != Some(claimer_id) => Err(AppError::Unauthorized(
+                "only the claimer can unclaim".into(),
+            )),
+            Some(_) => Err(AppError::NotFound("item not found".into())),
+        }
+    }
 }

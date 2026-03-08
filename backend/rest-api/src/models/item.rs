@@ -17,4 +17,6 @@ pub struct Item {
     pub purchased_at: Option<DateTime<Utc>>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
+    pub claimed_by: Option<Uuid>,
+    pub claimed_at: Option<DateTime<Utc>>,
 }

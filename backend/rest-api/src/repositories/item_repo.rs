@@ -10,7 +10,8 @@ use crate::traits;
 
 /// Shared column list for all item queries (avoids duplication).
 const ITEM_COLS: &str = "id, user_id, name, description, url, estimated_price, \
-                         priority, category_id, status, purchased_at, created_at, updated_at";
+                         priority, category_id, status, purchased_at, created_at, updated_at, \
+                         claimed_by, claimed_at";
 
 // ── Concrete implementation ──────────────────────────────────────────
 
@@ -122,6 +123,18 @@ impl traits::ItemRepo for PgItemRepo {
         cutoff: DateTime<Utc>,
     ) -> Result<Vec<Item>> {
         find_active_older_than(&self.pool, user_id, cutoff).await
+    }
+
+    async fn find_by_id_any_user(&self, id: Uuid) -> Result<Option<Item>> {
+        find_by_id_any_user(&self.pool, id).await
+    }
+
+    async fn claim_item(&self, id: Uuid, claimer_id: Uuid) -> Result<bool> {
+        claim_item(&self.pool, id, claimer_id).await
+    }
+
+    async fn unclaim_item(&self, id: Uuid, claimer_id: Uuid) -> Result<bool> {
+        unclaim_item(&self.pool, id, claimer_id).await
     }
 }
 
@@ -352,4 +365,58 @@ pub(crate) async fn find_active_older_than(
         .await?;
 
     Ok(items)
+}
+
+pub(crate) async fn find_by_id_any_user(
+    exec: impl PgExecutor<'_>,
+    id: Uuid,
+) -> Result<Option<Item>> {
+    let sql = format!("SELECT {ITEM_COLS} FROM items WHERE id = $1 AND status != 'deleted'");
+    let item = sqlx::query_as::<_, Item>(&sql)
+        .bind(id)
+        .fetch_optional(exec)
+        .await?;
+
+    Ok(item)
+}
+
+pub(crate) async fn claim_item(
+    exec: impl PgExecutor<'_>,
+    id: Uuid,
+    claimer_id: Uuid,
+) -> Result<bool> {
+    let result = sqlx::query(
+        "UPDATE items \
+         SET claimed_by = $2, claimed_at = NOW(), updated_at = NOW() \
+         WHERE id = $1 \
+           AND user_id != $2 \
+           AND claimed_by IS NULL \
+           AND status = 'active'",
+    )
+    .bind(id)
+    .bind(claimer_id)
+    .execute(exec)
+    .await?;
+
+    Ok(result.rows_affected() > 0)
+}
+
+pub(crate) async fn unclaim_item(
+    exec: impl PgExecutor<'_>,
+    id: Uuid,
+    claimer_id: Uuid,
+) -> Result<bool> {
+    let result = sqlx::query(
+        "UPDATE items \
+         SET claimed_by = NULL, claimed_at = NULL, updated_at = NOW() \
+         WHERE id = $1 \
+           AND claimed_by = $2 \
+           AND status != 'deleted'",
+    )
+    .bind(id)
+    .bind(claimer_id)
+    .execute(exec)
+    .await?;
+
+    Ok(result.rows_affected() > 0)
 }
