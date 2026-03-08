@@ -19,6 +19,7 @@ use rest_api::repositories::item_repo::PgItemRepo;
 use rest_api::repositories::push_token_repo::PgPushTokenRepo;
 use rest_api::repositories::refresh_token_repo::PgRefreshTokenRepo;
 use rest_api::repositories::user_repo::PgUserRepo;
+use rest_api::services::apns_notification_service::ApnsNotificationService;
 use rest_api::services::auth_service::PgAuthService;
 use rest_api::services::category_service::PgCategoryService;
 use rest_api::services::email_service::ResendEmailService;
@@ -29,7 +30,8 @@ use rest_api::services::reminder_service::PgReminderService;
 use rest_api::services::user_service::PgUserService;
 use rest_api::traits::{
     AuthService, CategoryRepo, CategoryService, EmailService, HealthCheck, ItemRepo, ItemService,
-    PushTokenRepo, PushTokenService, RefreshTokenRepo, ReminderService, UserRepo, UserService,
+    NotificationService, PushTokenRepo, PushTokenService, RefreshTokenRepo, ReminderService,
+    UserRepo, UserService,
 };
 use rest_api::utils::jwt::JwtKeys;
 
@@ -97,13 +99,27 @@ async fn main() -> anyhow::Result<()> {
     let push_token_svc: Arc<dyn PushTokenService> =
         Arc::new(PgPushTokenService::new(push_token_repo.clone()));
 
+    // APNs notification service
+    let apns_key = std::fs::read(&config.apns_key_path)
+        .map_err(|e| anyhow::anyhow!("Failed to read APNs key at {}: {e}", config.apns_key_path))?;
+    let notification_svc: Arc<dyn NotificationService> = Arc::new(
+        ApnsNotificationService::new(
+            &apns_key,
+            &config.apns_key_id,
+            &config.apns_team_id,
+            &config.apns_bundle_id,
+            config.apns_sandbox,
+        )
+        .map_err(|e| anyhow::anyhow!("Failed to initialize APNs client: {e}"))?,
+    );
+
     // Reminder service (not in AppState — used only by the CRON job)
     let reminder_svc: Arc<dyn ReminderService> = Arc::new(PgReminderService::new(
         user_repo,
         item_repo,
         push_token_repo,
         redis.clone(),
-        reqwest::Client::new(),
+        notification_svc,
     ));
 
     let state = AppState {

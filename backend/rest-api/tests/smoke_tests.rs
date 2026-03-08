@@ -492,3 +492,79 @@ async fn smoke_full_categories_crud_flow() {
     assert_eq!(renamed["name"], "Renamed Default");
     assert_eq!(renamed["is_default"], true);
 }
+
+#[tokio::test]
+async fn smoke_full_push_token_flow() {
+    let app = SmokeTestApp::new().await;
+    let password = common::TEST_PASSWORD;
+    let device_token = "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6abcd";
+
+    // ── Step 0: Register and get access token ───────────────────
+    let resp = app
+        .client
+        .post(app.url("/auth/register"))
+        .json(&serde_json::json!({
+            "email": "push-smoke@example.com",
+            "password": password,
+        }))
+        .send()
+        .await
+        .expect("register failed");
+    assert_eq!(resp.status(), 201);
+    let reg: serde_json::Value = resp.json().await.unwrap();
+    let token = reg["tokens"]["access_token"].as_str().unwrap();
+
+    // ── Step 1: Register push token ─────────────────────────────
+    let resp = app
+        .client
+        .post(app.url("/push-tokens"))
+        .bearer_auth(token)
+        .json(&serde_json::json!({
+            "token": device_token,
+            "platform": "ios"
+        }))
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), 201);
+    let pt: serde_json::Value = resp.json().await.unwrap();
+    let pt_id = pt["id"].as_str().expect("id should be a string");
+    assert_eq!(pt["token"], device_token);
+    assert_eq!(pt["platform"], "ios");
+
+    // ── Step 2: Idempotent re-register ──────────────────────────
+    let resp = app
+        .client
+        .post(app.url("/push-tokens"))
+        .bearer_auth(token)
+        .json(&serde_json::json!({
+            "token": device_token,
+            "platform": "ios"
+        }))
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), 201);
+    let pt2: serde_json::Value = resp.json().await.unwrap();
+    assert_eq!(pt2["id"], pt_id, "upsert should return same ID");
+
+    // ── Step 3: Unregister push token ───────────────────────────
+    let resp = app
+        .client
+        .delete(app.url(&format!("/push-tokens/{device_token}")))
+        .bearer_auth(token)
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), 204);
+
+    // ── Step 4: Unregister again → 404 ──────────────────────────
+    let resp = app
+        .client
+        .delete(app.url(&format!("/push-tokens/{device_token}")))
+        .bearer_auth(token)
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), 404);
+}

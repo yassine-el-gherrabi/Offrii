@@ -3,10 +3,9 @@ use std::sync::Arc;
 use async_trait::async_trait;
 use chrono::{TimeDelta, Timelike, Utc};
 use redis::AsyncCommands;
-use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::traits;
+use crate::traits::{self, NotificationOutcome, NotificationRequest};
 
 // ── Scoring constants ────────────────────────────────────────────────
 
@@ -29,34 +28,6 @@ fn freq_ttl(freq: &str) -> u64 {
     }
 }
 
-// ── Expo Push API types ──────────────────────────────────────────────
-
-#[derive(Debug, Serialize)]
-struct ExpoPushMessage {
-    to: String,
-    title: String,
-    body: String,
-    sound: &'static str,
-}
-
-#[derive(Debug, Deserialize)]
-struct ExpoPushResponse {
-    data: Vec<ExpoPushTicket>,
-}
-
-#[derive(Debug, Deserialize)]
-struct ExpoPushTicket {
-    status: String,
-    #[serde(default)]
-    details: Option<ExpoPushDetails>,
-}
-
-#[derive(Debug, Deserialize)]
-struct ExpoPushDetails {
-    #[serde(default)]
-    error: Option<String>,
-}
-
 // ── Concrete implementation ──────────────────────────────────────────
 
 pub struct PgReminderService {
@@ -64,7 +35,7 @@ pub struct PgReminderService {
     item_repo: Arc<dyn traits::ItemRepo>,
     push_token_repo: Arc<dyn traits::PushTokenRepo>,
     redis: redis::Client,
-    http: reqwest::Client,
+    notification_svc: Arc<dyn traits::NotificationService>,
 }
 
 impl PgReminderService {
@@ -73,14 +44,14 @@ impl PgReminderService {
         item_repo: Arc<dyn traits::ItemRepo>,
         push_token_repo: Arc<dyn traits::PushTokenRepo>,
         redis: redis::Client,
-        http: reqwest::Client,
+        notification_svc: Arc<dyn traits::NotificationService>,
     ) -> Self {
         Self {
             user_repo,
             item_repo,
             push_token_repo,
             redis,
-            http,
+            notification_svc,
         }
     }
 
@@ -178,47 +149,29 @@ impl PgReminderService {
             format!("N'oublie pas : {}", names.join(", "))
         };
 
-        // 6. Send to all tokens (batch of 100)
-        let messages: Vec<ExpoPushMessage> = tokens
+        // 6. Send via NotificationService
+        let requests: Vec<NotificationRequest> = tokens
             .iter()
-            .map(|pt| ExpoPushMessage {
-                to: pt.token.clone(),
+            .map(|pt| NotificationRequest {
+                device_token: pt.token.clone(),
                 title: title.clone(),
                 body: body.clone(),
-                sound: "default",
             })
             .collect();
 
-        for chunk in messages.chunks(100) {
-            match self
-                .http
-                .post("https://exp.host/--/api/v2/push/send")
-                .json(&chunk)
-                .send()
-                .await
-            {
-                Ok(resp) => {
-                    if let Ok(push_resp) = resp.json::<ExpoPushResponse>().await {
-                        // Handle DeviceNotRegistered — remove invalid tokens
-                        for (i, ticket) in push_resp.data.iter().enumerate() {
-                            if ticket.status == "error"
-                                && let Some(details) = &ticket.details
-                                && details.error.as_deref() == Some("DeviceNotRegistered")
-                                && let Some(msg) = chunk.get(i)
-                            {
-                                tracing::info!(
-                                    token = %msg.to,
-                                    "removing unregistered device token"
-                                );
-                                let _ =
-                                    self.push_token_repo.delete_by_token(user_id, &msg.to).await;
-                            }
-                        }
-                    }
-                }
-                Err(e) => {
-                    tracing::error!(user_id = %user_id, error = %e, "expo push send failed");
-                }
+        let outcomes = self.notification_svc.send_batch(&requests).await;
+
+        // Handle invalid tokens — remove them from DB
+        for (outcome, push_token) in outcomes.iter().zip(tokens.iter()) {
+            if matches!(outcome, NotificationOutcome::InvalidToken) {
+                tracing::info!(
+                    token = %push_token.token,
+                    "removing invalid device token"
+                );
+                let _ = self
+                    .push_token_repo
+                    .delete_by_token(user_id, &push_token.token)
+                    .await;
             }
         }
 

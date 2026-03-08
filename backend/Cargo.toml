@@ -12,6 +12,7 @@ unused = { level = "deny", priority = -1 }
 unused_variables = { level = "deny" }
 
 [workspace.dependencies]
+a2 = "0.10"
 anyhow = "1.0"
 argon2 = "0.5"
 async-trait = "0.1"
@@ -19,6 +20,7 @@ axum = "0.8"
 chrono = { version = "0.4", features = ["serde"] }
 chrono-tz = "0.10"
 dotenvy = "0.15"
+futures = "0.3"
 jsonwebtoken = "9"
 rand = "0.9"
 rand_core = { version = "0.6", features = ["getrandom"] }
