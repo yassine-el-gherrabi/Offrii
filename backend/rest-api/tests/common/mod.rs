@@ -1,3 +1,4 @@
+use std::collections::VecDeque;
 use std::sync::{Arc, Mutex as StdMutex};
 
 /// Non-breached password that passes OWASP policy checks, shared across all test modules.
@@ -62,7 +63,7 @@ impl EmailService for SpyEmailService {
 pub struct SpyNotificationService {
     pub sent: Arc<StdMutex<Vec<(String, String, String)>>>,
     /// Per-call outcomes to return; defaults to `Sent` when empty.
-    pub outcomes: Arc<StdMutex<Vec<NotificationOutcome>>>,
+    pub outcomes: Arc<StdMutex<VecDeque<NotificationOutcome>>>,
 }
 
 #[allow(dead_code)]
@@ -70,7 +71,7 @@ impl SpyNotificationService {
     pub fn new() -> Self {
         Self {
             sent: Arc::new(StdMutex::new(Vec::new())),
-            outcomes: Arc::new(StdMutex::new(Vec::new())),
+            outcomes: Arc::new(StdMutex::new(VecDeque::new())),
         }
     }
 }
@@ -84,11 +85,7 @@ impl NotificationService for SpyNotificationService {
             .iter()
             .map(|m| {
                 sent.push((m.device_token.clone(), m.title.clone(), m.body.clone()));
-                if outcomes.is_empty() {
-                    NotificationOutcome::Sent
-                } else {
-                    outcomes.remove(0)
-                }
+                outcomes.pop_front().unwrap_or(NotificationOutcome::Sent)
             })
             .collect()
     }
