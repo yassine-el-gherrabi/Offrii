@@ -5,6 +5,8 @@ pub struct Config {
     pub database_url: String,
     pub redis_url: String,
     pub api_port: u16,
+    pub resend_api_key: String,
+    pub email_from: String,
 }
 
 impl Config {
@@ -23,10 +25,18 @@ impl Config {
             .parse::<u16>()
             .map_err(|_| anyhow::anyhow!("API_PORT must be a valid u16"))?;
 
+        let resend_api_key =
+            var("RESEND_API_KEY").map_err(|_| anyhow::anyhow!("RESEND_API_KEY must be set"))?;
+
+        let email_from =
+            var("EMAIL_FROM").unwrap_or_else(|_| "Offrii <noreply@offrii.com>".to_string());
+
         Ok(Self {
             database_url,
             redis_url,
             api_port,
+            resend_api_key,
+            email_from,
         })
     }
 }
@@ -53,11 +63,15 @@ mod tests {
             "DATABASE_URL" => "postgres://localhost/test",
             "REDIS_URL" => "redis://custom:1234",
             "API_PORT" => "8080",
+            "RESEND_API_KEY" => "re_test_key",
+            "EMAIL_FROM" => "Test <test@example.com>",
         })
         .unwrap();
         assert_eq!(cfg.database_url, "postgres://localhost/test");
         assert_eq!(cfg.redis_url, "redis://custom:1234");
         assert_eq!(cfg.api_port, 8080);
+        assert_eq!(cfg.resend_api_key, "re_test_key");
+        assert_eq!(cfg.email_from, "Test <test@example.com>");
     }
 
     #[test]
@@ -73,6 +87,7 @@ mod tests {
     fn from_vars_defaults_redis_url() {
         let cfg = Config::from_vars(vars! {
             "DATABASE_URL" => "postgres://localhost/test",
+            "RESEND_API_KEY" => "re_test",
         })
         .unwrap();
         assert_eq!(cfg.redis_url, "redis://localhost:6379");
@@ -82,6 +97,7 @@ mod tests {
     fn from_vars_defaults_api_port() {
         let cfg = Config::from_vars(vars! {
             "DATABASE_URL" => "postgres://localhost/test",
+            "RESEND_API_KEY" => "re_test",
         })
         .unwrap();
         assert_eq!(cfg.api_port, 3000);
@@ -91,6 +107,7 @@ mod tests {
     fn from_vars_invalid_api_port() {
         let err = Config::from_vars(vars! {
             "DATABASE_URL" => "postgres://localhost/test",
+            "RESEND_API_KEY" => "re_test",
             "API_PORT" => "not_a_number",
         })
         .unwrap_err();
@@ -104,6 +121,7 @@ mod tests {
     fn from_vars_empty_database_url_is_accepted() {
         let cfg = Config::from_vars(vars! {
             "DATABASE_URL" => "",
+            "RESEND_API_KEY" => "re_test",
         })
         .unwrap();
         assert_eq!(cfg.database_url, "");
@@ -113,6 +131,7 @@ mod tests {
     fn from_vars_port_zero_is_valid() {
         let cfg = Config::from_vars(vars! {
             "DATABASE_URL" => "postgres://localhost/test",
+            "RESEND_API_KEY" => "re_test",
             "API_PORT" => "0",
         })
         .unwrap();
@@ -123,6 +142,7 @@ mod tests {
     fn from_vars_port_overflow() {
         let err = Config::from_vars(vars! {
             "DATABASE_URL" => "postgres://localhost/test",
+            "RESEND_API_KEY" => "re_test",
             "API_PORT" => "99999",
         })
         .unwrap_err();
@@ -130,5 +150,27 @@ mod tests {
             err.to_string().contains("API_PORT must be a valid u16"),
             "unexpected error: {err}"
         );
+    }
+
+    #[test]
+    fn from_vars_missing_resend_api_key() {
+        let err = Config::from_vars(vars! {
+            "DATABASE_URL" => "postgres://localhost/test",
+        })
+        .unwrap_err();
+        assert!(
+            err.to_string().contains("RESEND_API_KEY must be set"),
+            "unexpected error: {err}"
+        );
+    }
+
+    #[test]
+    fn from_vars_defaults_email_from() {
+        let cfg = Config::from_vars(vars! {
+            "DATABASE_URL" => "postgres://localhost/test",
+            "RESEND_API_KEY" => "re_test",
+        })
+        .unwrap();
+        assert_eq!(cfg.email_from, "Offrii <noreply@offrii.com>");
     }
 }

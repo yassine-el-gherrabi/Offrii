@@ -35,6 +35,38 @@ pub struct RefreshRequest {
     pub refresh_token: String,
 }
 
+#[derive(Debug, Deserialize, Validate)]
+pub struct ChangePasswordRequest {
+    #[validate(length(min = 1, message = "current password is required"))]
+    pub current_password: String,
+    #[validate(length(
+        min = 8,
+        max = 128,
+        message = "new password must be between 8 and 128 characters"
+    ))]
+    pub new_password: String,
+}
+
+#[derive(Debug, Deserialize, Validate)]
+pub struct ForgotPasswordRequest {
+    #[validate(email(message = "invalid email address"))]
+    pub email: String,
+}
+
+#[derive(Debug, Deserialize, Validate)]
+pub struct ResetPasswordRequest {
+    #[validate(email(message = "invalid email address"))]
+    pub email: String,
+    #[validate(length(equal = 6, message = "code must be exactly 6 characters"))]
+    pub code: String,
+    #[validate(length(
+        min = 8,
+        max = 128,
+        message = "password must be between 8 and 128 characters"
+    ))]
+    pub new_password: String,
+}
+
 // ── Response DTOs ────────────────────────────────────────────────────
 
 #[derive(Debug, Clone, Serialize)]

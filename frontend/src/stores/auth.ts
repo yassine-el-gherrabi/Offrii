@@ -21,6 +21,7 @@ interface AuthState {
   register: (email: string, password: string, displayName?: string) => Promise<void>;
   logout: () => Promise<void>;
   restoreSession: () => Promise<void>;
+  updateUser: (partial: Partial<UserResponse>) => void;
 }
 
 export const useAuthStore = create<AuthState>((set, get) => {
@@ -80,6 +81,14 @@ export const useAuthStore = create<AuthState>((set, get) => {
       set({ accessToken: null, user: null, isAuthenticated: false });
       await SecureStore.deleteItemAsync(REFRESH_TOKEN_KEY);
       await SecureStore.deleteItemAsync(USER_DATA_KEY);
+    },
+
+    updateUser: (partial) => {
+      const current = get().user;
+      if (!current) return;
+      const updated = { ...current, ...partial };
+      set({ user: updated });
+      void SecureStore.setItemAsync(USER_DATA_KEY, JSON.stringify(updated));
     },
 
     restoreSession: async () => {

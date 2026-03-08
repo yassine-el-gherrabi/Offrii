@@ -52,6 +52,7 @@ pub struct PgAuthService {
     refresh_token_repo: Arc<dyn traits::RefreshTokenRepo>,
     jwt: Arc<JwtKeys>,
     redis: redis::Client,
+    email_service: Arc<dyn traits::EmailService>,
 }
 
 /// Check if a sqlx database error is a unique-constraint violation (PG code 23505).
@@ -71,6 +72,7 @@ impl PgAuthService {
         refresh_token_repo: Arc<dyn traits::RefreshTokenRepo>,
         jwt: Arc<JwtKeys>,
         redis: redis::Client,
+        email_service: Arc<dyn traits::EmailService>,
     ) -> Self {
         Self {
             pool,
@@ -78,6 +80,7 @@ impl PgAuthService {
             refresh_token_repo,
             jwt,
             redis,
+            email_service,
         }
     }
 }
@@ -295,6 +298,183 @@ impl traits::AuthService for PgAuthService {
                 tracing::warn!("redis unavailable – skipping JTI blacklist on logout");
             }
         }
+
+        Ok(())
+    }
+
+    #[tracing::instrument(skip(self, current_password, new_password))]
+    async fn change_password(
+        &self,
+        user_id: Uuid,
+        current_password: &str,
+        new_password: &str,
+    ) -> Result<(), AppError> {
+        // 1. Fetch user
+        let user = self
+            .user_repo
+            .find_by_id(user_id)
+            .await
+            .map_err(AppError::Internal)?
+            .ok_or_else(|| AppError::NotFound("user not found".into()))?;
+
+        // 2. Verify current password on blocking thread
+        let hash = user.password_hash.clone();
+        let current_owned = current_password.to_string();
+        let valid =
+            tokio::task::spawn_blocking(move || hash::verify_password(&current_owned, &hash))
+                .await
+                .map_err(|e| AppError::Internal(anyhow::anyhow!("spawn_blocking join error: {e}")))?
+                .map_err(AppError::Internal)?;
+
+        if !valid {
+            return Err(AppError::Unauthorized("invalid current password".into()));
+        }
+
+        // 3. Hash new password on blocking thread
+        let new_owned = new_password.to_string();
+        let new_hash = tokio::task::spawn_blocking(move || hash::hash_password(&new_owned))
+            .await
+            .map_err(|e| AppError::Internal(anyhow::anyhow!("spawn_blocking join error: {e}")))?
+            .map_err(AppError::Internal)?;
+
+        // 4. Persist new hash
+        self.user_repo
+            .update_password_hash(user_id, &new_hash)
+            .await
+            .map_err(AppError::Internal)?;
+
+        // 5. Invalidate all tokens (force re-login everywhere)
+        self.invalidate_all_tokens(user_id).await?;
+
+        Ok(())
+    }
+
+    #[tracing::instrument(skip(self))]
+    async fn forgot_password(&self, email: &str) -> Result<(), AppError> {
+        let email = email.trim().to_lowercase();
+
+        // Rate limit: one request per email per 60 seconds
+        if let Ok(mut conn) = self.redis.get_multiplexed_async_connection().await {
+            let rate_key = format!("pwreset:rate:{email}");
+            let set: Result<bool, _> = redis::cmd("SET")
+                .arg(&rate_key)
+                .arg("1")
+                .arg("EX")
+                .arg(60)
+                .arg("NX")
+                .query_async(&mut conn)
+                .await;
+
+            // If SET NX failed (key already exists), silently return Ok
+            if set.is_err() || !set.unwrap_or(false) {
+                return Ok(());
+            }
+        }
+
+        // Look up user — if not found, return Ok silently (no email enumeration)
+        let user = self
+            .user_repo
+            .find_by_email(&email)
+            .await
+            .map_err(AppError::Internal)?;
+
+        let Some(_user) = user else {
+            return Ok(());
+        };
+
+        // Generate 6-digit code
+        let n: u32 = rand::random_range(0..1_000_000);
+        let code = format!("{n:06}");
+
+        // Hash the code and store in Redis with 30-minute TTL
+        let code_hash = sha256_hex(&code);
+        if let Ok(mut conn) = self.redis.get_multiplexed_async_connection().await {
+            let key = format!("pwreset:{email}");
+            let _: Result<(), _> = redis::cmd("SET")
+                .arg(&key)
+                .arg(&code_hash)
+                .arg("EX")
+                .arg(1800) // 30 minutes
+                .query_async(&mut conn)
+                .await;
+        }
+
+        // Send email in background
+        let email_svc = self.email_service.clone();
+        let to = email.clone();
+        let code_clone = code.clone();
+        tokio::spawn(async move {
+            if let Err(e) = email_svc.send_password_reset_code(&to, &code_clone).await {
+                tracing::error!("failed to send password reset email: {e}");
+            }
+        });
+
+        Ok(())
+    }
+
+    #[tracing::instrument(skip(self, code, new_password))]
+    async fn reset_password(
+        &self,
+        email: &str,
+        code: &str,
+        new_password: &str,
+    ) -> Result<(), AppError> {
+        let email = email.trim().to_lowercase();
+
+        // Read stored hash from Redis
+        let stored_hash: Option<String> =
+            if let Ok(mut conn) = self.redis.get_multiplexed_async_connection().await {
+                let key = format!("pwreset:{email}");
+                redis::cmd("GET")
+                    .arg(&key)
+                    .query_async(&mut conn)
+                    .await
+                    .ok()
+            } else {
+                None
+            };
+
+        let stored_hash =
+            stored_hash.ok_or_else(|| AppError::BadRequest("invalid_or_expired_code".into()))?;
+
+        // Verify code
+        let code_hash = sha256_hex(code);
+        if code_hash != stored_hash {
+            return Err(AppError::BadRequest("invalid_or_expired_code".into()));
+        }
+
+        // Clean up Redis keys
+        if let Ok(mut conn) = self.redis.get_multiplexed_async_connection().await {
+            let _: Result<(), _> = redis::cmd("DEL")
+                .arg(format!("pwreset:{email}"))
+                .arg(format!("pwreset:rate:{email}"))
+                .query_async(&mut conn)
+                .await;
+        }
+
+        // Find user
+        let user = self
+            .user_repo
+            .find_by_email(&email)
+            .await
+            .map_err(AppError::Internal)?
+            .ok_or_else(|| AppError::BadRequest("invalid_or_expired_code".into()))?;
+
+        // Hash new password
+        let new_owned = new_password.to_string();
+        let new_hash = tokio::task::spawn_blocking(move || hash::hash_password(&new_owned))
+            .await
+            .map_err(|e| AppError::Internal(anyhow::anyhow!("spawn_blocking join error: {e}")))?
+            .map_err(AppError::Internal)?;
+
+        // Update password
+        self.user_repo
+            .update_password_hash(user.id, &new_hash)
+            .await
+            .map_err(AppError::Internal)?;
+
+        // Invalidate all tokens
+        self.invalidate_all_tokens(user.id).await?;
 
         Ok(())
     }

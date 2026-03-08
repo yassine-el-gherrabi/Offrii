@@ -75,6 +75,10 @@ impl traits::UserRepo for PgUserRepo {
         find_eligible_for_reminder(&self.pool, utc_hour).await
     }
 
+    async fn update_password_hash(&self, id: Uuid, password_hash: &str) -> Result<bool> {
+        update_password_hash(&self.pool, id, password_hash).await
+    }
+
     async fn increment_token_version(&self, id: Uuid) -> Result<i32> {
         increment_token_version(&self.pool, id).await
     }
@@ -180,6 +184,21 @@ pub(crate) async fn update_profile(
     let user = qb.build_query_as::<User>().fetch_optional(exec).await?;
 
     Ok(user)
+}
+
+pub(crate) async fn update_password_hash(
+    exec: impl PgExecutor<'_>,
+    id: Uuid,
+    password_hash: &str,
+) -> Result<bool> {
+    let result =
+        sqlx::query("UPDATE users SET password_hash = $1, updated_at = NOW() WHERE id = $2")
+            .bind(password_hash)
+            .bind(id)
+            .execute(exec)
+            .await?;
+
+    Ok(result.rows_affected() > 0)
 }
 
 pub(crate) async fn delete_user(exec: impl PgExecutor<'_>, id: Uuid) -> Result<bool> {

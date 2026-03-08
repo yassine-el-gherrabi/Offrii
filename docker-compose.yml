@@ -44,6 +44,7 @@ services:
       RUST_LOG: ${RUST_LOG:-rest_api=info,tower_http=info}
       JWT_PRIVATE_KEY_FILE: /run/secrets/jwt_private_key
       JWT_PUBLIC_KEY_FILE: /run/secrets/jwt_public_key
+      RESEND_API_KEY: ${RESEND_API_KEY:?Set RESEND_API_KEY in .env}
     depends_on:
       postgres:
         condition: service_healthy

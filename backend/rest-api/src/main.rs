@@ -21,14 +21,15 @@ use rest_api::repositories::refresh_token_repo::PgRefreshTokenRepo;
 use rest_api::repositories::user_repo::PgUserRepo;
 use rest_api::services::auth_service::PgAuthService;
 use rest_api::services::category_service::PgCategoryService;
+use rest_api::services::email_service::ResendEmailService;
 use rest_api::services::health_check::PgHealthCheck;
 use rest_api::services::item_service::PgItemService;
 use rest_api::services::push_token_service::PgPushTokenService;
 use rest_api::services::reminder_service::PgReminderService;
 use rest_api::services::user_service::PgUserService;
 use rest_api::traits::{
-    AuthService, CategoryRepo, CategoryService, HealthCheck, ItemRepo, ItemService, PushTokenRepo,
-    PushTokenService, RefreshTokenRepo, ReminderService, UserRepo, UserService,
+    AuthService, CategoryRepo, CategoryService, EmailService, HealthCheck, ItemRepo, ItemService,
+    PushTokenRepo, PushTokenService, RefreshTokenRepo, ReminderService, UserRepo, UserService,
 };
 use rest_api::utils::jwt::JwtKeys;
 
@@ -62,12 +63,18 @@ async fn main() -> anyhow::Result<()> {
     let refresh_token_repo: Arc<dyn RefreshTokenRepo> =
         Arc::new(PgRefreshTokenRepo::new(db.clone()));
 
+    let email_service: Arc<dyn EmailService> = Arc::new(ResendEmailService::new(
+        &config.resend_api_key,
+        config.email_from.clone(),
+    ));
+
     let auth: Arc<dyn AuthService> = Arc::new(PgAuthService::new(
         db.clone(),
         user_repo.clone(),
         refresh_token_repo,
         jwt.clone(),
         redis.clone(),
+        email_service,
     ));
     let item_repo: Arc<dyn ItemRepo> = Arc::new(PgItemRepo::new(db.clone()));
     let items: Arc<dyn ItemService> = Arc::new(PgItemService::new(
@@ -77,12 +84,16 @@ async fn main() -> anyhow::Result<()> {
     ));
     let category_repo: Arc<dyn CategoryRepo> = Arc::new(PgCategoryRepo::new(db.clone()));
     let categories: Arc<dyn CategoryService> =
-        Arc::new(PgCategoryService::new(category_repo, redis.clone()));
+        Arc::new(PgCategoryService::new(category_repo.clone(), redis.clone()));
     let health: Arc<dyn HealthCheck> = Arc::new(PgHealthCheck::new(db.clone(), redis.clone()));
 
     // New services
     let push_token_repo: Arc<dyn PushTokenRepo> = Arc::new(PgPushTokenRepo::new(db.clone()));
-    let user_svc: Arc<dyn UserService> = Arc::new(PgUserService::new(user_repo.clone()));
+    let user_svc: Arc<dyn UserService> = Arc::new(PgUserService::new(
+        user_repo.clone(),
+        item_repo.clone(),
+        category_repo.clone(),
+    ));
     let push_token_svc: Arc<dyn PushTokenService> =
         Arc::new(PgPushTokenService::new(push_token_repo.clone()));
 

@@ -3,6 +3,8 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use validator::Validate;
 
+use crate::dto::categories::CategoryResponse;
+use crate::dto::items::ItemResponse;
 use crate::models::User;
 
 // ── Request DTOs ─────────────────────────────────────────────────────
@@ -30,6 +32,14 @@ pub struct UserProfileResponse {
     pub timezone: String,
     pub locale: String,
     pub created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct UserDataExport {
+    pub profile: UserProfileResponse,
+    pub items: Vec<ItemResponse>,
+    pub categories: Vec<CategoryResponse>,
+    pub exported_at: DateTime<Utc>,
 }
 
 impl From<&User> for UserProfileResponse {

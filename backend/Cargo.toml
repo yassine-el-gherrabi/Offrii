@@ -20,9 +20,11 @@ chrono = { version = "0.4", features = ["serde"] }
 chrono-tz = "0.10"
 dotenvy = "0.15"
 jsonwebtoken = "9"
+rand = "0.9"
 rand_core = { version = "0.6", features = ["getrandom"] }
 redis = { version = "1.0", features = ["tokio-comp"] }
 reqwest = { version = "0.12", features = ["json", "rustls-tls"] }
+resend-rs = { version = "0.8", default-features = false, features = ["rustls-tls"] }
 rsa = "0.9"
 rust_decimal = { version = "1", features = ["serde-with-str"] }
 serde = { version = "1.0", features = ["derive"] }

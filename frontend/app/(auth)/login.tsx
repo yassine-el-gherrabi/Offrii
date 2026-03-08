@@ -1,10 +1,11 @@
 import { useState } from 'react';
+import { Text } from 'react-native';
 import { TextInput, Button, HelperText } from 'react-native-paper';
 import { router } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 
 import { useAuthStore } from '@/src/stores/auth';
-import { colors } from '@/src/theme';
+import { colors, spacing } from '@/src/theme';
 import { ApiRequestError } from '@/src/api/client';
 import { ROUTES } from '@/src/constants/routes';
 import { AuthLayout, authStyles } from '@/src/components/auth';
@@ -120,6 +121,19 @@ export default function LoginScreen() {
       <HelperText type="error" visible={!!passwordError} testID="password-error">
         {passwordError}
       </HelperText>
+
+      <Text
+        onPress={() => router.push(ROUTES.FORGOT_PASSWORD as any)}
+        style={{
+          color: colors.primary,
+          textAlign: 'right',
+          marginBottom: spacing.sm,
+          fontWeight: '600',
+        }}
+        testID="forgot-password-link"
+      >
+        {t('auth.forgotPassword.link')}
+      </Text>
 
       <Button
         mode="contained"
