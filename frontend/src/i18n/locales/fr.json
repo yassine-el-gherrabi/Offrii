@@ -29,7 +29,11 @@
         "weak": "Faible",
         "good": "Correct",
         "strong": "Fort"
-      }
+      },
+      "legalNotice": "En vous inscrivant, vous acceptez notre ",
+      "legalPrivacy": "Politique de confidentialité",
+      "legalAnd": " et nos ",
+      "legalTerms": "Mentions légales"
     },
     "validation": {
       "emailRequired": "L'email est requis",
@@ -202,7 +206,7 @@
       "title": "À propos",
       "version": "Version",
       "privacy": "Politique de confidentialité",
-      "terms": "Conditions d'utilisation"
+      "terms": "Mentions légales"
     },
     "logout": "Se déconnecter",
     "errors": {
@@ -211,6 +215,70 @@
       "passwordChangeFailed": "Impossible de changer le mot de passe",
       "exportFailed": "Impossible d'exporter les données",
       "deleteFailed": "Impossible de supprimer le compte"
+    }
+  },
+  "legal": {
+    "legalNotice": {
+      "title": "Mentions légales",
+      "editor": {
+        "title": "Éditeur de l'application",
+        "body": "Yassine EL GHERRABI\nEntrepreneur individuel (libérale non réglementée)\nNom commercial : North Focus\nSIREN : 940 109 150\nSIRET : 940 109 150 000 18\nAPE : 6201Z — Programmation informatique\n\n24 rue Senac de Meilhan\n13001 Marseille, France\n\nDébut d'activité : 01/02/2025\nEmail : yassineelgherrabi@gmail.com"
+      },
+      "director": {
+        "title": "Directeur de la publication",
+        "body": "Yassine EL GHERRABI"
+      },
+      "host": {
+        "title": "Hébergeur",
+        "body": "Hetzner Online GmbH\nIndustriestr. 25\n91710 Gunzenhausen\nAllemagne"
+      },
+      "contact": {
+        "title": "Contact",
+        "body": "Email : yassineelgherrabi@gmail.com"
+      }
+    },
+    "privacyPolicy": {
+      "title": "Politique de confidentialité",
+      "controller": {
+        "title": "Responsable du traitement",
+        "body": "Yassine EL GHERRABI\nEntrepreneur individuel — North Focus\n24 rue Senac de Meilhan, 13001 Marseille, France\nEmail : yassineelgherrabi@gmail.com"
+      },
+      "dataCollected": {
+        "title": "Données collectées",
+        "body": "Nous collectons les données suivantes :\n\n• Adresse email (pour l'authentification)\n• Mot de passe (hashé avec Argon2, jamais stocké en clair)\n• Nom d'affichage (optionnel)\n• Préférences utilisateur (langue, fuseau horaire, fréquence et heure des rappels)\n• Jetons de notifications push (pour l'envoi de rappels)"
+      },
+      "purposes": {
+        "title": "Finalités du traitement",
+        "body": "Vos données sont utilisées pour :\n\n• Gestion de votre compte utilisateur\n• Envoi de notifications et rappels selon vos préférences\n• Personnalisation de l'expérience (langue, fuseau horaire)"
+      },
+      "legalBasis": {
+        "title": "Base légale",
+        "body": "Le traitement de vos données repose sur :\n\n• Votre consentement, donné lors de l'inscription\n• L'intérêt légitime pour la sécurité de votre compte (hachage du mot de passe, gestion des sessions)"
+      },
+      "retention": {
+        "title": "Durée de conservation",
+        "body": "Vos données sont conservées pendant toute la durée d'existence de votre compte.\n\nVous pouvez à tout moment exporter vos données (depuis votre profil) puis supprimer votre compte. La suppression entraîne l'effacement définitif de toutes vos données."
+      },
+      "hosting": {
+        "title": "Hébergement et transfert de données",
+        "body": "Vos données sont hébergées par Hetzner Online GmbH, en Allemagne (Union européenne).\n\nAucun transfert de données en dehors de l'Union européenne n'est effectué."
+      },
+      "rights": {
+        "title": "Vos droits",
+        "body": "Conformément au RGPD, vous disposez des droits suivants :\n\n• Droit d'accès à vos données\n• Droit de rectification\n• Droit à l'effacement (suppression du compte)\n• Droit à la portabilité (export de vos données)\n• Droit d'opposition\n• Droit à la limitation du traitement\n\nVous pouvez exercer ces droits directement depuis votre profil dans l'application, ou en nous contactant par email à yassineelgherrabi@gmail.com."
+      },
+      "cookies": {
+        "title": "Cookies et traceurs",
+        "body": "Offrii n'utilise aucun cookie tiers, aucun traceur publicitaire et aucun outil d'analyse comportementale.\n\nSeuls des jetons d'authentification locaux sont utilisés pour maintenir votre session."
+      },
+      "changes": {
+        "title": "Modifications de cette politique",
+        "body": "Cette politique de confidentialité peut être mise à jour. La date de dernière mise à jour sera indiquée ci-dessous.\n\nDernière mise à jour : 8 mars 2026"
+      },
+      "dpo": {
+        "title": "Contact — Protection des données",
+        "body": "Pour toute question relative à la protection de vos données personnelles, vous pouvez nous contacter à :\n\nyassineelgherrabi@gmail.com"
+      }
     }
   }
 }

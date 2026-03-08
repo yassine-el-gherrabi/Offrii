@@ -1,4 +1,6 @@
-export const LEGAL_URLS = {
-  PRIVACY: 'https://offrii.com/privacy',
-  TERMS: 'https://offrii.com/terms',
+import { ROUTES } from './routes';
+
+export const LEGAL_ROUTES = {
+  PRIVACY: ROUTES.PRIVACY_POLICY,
+  TERMS: ROUTES.LEGAL_NOTICE,
 } as const;
