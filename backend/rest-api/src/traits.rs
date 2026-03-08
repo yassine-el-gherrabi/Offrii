@@ -279,6 +279,27 @@ pub trait PushTokenService: Send + Sync {
     async fn unregister_token(&self, user_id: Uuid, token: &str) -> Result<(), AppError>;
 }
 
+// ── Notification traits ─────────────────────────────────────────────
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum NotificationOutcome {
+    Sent,
+    InvalidToken,
+    Error(String),
+}
+
+#[derive(Debug, Clone)]
+pub struct NotificationRequest {
+    pub device_token: String,
+    pub title: String,
+    pub body: String,
+}
+
+#[async_trait]
+pub trait NotificationService: Send + Sync {
+    async fn send_batch(&self, messages: &[NotificationRequest]) -> Vec<NotificationOutcome>;
+}
+
 #[async_trait]
 pub trait ReminderService: Send + Sync {
     async fn execute_hourly_tick(&self);

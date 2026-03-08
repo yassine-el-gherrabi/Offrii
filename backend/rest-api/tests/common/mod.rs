@@ -41,7 +41,8 @@ use rest_api::services::push_token_service::PgPushTokenService;
 use rest_api::services::user_service::PgUserService;
 use rest_api::traits::{
     AuthService, CategoryRepo, CategoryService, EmailService, HealthCheck, ItemRepo, ItemService,
-    PushTokenRepo, PushTokenService, RefreshTokenRepo, UserRepo, UserService,
+    NotificationOutcome, NotificationRequest, NotificationService, PushTokenRepo, PushTokenService,
+    RefreshTokenRepo, UserRepo, UserService,
 };
 use rest_api::utils::jwt::JwtKeys;
 
@@ -54,6 +55,42 @@ impl EmailService for SpyEmailService {
     async fn send_password_reset_code(&self, _to: &str, code: &str) -> Result<(), AppError> {
         *self.last_code.lock().unwrap() = Some(code.to_string());
         Ok(())
+    }
+}
+
+#[allow(dead_code)]
+pub struct SpyNotificationService {
+    pub sent: Arc<StdMutex<Vec<(String, String, String)>>>,
+    /// Per-call outcomes to return; defaults to `Sent` when empty.
+    pub outcomes: Arc<StdMutex<Vec<NotificationOutcome>>>,
+}
+
+#[allow(dead_code)]
+impl SpyNotificationService {
+    pub fn new() -> Self {
+        Self {
+            sent: Arc::new(StdMutex::new(Vec::new())),
+            outcomes: Arc::new(StdMutex::new(Vec::new())),
+        }
+    }
+}
+
+#[async_trait::async_trait]
+impl NotificationService for SpyNotificationService {
+    async fn send_batch(&self, messages: &[NotificationRequest]) -> Vec<NotificationOutcome> {
+        let mut sent = self.sent.lock().unwrap();
+        let mut outcomes = self.outcomes.lock().unwrap();
+        messages
+            .iter()
+            .map(|m| {
+                sent.push((m.device_token.clone(), m.title.clone(), m.body.clone()));
+                if outcomes.is_empty() {
+                    NotificationOutcome::Sent
+                } else {
+                    outcomes.remove(0)
+                }
+            })
+            .collect()
     }
 }
 

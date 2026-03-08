@@ -16,6 +16,7 @@ name = "migrate"
 path = "src/bin/migrate.rs"
 
 [dependencies]
+a2.workspace = true
 anyhow.workspace = true
 argon2.workspace = true
 async-trait.workspace = true
@@ -23,6 +24,7 @@ axum.workspace = true
 chrono.workspace = true
 chrono-tz.workspace = true
 dotenvy.workspace = true
+futures.workspace = true
 jsonwebtoken.workspace = true
 rand.workspace = true
 rand_core.workspace = true
