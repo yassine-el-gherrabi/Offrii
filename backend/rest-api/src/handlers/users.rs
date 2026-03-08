@@ -5,7 +5,7 @@ use axum::{Json, Router};
 use validator::Validate;
 
 use crate::AppState;
-use crate::dto::users::{UpdateProfileRequest, UserProfileResponse};
+use crate::dto::users::{UpdateProfileRequest, UserDataExport, UserProfileResponse};
 use crate::errors::AppError;
 use crate::middleware::AuthUser;
 
@@ -15,12 +15,14 @@ fn validate_request(req: &impl Validate) -> Result<(), AppError> {
 }
 
 pub fn router() -> Router<AppState> {
-    Router::new().route(
-        "/me",
-        get(get_profile)
-            .patch(update_profile)
-            .delete(delete_account),
-    )
+    Router::new()
+        .route(
+            "/me",
+            get(get_profile)
+                .patch(update_profile)
+                .delete(delete_account),
+        )
+        .route("/me/export", get(export_data))
 }
 
 #[tracing::instrument(skip(state, auth_user))]
@@ -41,6 +43,15 @@ async fn update_profile(
     validate_request(&req)?;
     let response = state.users.update_profile(auth_user.user_id, &req).await?;
     Ok(Json(response))
+}
+
+#[tracing::instrument(skip(state, auth_user))]
+async fn export_data(
+    State(state): State<AppState>,
+    auth_user: AuthUser,
+) -> Result<Json<UserDataExport>, AppError> {
+    let data = state.users.export_data(auth_user.user_id).await?;
+    Ok(Json(data))
 }
 
 #[tracing::instrument(skip(state, auth_user))]

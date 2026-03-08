@@ -40,6 +40,25 @@
       "passwordCommon": "Ce mot de passe est trop courant",
       "passwordBreached": "Ce mot de passe figure dans une fuite de données"
     },
+    "forgotPassword": {
+      "title": "Mot de passe oublié",
+      "description": "Entrez votre email pour recevoir un code de réinitialisation.",
+      "sendCode": "Envoyer le code",
+      "codeSent": "Code envoyé ! Vérifiez votre boîte mail.",
+      "link": "Mot de passe oublié ?"
+    },
+    "resetPassword": {
+      "title": "Réinitialiser le mot de passe",
+      "codeLabel": "Code à 6 chiffres",
+      "newPasswordLabel": "Nouveau mot de passe",
+      "confirmPasswordLabel": "Confirmer le mot de passe",
+      "submit": "Réinitialiser",
+      "success": "Mot de passe réinitialisé ! Connectez-vous.",
+      "resendCode": "Renvoyer le code",
+      "resendIn": "Renvoyer dans {{seconds}}s",
+      "invalidCode": "Code invalide ou expiré.",
+      "passwordMismatch": "Les mots de passe ne correspondent pas."
+    },
     "errors": {
       "unexpected": "Une erreur inattendue est survenue",
       "networkError": "Connexion au serveur impossible"
@@ -140,6 +159,58 @@
   },
   "profile": {
     "title": "Profil",
-    "logout": "Se déconnecter"
+    "account": {
+      "title": "Mon compte",
+      "email": "Email",
+      "displayName": "Nom d'affichage",
+      "saved": "Enregistré !"
+    },
+    "security": {
+      "title": "Sécurité",
+      "changePassword": "Changer le mot de passe",
+      "currentPassword": "Mot de passe actuel",
+      "newPassword": "Nouveau mot de passe",
+      "confirmPassword": "Confirmer le nouveau mot de passe",
+      "passwordChanged": "Mot de passe modifié. Veuillez vous reconnecter."
+    },
+    "reminders": {
+      "title": "Rappels",
+      "frequency": "Fréquence",
+      "never": "Jamais",
+      "daily": "Quotidien",
+      "weekly": "Hebdomadaire",
+      "monthly": "Mensuel",
+      "time": "Heure du rappel",
+      "timezone": "Fuseau horaire",
+      "timezoneAuto": "Automatique"
+    },
+    "language": {
+      "title": "Langue",
+      "french": "Français",
+      "english": "Anglais"
+    },
+    "data": {
+      "title": "Données personnelles",
+      "export": "Exporter mes données",
+      "exportDescription": "Télécharger toutes vos données en JSON",
+      "deleteAccount": "Supprimer mon compte",
+      "deleteConfirmTitle": "Supprimer le compte ?",
+      "deleteConfirmMessage": "Toutes vos données seront définitivement supprimées. Cette action est irréversible.",
+      "deleteConfirmButton": "Supprimer définitivement"
+    },
+    "about": {
+      "title": "À propos",
+      "version": "Version",
+      "privacy": "Politique de confidentialité",
+      "terms": "Conditions d'utilisation"
+    },
+    "logout": "Se déconnecter",
+    "errors": {
+      "loadFailed": "Impossible de charger le profil",
+      "saveFailed": "Impossible d'enregistrer",
+      "passwordChangeFailed": "Impossible de changer le mot de passe",
+      "exportFailed": "Impossible d'exporter les données",
+      "deleteFailed": "Impossible de supprimer le compte"
+    }
   }
 }

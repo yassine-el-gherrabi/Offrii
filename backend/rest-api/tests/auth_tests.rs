@@ -2,7 +2,7 @@ mod common;
 
 use axum::http::StatusCode;
 
-use common::{TEST_PASSWORD, TestApp, assert_error};
+use common::{NEW_PASSWORD, TEST_PASSWORD, TestApp, assert_error};
 
 /// Default test email. Each test gets its own container so no collision risk.
 const TEST_EMAIL: &str = "test@example.com";
@@ -773,4 +773,422 @@ async fn version_bump_does_not_affect_other_users() {
     let body = serde_json::json!({ "refresh_token": refresh_b });
     let (status, _) = app.post_json("/auth/refresh", &body).await;
     assert_eq!(status, StatusCode::OK);
+}
+
+// ---------------------------------------------------------------------------
+// Change password
+// ---------------------------------------------------------------------------
+
+#[tokio::test]
+async fn change_password_success_204() {
+    let app = TestApp::new().await;
+    let reg = app.setup_user(TEST_EMAIL, TEST_PASSWORD).await;
+    let access = reg["tokens"]["access_token"].as_str().unwrap();
+
+    let body = serde_json::json!({
+        "current_password": TEST_PASSWORD,
+        "new_password": NEW_PASSWORD,
+    });
+    let (status, _) = app
+        .post_json_with_auth("/auth/change-password", &body, access)
+        .await;
+
+    assert_eq!(status, StatusCode::NO_CONTENT);
+}
+
+#[tokio::test]
+async fn change_password_wrong_current_401() {
+    let app = TestApp::new().await;
+    let reg = app.setup_user(TEST_EMAIL, TEST_PASSWORD).await;
+    let access = reg["tokens"]["access_token"].as_str().unwrap();
+
+    let body = serde_json::json!({
+        "current_password": "wrongpassword123",
+        "new_password": NEW_PASSWORD,
+    });
+    let (status, resp) = app
+        .post_json_with_auth("/auth/change-password", &body, access)
+        .await;
+
+    assert_eq!(status, StatusCode::UNAUTHORIZED);
+    assert_error(&resp, "UNAUTHORIZED");
+}
+
+#[tokio::test]
+async fn change_password_without_auth_401() {
+    let app = TestApp::new().await;
+
+    let body = serde_json::json!({
+        "current_password": TEST_PASSWORD,
+        "new_password": NEW_PASSWORD,
+    });
+    let (status, _) = app.post_json("/auth/change-password", &body).await;
+
+    assert_eq!(status, StatusCode::UNAUTHORIZED);
+}
+
+#[tokio::test]
+async fn change_password_short_new_password_400() {
+    let app = TestApp::new().await;
+    let reg = app.setup_user(TEST_EMAIL, TEST_PASSWORD).await;
+    let access = reg["tokens"]["access_token"].as_str().unwrap();
+
+    let body = serde_json::json!({
+        "current_password": TEST_PASSWORD,
+        "new_password": "short",
+    });
+    let (status, resp) = app
+        .post_json_with_auth("/auth/change-password", &body, access)
+        .await;
+
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    assert_error(&resp, "BAD_REQUEST");
+}
+
+#[tokio::test]
+async fn change_password_too_long_new_password_400() {
+    let app = TestApp::new().await;
+    let reg = app.setup_user(TEST_EMAIL, TEST_PASSWORD).await;
+    let access = reg["tokens"]["access_token"].as_str().unwrap();
+
+    let body = serde_json::json!({
+        "current_password": TEST_PASSWORD,
+        "new_password": "a".repeat(129),
+    });
+    let (status, resp) = app
+        .post_json_with_auth("/auth/change-password", &body, access)
+        .await;
+
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    assert_error(&resp, "BAD_REQUEST");
+}
+
+#[tokio::test]
+async fn change_password_invalidates_tokens_and_allows_new_login() {
+    let app = TestApp::new().await;
+    let reg = app.setup_user(TEST_EMAIL, TEST_PASSWORD).await;
+    let access = reg["tokens"]["access_token"].as_str().unwrap();
+    let refresh = reg["tokens"]["refresh_token"].as_str().unwrap().to_string();
+
+    // Change password
+    let body = serde_json::json!({
+        "current_password": TEST_PASSWORD,
+        "new_password": NEW_PASSWORD,
+    });
+    let (status, _) = app
+        .post_json_with_auth("/auth/change-password", &body, access)
+        .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+
+    // Old refresh token should be revoked
+    let body = serde_json::json!({ "refresh_token": refresh });
+    let (status, _) = app.post_json("/auth/refresh", &body).await;
+    assert_eq!(status, StatusCode::UNAUTHORIZED);
+
+    // Old password should no longer work
+    let login_body = serde_json::json!({
+        "email": TEST_EMAIL,
+        "password": TEST_PASSWORD,
+    });
+    let (status, _) = app.post_json("/auth/login", &login_body).await;
+    assert_eq!(status, StatusCode::UNAUTHORIZED);
+
+    // New password should work
+    let login_body = serde_json::json!({
+        "email": TEST_EMAIL,
+        "password": NEW_PASSWORD,
+    });
+    let (status, resp) = app.post_json("/auth/login", &login_body).await;
+    assert_eq!(status, StatusCode::OK);
+    assert!(resp["tokens"]["access_token"].is_string());
+}
+
+// ---------------------------------------------------------------------------
+// Forgot password
+// ---------------------------------------------------------------------------
+
+#[tokio::test]
+async fn forgot_password_existing_email_200() {
+    let app = TestApp::new().await;
+    app.setup_user(TEST_EMAIL, TEST_PASSWORD).await;
+
+    let body = serde_json::json!({ "email": TEST_EMAIL });
+    let (status, _) = app.post_json("/auth/forgot-password", &body).await;
+
+    assert_eq!(status, StatusCode::OK);
+
+    // Verify a 6-digit code was generated and "emailed"
+    let code = app.get_last_reset_code().await;
+    assert!(code.is_some(), "expected a reset code to be sent");
+    assert_eq!(code.unwrap().len(), 6);
+}
+
+#[tokio::test]
+async fn forgot_password_nonexistent_email_200() {
+    let app = TestApp::new().await;
+
+    // No user registered — should still return 200 (no email enumeration)
+    let body = serde_json::json!({ "email": "nobody@example.com" });
+    let (status, _) = app.post_json("/auth/forgot-password", &body).await;
+
+    assert_eq!(status, StatusCode::OK);
+}
+
+#[tokio::test]
+async fn forgot_password_invalid_email_400() {
+    let app = TestApp::new().await;
+
+    let body = serde_json::json!({ "email": "not-an-email" });
+    let (status, resp) = app.post_json("/auth/forgot-password", &body).await;
+
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    assert_error(&resp, "BAD_REQUEST");
+}
+
+#[tokio::test]
+async fn forgot_password_rate_limit_no_new_code() {
+    let app = TestApp::new().await;
+    app.setup_user(TEST_EMAIL, TEST_PASSWORD).await;
+
+    // First call — should succeed and send a code
+    let body = serde_json::json!({ "email": TEST_EMAIL });
+    let (status, _) = app.post_json("/auth/forgot-password", &body).await;
+    assert_eq!(status, StatusCode::OK);
+
+    let code1 = app.get_last_reset_code().await;
+    assert!(code1.is_some());
+
+    // Clear the spy
+    *app.last_reset_code.lock().unwrap() = None;
+
+    // Second call within 60s — should return 200 but NOT send a new code
+    let (status, _) = app.post_json("/auth/forgot-password", &body).await;
+    assert_eq!(status, StatusCode::OK);
+
+    // Wait briefly in case a background task fires
+    tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+    let code2 = app.last_reset_code.lock().unwrap().clone();
+    assert!(code2.is_none(), "expected no new code due to rate limiting");
+}
+
+#[tokio::test]
+async fn forgot_password_normalizes_email() {
+    let app = TestApp::new().await;
+    app.setup_user(TEST_EMAIL, TEST_PASSWORD).await;
+
+    // Send with uppercase email — should still match the registered user
+    let body = serde_json::json!({ "email": "TEST@EXAMPLE.COM" });
+    let (status, _) = app.post_json("/auth/forgot-password", &body).await;
+    assert_eq!(status, StatusCode::OK);
+
+    let code = app.get_last_reset_code().await;
+    assert!(
+        code.is_some(),
+        "should find user even with different case email"
+    );
+}
+
+// ---------------------------------------------------------------------------
+// Reset password
+// ---------------------------------------------------------------------------
+
+#[tokio::test]
+async fn reset_password_valid_code_204() {
+    let app = TestApp::new().await;
+    app.setup_user(TEST_EMAIL, TEST_PASSWORD).await;
+
+    // Trigger forgot password to get a code
+    let body = serde_json::json!({ "email": TEST_EMAIL });
+    let (status, _) = app.post_json("/auth/forgot-password", &body).await;
+    assert_eq!(status, StatusCode::OK);
+
+    let code = app.get_last_reset_code().await.unwrap();
+
+    // Reset with the valid code
+    let body = serde_json::json!({
+        "email": TEST_EMAIL,
+        "code": code,
+        "new_password": NEW_PASSWORD,
+    });
+    let (status, _) = app.post_json("/auth/reset-password", &body).await;
+
+    assert_eq!(status, StatusCode::NO_CONTENT);
+}
+
+#[tokio::test]
+async fn reset_password_invalid_code_400() {
+    let app = TestApp::new().await;
+    app.setup_user(TEST_EMAIL, TEST_PASSWORD).await;
+
+    // Trigger forgot password
+    let body = serde_json::json!({ "email": TEST_EMAIL });
+    app.post_json("/auth/forgot-password", &body).await;
+
+    let real_code = app.get_last_reset_code().await.unwrap();
+    let wrong_code = if real_code == "000000" {
+        "111111"
+    } else {
+        "000000"
+    };
+
+    let body = serde_json::json!({
+        "email": TEST_EMAIL,
+        "code": wrong_code,
+        "new_password": NEW_PASSWORD,
+    });
+    let (status, resp) = app.post_json("/auth/reset-password", &body).await;
+
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    assert_error(&resp, "BAD_REQUEST");
+}
+
+#[tokio::test]
+async fn reset_password_no_code_exists_400() {
+    let app = TestApp::new().await;
+    app.setup_user(TEST_EMAIL, TEST_PASSWORD).await;
+
+    // No forgot-password called — no code in Redis
+    let body = serde_json::json!({
+        "email": TEST_EMAIL,
+        "code": "123456",
+        "new_password": NEW_PASSWORD,
+    });
+    let (status, resp) = app.post_json("/auth/reset-password", &body).await;
+
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    assert_error(&resp, "BAD_REQUEST");
+}
+
+#[tokio::test]
+async fn reset_password_short_password_400() {
+    let app = TestApp::new().await;
+
+    let body = serde_json::json!({
+        "email": TEST_EMAIL,
+        "code": "123456",
+        "new_password": "short",
+    });
+    let (status, resp) = app.post_json("/auth/reset-password", &body).await;
+
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    assert_error(&resp, "BAD_REQUEST");
+}
+
+#[tokio::test]
+async fn reset_password_allows_login_with_new_password() {
+    let app = TestApp::new().await;
+    app.setup_user(TEST_EMAIL, TEST_PASSWORD).await;
+
+    // Trigger forgot password + get code
+    let body = serde_json::json!({ "email": TEST_EMAIL });
+    app.post_json("/auth/forgot-password", &body).await;
+    let code = app.get_last_reset_code().await.unwrap();
+
+    // Reset password
+    let body = serde_json::json!({
+        "email": TEST_EMAIL,
+        "code": code,
+        "new_password": NEW_PASSWORD,
+    });
+    let (status, _) = app.post_json("/auth/reset-password", &body).await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+
+    // Old password should fail
+    let login_body = serde_json::json!({
+        "email": TEST_EMAIL,
+        "password": TEST_PASSWORD,
+    });
+    let (status, _) = app.post_json("/auth/login", &login_body).await;
+    assert_eq!(status, StatusCode::UNAUTHORIZED);
+
+    // New password should work
+    let login_body = serde_json::json!({
+        "email": TEST_EMAIL,
+        "password": NEW_PASSWORD,
+    });
+    let (status, resp) = app.post_json("/auth/login", &login_body).await;
+    assert_eq!(status, StatusCode::OK);
+    assert!(resp["tokens"]["access_token"].is_string());
+}
+
+#[tokio::test]
+async fn reset_password_invalidates_old_tokens() {
+    let app = TestApp::new().await;
+    let reg = app.setup_user(TEST_EMAIL, TEST_PASSWORD).await;
+    let access = reg["tokens"]["access_token"].as_str().unwrap();
+    let refresh = reg["tokens"]["refresh_token"].as_str().unwrap().to_string();
+
+    // Trigger forgot password + reset
+    let body = serde_json::json!({ "email": TEST_EMAIL });
+    app.post_json("/auth/forgot-password", &body).await;
+    let code = app.get_last_reset_code().await.unwrap();
+
+    let body = serde_json::json!({
+        "email": TEST_EMAIL,
+        "code": code,
+        "new_password": NEW_PASSWORD,
+    });
+    let (status, _) = app.post_json("/auth/reset-password", &body).await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+
+    // Old refresh token should be revoked
+    let body = serde_json::json!({ "refresh_token": refresh });
+    let (status, _) = app.post_json("/auth/refresh", &body).await;
+    assert_eq!(status, StatusCode::UNAUTHORIZED);
+
+    // Old access token should be rejected (token version bumped)
+    let (status, _) = app.get_with_auth("/categories", access).await;
+    assert_eq!(status, StatusCode::UNAUTHORIZED);
+}
+
+#[tokio::test]
+async fn reset_password_code_consumed_once() {
+    let app = TestApp::new().await;
+    app.setup_user(TEST_EMAIL, TEST_PASSWORD).await;
+
+    // Trigger forgot password
+    let body = serde_json::json!({ "email": TEST_EMAIL });
+    app.post_json("/auth/forgot-password", &body).await;
+    let code = app.get_last_reset_code().await.unwrap();
+
+    // First reset succeeds
+    let body = serde_json::json!({
+        "email": TEST_EMAIL,
+        "code": &code,
+        "new_password": NEW_PASSWORD,
+    });
+    let (status, _) = app.post_json("/auth/reset-password", &body).await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+
+    // Second reset with same code fails (code was consumed / Redis key deleted)
+    let body = serde_json::json!({
+        "email": TEST_EMAIL,
+        "code": &code,
+        "new_password": "An0therStr0ng!Pass#2026",
+    });
+    let (status, resp) = app.post_json("/auth/reset-password", &body).await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    assert_error(&resp, "BAD_REQUEST");
+}
+
+#[tokio::test]
+async fn reset_password_wrong_email_400() {
+    let app = TestApp::new().await;
+    app.setup_user(TEST_EMAIL, TEST_PASSWORD).await;
+    app.setup_user("other@example.com", TEST_PASSWORD).await;
+
+    // Trigger forgot password for TEST_EMAIL
+    let body = serde_json::json!({ "email": TEST_EMAIL });
+    app.post_json("/auth/forgot-password", &body).await;
+    let code = app.get_last_reset_code().await.unwrap();
+
+    // Try resetting with the code but a different email — Redis key mismatch
+    let body = serde_json::json!({
+        "email": "other@example.com",
+        "code": code,
+        "new_password": NEW_PASSWORD,
+    });
+    let (status, resp) = app.post_json("/auth/reset-password", &body).await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    assert_error(&resp, "BAD_REQUEST");
 }

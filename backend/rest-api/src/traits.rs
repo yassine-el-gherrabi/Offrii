@@ -7,7 +7,7 @@ use crate::dto::auth::{AuthResponse, RefreshResponse};
 use crate::dto::categories::CategoryResponse;
 use crate::dto::items::{ItemResponse, ItemsListResponse, ListItemsQuery};
 use crate::dto::push_tokens::PushTokenResponse;
-use crate::dto::users::UserProfileResponse;
+use crate::dto::users::{UserDataExport, UserProfileResponse};
 use crate::errors::AppError;
 use crate::models::{Category, Item, PushToken, RefreshToken, User};
 
@@ -41,6 +41,8 @@ pub trait UserRepo: Send + Sync {
     async fn delete_user(&self, id: Uuid) -> Result<bool>;
 
     async fn find_eligible_for_reminder(&self, utc_hour: i16) -> Result<Vec<User>>;
+
+    async fn update_password_hash(&self, id: Uuid, password_hash: &str) -> Result<bool>;
 
     async fn increment_token_version(&self, id: Uuid) -> Result<i32>;
 }
@@ -151,6 +153,11 @@ pub trait PushTokenRepo: Send + Sync {
 // ── Service traits ──────────────────────────────────────────────────
 
 #[async_trait]
+pub trait EmailService: Send + Sync {
+    async fn send_password_reset_code(&self, to: &str, code: &str) -> Result<(), AppError>;
+}
+
+#[async_trait]
 pub trait AuthService: Send + Sync {
     async fn register(
         &self,
@@ -166,6 +173,22 @@ pub trait AuthService: Send + Sync {
     async fn logout(&self, user_id: Uuid, jti: &str, token_exp: usize) -> Result<(), AppError>;
 
     async fn invalidate_all_tokens(&self, user_id: Uuid) -> Result<(), AppError>;
+
+    async fn change_password(
+        &self,
+        user_id: Uuid,
+        current_password: &str,
+        new_password: &str,
+    ) -> Result<(), AppError>;
+
+    async fn forgot_password(&self, email: &str) -> Result<(), AppError>;
+
+    async fn reset_password(
+        &self,
+        email: &str,
+        code: &str,
+        new_password: &str,
+    ) -> Result<(), AppError>;
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -240,6 +263,8 @@ pub trait UserService: Send + Sync {
     ) -> Result<UserProfileResponse, AppError>;
 
     async fn delete_account(&self, user_id: Uuid) -> Result<(), AppError>;
+
+    async fn export_data(&self, user_id: Uuid) -> Result<UserDataExport, AppError>;
 }
 
 #[async_trait]

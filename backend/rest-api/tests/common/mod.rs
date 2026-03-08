@@ -1,8 +1,12 @@
-use std::sync::Arc;
+use std::sync::{Arc, Mutex as StdMutex};
 
 /// Non-breached password that passes OWASP policy checks, shared across all test modules.
 #[allow(dead_code)]
 pub const TEST_PASSWORD: &str = "Str0ng!P@ssw0rd#2026x";
+
+/// Alternate strong password for change/reset tests.
+#[allow(dead_code)]
+pub const NEW_PASSWORD: &str = "N3wStr0ng!P@ss#2026z";
 
 use axum::Router;
 use axum::body::Body;
@@ -21,6 +25,7 @@ use tower_http::trace::TraceLayer;
 
 use rest_api::AppState;
 use rest_api::config::database::{create_pg_pool, create_redis_client};
+use rest_api::errors::AppError;
 use rest_api::handlers::health::health_check;
 use rest_api::handlers::{auth, categories, items, push_tokens, users};
 use rest_api::repositories::category_repo::PgCategoryRepo;
@@ -35,10 +40,22 @@ use rest_api::services::item_service::PgItemService;
 use rest_api::services::push_token_service::PgPushTokenService;
 use rest_api::services::user_service::PgUserService;
 use rest_api::traits::{
-    AuthService, CategoryRepo, CategoryService, HealthCheck, ItemRepo, ItemService, PushTokenRepo,
-    PushTokenService, RefreshTokenRepo, UserRepo, UserService,
+    AuthService, CategoryRepo, CategoryService, EmailService, HealthCheck, ItemRepo, ItemService,
+    PushTokenRepo, PushTokenService, RefreshTokenRepo, UserRepo, UserService,
 };
 use rest_api::utils::jwt::JwtKeys;
+
+struct SpyEmailService {
+    last_code: Arc<StdMutex<Option<String>>>,
+}
+
+#[async_trait::async_trait]
+impl EmailService for SpyEmailService {
+    async fn send_password_reset_code(&self, _to: &str, code: &str) -> Result<(), AppError> {
+        *self.last_code.lock().unwrap() = Some(code.to_string());
+        Ok(())
+    }
+}
 
 #[allow(dead_code)]
 pub struct TestApp {
@@ -47,6 +64,7 @@ pub struct TestApp {
     pub router: Router,
     pub db: PgPool,
     pub redis: redis::Client,
+    pub last_reset_code: Arc<StdMutex<Option<String>>>,
 }
 
 #[allow(dead_code)]
@@ -78,24 +96,34 @@ impl TestApp {
         let refresh_token_repo: Arc<dyn RefreshTokenRepo> =
             Arc::new(PgRefreshTokenRepo::new(db.clone()));
 
+        let last_reset_code = Arc::new(StdMutex::new(None));
+        let email_service: Arc<dyn EmailService> = Arc::new(SpyEmailService {
+            last_code: last_reset_code.clone(),
+        });
+
         let auth: Arc<dyn AuthService> = Arc::new(PgAuthService::new(
             db.clone(),
             user_repo.clone(),
             refresh_token_repo,
             jwt.clone(),
             redis.clone(),
+            email_service,
         ));
         let item_repo: Arc<dyn ItemRepo> = Arc::new(PgItemRepo::new(db.clone()));
-        let items: Arc<dyn ItemService> =
-            Arc::new(PgItemService::new(db.clone(), item_repo, redis.clone()));
+        let items: Arc<dyn ItemService> = Arc::new(PgItemService::new(
+            db.clone(),
+            item_repo.clone(),
+            redis.clone(),
+        ));
         let category_repo: Arc<dyn CategoryRepo> = Arc::new(PgCategoryRepo::new(db.clone()));
         let categories: Arc<dyn CategoryService> =
-            Arc::new(PgCategoryService::new(category_repo, redis.clone()));
+            Arc::new(PgCategoryService::new(category_repo.clone(), redis.clone()));
         let health: Arc<dyn HealthCheck> = Arc::new(PgHealthCheck::new(db.clone(), redis.clone()));
 
         // New services
         let push_token_repo: Arc<dyn PushTokenRepo> = Arc::new(PgPushTokenRepo::new(db.clone()));
-        let user_svc: Arc<dyn UserService> = Arc::new(PgUserService::new(user_repo));
+        let user_svc: Arc<dyn UserService> =
+            Arc::new(PgUserService::new(user_repo, item_repo, category_repo));
         let push_token_svc: Arc<dyn PushTokenService> =
             Arc::new(PgPushTokenService::new(push_token_repo));
 
@@ -127,6 +155,7 @@ impl TestApp {
             router,
             db,
             redis,
+            last_reset_code,
         }
     }
 
@@ -382,6 +411,13 @@ impl TestApp {
             .as_str()
             .expect("access_token should be a string")
             .to_string()
+    }
+
+    /// Retrieve the last reset code sent by the SpyEmailService.
+    /// Waits briefly for the background `tokio::spawn` in `forgot_password` to complete.
+    pub async fn get_last_reset_code(&self) -> Option<String> {
+        tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+        self.last_reset_code.lock().unwrap().clone()
     }
 
     pub async fn post_raw(

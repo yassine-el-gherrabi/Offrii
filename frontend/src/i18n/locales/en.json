@@ -40,6 +40,25 @@
       "passwordCommon": "This password is too common",
       "passwordBreached": "This password was found in a data breach"
     },
+    "forgotPassword": {
+      "title": "Forgot Password",
+      "description": "Enter your email to receive a reset code.",
+      "sendCode": "Send Code",
+      "codeSent": "Code sent! Check your inbox.",
+      "link": "Forgot password?"
+    },
+    "resetPassword": {
+      "title": "Reset Password",
+      "codeLabel": "6-digit code",
+      "newPasswordLabel": "New password",
+      "confirmPasswordLabel": "Confirm password",
+      "submit": "Reset Password",
+      "success": "Password reset! Please log in.",
+      "resendCode": "Resend code",
+      "resendIn": "Resend in {{seconds}}s",
+      "invalidCode": "Invalid or expired code.",
+      "passwordMismatch": "Passwords do not match."
+    },
     "errors": {
       "unexpected": "An unexpected error occurred",
       "networkError": "Unable to connect to server"
@@ -140,6 +159,58 @@
   },
   "profile": {
     "title": "Profile",
-    "logout": "Sign out"
+    "account": {
+      "title": "My Account",
+      "email": "Email",
+      "displayName": "Display name",
+      "saved": "Saved!"
+    },
+    "security": {
+      "title": "Security",
+      "changePassword": "Change password",
+      "currentPassword": "Current password",
+      "newPassword": "New password",
+      "confirmPassword": "Confirm new password",
+      "passwordChanged": "Password changed. Please sign in again."
+    },
+    "reminders": {
+      "title": "Reminders",
+      "frequency": "Frequency",
+      "never": "Never",
+      "daily": "Daily",
+      "weekly": "Weekly",
+      "monthly": "Monthly",
+      "time": "Reminder time",
+      "timezone": "Timezone",
+      "timezoneAuto": "Automatic"
+    },
+    "language": {
+      "title": "Language",
+      "french": "French",
+      "english": "English"
+    },
+    "data": {
+      "title": "Personal data",
+      "export": "Export my data",
+      "exportDescription": "Download all your data as JSON",
+      "deleteAccount": "Delete my account",
+      "deleteConfirmTitle": "Delete account?",
+      "deleteConfirmMessage": "All your data will be permanently deleted. This action cannot be undone.",
+      "deleteConfirmButton": "Delete permanently"
+    },
+    "about": {
+      "title": "About",
+      "version": "Version",
+      "privacy": "Privacy policy",
+      "terms": "Terms of use"
+    },
+    "logout": "Sign out",
+    "errors": {
+      "loadFailed": "Unable to load profile",
+      "saveFailed": "Unable to save",
+      "passwordChangeFailed": "Unable to change password",
+      "exportFailed": "Unable to export data",
+      "deleteFailed": "Unable to delete account"
+    }
   }
 }

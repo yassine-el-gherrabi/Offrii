@@ -5,7 +5,9 @@ use chrono::{NaiveTime, Timelike};
 use chrono_tz::Tz;
 use uuid::Uuid;
 
-use crate::dto::users::{UpdateProfileRequest, UserProfileResponse};
+use crate::dto::categories::CategoryResponse;
+use crate::dto::items::ItemResponse;
+use crate::dto::users::{UpdateProfileRequest, UserDataExport, UserProfileResponse};
 use crate::errors::AppError;
 use crate::traits;
 
@@ -13,11 +15,21 @@ use crate::traits;
 
 pub struct PgUserService {
     user_repo: Arc<dyn traits::UserRepo>,
+    item_repo: Arc<dyn traits::ItemRepo>,
+    category_repo: Arc<dyn traits::CategoryRepo>,
 }
 
 impl PgUserService {
-    pub fn new(user_repo: Arc<dyn traits::UserRepo>) -> Self {
-        Self { user_repo }
+    pub fn new(
+        user_repo: Arc<dyn traits::UserRepo>,
+        item_repo: Arc<dyn traits::ItemRepo>,
+        category_repo: Arc<dyn traits::CategoryRepo>,
+    ) -> Self {
+        Self {
+            user_repo,
+            item_repo,
+            category_repo,
+        }
     }
 }
 
@@ -99,6 +111,34 @@ impl traits::UserService for PgUserService {
             .ok_or_else(|| AppError::NotFound("user not found".into()))?;
 
         Ok(UserProfileResponse::from(&user))
+    }
+
+    async fn export_data(&self, user_id: Uuid) -> Result<UserDataExport, AppError> {
+        let user = self
+            .user_repo
+            .find_by_id(user_id)
+            .await
+            .map_err(AppError::Internal)?
+            .ok_or_else(|| AppError::NotFound("user not found".into()))?;
+
+        let items = self
+            .item_repo
+            .list(user_id, None, None, "created_at", "desc", i64::MAX, 0)
+            .await
+            .map_err(AppError::Internal)?;
+
+        let categories = self
+            .category_repo
+            .list_by_user(user_id)
+            .await
+            .map_err(AppError::Internal)?;
+
+        Ok(UserDataExport {
+            profile: UserProfileResponse::from(&user),
+            items: items.into_iter().map(ItemResponse::from).collect(),
+            categories: categories.into_iter().map(CategoryResponse::from).collect(),
+            exported_at: chrono::Utc::now(),
+        })
     }
 
     async fn delete_account(&self, user_id: Uuid) -> Result<(), AppError> {
