@@ -123,7 +123,7 @@ export default function LoginScreen() {
       </HelperText>
 
       <Text
-        onPress={() => router.push(ROUTES.FORGOT_PASSWORD as any)}
+        onPress={() => router.push(ROUTES.FORGOT_PASSWORD)}
         style={{
           color: colors.primary,
           textAlign: 'right',

@@ -67,9 +67,14 @@ export default function ResetPasswordScreen() {
     setSuccessMessage('');
     if (!validate()) return;
 
+    if (!email) {
+      setApiError(t('auth.errors.unexpected'));
+      return;
+    }
+
     setIsSubmitting(true);
     try {
-      await resetPassword(email!, code, newPassword);
+      await resetPassword(email, code, newPassword);
       setSuccessMessage(t('auth.resetPassword.success'));
       setTimeout(() => {
         router.replace(ROUTES.LOGIN);
