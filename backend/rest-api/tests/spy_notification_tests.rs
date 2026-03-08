@@ -53,9 +53,9 @@ async fn send_batch_returns_configured_outcomes() {
     let spy = common::SpyNotificationService::new();
     {
         let mut outcomes = spy.outcomes.lock().unwrap();
-        outcomes.push(NotificationOutcome::Sent);
-        outcomes.push(NotificationOutcome::InvalidToken);
-        outcomes.push(NotificationOutcome::Error("boom".into()));
+        outcomes.push_back(NotificationOutcome::Sent);
+        outcomes.push_back(NotificationOutcome::InvalidToken);
+        outcomes.push_back(NotificationOutcome::Error("boom".into()));
     }
 
     let messages = vec![

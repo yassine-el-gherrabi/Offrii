@@ -162,16 +162,25 @@ impl PgReminderService {
         let outcomes = self.notification_svc.send_batch(&requests).await;
 
         // Handle invalid tokens — remove them from DB
-        for (outcome, push_token) in outcomes.iter().zip(tokens.iter()) {
-            if matches!(outcome, NotificationOutcome::InvalidToken) {
-                tracing::info!(
-                    token = %push_token.token,
-                    "removing invalid device token"
-                );
-                let _ = self
-                    .push_token_repo
-                    .delete_by_token(user_id, &push_token.token)
-                    .await;
+        if outcomes.len() != tokens.len() {
+            tracing::error!(
+                user_id = %user_id,
+                outcomes_len = outcomes.len(),
+                tokens_len = tokens.len(),
+                "send_batch returned length mismatch; skipping token cleanup"
+            );
+        } else {
+            for (outcome, push_token) in outcomes.iter().zip(tokens.iter()) {
+                if matches!(outcome, NotificationOutcome::InvalidToken) {
+                    tracing::info!(
+                        token = %push_token.token,
+                        "removing invalid device token"
+                    );
+                    let _ = self
+                        .push_token_repo
+                        .delete_by_token(user_id, &push_token.token)
+                        .await;
+                }
             }
         }
 
