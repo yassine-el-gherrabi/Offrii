@@ -215,13 +215,14 @@ describe('unregisterPushNotifications', () => {
     expect(mockDeleteItem).not.toHaveBeenCalled();
   });
 
-  it('still clears secure store when API call fails', async () => {
+  it('keeps token for retry when API call fails', async () => {
     mockGetItem.mockResolvedValueOnce('ExponentPushToken[xxx]');
     mockUnregisterToken.mockRejectedValueOnce(new Error('network'));
 
     await unregisterPushNotifications();
 
-    expect(mockDeleteItem).toHaveBeenCalledWith('offrii_push_token');
+    expect(mockUnregisterToken).toHaveBeenCalledWith('ExponentPushToken[xxx]');
+    expect(mockDeleteItem).not.toHaveBeenCalled();
   });
 });
 

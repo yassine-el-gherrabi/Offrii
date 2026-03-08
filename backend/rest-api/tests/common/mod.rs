@@ -414,10 +414,18 @@ impl TestApp {
     }
 
     /// Retrieve the last reset code sent by the SpyEmailService.
-    /// Waits briefly for the background `tokio::spawn` in `forgot_password` to complete.
+    /// Polls until the code is available or timeout (5s) to avoid flaky sleeps.
     pub async fn get_last_reset_code(&self) -> Option<String> {
-        tokio::time::sleep(std::time::Duration::from_millis(50)).await;
-        self.last_reset_code.lock().unwrap().clone()
+        let deadline = std::time::Instant::now() + std::time::Duration::from_secs(5);
+        loop {
+            if let Some(code) = self.last_reset_code.lock().unwrap().clone() {
+                return Some(code);
+            }
+            if std::time::Instant::now() >= deadline {
+                return None;
+            }
+            tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+        }
     }
 
     pub async fn post_raw(

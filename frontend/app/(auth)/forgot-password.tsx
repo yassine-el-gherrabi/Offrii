@@ -32,7 +32,7 @@ export default function ForgotPasswordScreen() {
     try {
       await forgotPassword(email.trim());
       router.push({
-        pathname: ROUTES.RESET_PASSWORD as any,
+        pathname: ROUTES.RESET_PASSWORD,
         params: { email: email.trim() },
       });
     } catch (error) {

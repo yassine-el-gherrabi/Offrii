@@ -338,10 +338,15 @@ impl traits::AuthService for PgAuthService {
             .map_err(AppError::Internal)?;
 
         // 4. Persist new hash
-        self.user_repo
+        let updated = self
+            .user_repo
             .update_password_hash(user_id, &new_hash)
             .await
             .map_err(AppError::Internal)?;
+
+        if !updated {
+            return Err(AppError::NotFound("user not found".into()));
+        }
 
         // 5. Invalidate all tokens (force re-login everywhere)
         self.invalidate_all_tokens(user_id).await?;
@@ -388,26 +393,33 @@ impl traits::AuthService for PgAuthService {
 
         // Hash the code and store in Redis with 30-minute TTL
         let code_hash = sha256_hex(&code);
-        if let Ok(mut conn) = self.redis.get_multiplexed_async_connection().await {
+        let stored = if let Ok(mut conn) = self.redis.get_multiplexed_async_connection().await {
             let key = format!("pwreset:{email}");
-            let _: Result<(), _> = redis::cmd("SET")
+            redis::cmd("SET")
                 .arg(&key)
                 .arg(&code_hash)
                 .arg("EX")
                 .arg(1800) // 30 minutes
-                .query_async(&mut conn)
-                .await;
-        }
+                .query_async::<()>(&mut conn)
+                .await
+                .is_ok()
+        } else {
+            false
+        };
 
-        // Send email in background
-        let email_svc = self.email_service.clone();
-        let to = email.clone();
-        let code_clone = code.clone();
-        tokio::spawn(async move {
-            if let Err(e) = email_svc.send_password_reset_code(&to, &code_clone).await {
-                tracing::error!("failed to send password reset email: {e}");
-            }
-        });
+        // Only send email if code was stored successfully
+        if stored {
+            let email_svc = self.email_service.clone();
+            let to = email.clone();
+            let code_clone = code.clone();
+            tokio::spawn(async move {
+                if let Err(e) = email_svc.send_password_reset_code(&to, &code_clone).await {
+                    tracing::error!("failed to send password reset email: {e}");
+                }
+            });
+        } else {
+            tracing::error!("failed to store password reset code in redis, skipping email");
+        }
 
         Ok(())
     }
@@ -468,10 +480,15 @@ impl traits::AuthService for PgAuthService {
             .map_err(AppError::Internal)?;
 
         // Update password
-        self.user_repo
+        let updated = self
+            .user_repo
             .update_password_hash(user.id, &new_hash)
             .await
             .map_err(AppError::Internal)?;
+
+        if !updated {
+            return Err(AppError::NotFound("user not found".into()));
+        }
 
         // Invalidate all tokens
         self.invalidate_all_tokens(user.id).await?;

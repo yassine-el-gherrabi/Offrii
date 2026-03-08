@@ -207,6 +207,10 @@ export default function ProfileScreen() {
   // ── Export data ───────────────────────────────────────────────────
   async function handleExport() {
     try {
+      if (!(await Sharing.isAvailableAsync())) {
+        setSnackbar(t('profile.errors.exportFailed'));
+        return;
+      }
       const data = await usersApi.exportData();
       const file = new File(Paths.cache, 'offrii-export.json');
       file.create({ overwrite: true });
