@@ -413,22 +413,14 @@ impl traits::ItemService for PgItemService {
 
     #[tracing::instrument(skip(self))]
     async fn claim_item(&self, item_id: Uuid, claimer_id: Uuid) -> Result<(), AppError> {
-        let claimed = self
+        let owner_id = self
             .item_repo
             .claim_item(item_id, claimer_id)
             .await
             .map_err(AppError::Internal)?;
 
-        if claimed {
-            // Invalidate cache for the item owner
-            if let Some(item) = self
-                .item_repo
-                .find_by_id_any_user(item_id)
-                .await
-                .map_err(AppError::Internal)?
-            {
-                self.bump_version(item.user_id).await;
-            }
+        if let Some(owner_id) = owner_id {
+            self.bump_version(owner_id).await;
             return Ok(());
         }
 
@@ -452,22 +444,14 @@ impl traits::ItemService for PgItemService {
 
     #[tracing::instrument(skip(self))]
     async fn unclaim_item(&self, item_id: Uuid, claimer_id: Uuid) -> Result<(), AppError> {
-        let unclaimed = self
+        let owner_id = self
             .item_repo
             .unclaim_item(item_id, claimer_id)
             .await
             .map_err(AppError::Internal)?;
 
-        if unclaimed {
-            // Invalidate cache for the item owner
-            if let Some(item) = self
-                .item_repo
-                .find_by_id_any_user(item_id)
-                .await
-                .map_err(AppError::Internal)?
-            {
-                self.bump_version(item.user_id).await;
-            }
+        if let Some(owner_id) = owner_id {
+            self.bump_version(owner_id).await;
             return Ok(());
         }
 

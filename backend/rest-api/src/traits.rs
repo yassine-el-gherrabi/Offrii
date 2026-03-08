@@ -142,9 +142,9 @@ pub trait ItemRepo: Send + Sync {
 
     async fn find_by_id_any_user(&self, id: Uuid) -> Result<Option<Item>>;
 
-    async fn claim_item(&self, id: Uuid, claimer_id: Uuid) -> Result<bool>;
+    async fn claim_item(&self, id: Uuid, claimer_id: Uuid) -> Result<Option<Uuid>>;
 
-    async fn unclaim_item(&self, id: Uuid, claimer_id: Uuid) -> Result<bool>;
+    async fn unclaim_item(&self, id: Uuid, claimer_id: Uuid) -> Result<Option<Uuid>>;
 }
 
 #[async_trait]

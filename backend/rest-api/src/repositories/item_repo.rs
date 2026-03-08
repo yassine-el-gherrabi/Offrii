@@ -129,11 +129,11 @@ impl traits::ItemRepo for PgItemRepo {
         find_by_id_any_user(&self.pool, id).await
     }
 
-    async fn claim_item(&self, id: Uuid, claimer_id: Uuid) -> Result<bool> {
+    async fn claim_item(&self, id: Uuid, claimer_id: Uuid) -> Result<Option<Uuid>> {
         claim_item(&self.pool, id, claimer_id).await
     }
 
-    async fn unclaim_item(&self, id: Uuid, claimer_id: Uuid) -> Result<bool> {
+    async fn unclaim_item(&self, id: Uuid, claimer_id: Uuid) -> Result<Option<Uuid>> {
         unclaim_item(&self.pool, id, claimer_id).await
     }
 }
@@ -384,39 +384,41 @@ pub(crate) async fn claim_item(
     exec: impl PgExecutor<'_>,
     id: Uuid,
     claimer_id: Uuid,
-) -> Result<bool> {
-    let result = sqlx::query(
+) -> Result<Option<Uuid>> {
+    let row = sqlx::query(
         "UPDATE items \
          SET claimed_by = $2, claimed_at = NOW(), updated_at = NOW() \
          WHERE id = $1 \
            AND user_id != $2 \
            AND claimed_by IS NULL \
-           AND status = 'active'",
+           AND status = 'active' \
+         RETURNING user_id",
     )
     .bind(id)
     .bind(claimer_id)
-    .execute(exec)
+    .fetch_optional(exec)
     .await?;
 
-    Ok(result.rows_affected() > 0)
+    Ok(row.map(|r| r.get("user_id")))
 }
 
 pub(crate) async fn unclaim_item(
     exec: impl PgExecutor<'_>,
     id: Uuid,
     claimer_id: Uuid,
-) -> Result<bool> {
-    let result = sqlx::query(
+) -> Result<Option<Uuid>> {
+    let row = sqlx::query(
         "UPDATE items \
          SET claimed_by = NULL, claimed_at = NULL, updated_at = NOW() \
          WHERE id = $1 \
            AND claimed_by = $2 \
-           AND status != 'deleted'",
+           AND status != 'deleted' \
+         RETURNING user_id",
     )
     .bind(id)
     .bind(claimer_id)
-    .execute(exec)
+    .fetch_optional(exec)
     .await?;
 
-    Ok(result.rows_affected() > 0)
+    Ok(row.map(|r| r.get("user_id")))
 }
