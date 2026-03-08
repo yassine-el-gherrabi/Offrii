@@ -259,7 +259,7 @@ async fn export_data_empty_user_200() {
     assert_eq!(body["profile"]["email"], "user@example.com");
     assert!(body["profile"]["id"].is_string());
     // No password_hash in export
-    assert!(body["profile"]["password_hash"].is_null());
+    assert!(body["profile"].get("password_hash").is_none());
     // Empty arrays for new user
     assert!(body["items"].is_array());
     assert_eq!(body["items"].as_array().unwrap().len(), 0);
@@ -450,8 +450,8 @@ async fn get_profile_excludes_password_hash() {
     assert_eq!(status, StatusCode::OK);
 
     // Ensure password_hash is never in the response
-    assert!(body.get("password_hash").is_none() || body["password_hash"].is_null());
-    assert!(body.get("password").is_none() || body["password"].is_null());
+    assert!(body.get("password_hash").is_none());
+    assert!(body.get("password").is_none());
 }
 
 #[tokio::test]
