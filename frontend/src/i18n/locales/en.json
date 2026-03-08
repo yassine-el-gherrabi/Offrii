@@ -29,7 +29,11 @@
         "weak": "Weak",
         "good": "Good",
         "strong": "Strong"
-      }
+      },
+      "legalNotice": "By signing up, you agree to our ",
+      "legalPrivacy": "Privacy Policy",
+      "legalAnd": " and our ",
+      "legalTerms": "Legal Notice"
     },
     "validation": {
       "emailRequired": "Email is required",
@@ -202,7 +206,7 @@
       "title": "About",
       "version": "Version",
       "privacy": "Privacy policy",
-      "terms": "Terms of use"
+      "terms": "Legal Notice"
     },
     "logout": "Sign out",
     "errors": {
@@ -211,6 +215,70 @@
       "passwordChangeFailed": "Unable to change password",
       "exportFailed": "Unable to export data",
       "deleteFailed": "Unable to delete account"
+    }
+  },
+  "legal": {
+    "legalNotice": {
+      "title": "Legal Notice",
+      "editor": {
+        "title": "Application Publisher",
+        "body": "Yassine EL GHERRABI\nSole proprietor (unregulated liberal profession)\nTrade name: North Focus\nSIREN: 940 109 150\nSIRET: 940 109 150 000 18\nAPE: 6201Z — Computer programming\n\n24 rue Senac de Meilhan\n13001 Marseille, France\n\nBusiness start date: 01/02/2025\nEmail: yassineelgherrabi@gmail.com"
+      },
+      "director": {
+        "title": "Publication Director",
+        "body": "Yassine EL GHERRABI"
+      },
+      "host": {
+        "title": "Hosting Provider",
+        "body": "Hetzner Online GmbH\nIndustriestr. 25\n91710 Gunzenhausen\nGermany"
+      },
+      "contact": {
+        "title": "Contact",
+        "body": "Email: yassineelgherrabi@gmail.com"
+      }
+    },
+    "privacyPolicy": {
+      "title": "Privacy Policy",
+      "controller": {
+        "title": "Data Controller",
+        "body": "Yassine EL GHERRABI\nSole proprietor — North Focus\n24 rue Senac de Meilhan, 13001 Marseille, France\nEmail: yassineelgherrabi@gmail.com"
+      },
+      "dataCollected": {
+        "title": "Data Collected",
+        "body": "We collect the following data:\n\n• Email address (for authentication)\n• Password (hashed with Argon2, never stored in plain text)\n• Display name (optional)\n• User preferences (language, timezone, reminder frequency and time)\n• Push notification tokens (for sending reminders)"
+      },
+      "purposes": {
+        "title": "Purposes of Processing",
+        "body": "Your data is used for:\n\n• Managing your user account\n• Sending notifications and reminders based on your preferences\n• Personalizing your experience (language, timezone)"
+      },
+      "legalBasis": {
+        "title": "Legal Basis",
+        "body": "The processing of your data is based on:\n\n• Your consent, given upon registration\n• Legitimate interest for account security (password hashing, session management)"
+      },
+      "retention": {
+        "title": "Data Retention",
+        "body": "Your data is retained for the duration of your account's existence.\n\nYou can export your data at any time (from your profile) and then delete your account. Deletion results in the permanent erasure of all your data."
+      },
+      "hosting": {
+        "title": "Hosting and Data Transfers",
+        "body": "Your data is hosted by Hetzner Online GmbH, in Germany (European Union).\n\nNo data transfers outside the European Union are performed."
+      },
+      "rights": {
+        "title": "Your Rights",
+        "body": "Under GDPR, you have the following rights:\n\n• Right of access to your data\n• Right to rectification\n• Right to erasure (account deletion)\n• Right to data portability (data export)\n• Right to object\n• Right to restriction of processing\n\nYou can exercise these rights directly from your profile in the app, or by contacting us at yassineelgherrabi@gmail.com."
+      },
+      "cookies": {
+        "title": "Cookies and Trackers",
+        "body": "Offrii does not use any third-party cookies, advertising trackers, or behavioral analytics tools.\n\nOnly local authentication tokens are used to maintain your session."
+      },
+      "changes": {
+        "title": "Changes to This Policy",
+        "body": "This privacy policy may be updated. The date of the last update will be indicated below.\n\nLast updated: March 8, 2026"
+      },
+      "dpo": {
+        "title": "Contact — Data Protection",
+        "body": "For any questions regarding the protection of your personal data, you can contact us at:\n\nyassineelgherrabi@gmail.com"
+      }
     }
   }
 }

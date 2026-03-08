@@ -23,7 +23,6 @@ import { router } from 'expo-router';
 import Constants from 'expo-constants';
 import { File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
-import * as WebBrowser from 'expo-web-browser';
 import DateTimePicker, {
   type DateTimePickerEvent,
 } from '@react-native-community/datetimepicker';
@@ -32,7 +31,6 @@ import { useAuthStore } from '@/src/stores/auth';
 import * as usersApi from '@/src/api/users';
 import { colors, spacing, borderRadius } from '@/src/theme';
 import { ROUTES } from '@/src/constants/routes';
-import { LEGAL_URLS } from '@/src/constants/legal';
 import type { UserProfileResponse } from '@/src/types/auth';
 
 export default function ProfileScreen() {
@@ -456,14 +454,14 @@ export default function ProfileScreen() {
           <List.Item
             title={t('profile.about.privacy')}
             left={(props) => <List.Icon {...props} icon="shield-check-outline" />}
-            right={(props) => <List.Icon {...props} icon="open-in-new" />}
-            onPress={() => WebBrowser.openBrowserAsync(LEGAL_URLS.PRIVACY)}
+            right={(props) => <List.Icon {...props} icon="chevron-right" />}
+            onPress={() => router.push(ROUTES.PRIVACY_POLICY)}
           />
           <List.Item
             title={t('profile.about.terms')}
             left={(props) => <List.Icon {...props} icon="file-document-outline" />}
-            right={(props) => <List.Icon {...props} icon="open-in-new" />}
-            onPress={() => WebBrowser.openBrowserAsync(LEGAL_URLS.TERMS)}
+            right={(props) => <List.Icon {...props} icon="chevron-right" />}
+            onPress={() => router.push(ROUTES.LEGAL_NOTICE)}
           />
         </List.Section>
 

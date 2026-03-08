@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { TextInput, Button, HelperText } from 'react-native-paper';
+import { TextInput, Button, HelperText, Text } from 'react-native-paper';
 import { router } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 
+import { View } from 'react-native';
 import { useAuthStore } from '@/src/stores/auth';
-import { colors } from '@/src/theme';
+import { colors, spacing } from '@/src/theme';
 import { ApiRequestError } from '@/src/api/client';
 import { ROUTES } from '@/src/constants/routes';
 import { AuthLayout, authStyles } from '@/src/components/auth';
@@ -202,6 +203,27 @@ export default function RegisterScreen() {
       <HelperText type="error" visible={!!displayNameError} testID="displayname-error">
         {displayNameError}
       </HelperText>
+
+      <View style={{ alignItems: 'center', marginBottom: spacing.sm }}>
+        <Text variant="bodySmall" style={{ color: colors.textSecondary, textAlign: 'center' }}>
+          {t('auth.register.legalNotice')}
+          <Text
+            variant="bodySmall"
+            style={{ color: colors.primary, fontWeight: '600' }}
+            onPress={() => router.push(ROUTES.PRIVACY_POLICY)}
+          >
+            {t('auth.register.legalPrivacy')}
+          </Text>
+          {t('auth.register.legalAnd')}
+          <Text
+            variant="bodySmall"
+            style={{ color: colors.primary, fontWeight: '600' }}
+            onPress={() => router.push(ROUTES.LEGAL_NOTICE)}
+          >
+            {t('auth.register.legalTerms')}
+          </Text>
+        </Text>
+      </View>
 
       <Button
         mode="contained"
