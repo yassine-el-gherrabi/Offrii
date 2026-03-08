@@ -21,6 +21,10 @@ pub fn router() -> Router<AppState> {
     Router::new()
         .route("/", get(list_items).post(create_item))
         .route("/{id}", get(get_item).put(update_item).delete(delete_item))
+        .route(
+            "/{id}/claim",
+            axum::routing::post(claim_item).delete(unclaim_item),
+        )
 }
 
 #[tracing::instrument(skip(state, req))]
@@ -105,6 +109,28 @@ async fn delete_item(
     Path(id): Path<Uuid>,
 ) -> Result<StatusCode, AppError> {
     state.items.delete_item(id, auth_user.user_id).await?;
+
+    Ok(StatusCode::NO_CONTENT)
+}
+
+#[tracing::instrument(skip(state))]
+async fn claim_item(
+    State(state): State<AppState>,
+    auth_user: AuthUser,
+    Path(id): Path<Uuid>,
+) -> Result<StatusCode, AppError> {
+    state.items.claim_item(id, auth_user.user_id).await?;
+
+    Ok(StatusCode::NO_CONTENT)
+}
+
+#[tracing::instrument(skip(state))]
+async fn unclaim_item(
+    State(state): State<AppState>,
+    auth_user: AuthUser,
+    Path(id): Path<Uuid>,
+) -> Result<StatusCode, AppError> {
+    state.items.unclaim_item(id, auth_user.user_id).await?;
 
     Ok(StatusCode::NO_CONTENT)
 }

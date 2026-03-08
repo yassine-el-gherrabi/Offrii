@@ -68,6 +68,7 @@ pub struct ItemResponse {
     pub purchased_at: Option<DateTime<Utc>>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
+    pub is_claimed: bool,
 }
 
 impl From<Item> for ItemResponse {
@@ -84,6 +85,7 @@ impl From<Item> for ItemResponse {
             purchased_at: i.purchased_at,
             created_at: i.created_at,
             updated_at: i.updated_at,
+            is_claimed: i.claimed_by.is_some(),
         }
     }
 }

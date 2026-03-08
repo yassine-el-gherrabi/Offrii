@@ -373,6 +373,119 @@ async fn smoke_full_items_crud_flow() {
 }
 
 #[tokio::test]
+async fn smoke_claim_unclaim_flow() {
+    let app = SmokeTestApp::new().await;
+    let password = common::TEST_PASSWORD;
+
+    // ── Register owner and claimer ──────────────────────────────
+    let resp = app
+        .client
+        .post(app.url("/auth/register"))
+        .json(&serde_json::json!({
+            "email": "claim-smoke-owner@example.com",
+            "password": password,
+        }))
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), 201);
+    let reg: serde_json::Value = resp.json().await.unwrap();
+    let owner_token = reg["tokens"]["access_token"].as_str().unwrap().to_string();
+
+    let resp = app
+        .client
+        .post(app.url("/auth/register"))
+        .json(&serde_json::json!({
+            "email": "claim-smoke-claimer@example.com",
+            "password": password,
+        }))
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), 201);
+    let reg: serde_json::Value = resp.json().await.unwrap();
+    let claimer_token = reg["tokens"]["access_token"].as_str().unwrap().to_string();
+
+    // ── Create item ─────────────────────────────────────────────
+    let resp = app
+        .client
+        .post(app.url("/items"))
+        .bearer_auth(&owner_token)
+        .json(&serde_json::json!({ "name": "Smoke gift" }))
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), 201);
+    let item: serde_json::Value = resp.json().await.unwrap();
+    let item_id = item["id"].as_str().unwrap();
+    assert_eq!(item["is_claimed"], false);
+
+    // ── Claim ───────────────────────────────────────────────────
+    let resp = app
+        .client
+        .post(app.url(&format!("/items/{item_id}/claim")))
+        .bearer_auth(&claimer_token)
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), 204);
+
+    // ── Verify is_claimed via GET ───────────────────────────────
+    let resp = app
+        .client
+        .get(app.url(&format!("/items/{item_id}")))
+        .bearer_auth(&owner_token)
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), 200);
+    let fetched: serde_json::Value = resp.json().await.unwrap();
+    assert_eq!(fetched["is_claimed"], true);
+
+    // ── Double-claim → 409 ──────────────────────────────────────
+    let resp = app
+        .client
+        .post(app.url(&format!("/items/{item_id}/claim")))
+        .bearer_auth(&claimer_token)
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), 409);
+
+    // ── Unclaim ─────────────────────────────────────────────────
+    let resp = app
+        .client
+        .delete(app.url(&format!("/items/{item_id}/claim")))
+        .bearer_auth(&claimer_token)
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), 204);
+
+    // ── Verify is_claimed reset ─────────────────────────────────
+    let resp = app
+        .client
+        .get(app.url(&format!("/items/{item_id}")))
+        .bearer_auth(&owner_token)
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), 200);
+    let fetched: serde_json::Value = resp.json().await.unwrap();
+    assert_eq!(fetched["is_claimed"], false);
+
+    // ── Self-claim → 400 ────────────────────────────────────────
+    let resp = app
+        .client
+        .post(app.url(&format!("/items/{item_id}/claim")))
+        .bearer_auth(&owner_token)
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), 400);
+}
+
+#[tokio::test]
 async fn smoke_full_categories_crud_flow() {
     let app = SmokeTestApp::new().await;
     let password = common::TEST_PASSWORD;

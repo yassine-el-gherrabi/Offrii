@@ -139,6 +139,12 @@ pub trait ItemRepo: Send + Sync {
         user_id: Uuid,
         cutoff: DateTime<Utc>,
     ) -> Result<Vec<Item>>;
+
+    async fn find_by_id_any_user(&self, id: Uuid) -> Result<Option<Item>>;
+
+    async fn claim_item(&self, id: Uuid, claimer_id: Uuid) -> Result<bool>;
+
+    async fn unclaim_item(&self, id: Uuid, claimer_id: Uuid) -> Result<bool>;
 }
 
 #[async_trait]
@@ -227,6 +233,10 @@ pub trait ItemService: Send + Sync {
     ) -> Result<ItemResponse, AppError>;
 
     async fn delete_item(&self, id: Uuid, user_id: Uuid) -> Result<(), AppError>;
+
+    async fn claim_item(&self, item_id: Uuid, claimer_id: Uuid) -> Result<(), AppError>;
+
+    async fn unclaim_item(&self, item_id: Uuid, claimer_id: Uuid) -> Result<(), AppError>;
 }
 
 #[async_trait]
