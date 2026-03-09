@@ -120,7 +120,7 @@ impl TestApp {
             .start()
             .await
             .unwrap();
-        let redis_container = Redis::default().start().await.unwrap();
+        let redis_container = Redis::default().with_tag("7").start().await.unwrap();
 
         let pg_host = pg_container.get_host().await.unwrap();
         let pg_port = pg_container.get_host_port_ipv4(5432).await.unwrap();
