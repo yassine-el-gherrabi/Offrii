@@ -412,6 +412,40 @@ impl TestApp {
         }
     }
 
+    /// GET without auth, requesting JSON via Accept header.
+    pub async fn get_json_no_auth(&self, uri: &str) -> (StatusCode, Value) {
+        let req = Request::builder()
+            .method("GET")
+            .uri(uri)
+            .header(header::ACCEPT, "application/json")
+            .body(Body::empty())
+            .unwrap();
+
+        let resp = self.router.clone().oneshot(req).await.unwrap();
+        let status = resp.status();
+        let bytes = resp.into_body().collect().await.unwrap().to_bytes();
+
+        if bytes.is_empty() {
+            (status, Value::Null)
+        } else {
+            (status, serde_json::from_slice(&bytes).unwrap())
+        }
+    }
+
+    pub async fn get_with_accept(&self, uri: &str, accept: &str) -> (StatusCode, Vec<u8>) {
+        let req = Request::builder()
+            .method("GET")
+            .uri(uri)
+            .header(header::ACCEPT, accept)
+            .body(Body::empty())
+            .unwrap();
+
+        let resp = self.router.clone().oneshot(req).await.unwrap();
+        let status = resp.status();
+        let bytes = resp.into_body().collect().await.unwrap().to_bytes();
+        (status, bytes.to_vec())
+    }
+
     pub async fn get_no_auth(&self, uri: &str) -> (StatusCode, Value) {
         let req = Request::builder()
             .method("GET")

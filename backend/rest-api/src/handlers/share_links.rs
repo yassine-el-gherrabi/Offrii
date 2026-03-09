@@ -5,14 +5,19 @@ use axum::{Json, Router};
 use uuid::Uuid;
 
 use crate::AppState;
-use crate::dto::share_links::{CreateShareLinkRequest, ShareLinkListItem, ShareLinkResponse};
+use crate::dto::share_links::{
+    CreateShareLinkRequest, ShareLinkListItem, ShareLinkResponse, UpdateShareLinkRequest,
+};
 use crate::errors::AppError;
 use crate::middleware::AuthUser;
 
 pub fn router() -> Router<AppState> {
     Router::new()
         .route("/", get(list_share_links).post(create_share_link))
-        .route("/{id}", axum::routing::delete(delete_share_link))
+        .route(
+            "/{id}",
+            axum::routing::delete(delete_share_link).patch(update_share_link),
+        )
 }
 
 #[tracing::instrument(skip(state))]
@@ -21,11 +26,21 @@ async fn create_share_link(
     auth_user: AuthUser,
     body: Option<Json<CreateShareLinkRequest>>,
 ) -> Result<(StatusCode, Json<ShareLinkResponse>), AppError> {
-    let expires_at = body.and_then(|b| b.0.expires_at);
+    let (expires_at, label, permissions, scope, scope_data) = match body {
+        Some(Json(b)) => (b.expires_at, b.label, b.permissions, b.scope, b.scope_data),
+        None => (None, None, None, None, None),
+    };
 
     let response = state
         .share_links
-        .create_share_link(auth_user.user_id, expires_at)
+        .create_share_link(
+            auth_user.user_id,
+            expires_at,
+            label.as_deref(),
+            permissions.as_deref(),
+            scope.as_deref(),
+            scope_data.as_ref(),
+        )
         .await?;
 
     Ok((StatusCode::CREATED, Json(response)))
@@ -56,4 +71,19 @@ async fn delete_share_link(
         .await?;
 
     Ok(StatusCode::NO_CONTENT)
+}
+
+#[tracing::instrument(skip(state))]
+async fn update_share_link(
+    State(state): State<AppState>,
+    auth_user: AuthUser,
+    Path(id): Path<Uuid>,
+    Json(body): Json<UpdateShareLinkRequest>,
+) -> Result<Json<ShareLinkResponse>, AppError> {
+    let response = state
+        .share_links
+        .update_share_link(id, auth_user.user_id, &body)
+        .await?;
+
+    Ok(Json(response))
 }

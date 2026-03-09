@@ -21,6 +21,12 @@ pub enum AppError {
 
     #[error("not found: {0}")]
     NotFound(String),
+
+    #[error("gone: {0}")]
+    Gone(String),
+
+    #[error("forbidden: {0}")]
+    Forbidden(String),
 }
 
 impl IntoResponse for AppError {
@@ -43,6 +49,8 @@ impl IntoResponse for AppError {
             AppError::Conflict(msg) => (StatusCode::CONFLICT, "CONFLICT", msg.clone()),
             AppError::BadRequest(msg) => (StatusCode::BAD_REQUEST, "BAD_REQUEST", msg.clone()),
             AppError::NotFound(msg) => (StatusCode::NOT_FOUND, "NOT_FOUND", msg.clone()),
+            AppError::Gone(msg) => (StatusCode::GONE, "GONE", msg.clone()),
+            AppError::Forbidden(msg) => (StatusCode::FORBIDDEN, "FORBIDDEN", msg.clone()),
         };
 
         let body = json!({

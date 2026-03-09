@@ -100,7 +100,9 @@ async fn get_shared_view_returns_items() {
     let share_token = link_body["token"].as_str().unwrap();
 
     // Access shared view (public endpoint, no auth needed)
-    let (status, body) = app.get_no_auth(&format!("/shared/{share_token}")).await;
+    let (status, body) = app
+        .get_json_no_auth(&format!("/shared/{share_token}"))
+        .await;
 
     assert_eq!(status, StatusCode::OK);
     assert!(body["items"].is_array());
@@ -113,7 +115,7 @@ async fn get_shared_view_returns_items() {
 async fn get_shared_view_invalid_token_returns_404() {
     let app = TestApp::new().await;
 
-    let (status, body) = app.get_no_auth("/shared/nonexistent_token").await;
+    let (status, body) = app.get_json_no_auth("/shared/nonexistent_token").await;
 
     assert_eq!(status, StatusCode::NOT_FOUND);
     common::assert_error(&body, "NOT_FOUND");
@@ -145,7 +147,9 @@ async fn claim_via_share_link() {
     assert_eq!(status, StatusCode::NO_CONTENT);
 
     // Verify item is claimed in the shared view
-    let (_, body) = app.get_no_auth(&format!("/shared/{share_token}")).await;
+    let (_, body) = app
+        .get_json_no_auth(&format!("/shared/{share_token}"))
+        .await;
     let items = body["items"].as_array().unwrap();
     assert!(items[0]["is_claimed"].as_bool().unwrap());
 }
@@ -227,7 +231,9 @@ async fn shared_view_returns_user_username() {
     let (_, link_body) = app.post_with_auth("/share-links", &token).await;
     let share_token = link_body["token"].as_str().unwrap();
 
-    let (status, body) = app.get_no_auth(&format!("/shared/{share_token}")).await;
+    let (status, body) = app
+        .get_json_no_auth(&format!("/shared/{share_token}"))
+        .await;
     assert_eq!(status, StatusCode::OK);
     assert!(
         body["user_username"].is_string(),
@@ -251,7 +257,9 @@ async fn expired_link_returns_404() {
         .await
         .unwrap();
 
-    let (status, body) = app.get_no_auth(&format!("/shared/{share_token}")).await;
+    let (status, body) = app
+        .get_json_no_auth(&format!("/shared/{share_token}"))
+        .await;
     assert_eq!(status, StatusCode::NOT_FOUND);
     common::assert_error(&body, "NOT_FOUND");
 }
@@ -345,10 +353,457 @@ async fn shared_view_does_not_show_deleted_items() {
     let (_, link_body) = app.post_with_auth("/share-links", &token).await;
     let share_token = link_body["token"].as_str().unwrap();
 
-    let (status, body) = app.get_no_auth(&format!("/shared/{share_token}")).await;
+    let (status, body) = app
+        .get_json_no_auth(&format!("/shared/{share_token}"))
+        .await;
 
     assert_eq!(status, StatusCode::OK);
     let items = body["items"].as_array().unwrap();
     assert_eq!(items.len(), 1);
     assert_eq!(items[0]["name"], "Item 2");
+}
+
+// ── Scope tests ──────────────────────────────────────────────────────
+
+#[tokio::test]
+async fn create_share_link_with_scope_category() {
+    let app = TestApp::new().await;
+    let token = app.setup_user_token("alice@test.com", TEST_PASSWORD).await;
+
+    // Create a category and items
+    let cat = app
+        .create_category(&token, &serde_json::json!({ "name": "Consoles de jeu" }))
+        .await;
+    let cat_id = cat["id"].as_str().unwrap();
+
+    app.create_item(
+        &token,
+        &serde_json::json!({ "name": "PS5", "category_id": cat_id }),
+    )
+    .await;
+    app.create_item(
+        &token,
+        &serde_json::json!({ "name": "Book" }), // no category
+    )
+    .await;
+
+    // Create share link with scope=category
+    let body = serde_json::json!({
+        "scope": "category",
+        "scope_data": { "category_id": cat_id }
+    });
+    let (status, link_body) = app.post_json_with_auth("/share-links", &body, &token).await;
+    assert_eq!(status, StatusCode::CREATED);
+    assert_eq!(link_body["scope"], "category");
+
+    let share_token = link_body["token"].as_str().unwrap();
+
+    // Access shared view — should only show PS5
+    let (status, view) = app
+        .get_json_no_auth(&format!("/shared/{share_token}"))
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    let items = view["items"].as_array().unwrap();
+    assert_eq!(items.len(), 1);
+    assert_eq!(items[0]["name"], "PS5");
+}
+
+#[tokio::test]
+async fn create_share_link_with_scope_selection() {
+    let app = TestApp::new().await;
+    let token = app.setup_user_token("alice@test.com", TEST_PASSWORD).await;
+
+    let item1 = app
+        .create_item(&token, &serde_json::json!({ "name": "PS5" }))
+        .await;
+    let item2 = app
+        .create_item(&token, &serde_json::json!({ "name": "Xbox" }))
+        .await;
+    app.create_item(&token, &serde_json::json!({ "name": "Switch" }))
+        .await;
+
+    let item1_id = item1["id"].as_str().unwrap();
+    let item2_id = item2["id"].as_str().unwrap();
+
+    let body = serde_json::json!({
+        "scope": "selection",
+        "scope_data": { "item_ids": [item1_id, item2_id] }
+    });
+    let (status, link_body) = app.post_json_with_auth("/share-links", &body, &token).await;
+    assert_eq!(status, StatusCode::CREATED);
+    assert_eq!(link_body["scope"], "selection");
+
+    let share_token = link_body["token"].as_str().unwrap();
+
+    let (status, view) = app
+        .get_json_no_auth(&format!("/shared/{share_token}"))
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    let items = view["items"].as_array().unwrap();
+    assert_eq!(items.len(), 2);
+    let names: Vec<&str> = items.iter().map(|i| i["name"].as_str().unwrap()).collect();
+    assert!(names.contains(&"PS5"));
+    assert!(names.contains(&"Xbox"));
+}
+
+#[tokio::test]
+async fn create_share_link_scope_all_with_scope_data_returns_400() {
+    let app = TestApp::new().await;
+    let token = app.setup_user_token("alice@test.com", TEST_PASSWORD).await;
+
+    let body = serde_json::json!({
+        "scope": "all",
+        "scope_data": { "some": "data" }
+    });
+    let (status, body) = app.post_json_with_auth("/share-links", &body, &token).await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    common::assert_error(&body, "BAD_REQUEST");
+}
+
+#[tokio::test]
+async fn create_share_link_scope_selection_invalid_items_returns_400() {
+    let app = TestApp::new().await;
+    let alice_token = app.setup_user_token("alice@test.com", TEST_PASSWORD).await;
+    let bob_token = app.setup_user_token("bob@test.com", TEST_PASSWORD).await;
+
+    // Bob creates an item
+    let bob_item = app
+        .create_item(&bob_token, &serde_json::json!({ "name": "Bob's item" }))
+        .await;
+    let bob_item_id = bob_item["id"].as_str().unwrap();
+
+    // Alice tries to create a link with Bob's item
+    let body = serde_json::json!({
+        "scope": "selection",
+        "scope_data": { "item_ids": [bob_item_id] }
+    });
+    let (status, resp) = app
+        .post_json_with_auth("/share-links", &body, &alice_token)
+        .await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    common::assert_error(&resp, "BAD_REQUEST");
+}
+
+// ── Permissions tests ────────────────────────────────────────────────
+
+#[tokio::test]
+async fn claim_view_only_link_returns_403() {
+    let app = TestApp::new().await;
+    let alice_token = app.setup_user_token("alice@test.com", TEST_PASSWORD).await;
+    let bob_token = app.setup_user_token("bob@test.com", TEST_PASSWORD).await;
+
+    let item = app
+        .create_item(&alice_token, &serde_json::json!({ "name": "PS5" }))
+        .await;
+    let item_id = item["id"].as_str().unwrap();
+
+    let body = serde_json::json!({ "permissions": "view_only" });
+    let (_, link_body) = app
+        .post_json_with_auth("/share-links", &body, &alice_token)
+        .await;
+    let share_token = link_body["token"].as_str().unwrap();
+
+    let (status, resp) = app
+        .post_with_auth(
+            &format!("/shared/{share_token}/items/{item_id}/claim"),
+            &bob_token,
+        )
+        .await;
+    assert_eq!(status, StatusCode::FORBIDDEN);
+    common::assert_error(&resp, "FORBIDDEN");
+}
+
+#[tokio::test]
+async fn view_only_link_shows_items() {
+    let app = TestApp::new().await;
+    let token = app.setup_user_token("alice@test.com", TEST_PASSWORD).await;
+
+    app.create_item(&token, &serde_json::json!({ "name": "PS5" }))
+        .await;
+
+    let body = serde_json::json!({ "permissions": "view_only" });
+    let (_, link_body) = app.post_json_with_auth("/share-links", &body, &token).await;
+    let share_token = link_body["token"].as_str().unwrap();
+
+    let (status, view) = app
+        .get_json_no_auth(&format!("/shared/{share_token}"))
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(view["permissions"], "view_only");
+    let items = view["items"].as_array().unwrap();
+    assert_eq!(items.len(), 1);
+}
+
+// ── is_active tests ──────────────────────────────────────────────────
+
+#[tokio::test]
+async fn deactivated_link_returns_410() {
+    let app = TestApp::new().await;
+    let token = app.setup_user_token("alice@test.com", TEST_PASSWORD).await;
+
+    let (_, link_body) = app.post_with_auth("/share-links", &token).await;
+    let link_id = link_body["id"].as_str().unwrap();
+    let share_token = link_body["token"].as_str().unwrap();
+
+    // Deactivate
+    let patch_body = serde_json::json!({ "is_active": false });
+    let (status, _) = app
+        .patch_json_with_auth(&format!("/share-links/{link_id}"), &patch_body, &token)
+        .await;
+    assert_eq!(status, StatusCode::OK);
+
+    // Try to access
+    let (status, body) = app
+        .get_json_no_auth(&format!("/shared/{share_token}"))
+        .await;
+    assert_eq!(status, StatusCode::GONE);
+    common::assert_error(&body, "GONE");
+}
+
+#[tokio::test]
+async fn reactivate_link_works() {
+    let app = TestApp::new().await;
+    let token = app.setup_user_token("alice@test.com", TEST_PASSWORD).await;
+
+    app.create_item(&token, &serde_json::json!({ "name": "PS5" }))
+        .await;
+
+    let (_, link_body) = app.post_with_auth("/share-links", &token).await;
+    let link_id = link_body["id"].as_str().unwrap();
+    let share_token = link_body["token"].as_str().unwrap();
+
+    // Deactivate then reactivate
+    app.patch_json_with_auth(
+        &format!("/share-links/{link_id}"),
+        &serde_json::json!({ "is_active": false }),
+        &token,
+    )
+    .await;
+    app.patch_json_with_auth(
+        &format!("/share-links/{link_id}"),
+        &serde_json::json!({ "is_active": true }),
+        &token,
+    )
+    .await;
+
+    let (status, _) = app
+        .get_json_no_auth(&format!("/shared/{share_token}"))
+        .await;
+    assert_eq!(status, StatusCode::OK);
+}
+
+#[tokio::test]
+async fn claim_deactivated_link_returns_410() {
+    let app = TestApp::new().await;
+    let alice_token = app.setup_user_token("alice@test.com", TEST_PASSWORD).await;
+    let bob_token = app.setup_user_token("bob@test.com", TEST_PASSWORD).await;
+
+    let item = app
+        .create_item(&alice_token, &serde_json::json!({ "name": "PS5" }))
+        .await;
+    let item_id = item["id"].as_str().unwrap();
+
+    let (_, link_body) = app.post_with_auth("/share-links", &alice_token).await;
+    let link_id = link_body["id"].as_str().unwrap();
+    let share_token = link_body["token"].as_str().unwrap();
+
+    // Deactivate
+    app.patch_json_with_auth(
+        &format!("/share-links/{link_id}"),
+        &serde_json::json!({ "is_active": false }),
+        &alice_token,
+    )
+    .await;
+
+    let (status, body) = app
+        .post_with_auth(
+            &format!("/shared/{share_token}/items/{item_id}/claim"),
+            &bob_token,
+        )
+        .await;
+    assert_eq!(status, StatusCode::GONE);
+    common::assert_error(&body, "GONE");
+}
+
+// ── PATCH tests ──────────────────────────────────────────────────────
+
+#[tokio::test]
+async fn update_share_link_label() {
+    let app = TestApp::new().await;
+    let token = app.setup_user_token("alice@test.com", TEST_PASSWORD).await;
+
+    let (_, link_body) = app.post_with_auth("/share-links", &token).await;
+    let link_id = link_body["id"].as_str().unwrap();
+
+    let patch = serde_json::json!({ "label": "Noël 2026" });
+    let (status, resp) = app
+        .patch_json_with_auth(&format!("/share-links/{link_id}"), &patch, &token)
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(resp["label"], "Noël 2026");
+}
+
+#[tokio::test]
+async fn update_share_link_toggle_active() {
+    let app = TestApp::new().await;
+    let token = app.setup_user_token("alice@test.com", TEST_PASSWORD).await;
+
+    let (_, link_body) = app.post_with_auth("/share-links", &token).await;
+    let link_id = link_body["id"].as_str().unwrap();
+
+    let patch = serde_json::json!({ "is_active": false });
+    let (status, resp) = app
+        .patch_json_with_auth(&format!("/share-links/{link_id}"), &patch, &token)
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(resp["is_active"], false);
+}
+
+#[tokio::test]
+async fn update_share_link_permissions() {
+    let app = TestApp::new().await;
+    let token = app.setup_user_token("alice@test.com", TEST_PASSWORD).await;
+
+    let (_, link_body) = app.post_with_auth("/share-links", &token).await;
+    let link_id = link_body["id"].as_str().unwrap();
+
+    let patch = serde_json::json!({ "permissions": "view_only" });
+    let (status, resp) = app
+        .patch_json_with_auth(&format!("/share-links/{link_id}"), &patch, &token)
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(resp["permissions"], "view_only");
+}
+
+#[tokio::test]
+async fn update_another_users_link_returns_404() {
+    let app = TestApp::new().await;
+    let alice_token = app.setup_user_token("alice@test.com", TEST_PASSWORD).await;
+    let bob_token = app.setup_user_token("bob@test.com", TEST_PASSWORD).await;
+
+    let (_, link_body) = app.post_with_auth("/share-links", &alice_token).await;
+    let link_id = link_body["id"].as_str().unwrap();
+
+    let patch = serde_json::json!({ "label": "Hacked" });
+    let (status, _) = app
+        .patch_json_with_auth(&format!("/share-links/{link_id}"), &patch, &bob_token)
+        .await;
+    assert_eq!(status, StatusCode::NOT_FOUND);
+}
+
+// ── Content negotiation tests ────────────────────────────────────────
+
+#[tokio::test]
+async fn shared_view_returns_html_by_default() {
+    let app = TestApp::new().await;
+    let token = app.setup_user_token("alice@test.com", TEST_PASSWORD).await;
+
+    let (_, link_body) = app.post_with_auth("/share-links", &token).await;
+    let share_token = link_body["token"].as_str().unwrap();
+
+    let (status, bytes) = app
+        .get_with_accept(&format!("/shared/{share_token}"), "text/html")
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    let html = String::from_utf8(bytes).unwrap();
+    assert!(html.contains("<!DOCTYPE html>"));
+    assert!(html.contains("Offrii"));
+}
+
+#[tokio::test]
+async fn shared_view_returns_json_when_requested() {
+    let app = TestApp::new().await;
+    let token = app.setup_user_token("alice@test.com", TEST_PASSWORD).await;
+
+    app.create_item(&token, &serde_json::json!({ "name": "PS5" }))
+        .await;
+
+    let (_, link_body) = app.post_with_auth("/share-links", &token).await;
+    let share_token = link_body["token"].as_str().unwrap();
+
+    let (status, bytes) = app
+        .get_with_accept(&format!("/shared/{share_token}"), "application/json")
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    let body: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+    assert!(body["items"].is_array());
+    assert_eq!(body["items"][0]["name"], "PS5");
+}
+
+#[tokio::test]
+async fn html_page_contains_items() {
+    let app = TestApp::new().await;
+    let token = app.setup_user_token("alice@test.com", TEST_PASSWORD).await;
+
+    app.create_item(&token, &serde_json::json!({ "name": "Nintendo Switch" }))
+        .await;
+
+    let (_, link_body) = app.post_with_auth("/share-links", &token).await;
+    let share_token = link_body["token"].as_str().unwrap();
+
+    let (status, bytes) = app
+        .get_with_accept(&format!("/shared/{share_token}"), "text/html")
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    let html = String::from_utf8(bytes).unwrap();
+    assert!(html.contains("Nintendo Switch"));
+}
+
+#[tokio::test]
+async fn html_page_respects_scope() {
+    let app = TestApp::new().await;
+    let token = app.setup_user_token("alice@test.com", TEST_PASSWORD).await;
+
+    let item1 = app
+        .create_item(&token, &serde_json::json!({ "name": "PS5" }))
+        .await;
+    app.create_item(&token, &serde_json::json!({ "name": "Xbox" }))
+        .await;
+    let item1_id = item1["id"].as_str().unwrap();
+
+    let body = serde_json::json!({
+        "scope": "selection",
+        "scope_data": { "item_ids": [item1_id] }
+    });
+    let (_, link_body) = app.post_json_with_auth("/share-links", &body, &token).await;
+    let share_token = link_body["token"].as_str().unwrap();
+
+    let (status, bytes) = app
+        .get_with_accept(&format!("/shared/{share_token}"), "text/html")
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    let html = String::from_utf8(bytes).unwrap();
+    assert!(html.contains("PS5"));
+    assert!(!html.contains("Xbox"));
+}
+
+// ── Retrocompatibility: default shared view returns JSON via get_no_auth ──
+
+#[tokio::test]
+async fn create_share_link_returns_new_fields() {
+    let app = TestApp::new().await;
+    let token = app.setup_user_token("alice@test.com", TEST_PASSWORD).await;
+
+    let (status, body) = app.post_with_auth("/share-links", &token).await;
+    assert_eq!(status, StatusCode::CREATED);
+    assert_eq!(body["permissions"], "view_and_claim");
+    assert_eq!(body["scope"], "all");
+    assert_eq!(body["is_active"], true);
+    assert!(body["scope_data"].is_null());
+    assert!(body["label"].is_null());
+}
+
+#[tokio::test]
+async fn list_share_links_returns_new_fields() {
+    let app = TestApp::new().await;
+    let token = app.setup_user_token("alice@test.com", TEST_PASSWORD).await;
+
+    app.post_with_auth("/share-links", &token).await;
+
+    let (status, body) = app.get_with_auth("/share-links", &token).await;
+    assert_eq!(status, StatusCode::OK);
+    let links = body.as_array().unwrap();
+    assert_eq!(links[0]["permissions"], "view_and_claim");
+    assert_eq!(links[0]["scope"], "all");
+    assert_eq!(links[0]["is_active"], true);
 }

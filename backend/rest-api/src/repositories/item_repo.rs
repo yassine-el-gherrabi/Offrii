@@ -136,6 +136,10 @@ impl traits::ItemRepo for PgItemRepo {
     async fn unclaim_item(&self, id: Uuid, claimer_id: Uuid) -> Result<Option<Uuid>> {
         unclaim_item(&self.pool, id, claimer_id).await
     }
+
+    async fn find_by_ids(&self, user_id: Uuid, ids: &[Uuid]) -> Result<Vec<Item>> {
+        find_by_ids(&self.pool, user_id, ids).await
+    }
 }
 
 // ── Free functions (kept pub(crate) for transactional use) ───────────
@@ -421,4 +425,22 @@ pub(crate) async fn unclaim_item(
     .await?;
 
     Ok(row.map(|r| r.get("user_id")))
+}
+
+pub(crate) async fn find_by_ids(
+    exec: impl PgExecutor<'_>,
+    user_id: Uuid,
+    ids: &[Uuid],
+) -> Result<Vec<Item>> {
+    let sql = format!(
+        "SELECT {ITEM_COLS} FROM items \
+         WHERE user_id = $1 AND id = ANY($2) AND status != 'deleted'"
+    );
+    let items = sqlx::query_as::<_, Item>(&sql)
+        .bind(user_id)
+        .bind(ids)
+        .fetch_all(exec)
+        .await?;
+
+    Ok(items)
 }
