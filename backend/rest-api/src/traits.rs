@@ -37,6 +37,8 @@ pub trait UserRepo: Send + Sync {
 
     async fn find_by_id(&self, id: Uuid) -> Result<Option<User>>;
 
+    async fn find_by_ids(&self, ids: &[Uuid]) -> Result<Vec<User>>;
+
     async fn find_by_username(&self, username: &str) -> Result<Option<User>>;
 
     async fn is_username_taken(
@@ -367,12 +369,13 @@ pub trait CircleInviteRepo: Send + Sync {
 
 #[async_trait]
 pub trait CircleItemRepo: Send + Sync {
+    /// Returns `Some` when a new row was inserted, `None` when item was already shared.
     async fn share_item(
         &self,
         circle_id: Uuid,
         item_id: Uuid,
         shared_by: Uuid,
-    ) -> Result<CircleItem>;
+    ) -> Result<Option<CircleItem>>;
 
     async fn unshare_item(&self, circle_id: Uuid, item_id: Uuid) -> Result<bool>;
 

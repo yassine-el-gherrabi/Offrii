@@ -975,7 +975,7 @@ async fn share_same_item_twice_is_idempotent() {
         .await;
     assert_eq!(s1, StatusCode::NO_CONTENT);
 
-    // Second share — should still succeed (ON CONFLICT DO NOTHING)
+    // Second share — idempotent, no duplicate events (ON CONFLICT DO NOTHING)
     let (s2, _) = app
         .post_json_with_auth(&format!("/circles/{circle_id}/items"), &share_body, &alice)
         .await;

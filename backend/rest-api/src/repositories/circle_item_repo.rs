@@ -27,7 +27,7 @@ impl traits::CircleItemRepo for PgCircleItemRepo {
         circle_id: Uuid,
         item_id: Uuid,
         shared_by: Uuid,
-    ) -> Result<CircleItem> {
+    ) -> Result<Option<CircleItem>> {
         share_item(&self.pool, circle_id, item_id, shared_by).await
     }
 
@@ -55,18 +55,18 @@ pub(crate) async fn share_item(
     circle_id: Uuid,
     item_id: Uuid,
     shared_by: Uuid,
-) -> Result<CircleItem> {
+) -> Result<Option<CircleItem>> {
     let sql = format!(
         "INSERT INTO circle_items (circle_id, item_id, shared_by) \
          VALUES ($1, $2, $3) \
-         ON CONFLICT (circle_id, item_id) DO UPDATE SET shared_by = EXCLUDED.shared_by \
+         ON CONFLICT (circle_id, item_id) DO NOTHING \
          RETURNING {CIRCLE_ITEM_COLS}"
     );
     let item = sqlx::query_as::<_, CircleItem>(&sql)
         .bind(circle_id)
         .bind(item_id)
         .bind(shared_by)
-        .fetch_one(exec)
+        .fetch_optional(exec)
         .await?;
 
     Ok(item)
