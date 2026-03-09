@@ -1,13 +1,13 @@
 use std::collections::VecDeque;
 use std::sync::{Arc, Mutex as StdMutex};
 
-/// Non-breached password that passes OWASP policy checks, shared across all test modules.
+/// Dummy test password — NOT a real credential. Passes OWASP policy checks.
 #[allow(dead_code)]
-pub const TEST_PASSWORD: &str = "Str0ng!P@ssw0rd#2026x";
+pub const TEST_PASSWORD: &str = "TestPass9xKz2mQ"; // gitleaks:allow
 
-/// Alternate strong password for change/reset tests.
+/// Alternate dummy password for change/reset tests — NOT a real credential.
 #[allow(dead_code)]
-pub const NEW_PASSWORD: &str = "N3wStr0ng!P@ss#2026z";
+pub const NEW_PASSWORD: &str = "NewPass7wRj4nL8v"; // gitleaks:allow
 
 use axum::Router;
 use axum::body::Body;
