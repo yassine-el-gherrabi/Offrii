@@ -93,7 +93,7 @@ jobs:
           xcodebuild build \
             -project Offrii.xcodeproj \
             -scheme Offrii \
-            -destination 'platform=iOS Simulator,name=iPhone 16,OS=18.2' \
+            -destination 'platform=iOS Simulator,name=iPhone 16,OS=latest' \
             -configuration Debug \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
@@ -104,7 +104,7 @@ jobs:
           xcodebuild test \
             -project Offrii.xcodeproj \
             -scheme Offrii \
-            -destination 'platform=iOS Simulator,name=iPhone 16,OS=18.2' \
+            -destination 'platform=iOS Simulator,name=iPhone 16,OS=latest' \
             -configuration Debug \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
