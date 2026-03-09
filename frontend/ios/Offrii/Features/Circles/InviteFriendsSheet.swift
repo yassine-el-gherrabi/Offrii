@@ -98,6 +98,17 @@ struct InviteFriendsSheet: View {
             .task {
                 await loadFriends()
             }
+            .alert(
+                NSLocalizedString("common.error", comment: ""),
+                isPresented: Binding(
+                    get: { error != nil },
+                    set: { if !$0 { error = nil } }
+                )
+            ) {
+                Button(NSLocalizedString("common.ok", comment: ""), role: .cancel) {}
+            } message: {
+                if let error { Text(error) }
+            }
         }
     }
 
@@ -121,15 +132,29 @@ struct InviteFriendsSheet: View {
 
     private func inviteSelected() async {
         isInviting = true
+        var failedCount = 0
+        var succeeded: Set<UUID> = []
+
         for userId in selected {
             do {
                 try await CircleService.shared.addMember(circleId: circleId, userId: userId)
+                succeeded.insert(userId)
             } catch {
+                failedCount += 1
                 self.error = error.localizedDescription
             }
         }
+
+        // Remove successfully invited from selection
+        selected.subtract(succeeded)
         isInviting = false
-        onInvited()
-        dismiss()
+
+        if failedCount == 0 {
+            onInvited()
+            dismiss()
+        } else if !succeeded.isEmpty {
+            // Partial success — refresh parent but keep sheet open for retry
+            onInvited()
+        }
     }
 }
