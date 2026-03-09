@@ -7,7 +7,9 @@ use crate::dto::auth::{AuthResponse, RefreshResponse};
 use crate::dto::categories::CategoryResponse;
 use crate::dto::items::{ItemResponse, ItemsListResponse, ListItemsQuery};
 use crate::dto::push_tokens::PushTokenResponse;
-use crate::dto::share_links::{ShareLinkListItem, ShareLinkResponse, SharedViewResponse};
+use crate::dto::share_links::{
+    ShareLinkListItem, ShareLinkResponse, SharedViewResponse, UpdateShareLinkRequest,
+};
 use crate::dto::users::{UserDataExport, UserProfileResponse};
 use crate::errors::AppError;
 use crate::models::{Category, Item, PushToken, RefreshToken, ShareLink, User};
@@ -156,6 +158,8 @@ pub trait ItemRepo: Send + Sync {
     async fn claim_item(&self, id: Uuid, claimer_id: Uuid) -> Result<Option<Uuid>>;
 
     async fn unclaim_item(&self, id: Uuid, claimer_id: Uuid) -> Result<Option<Uuid>>;
+
+    async fn find_by_ids(&self, user_id: Uuid, ids: &[Uuid]) -> Result<Vec<Item>>;
 }
 
 #[async_trait]
@@ -302,6 +306,7 @@ pub trait PushTokenService: Send + Sync {
 
 // ── Share link traits ───────────────────────────────────────────────
 
+#[allow(clippy::too_many_arguments)]
 #[async_trait]
 pub trait ShareLinkRepo: Send + Sync {
     async fn create(
@@ -309,6 +314,10 @@ pub trait ShareLinkRepo: Send + Sync {
         user_id: Uuid,
         token: &str,
         expires_at: Option<DateTime<Utc>>,
+        label: Option<&str>,
+        permissions: &str,
+        scope: &str,
+        scope_data: Option<&serde_json::Value>,
     ) -> Result<ShareLink>;
 
     async fn list_by_user(&self, user_id: Uuid) -> Result<Vec<ShareLink>>;
@@ -318,6 +327,16 @@ pub trait ShareLinkRepo: Send + Sync {
     async fn find_by_token(&self, token: &str) -> Result<Option<ShareLink>>;
 
     async fn delete(&self, id: Uuid, user_id: Uuid) -> Result<bool>;
+
+    async fn update(
+        &self,
+        id: Uuid,
+        user_id: Uuid,
+        label: Option<&str>,
+        is_active: Option<bool>,
+        permissions: Option<&str>,
+        expires_at: Option<Option<DateTime<Utc>>>,
+    ) -> Result<Option<ShareLink>>;
 }
 
 #[async_trait]
@@ -326,6 +345,10 @@ pub trait ShareLinkService: Send + Sync {
         &self,
         user_id: Uuid,
         expires_at: Option<DateTime<Utc>>,
+        label: Option<&str>,
+        permissions: Option<&str>,
+        scope: Option<&str>,
+        scope_data: Option<&serde_json::Value>,
     ) -> Result<ShareLinkResponse, AppError>;
 
     async fn list_share_links(&self, user_id: Uuid) -> Result<Vec<ShareLinkListItem>, AppError>;
@@ -333,6 +356,13 @@ pub trait ShareLinkService: Send + Sync {
     async fn delete_share_link(&self, id: Uuid, user_id: Uuid) -> Result<(), AppError>;
 
     async fn get_shared_view(&self, token: &str) -> Result<SharedViewResponse, AppError>;
+
+    async fn update_share_link(
+        &self,
+        id: Uuid,
+        user_id: Uuid,
+        req: &UpdateShareLinkRequest,
+    ) -> Result<ShareLinkResponse, AppError>;
 
     async fn claim_via_share(
         &self,
