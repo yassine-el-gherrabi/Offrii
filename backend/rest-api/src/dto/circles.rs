@@ -29,6 +29,11 @@ pub struct ShareItemRequest {
 }
 
 #[derive(Debug, Deserialize)]
+pub struct AddMemberRequest {
+    pub user_id: Uuid,
+}
+
+#[derive(Debug, Deserialize)]
 pub struct FeedQuery {
     pub page: Option<i64>,
     pub per_page: Option<i64>,

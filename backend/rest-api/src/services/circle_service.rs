@@ -28,6 +28,7 @@ pub struct PgCircleService {
     user_repo: Arc<dyn traits::UserRepo>,
     push_token_repo: Arc<dyn traits::PushTokenRepo>,
     notification_svc: Arc<dyn traits::NotificationService>,
+    friend_repo: Arc<dyn traits::FriendRepo>,
     redis: redis::Client,
 }
 
@@ -44,6 +45,7 @@ impl PgCircleService {
         user_repo: Arc<dyn traits::UserRepo>,
         push_token_repo: Arc<dyn traits::PushTokenRepo>,
         notification_svc: Arc<dyn traits::NotificationService>,
+        friend_repo: Arc<dyn traits::FriendRepo>,
         redis: redis::Client,
     ) -> Self {
         Self {
@@ -57,6 +59,7 @@ impl PgCircleService {
             user_repo,
             push_token_repo,
             notification_svc,
+            friend_repo,
             redis,
         }
     }
@@ -779,6 +782,79 @@ impl traits::CircleService for PgCircleService {
             .insert(circle_id, user_id, "item_unshared", Some(item_id), None)
             .await
             .map_err(AppError::Internal)?;
+
+        self.bump_circle_version(circle_id);
+
+        Ok(())
+    }
+
+    #[tracing::instrument(skip(self))]
+    async fn add_member_by_id(
+        &self,
+        circle_id: Uuid,
+        user_id: Uuid,
+        requester_id: Uuid,
+    ) -> Result<(), AppError> {
+        self.require_membership(circle_id, requester_id).await?;
+
+        // Verify the target user exists
+        let target = self
+            .user_repo
+            .find_by_id(user_id)
+            .await
+            .map_err(AppError::Internal)?
+            .ok_or_else(|| AppError::NotFound("user not found".into()))?;
+
+        // Verify friendship
+        let friends = self
+            .friend_repo
+            .are_friends(requester_id, user_id)
+            .await
+            .map_err(AppError::Internal)?;
+
+        if !friends {
+            return Err(AppError::Forbidden(
+                "you can only add friends to a circle".into(),
+            ));
+        }
+
+        // Check not already a member
+        let existing = self
+            .circle_member_repo
+            .find_member(circle_id, user_id)
+            .await
+            .map_err(AppError::Internal)?;
+
+        if existing.is_some() {
+            return Err(AppError::Conflict("user is already a member".into()));
+        }
+
+        // Add member + event in transaction
+        let mut tx = self
+            .pool
+            .begin()
+            .await
+            .map_err(|e| AppError::Internal(e.into()))?;
+
+        circle_member_repo::add_member(&mut *tx, circle_id, user_id, "member")
+            .await
+            .map_err(AppError::Internal)?;
+
+        circle_event_repo::insert(&mut *tx, circle_id, user_id, "member_joined", None, None)
+            .await
+            .map_err(AppError::Internal)?;
+
+        tx.commit()
+            .await
+            .map_err(|e| AppError::Internal(e.into()))?;
+
+        // Fire-and-forget notification to the added user
+        self.notify_members(
+            circle_id,
+            requester_id,
+            "Nouveau membre !".to_string(),
+            format!("{} a rejoint le cercle", target.username),
+        );
 
         self.bump_circle_version(circle_id);
 

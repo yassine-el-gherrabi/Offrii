@@ -3,6 +3,7 @@ pub mod auth_service;
 pub mod category_service;
 pub mod circle_service;
 pub mod email_service;
+pub mod friend_service;
 pub mod health_check;
 pub mod item_service;
 pub mod push_token_service;
