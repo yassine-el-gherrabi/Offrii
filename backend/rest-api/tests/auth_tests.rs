@@ -119,6 +119,121 @@ async fn register_without_display_name_generates_username_from_email() {
     );
 }
 
+// ---------------------------------------------------------------------------
+// Register with explicit username
+// ---------------------------------------------------------------------------
+
+#[tokio::test]
+async fn register_with_username_preserves_it() {
+    let app = TestApp::new().await;
+
+    let (status, body) = app
+        .register_user_with_username(TEST_EMAIL, TEST_PASSWORD, "alice_e2e")
+        .await;
+
+    assert_eq!(status, StatusCode::CREATED);
+    assert_eq!(
+        body["user"]["username"], "alice_e2e",
+        "username should be preserved exactly as provided"
+    );
+}
+
+#[tokio::test]
+async fn register_with_username_and_display_name() {
+    let app = TestApp::new().await;
+
+    let body = serde_json::json!({
+        "email": TEST_EMAIL,
+        "password": TEST_PASSWORD,
+        "display_name": "Alice",
+        "username": "custom_user"
+    });
+    let (status, resp) = app.post_json("/auth/register", &body).await;
+
+    assert_eq!(status, StatusCode::CREATED);
+    assert_eq!(resp["user"]["username"], "custom_user");
+    assert_eq!(resp["user"]["display_name"], "Alice");
+}
+
+#[tokio::test]
+async fn register_with_invalid_username_format_400() {
+    let app = TestApp::new().await;
+
+    // Starts with digit
+    let (status, body) = app
+        .register_user_with_username(TEST_EMAIL, TEST_PASSWORD, "1invalid")
+        .await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    assert_error(&body, "BAD_REQUEST");
+}
+
+#[tokio::test]
+async fn register_with_uppercase_username_400() {
+    let app = TestApp::new().await;
+
+    let (status, body) = app
+        .register_user_with_username(TEST_EMAIL, TEST_PASSWORD, "Alice")
+        .await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    assert_error(&body, "BAD_REQUEST");
+}
+
+#[tokio::test]
+async fn register_with_too_short_username_400() {
+    let app = TestApp::new().await;
+
+    let (status, body) = app
+        .register_user_with_username(TEST_EMAIL, TEST_PASSWORD, "ab")
+        .await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    assert_error(&body, "BAD_REQUEST");
+}
+
+#[tokio::test]
+async fn register_with_special_chars_username_400() {
+    let app = TestApp::new().await;
+
+    let (status, body) = app
+        .register_user_with_username(TEST_EMAIL, TEST_PASSWORD, "alice@home")
+        .await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    assert_error(&body, "BAD_REQUEST");
+}
+
+#[tokio::test]
+async fn register_with_taken_username_409() {
+    let app = TestApp::new().await;
+
+    // First user takes the username
+    let (status, _) = app
+        .register_user_with_username("first@example.com", TEST_PASSWORD, "taken_name")
+        .await;
+    assert_eq!(status, StatusCode::CREATED);
+
+    // Second user tries the same username
+    let (status, body) = app
+        .register_user_with_username("second@example.com", TEST_PASSWORD, "taken_name")
+        .await;
+    assert_eq!(status, StatusCode::CONFLICT);
+    assert_error(&body, "CONFLICT");
+}
+
+#[tokio::test]
+async fn register_without_username_auto_generates() {
+    let app = TestApp::new().await;
+
+    // No username field → auto-generate (backward compat)
+    let (status, body) = app.register_user(TEST_EMAIL, TEST_PASSWORD).await;
+
+    assert_eq!(status, StatusCode::CREATED);
+    let username = body["user"]["username"].as_str().unwrap();
+    assert!(username.len() >= 3);
+    assert!(
+        username.chars().next().unwrap().is_ascii_lowercase(),
+        "auto-generated username should start with a letter: {username}"
+    );
+}
+
 #[tokio::test]
 async fn register_malformed_json_400() {
     let app = TestApp::new().await;

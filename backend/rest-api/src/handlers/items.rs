@@ -121,6 +121,11 @@ async fn claim_item(
 ) -> Result<StatusCode, AppError> {
     state.items.claim_item(id, auth_user.user_id).await?;
 
+    // Best-effort circle events — don't fail the claim if this errors
+    if let Err(e) = state.circles.on_item_claimed(id, auth_user.user_id).await {
+        tracing::warn!(item_id = %id, error = %e, "failed to create circle claim events");
+    }
+
     Ok(StatusCode::NO_CONTENT)
 }
 
@@ -131,6 +136,11 @@ async fn unclaim_item(
     Path(id): Path<Uuid>,
 ) -> Result<StatusCode, AppError> {
     state.items.unclaim_item(id, auth_user.user_id).await?;
+
+    // Best-effort circle events — don't fail the unclaim if this errors
+    if let Err(e) = state.circles.on_item_unclaimed(id, auth_user.user_id).await {
+        tracing::warn!(item_id = %id, error = %e, "failed to create circle unclaim events");
+    }
 
     Ok(StatusCode::NO_CONTENT)
 }

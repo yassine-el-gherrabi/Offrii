@@ -19,6 +19,12 @@ pub struct RegisterRequest {
     pub password: String,
     #[validate(length(max = 100, message = "display name must be at most 100 characters"))]
     pub display_name: Option<String>,
+    #[validate(length(
+        min = 3,
+        max = 30,
+        message = "username must be between 3 and 30 characters"
+    ))]
+    pub username: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Validate)]

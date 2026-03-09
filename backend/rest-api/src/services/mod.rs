@@ -1,6 +1,7 @@
 pub mod apns_notification_service;
 pub mod auth_service;
 pub mod category_service;
+pub mod circle_service;
 pub mod email_service;
 pub mod health_check;
 pub mod item_service;

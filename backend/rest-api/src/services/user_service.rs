@@ -10,19 +10,7 @@ use crate::dto::items::ItemResponse;
 use crate::dto::users::{UpdateProfileRequest, UserDataExport, UserProfileResponse};
 use crate::errors::AppError;
 use crate::traits;
-
-/// Validate username format: ^[a-z][a-z0-9_]{2,29}$
-fn is_valid_username(s: &str) -> bool {
-    if s.len() < 3 || s.len() > 30 {
-        return false;
-    }
-    let mut chars = s.chars();
-    match chars.next() {
-        Some(c) if c.is_ascii_lowercase() => {}
-        _ => return false,
-    }
-    chars.all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '_')
-}
+use crate::utils::username::is_valid_username;
 
 // ── Concrete implementation ──────────────────────────────────────────
 

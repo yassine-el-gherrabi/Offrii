@@ -140,6 +140,10 @@ impl traits::ItemRepo for PgItemRepo {
     async fn find_by_ids(&self, user_id: Uuid, ids: &[Uuid]) -> Result<Vec<Item>> {
         find_by_ids(&self.pool, user_id, ids).await
     }
+
+    async fn find_by_ids_any_user(&self, ids: &[Uuid]) -> Result<Vec<Item>> {
+        find_by_ids_any_user(&self.pool, ids).await
+    }
 }
 
 // ── Free functions (kept pub(crate) for transactional use) ───────────
@@ -438,6 +442,22 @@ pub(crate) async fn find_by_ids(
     );
     let items = sqlx::query_as::<_, Item>(&sql)
         .bind(user_id)
+        .bind(ids)
+        .fetch_all(exec)
+        .await?;
+
+    Ok(items)
+}
+
+pub(crate) async fn find_by_ids_any_user(
+    exec: impl PgExecutor<'_>,
+    ids: &[Uuid],
+) -> Result<Vec<Item>> {
+    let sql = format!(
+        "SELECT {ITEM_COLS} FROM items \
+         WHERE id = ANY($1) AND status != 'deleted'"
+    );
+    let items = sqlx::query_as::<_, Item>(&sql)
         .bind(ids)
         .fetch_all(exec)
         .await?;

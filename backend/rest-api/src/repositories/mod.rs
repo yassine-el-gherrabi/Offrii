@@ -1,4 +1,9 @@
 pub mod category_repo;
+pub mod circle_event_repo;
+pub mod circle_invite_repo;
+pub mod circle_item_repo;
+pub mod circle_member_repo;
+pub mod circle_repo;
 pub mod item_repo;
 pub mod push_token_repo;
 pub mod refresh_token_repo;

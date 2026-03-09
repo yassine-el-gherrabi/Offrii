@@ -37,7 +37,12 @@ async fn register(
 
     let response = state
         .auth
-        .register(&req.email, &req.password, req.display_name.as_deref())
+        .register(
+            &req.email,
+            &req.password,
+            req.display_name.as_deref(),
+            req.username.as_deref(),
+        )
         .await?;
 
     Ok((StatusCode::CREATED, Json(response)))
@@ -133,6 +138,7 @@ mod tests {
             email: "not-an-email".into(),
             password: "longpassword".into(),
             display_name: None,
+            username: None,
         };
         assert!(req.validate().is_err());
     }
@@ -143,6 +149,7 @@ mod tests {
             email: "user@example.com".into(),
             password: "short".into(),
             display_name: None,
+            username: None,
         };
         assert!(req.validate().is_err());
     }
@@ -153,8 +160,42 @@ mod tests {
             email: "user@example.com".into(),
             password: "longpassword123".into(),
             display_name: Some("Alice".into()),
+            username: None,
         };
         assert!(req.validate().is_ok());
+    }
+
+    #[test]
+    fn register_accepts_valid_username() {
+        let req = RegisterRequest {
+            email: "user@example.com".into(),
+            password: "longpassword123".into(),
+            display_name: None,
+            username: Some("alice_e2e".into()),
+        };
+        assert!(req.validate().is_ok());
+    }
+
+    #[test]
+    fn register_rejects_too_short_username() {
+        let req = RegisterRequest {
+            email: "user@example.com".into(),
+            password: "longpassword123".into(),
+            display_name: None,
+            username: Some("ab".into()),
+        };
+        assert!(req.validate().is_err());
+    }
+
+    #[test]
+    fn register_rejects_too_long_username() {
+        let req = RegisterRequest {
+            email: "user@example.com".into(),
+            password: "longpassword123".into(),
+            display_name: None,
+            username: Some("a".repeat(31)),
+        };
+        assert!(req.validate().is_err());
     }
 
     #[test]

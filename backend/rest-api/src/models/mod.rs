@@ -1,4 +1,7 @@
 pub mod category;
+pub mod circle;
+pub mod circle_event;
+pub mod circle_item;
 pub mod item;
 pub mod push_token;
 pub mod refresh_token;
@@ -6,6 +9,9 @@ pub mod share_link;
 pub mod user;
 
 pub use category::Category;
+pub use circle::{Circle, CircleInvite, CircleMember};
+pub use circle_event::CircleEvent;
+pub use circle_item::CircleItem;
 pub use item::Item;
 pub use push_token::PushToken;
 pub use refresh_token::RefreshToken;

@@ -16,6 +16,7 @@ use crate::utils::hash;
 use crate::utils::jwt::{ACCESS_TOKEN_TTL_SECS, JwtKeys, REFRESH_TOKEN_TTL_SECS};
 use crate::utils::password_policy::{self, PasswordPolicyViolation};
 use crate::utils::token_hash::sha256_hex;
+use crate::utils::username::is_valid_username;
 
 /// Maximum number of active refresh tokens kept per user.
 const MAX_REFRESH_TOKENS_PER_USER: i64 = 5;
@@ -93,6 +94,7 @@ impl traits::AuthService for PgAuthService {
         email: &str,
         password: &str,
         display_name: Option<&str>,
+        requested_username: Option<&str>,
     ) -> Result<AuthResponse, AppError> {
         let email = email.trim().to_lowercase();
 
@@ -117,12 +119,30 @@ impl traits::AuthService for PgAuthService {
                 .map_err(|e| AppError::Internal(anyhow::anyhow!("spawn_blocking join error: {e}")))?
                 .map_err(AppError::Internal)?;
 
-        // Auto-generate username from display_name or email prefix
-        let base: &str = match display_name {
-            Some(name) => name,
-            None => email.split('@').next().unwrap_or("user"),
+        // Resolve username: use provided value (with validation) or auto-generate
+        let username = if let Some(uname) = requested_username {
+            if !is_valid_username(uname) {
+                return Err(AppError::BadRequest(
+                    "username must be 3-30 characters, start with a letter, and contain only lowercase letters, digits, and underscores".into(),
+                ));
+            }
+            let taken: bool =
+                sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM users WHERE username = $1)")
+                    .bind(uname)
+                    .fetch_one(&self.pool)
+                    .await
+                    .map_err(|e| AppError::Internal(e.into()))?;
+            if taken {
+                return Err(AppError::Conflict("username already taken".into()));
+            }
+            uname.to_string()
+        } else {
+            let base: &str = match display_name {
+                Some(name) => name,
+                None => email.split('@').next().unwrap_or("user"),
+            };
+            generate_unique_username(base, &self.pool).await?
         };
-        let username = generate_unique_username(base, &self.pool).await?;
 
         // Transaction: create user + copy categories + insert refresh token
         let mut tx = self
