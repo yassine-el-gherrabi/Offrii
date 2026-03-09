@@ -45,6 +45,10 @@ impl traits::UserRepo for PgUserRepo {
         find_by_id(&self.pool, id).await
     }
 
+    async fn find_by_ids(&self, ids: &[Uuid]) -> Result<Vec<User>> {
+        find_by_ids(&self.pool, ids).await
+    }
+
     async fn find_by_username(&self, username: &str) -> Result<Option<User>> {
         find_by_username(&self.pool, username).await
     }
@@ -181,6 +185,16 @@ pub(crate) async fn find_by_id(exec: impl PgExecutor<'_>, id: Uuid) -> Result<Op
         .await?;
 
     Ok(user)
+}
+
+pub(crate) async fn find_by_ids(exec: impl PgExecutor<'_>, ids: &[Uuid]) -> Result<Vec<User>> {
+    let sql = format!("SELECT {USER_COLS} FROM users WHERE id = ANY($1)");
+    let users = sqlx::query_as::<_, User>(&sql)
+        .bind(ids)
+        .fetch_all(exec)
+        .await?;
+
+    Ok(users)
 }
 
 #[allow(clippy::too_many_arguments)]

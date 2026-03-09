@@ -12,6 +12,7 @@ use crate::dto::circles::{
     CircleResponse, ClaimedByInfo, FeedResponse, InviteResponse, JoinResponse,
 };
 use crate::errors::AppError;
+use crate::repositories::{circle_event_repo, circle_invite_repo, circle_member_repo};
 use crate::traits::{self, NotificationRequest};
 
 // ── Concrete implementation ──────────────────────────────────────────
@@ -145,18 +146,15 @@ impl PgCircleService {
         &self,
         user_ids: &[Uuid],
     ) -> Result<HashMap<Uuid, (String, Option<String>)>, AppError> {
-        let mut map = HashMap::new();
-        for &uid in user_ids {
-            if let Some(user) = self
-                .user_repo
-                .find_by_id(uid)
-                .await
-                .map_err(AppError::Internal)?
-            {
-                map.insert(uid, (user.username, user.display_name));
-            }
-        }
-        Ok(map)
+        let users = self
+            .user_repo
+            .find_by_ids(user_ids)
+            .await
+            .map_err(AppError::Internal)?;
+        Ok(users
+            .into_iter()
+            .map(|u| (u.id, (u.username, u.display_name)))
+            .collect())
     }
 }
 
@@ -472,10 +470,15 @@ impl traits::CircleService for PgCircleService {
             return Err(AppError::Conflict("already a member of this circle".into()));
         }
 
-        // Atomically increment use count (race-safe)
-        let incremented = self
-            .circle_invite_repo
-            .increment_use_count(invite.id)
+        // Wrap increment + add_member + event in a single transaction so a
+        // failed membership insert cannot consume an invite use.
+        let mut tx = self
+            .pool
+            .begin()
+            .await
+            .map_err(|e| AppError::Internal(e.into()))?;
+
+        let incremented = circle_invite_repo::increment_use_count(&mut *tx, invite.id)
             .await
             .map_err(AppError::Internal)?;
 
@@ -483,17 +486,24 @@ impl traits::CircleService for PgCircleService {
             return Err(AppError::Gone("invite is no longer valid".into()));
         }
 
-        // Add member
-        self.circle_member_repo
-            .add_member(invite.circle_id, user_id, "member")
+        circle_member_repo::add_member(&mut *tx, invite.circle_id, user_id, "member")
             .await
             .map_err(AppError::Internal)?;
 
-        // Log event
-        self.circle_event_repo
-            .insert(invite.circle_id, user_id, "member_joined", None, None)
+        circle_event_repo::insert(
+            &mut *tx,
+            invite.circle_id,
+            user_id,
+            "member_joined",
+            None,
+            None,
+        )
+        .await
+        .map_err(AppError::Internal)?;
+
+        tx.commit()
             .await
-            .map_err(AppError::Internal)?;
+            .map_err(|e| AppError::Internal(e.into()))?;
 
         // Get circle name for response
         let circle = self
@@ -643,26 +653,28 @@ impl traits::CircleService for PgCircleService {
             .map_err(AppError::Internal)?
             .ok_or_else(|| AppError::NotFound("item not found".into()))?;
 
-        self.circle_item_repo
+        let inserted = self
+            .circle_item_repo
             .share_item(circle_id, item_id, user_id)
             .await
             .map_err(AppError::Internal)?;
 
-        // Log event
-        self.circle_event_repo
-            .insert(circle_id, user_id, "item_shared", Some(item_id), None)
-            .await
-            .map_err(AppError::Internal)?;
+        // Only emit event / notification / version bump on first share
+        if inserted.is_some() {
+            self.circle_event_repo
+                .insert(circle_id, user_id, "item_shared", Some(item_id), None)
+                .await
+                .map_err(AppError::Internal)?;
 
-        // Fire-and-forget notification
-        self.notify_members(
-            circle_id,
-            user_id,
-            "Nouvel article partagé !".to_string(),
-            format!("{} a été partagé dans le cercle", item.name),
-        );
+            self.notify_members(
+                circle_id,
+                user_id,
+                "Nouvel article partagé !".to_string(),
+                format!("{} a été partagé dans le cercle", item.name),
+            );
 
-        self.bump_circle_version(circle_id);
+            self.bump_circle_version(circle_id);
+        }
 
         Ok(())
     }
@@ -782,11 +794,14 @@ impl traits::CircleService for PgCircleService {
             .map_err(AppError::Internal)?;
 
         for circle_id in circle_ids {
-            self.circle_event_repo
+            if let Err(e) = self
+                .circle_event_repo
                 .insert(circle_id, claimer_id, "item_claimed", Some(item_id), None)
                 .await
-                .map_err(AppError::Internal)?;
-
+            {
+                tracing::warn!(%circle_id, error = %e, "failed to insert item_claimed event");
+                continue;
+            }
             self.bump_circle_version(circle_id);
         }
 
@@ -802,11 +817,14 @@ impl traits::CircleService for PgCircleService {
             .map_err(AppError::Internal)?;
 
         for circle_id in circle_ids {
-            self.circle_event_repo
+            if let Err(e) = self
+                .circle_event_repo
                 .insert(circle_id, claimer_id, "item_unclaimed", Some(item_id), None)
                 .await
-                .map_err(AppError::Internal)?;
-
+            {
+                tracing::warn!(%circle_id, error = %e, "failed to insert item_unclaimed event");
+                continue;
+            }
             self.bump_circle_version(circle_id);
         }
 
