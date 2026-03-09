@@ -11,8 +11,9 @@ pub struct SendFriendRequestBody {
     pub username: String,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Validate)]
 pub struct UserSearchQuery {
+    #[validate(length(min = 1, max = 50, message = "query must be 1-50 characters"))]
     pub q: String,
 }
 

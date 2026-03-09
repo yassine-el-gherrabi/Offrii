@@ -12,16 +12,26 @@ final class FriendsViewModel {
     func loadAll() async {
         isLoading = true
         error = nil
-        async let friendsTask = FriendService.shared.listFriends()
-        async let requestsTask = FriendService.shared.listPendingRequests()
-        async let sentTask = FriendService.shared.listSentRequests()
-        do {
-            friends = try await friendsTask
-            pendingRequests = try await requestsTask
-            sentRequests = try await sentTask
-        } catch {
-            self.error = error.localizedDescription
+
+        async let f: Result<[FriendResponse], Error> = Result { try await FriendService.shared.listFriends() }
+        async let p: Result<[FriendRequestResponse], Error> = Result { try await FriendService.shared.listPendingRequests() }
+        async let s: Result<[SentFriendRequestResponse], Error> = Result { try await FriendService.shared.listSentRequests() }
+
+        let (fResult, pResult, sResult) = await (f, p, s)
+
+        if case .success(let val) = fResult { friends = val }
+        if case .success(let val) = pResult { pendingRequests = val }
+        if case .success(let val) = sResult { sentRequests = val }
+
+        // Show error only if all three failed
+        var errors: [Error] = []
+        if case .failure(let e) = fResult { errors.append(e) }
+        if case .failure(let e) = pResult { errors.append(e) }
+        if case .failure(let e) = sResult { errors.append(e) }
+        if errors.count == 3 {
+            self.error = errors.first?.localizedDescription
         }
+
         isLoading = false
     }
 

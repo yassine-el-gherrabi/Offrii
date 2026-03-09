@@ -7,6 +7,7 @@ struct AddFriendSheet: View {
     @State private var isSearching = false
     @State private var sentUsernames: Set<String> = []
     @State private var error: String?
+    @State private var searchTask: Task<Void, Never>?
     let onSent: () -> Void
 
     var body: some View {
@@ -119,7 +120,12 @@ struct AddFriendSheet: View {
                 }
             }
             .onChange(of: searchText) { _, newValue in
-                Task { await search(query: newValue) }
+                searchTask?.cancel()
+                searchTask = Task {
+                    try? await Task.sleep(for: .milliseconds(300))
+                    guard !Task.isCancelled else { return }
+                    await search(query: newValue)
+                }
             }
         }
     }

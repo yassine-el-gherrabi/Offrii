@@ -21,7 +21,8 @@ use crate::dto::users::{UserDataExport, UserProfileResponse};
 use crate::errors::AppError;
 use crate::models::{
     Category, Circle, CircleEvent, CircleInvite, CircleItem, CircleMember, FriendRequest,
-    Friendship, Item, PushToken, RefreshToken, ShareLink, User,
+    FriendRequestStatus, FriendWithSince, Friendship, Item, PushToken, RefreshToken, ShareLink,
+    User,
 };
 
 // ── Repository traits ────────────────────────────────────────────────
@@ -333,13 +334,15 @@ pub trait FriendRepo: Send + Sync {
 
     async fn find_request_by_id(&self, id: Uuid) -> Result<Option<FriendRequest>>;
 
-    async fn update_request_status(&self, id: Uuid, status: &str) -> Result<bool>;
+    async fn update_request_status(&self, id: Uuid, status: FriendRequestStatus) -> Result<bool>;
 
     async fn create_friendship(&self, user_a_id: Uuid, user_b_id: Uuid) -> Result<Friendship>;
 
     async fn delete_friendship(&self, user_a_id: Uuid, user_b_id: Uuid) -> Result<bool>;
 
     async fn list_friends(&self, user_id: Uuid) -> Result<Vec<Uuid>>;
+
+    async fn list_friends_with_since(&self, user_id: Uuid) -> Result<Vec<FriendWithSince>>;
 
     async fn are_friends(&self, user_a_id: Uuid, user_b_id: Uuid) -> Result<bool>;
 

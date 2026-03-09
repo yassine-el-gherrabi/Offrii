@@ -13,7 +13,7 @@ pub use category::Category;
 pub use circle::{Circle, CircleInvite, CircleMember};
 pub use circle_event::CircleEvent;
 pub use circle_item::CircleItem;
-pub use friend::{FriendRequest, Friendship};
+pub use friend::{FriendRequest, FriendRequestStatus, FriendWithSince, Friendship};
 pub use item::Item;
 pub use push_token::PushToken;
 pub use refresh_token::RefreshToken;

@@ -39,6 +39,7 @@ async fn search_users(
     auth_user: AuthUser,
     Query(q): Query<UserSearchQuery>,
 ) -> Result<Json<Vec<UserSearchResult>>, AppError> {
+    validate_request(&q)?;
     let results = state.friends.search_users(&q.q, auth_user.user_id).await?;
     Ok(Json(results))
 }

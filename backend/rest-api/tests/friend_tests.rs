@@ -122,15 +122,13 @@ async fn search_users_excludes_self() {
 }
 
 #[tokio::test]
-async fn search_users_empty_query_returns_empty() {
+async fn search_users_empty_query_returns_400() {
     let app = TestApp::new().await;
     let (token, _) = setup_named_user(&app, "alice@test.com", "alice_test").await;
 
-    let (status, body) = app.get_with_auth("/users/search?q=", &token).await;
+    let (status, _body) = app.get_with_auth("/users/search?q=", &token).await;
 
-    assert_eq!(status, StatusCode::OK);
-    let results = body.as_array().expect("array");
-    assert!(results.is_empty());
+    assert_eq!(status, StatusCode::BAD_REQUEST);
 }
 
 #[tokio::test]
