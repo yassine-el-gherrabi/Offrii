@@ -797,6 +797,20 @@ impl traits::CircleService for PgCircleService {
     ) -> Result<(), AppError> {
         self.require_membership(circle_id, requester_id).await?;
 
+        // Direct circles are 1-to-1; reject additional members
+        let circle = self
+            .circle_repo
+            .find_by_id(circle_id)
+            .await
+            .map_err(AppError::Internal)?
+            .ok_or_else(|| AppError::NotFound("circle not found".into()))?;
+
+        if circle.is_direct {
+            return Err(AppError::BadRequest(
+                "cannot add members to a direct circle".into(),
+            ));
+        }
+
         // Verify the target user exists
         let target = self
             .user_repo

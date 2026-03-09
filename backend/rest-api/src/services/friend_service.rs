@@ -292,9 +292,16 @@ impl traits::FriendService for PgFriendService {
             .await
             .map_err(|e| AppError::Internal(e.into()))?;
 
-        friend_repo::update_request_status(&mut *tx, request_id, FriendRequestStatus::Accepted)
-            .await
-            .map_err(AppError::Internal)?;
+        let updated =
+            friend_repo::update_request_status(&mut *tx, request_id, FriendRequestStatus::Accepted)
+                .await
+                .map_err(AppError::Internal)?;
+
+        if !updated {
+            return Err(AppError::Conflict(
+                "friend request was already handled".into(),
+            ));
+        }
 
         let friendship = friend_repo::create_friendship(&mut *tx, req.from_user_id, user_id)
             .await

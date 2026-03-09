@@ -4,7 +4,6 @@ struct CirclesListView: View {
     @Environment(AuthManager.self) private var authManager
     @State private var viewModel = CirclesViewModel()
     @State private var showCreateCircle = false
-    @State private var showFriends = false
 
     var body: some View {
         ZStack {
