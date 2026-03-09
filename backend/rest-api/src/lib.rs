@@ -25,4 +25,5 @@ pub struct AppState {
     pub users: Arc<dyn traits::UserService>,
     pub push_tokens: Arc<dyn traits::PushTokenService>,
     pub share_links: Arc<dyn traits::ShareLinkService>,
+    pub circles: Arc<dyn traits::CircleService>,
 }

@@ -4,3 +4,4 @@ pub mod hibp;
 pub mod jwt;
 pub mod password_policy;
 pub mod token_hash;
+pub mod username;

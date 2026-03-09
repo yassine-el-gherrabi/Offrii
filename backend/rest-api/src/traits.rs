@@ -5,6 +5,10 @@ use uuid::Uuid;
 
 use crate::dto::auth::{AuthResponse, RefreshResponse};
 use crate::dto::categories::CategoryResponse;
+use crate::dto::circles::{
+    CircleDetailResponse, CircleItemResponse, CircleResponse, FeedResponse, InviteResponse,
+    JoinResponse,
+};
 use crate::dto::items::{ItemResponse, ItemsListResponse, ListItemsQuery};
 use crate::dto::push_tokens::PushTokenResponse;
 use crate::dto::share_links::{
@@ -12,7 +16,10 @@ use crate::dto::share_links::{
 };
 use crate::dto::users::{UserDataExport, UserProfileResponse};
 use crate::errors::AppError;
-use crate::models::{Category, Item, PushToken, RefreshToken, ShareLink, User};
+use crate::models::{
+    Category, Circle, CircleEvent, CircleInvite, CircleItem, CircleMember, Item, PushToken,
+    RefreshToken, ShareLink, User,
+};
 
 // ── Repository traits ────────────────────────────────────────────────
 
@@ -160,6 +167,8 @@ pub trait ItemRepo: Send + Sync {
     async fn unclaim_item(&self, id: Uuid, claimer_id: Uuid) -> Result<Option<Uuid>>;
 
     async fn find_by_ids(&self, user_id: Uuid, ids: &[Uuid]) -> Result<Vec<Item>>;
+
+    async fn find_by_ids_any_user(&self, ids: &[Uuid]) -> Result<Vec<Item>>;
 }
 
 #[async_trait]
@@ -185,6 +194,7 @@ pub trait AuthService: Send + Sync {
         email: &str,
         password: &str,
         display_name: Option<&str>,
+        username: Option<&str>,
     ) -> Result<AuthResponse, AppError>;
 
     async fn login(&self, email: &str, password: &str) -> Result<AuthResponse, AppError>;
@@ -302,6 +312,188 @@ pub trait PushTokenService: Send + Sync {
     ) -> Result<PushTokenResponse, AppError>;
 
     async fn unregister_token(&self, user_id: Uuid, token: &str) -> Result<(), AppError>;
+}
+
+// ── Circle traits ──────────────────────────────────────────────────
+
+#[async_trait]
+pub trait CircleRepo: Send + Sync {
+    async fn create(&self, name: Option<&str>, owner_id: Uuid, is_direct: bool) -> Result<Circle>;
+
+    async fn find_by_id(&self, id: Uuid) -> Result<Option<Circle>>;
+
+    async fn update_name(&self, id: Uuid, name: &str) -> Result<Option<Circle>>;
+
+    async fn delete(&self, id: Uuid) -> Result<bool>;
+
+    /// Returns (Circle, member_count) pairs, plus optional other_username for direct circles.
+    async fn list_by_member(&self, user_id: Uuid) -> Result<Vec<(Circle, i64, Option<String>)>>;
+}
+
+#[async_trait]
+pub trait CircleMemberRepo: Send + Sync {
+    async fn add_member(&self, circle_id: Uuid, user_id: Uuid, role: &str) -> Result<CircleMember>;
+
+    async fn remove_member(&self, circle_id: Uuid, user_id: Uuid) -> Result<bool>;
+
+    async fn find_member(&self, circle_id: Uuid, user_id: Uuid) -> Result<Option<CircleMember>>;
+
+    async fn list_members(&self, circle_id: Uuid) -> Result<Vec<CircleMember>>;
+
+    async fn count_members(&self, circle_id: Uuid) -> Result<i64>;
+
+    async fn find_direct_circle_between(&self, user_a: Uuid, user_b: Uuid) -> Result<Option<Uuid>>;
+}
+
+#[async_trait]
+pub trait CircleInviteRepo: Send + Sync {
+    async fn create(
+        &self,
+        circle_id: Uuid,
+        token: &str,
+        created_by: Uuid,
+        expires_at: DateTime<Utc>,
+        max_uses: i32,
+    ) -> Result<CircleInvite>;
+
+    async fn find_by_token(&self, token: &str) -> Result<Option<CircleInvite>>;
+
+    async fn increment_use_count(&self, id: Uuid) -> Result<bool>;
+
+    async fn list_active_by_circle(&self, circle_id: Uuid) -> Result<Vec<CircleInvite>>;
+
+    async fn delete(&self, id: Uuid) -> Result<bool>;
+}
+
+#[async_trait]
+pub trait CircleItemRepo: Send + Sync {
+    async fn share_item(
+        &self,
+        circle_id: Uuid,
+        item_id: Uuid,
+        shared_by: Uuid,
+    ) -> Result<CircleItem>;
+
+    async fn unshare_item(&self, circle_id: Uuid, item_id: Uuid) -> Result<bool>;
+
+    async fn list_by_circle(&self, circle_id: Uuid) -> Result<Vec<CircleItem>>;
+
+    async fn find(&self, circle_id: Uuid, item_id: Uuid) -> Result<Option<CircleItem>>;
+
+    async fn list_circles_for_item(&self, item_id: Uuid) -> Result<Vec<Uuid>>;
+}
+
+#[async_trait]
+pub trait CircleEventRepo: Send + Sync {
+    #[allow(clippy::too_many_arguments)]
+    async fn insert(
+        &self,
+        circle_id: Uuid,
+        actor_id: Uuid,
+        event_type: &str,
+        target_item_id: Option<Uuid>,
+        target_user_id: Option<Uuid>,
+    ) -> Result<CircleEvent>;
+
+    async fn list_by_circle(
+        &self,
+        circle_id: Uuid,
+        limit: i64,
+        offset: i64,
+    ) -> Result<Vec<CircleEvent>>;
+
+    async fn count_by_circle(&self, circle_id: Uuid) -> Result<i64>;
+}
+
+#[allow(clippy::too_many_arguments)]
+#[async_trait]
+pub trait CircleService: Send + Sync {
+    async fn create_circle(&self, user_id: Uuid, name: &str) -> Result<CircleResponse, AppError>;
+
+    async fn list_circles(&self, user_id: Uuid) -> Result<Vec<CircleResponse>, AppError>;
+
+    async fn get_circle(
+        &self,
+        circle_id: Uuid,
+        user_id: Uuid,
+    ) -> Result<CircleDetailResponse, AppError>;
+
+    async fn update_circle(
+        &self,
+        circle_id: Uuid,
+        user_id: Uuid,
+        name: &str,
+    ) -> Result<CircleResponse, AppError>;
+
+    async fn delete_circle(&self, circle_id: Uuid, user_id: Uuid) -> Result<(), AppError>;
+
+    async fn create_direct_circle(
+        &self,
+        owner_id: Uuid,
+        other_user_id: Uuid,
+    ) -> Result<CircleResponse, AppError>;
+
+    async fn create_invite(
+        &self,
+        circle_id: Uuid,
+        user_id: Uuid,
+        max_uses: Option<i32>,
+        expires_in_hours: Option<i64>,
+    ) -> Result<InviteResponse, AppError>;
+
+    async fn join_via_invite(&self, token: &str, user_id: Uuid) -> Result<JoinResponse, AppError>;
+
+    async fn remove_member(
+        &self,
+        circle_id: Uuid,
+        target_user_id: Uuid,
+        requester_id: Uuid,
+    ) -> Result<(), AppError>;
+
+    async fn list_invites(
+        &self,
+        circle_id: Uuid,
+        user_id: Uuid,
+    ) -> Result<Vec<InviteResponse>, AppError>;
+
+    async fn revoke_invite(
+        &self,
+        circle_id: Uuid,
+        invite_id: Uuid,
+        user_id: Uuid,
+    ) -> Result<(), AppError>;
+
+    async fn share_item(
+        &self,
+        circle_id: Uuid,
+        item_id: Uuid,
+        user_id: Uuid,
+    ) -> Result<(), AppError>;
+
+    async fn list_circle_items(
+        &self,
+        circle_id: Uuid,
+        user_id: Uuid,
+    ) -> Result<Vec<CircleItemResponse>, AppError>;
+
+    async fn unshare_item(
+        &self,
+        circle_id: Uuid,
+        item_id: Uuid,
+        user_id: Uuid,
+    ) -> Result<(), AppError>;
+
+    async fn get_feed(
+        &self,
+        circle_id: Uuid,
+        user_id: Uuid,
+        page: Option<i64>,
+        per_page: Option<i64>,
+    ) -> Result<FeedResponse, AppError>;
+
+    async fn on_item_claimed(&self, item_id: Uuid, claimer_id: Uuid) -> Result<(), AppError>;
+
+    async fn on_item_unclaimed(&self, item_id: Uuid, claimer_id: Uuid) -> Result<(), AppError>;
 }
 
 // ── Share link traits ───────────────────────────────────────────────

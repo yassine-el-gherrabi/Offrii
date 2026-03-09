@@ -28,8 +28,15 @@ use rest_api::AppState;
 use rest_api::config::database::{create_pg_pool, create_redis_client};
 use rest_api::errors::AppError;
 use rest_api::handlers::health::health_check;
-use rest_api::handlers::{auth, categories, items, push_tokens, share_links, shared, users};
+use rest_api::handlers::{
+    auth, categories, circles, items, push_tokens, share_links, shared, users,
+};
 use rest_api::repositories::category_repo::PgCategoryRepo;
+use rest_api::repositories::circle_event_repo::PgCircleEventRepo;
+use rest_api::repositories::circle_invite_repo::PgCircleInviteRepo;
+use rest_api::repositories::circle_item_repo::PgCircleItemRepo;
+use rest_api::repositories::circle_member_repo::PgCircleMemberRepo;
+use rest_api::repositories::circle_repo::PgCircleRepo;
 use rest_api::repositories::item_repo::PgItemRepo;
 use rest_api::repositories::push_token_repo::PgPushTokenRepo;
 use rest_api::repositories::refresh_token_repo::PgRefreshTokenRepo;
@@ -37,13 +44,15 @@ use rest_api::repositories::share_link_repo::PgShareLinkRepo;
 use rest_api::repositories::user_repo::PgUserRepo;
 use rest_api::services::auth_service::PgAuthService;
 use rest_api::services::category_service::PgCategoryService;
+use rest_api::services::circle_service::PgCircleService;
 use rest_api::services::health_check::PgHealthCheck;
 use rest_api::services::item_service::PgItemService;
 use rest_api::services::push_token_service::PgPushTokenService;
 use rest_api::services::share_link_service::PgShareLinkService;
 use rest_api::services::user_service::PgUserService;
 use rest_api::traits::{
-    AuthService, CategoryRepo, CategoryService, EmailService, HealthCheck, ItemRepo, ItemService,
+    AuthService, CategoryRepo, CategoryService, CircleEventRepo, CircleInviteRepo, CircleItemRepo,
+    CircleMemberRepo, CircleRepo, CircleService, EmailService, HealthCheck, ItemRepo, ItemService,
     NotificationOutcome, NotificationRequest, NotificationService, PushTokenRepo, PushTokenService,
     RefreshTokenRepo, ShareLinkRepo, ShareLinkService, UserRepo, UserService,
 };
@@ -169,6 +178,32 @@ impl TestApp {
             "http://localhost:3000".to_string(),
         ));
 
+        let notification_svc: Arc<dyn NotificationService> =
+            Arc::new(SpyNotificationService::new());
+
+        // Circle service
+        let circle_repo: Arc<dyn CircleRepo> = Arc::new(PgCircleRepo::new(db.clone()));
+        let circle_member_repo: Arc<dyn CircleMemberRepo> =
+            Arc::new(PgCircleMemberRepo::new(db.clone()));
+        let circle_invite_repo: Arc<dyn CircleInviteRepo> =
+            Arc::new(PgCircleInviteRepo::new(db.clone()));
+        let circle_item_repo: Arc<dyn CircleItemRepo> = Arc::new(PgCircleItemRepo::new(db.clone()));
+        let circle_event_repo: Arc<dyn CircleEventRepo> =
+            Arc::new(PgCircleEventRepo::new(db.clone()));
+        let circle_svc: Arc<dyn CircleService> = Arc::new(PgCircleService::new(
+            db.clone(),
+            circle_repo,
+            circle_member_repo,
+            circle_invite_repo,
+            circle_item_repo,
+            circle_event_repo,
+            item_repo.clone(),
+            user_repo.clone(),
+            push_token_repo.clone(),
+            notification_svc,
+            redis.clone(),
+        ));
+
         let user_svc: Arc<dyn UserService> =
             Arc::new(PgUserService::new(user_repo, item_repo, category_repo));
         let push_token_svc: Arc<dyn PushTokenService> =
@@ -185,6 +220,7 @@ impl TestApp {
             users: user_svc,
             push_tokens: push_token_svc,
             share_links: share_link_svc,
+            circles: circle_svc,
         };
 
         let router = Router::new()
@@ -196,6 +232,7 @@ impl TestApp {
             .nest("/push-tokens", push_tokens::router())
             .nest("/share-links", share_links::router())
             .nest("/shared", shared::router())
+            .nest("/circles", circles::router())
             .layer(TraceLayer::new_for_http())
             .with_state(state);
 
@@ -320,6 +357,20 @@ impl TestApp {
             "email": email,
             "password": password,
             "display_name": display_name,
+        });
+        self.post_json("/auth/register", &body).await
+    }
+
+    pub async fn register_user_with_username(
+        &self,
+        email: &str,
+        password: &str,
+        username: &str,
+    ) -> (StatusCode, Value) {
+        let body = serde_json::json!({
+            "email": email,
+            "password": password,
+            "username": username,
         });
         self.post_json("/auth/register", &body).await
     }
