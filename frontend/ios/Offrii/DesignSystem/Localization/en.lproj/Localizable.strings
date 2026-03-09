@@ -52,6 +52,7 @@
 "error.passwordMismatch" = "Passwords do not match";
 "error.usernameTaken" = "This username is already taken";
 "error.usernameInvalid" = "3-30 characters, lowercase letters, digits and _";
+"error.loadProfileFailed" = "Failed to load profile";
 
 /* Onboarding */
 "onboarding.step1.title" = "Your wishes, all in one place";

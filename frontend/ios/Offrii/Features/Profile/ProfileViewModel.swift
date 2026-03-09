@@ -9,6 +9,7 @@ final class ProfileViewModel {
     var reminderFreq = "never"
     var reminderTime = "09:00"
     var isLoggingOut = false
+    var loadError: String?
 
     var initials: String {
         let name = displayName.isEmpty ? email : displayName
@@ -29,6 +30,7 @@ final class ProfileViewModel {
     }
 
     func loadProfile() async {
+        loadError = nil
         do {
             let profile = try await UserService.shared.getProfile()
             displayName = profile.displayName ?? ""
@@ -37,7 +39,7 @@ final class ProfileViewModel {
             reminderFreq = profile.reminderFreq ?? "never"
             reminderTime = profile.reminderTime ?? "09:00"
         } catch {
-            // Profile will show empty state; user can still navigate
+            loadError = NSLocalizedString("error.loadProfileFailed", comment: "")
         }
     }
 

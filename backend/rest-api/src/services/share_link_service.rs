@@ -4,19 +4,26 @@ use async_trait::async_trait;
 use chrono::Utc;
 use rand::distr::Alphanumeric;
 use rand::{Rng, rng};
+use sqlx::PgPool;
 use uuid::Uuid;
 
 use crate::dto::items::ItemResponse;
 use crate::dto::share_links::{ShareLinkListItem, ShareLinkResponse, SharedViewResponse};
 use crate::errors::AppError;
+use crate::models::ShareLink;
+use crate::repositories::share_link_repo;
 use crate::traits;
 
 /// Maximum number of share links per user.
-const MAX_LINKS_PER_USER: usize = 10;
+const MAX_LINKS_PER_USER: i64 = 10;
+
+/// Maximum number of items returned in a shared view.
+const MAX_SHARED_VIEW_ITEMS: i64 = 500;
 
 // ── Concrete implementation ──────────────────────────────────────────
 
 pub struct PgShareLinkService {
+    pool: PgPool,
     share_link_repo: Arc<dyn traits::ShareLinkRepo>,
     item_repo: Arc<dyn traits::ItemRepo>,
     user_repo: Arc<dyn traits::UserRepo>,
@@ -25,12 +32,14 @@ pub struct PgShareLinkService {
 
 impl PgShareLinkService {
     pub fn new(
+        pool: PgPool,
         share_link_repo: Arc<dyn traits::ShareLinkRepo>,
         item_repo: Arc<dyn traits::ItemRepo>,
         user_repo: Arc<dyn traits::UserRepo>,
         app_base_url: String,
     ) -> Self {
         Self {
+            pool,
             share_link_repo,
             item_repo,
             user_repo,
@@ -47,6 +56,16 @@ fn generate_token() -> String {
         .collect()
 }
 
+/// Returns an error if the share link has expired.
+fn check_link_expiry(link: &ShareLink) -> Result<(), AppError> {
+    if let Some(expires_at) = link.expires_at
+        && expires_at < Utc::now()
+    {
+        return Err(AppError::NotFound("share link has expired".into()));
+    }
+    Ok(())
+}
+
 #[async_trait]
 impl traits::ShareLinkService for PgShareLinkService {
     #[tracing::instrument(skip(self))]
@@ -55,14 +74,27 @@ impl traits::ShareLinkService for PgShareLinkService {
         user_id: Uuid,
         expires_at: Option<chrono::DateTime<Utc>>,
     ) -> Result<ShareLinkResponse, AppError> {
-        // Check limit
-        let existing = self
-            .share_link_repo
-            .list_by_user(user_id)
+        let mut tx = self
+            .pool
+            .begin()
             .await
-            .map_err(AppError::Internal)?;
+            .map_err(|e| AppError::Internal(e.into()))?;
 
-        if existing.len() >= MAX_LINKS_PER_USER {
+        // Lock the user row to serialise concurrent share-link creation
+        sqlx::query("SELECT 1 FROM users WHERE id = $1 FOR UPDATE")
+            .bind(user_id)
+            .fetch_one(&mut *tx)
+            .await
+            .map_err(|e| AppError::Internal(e.into()))?;
+
+        // Count existing links inside the same transaction
+        let count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM share_links WHERE user_id = $1")
+            .bind(user_id)
+            .fetch_one(&mut *tx)
+            .await
+            .map_err(|e| AppError::Internal(e.into()))?;
+
+        if count >= MAX_LINKS_PER_USER {
             return Err(AppError::BadRequest(format!(
                 "maximum of {MAX_LINKS_PER_USER} share links allowed"
             )));
@@ -70,11 +102,13 @@ impl traits::ShareLinkService for PgShareLinkService {
 
         let token = generate_token();
 
-        let link = self
-            .share_link_repo
-            .create(user_id, &token, expires_at)
+        let link = share_link_repo::create(&mut *tx, user_id, &token, expires_at)
             .await
             .map_err(AppError::Internal)?;
+
+        tx.commit()
+            .await
+            .map_err(|e| AppError::Internal(e.into()))?;
 
         Ok(ShareLinkResponse::from_model(link, &self.app_base_url))
     }
@@ -114,12 +148,7 @@ impl traits::ShareLinkService for PgShareLinkService {
             .map_err(AppError::Internal)?
             .ok_or_else(|| AppError::NotFound("share link not found".into()))?;
 
-        // Check expiry
-        if let Some(expires_at) = link.expires_at
-            && expires_at < Utc::now()
-        {
-            return Err(AppError::NotFound("share link has expired".into()));
-        }
+        check_link_expiry(&link)?;
 
         // Get owner info
         let user = self
@@ -128,7 +157,7 @@ impl traits::ShareLinkService for PgShareLinkService {
             .await
             .map_err(AppError::Internal)?;
 
-        let display_name = user.and_then(|u| u.display_name);
+        let username = user.map(|u| u.username).unwrap_or_default();
 
         // Get active items (not deleted, status = active)
         let items = self
@@ -139,7 +168,7 @@ impl traits::ShareLinkService for PgShareLinkService {
                 None,
                 "created_at",
                 "desc",
-                100,
+                MAX_SHARED_VIEW_ITEMS,
                 0,
             )
             .await
@@ -148,7 +177,7 @@ impl traits::ShareLinkService for PgShareLinkService {
         let items: Vec<ItemResponse> = items.into_iter().map(ItemResponse::from).collect();
 
         Ok(SharedViewResponse {
-            user_display_name: display_name,
+            user_username: username,
             items,
         })
     }
@@ -167,12 +196,7 @@ impl traits::ShareLinkService for PgShareLinkService {
             .map_err(AppError::Internal)?
             .ok_or_else(|| AppError::NotFound("share link not found".into()))?;
 
-        // Check expiry
-        if let Some(expires_at) = link.expires_at
-            && expires_at < Utc::now()
-        {
-            return Err(AppError::NotFound("share link has expired".into()));
-        }
+        check_link_expiry(&link)?;
 
         // Verify item belongs to the share link owner
         let item = self
@@ -227,12 +251,7 @@ impl traits::ShareLinkService for PgShareLinkService {
             .map_err(AppError::Internal)?
             .ok_or_else(|| AppError::NotFound("share link not found".into()))?;
 
-        // Check expiry
-        if let Some(expires_at) = link.expires_at
-            && expires_at < Utc::now()
-        {
-            return Err(AppError::NotFound("share link has expired".into()));
-        }
+        check_link_expiry(&link)?;
 
         // Verify item belongs to the share link owner
         self.item_repo

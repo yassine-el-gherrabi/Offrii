@@ -50,7 +50,7 @@ impl From<ShareLink> for ShareLinkListItem {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SharedViewResponse {
-    pub user_display_name: Option<String>,
+    pub user_username: String,
     pub items: Vec<ItemResponse>,
 }
 

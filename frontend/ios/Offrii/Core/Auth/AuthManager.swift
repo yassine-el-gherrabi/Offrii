@@ -76,7 +76,8 @@ final class AuthManager {
 
         let body = RefreshBody(refreshToken: refreshToken)
         let response: RefreshResponse = try await client.request(.refresh(body))
-        keychain.accessToken = response.accessToken
+        keychain.accessToken = response.tokens.accessToken
+        keychain.refreshToken = response.tokens.refreshToken
         logger.info("Tokens refreshed")
     }
 

@@ -6,11 +6,7 @@ struct AuthResponse: Codable {
 }
 
 struct RefreshResponse: Codable {
-    let accessToken: String
-
-    enum CodingKeys: String, CodingKey {
-        case accessToken = "access_token"
-    }
+    let tokens: AuthTokens
 }
 
 struct UserProfileResponse: Codable {
@@ -92,12 +88,12 @@ struct ShareLinkResponse: Codable {
 }
 
 struct SharedViewResponse: Codable {
-    let userDisplayName: String?
+    let userUsername: String
     let items: [Item]
 
     enum CodingKeys: String, CodingKey {
         case items
-        case userDisplayName = "user_display_name"
+        case userUsername = "user_username"
     }
 }
 
