@@ -134,6 +134,61 @@
 "comingSoon.title" = "Bientôt disponible";
 "comingSoon.subtitle" = "Cette fonctionnalité arrive prochainement.";
 
+/* Circles */
+"circles.title" = "Cercles";
+"circles.create" = "Créer un cercle";
+"circles.shareTo" = "Partager avec...";
+"circles.empty" = "Pas encore de cercles.\nCréez-en un ou ajoutez un ami pour commencer.";
+"circles.unnamed" = "Cercle sans nom";
+"circles.memberCount" = "%d membres";
+"circles.createName" = "Nom du cercle";
+"circles.createNamePlaceholder" = "Ex : Famille, Collègues...";
+"circles.createButton" = "Créer";
+"circles.detail.items" = "Envies";
+"circles.detail.activity" = "Activité";
+"circles.detail.noItems" = "Aucune envie partagée";
+"circles.detail.noActivity" = "Pas encore d'activité";
+"circles.detail.myWishes" = "Mes envies";
+"circles.detail.handleIt" = "Je m'en occupe";
+"circles.detail.claimed" = "Réservé";
+"circles.detail.someone" = "Quelqu'un";
+"circles.event.itemShared" = "%@ a partagé %@";
+"circles.event.itemClaimed" = "%@ s'occupe de %@";
+"circles.event.itemClaimedAnti" = "Quelqu'un s'occupe de %@";
+"circles.event.itemUnclaimed" = "%@ a annulé la réservation de %@";
+"circles.event.memberJoined" = "%@ a rejoint le cercle";
+"circles.event.memberLeft" = "%@ a quitté le cercle";
+"circles.invite.title" = "Inviter des amis";
+"circles.invite.noFriends" = "Aucun ami à inviter.\nAjoutez d'abord des amis !";
+"circles.invite.alreadyMember" = "Déjà membre";
+"circles.invite.addCount" = "Ajouter %d ami(s)";
+"circles.members.title" = "Membres";
+"circles.members.you" = "(vous)";
+"circles.members.owner" = "Propriétaire";
+"circles.members.leave" = "Quitter le cercle";
+"circles.members.leaveConfirm.title" = "Quitter le cercle ?";
+"circles.members.leaveConfirm.message" = "Vous ne verrez plus les envies partagées dans ce cercle.";
+
+/* Friends */
+"friends.title" = "Mes amis";
+"friends.empty" = "Pas encore d'amis";
+"friends.count" = "%d ami(s)";
+"friends.pendingSection" = "Demandes en attente (%d)";
+"friends.accept" = "Accepter";
+"friends.decline" = "Décliner";
+"friends.add.title" = "Ajouter un ami";
+"friends.add.searchPlaceholder" = "Rechercher par pseudo...";
+"friends.add.noResults" = "Aucun utilisateur trouvé";
+"friends.add.send" = "Ajouter";
+"friends.add.sent" = "Envoyé";
+"friends.pending.title" = "Demandes d'amitié";
+"friends.pending.empty" = "Aucune demande en attente";
+"friends.sentSection" = "Demandes envoyées (%d)";
+"friends.sent.cancel" = "Annuler";
+
+/* Profile - Friends */
+"profile.friends" = "Amis";
+
 /* Common */
 "common.save" = "Enregistrer";
 "common.cancel" = "Annuler";

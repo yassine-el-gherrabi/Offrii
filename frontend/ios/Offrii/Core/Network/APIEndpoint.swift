@@ -72,6 +72,33 @@ enum APIEndpoint {
     case getSharedView(token: String)
     case claimViaShare(token: String, itemId: UUID)
     case unclaimViaShare(token: String, itemId: UUID)
+
+    // MARK: Circles
+
+    case listCircles
+    case createCircle(CreateCircleBody)
+    case getCircle(id: UUID)
+    case updateCircle(id: UUID, body: UpdateCircleBody)
+    case deleteCircle(id: UUID)
+    case createDirectCircle(userId: UUID)
+    case addMemberToCircle(circleId: UUID, body: AddMemberBody)
+    case removeMember(circleId: UUID, userId: UUID)
+    case shareItemToCircle(circleId: UUID, body: ShareItemBody)
+    case listCircleItems(circleId: UUID)
+    case unshareItem(circleId: UUID, itemId: UUID)
+    case getCircleFeed(circleId: UUID, page: Int, perPage: Int)
+
+    // MARK: Friends
+
+    case searchUsers(query: String)
+    case sendFriendRequest(SendFriendRequestBody)
+    case listPendingFriendRequests
+    case listSentFriendRequests
+    case acceptFriendRequest(id: UUID)
+    case declineFriendRequest(id: UUID)
+    case cancelFriendRequest(id: UUID)
+    case listFriends
+    case removeFriend(userId: UUID)
 }
 
 // MARK: - Endpoint Properties
@@ -122,6 +149,31 @@ extension APIEndpoint {
         case .getSharedView(let token):                 return "/shared/\(token)"
         case .claimViaShare(let token, let itemId):     return "/shared/\(token)/items/\(itemId)/claim"
         case .unclaimViaShare(let token, let itemId):   return "/shared/\(token)/items/\(itemId)/claim"
+
+        // Circles
+        case .listCircles:                              return "/circles"
+        case .createCircle:                             return "/circles"
+        case .getCircle(let id):                        return "/circles/\(id)"
+        case .updateCircle(let id, _):                  return "/circles/\(id)"
+        case .deleteCircle(let id):                     return "/circles/\(id)"
+        case .createDirectCircle(let userId):           return "/circles/direct/\(userId)"
+        case .addMemberToCircle(let circleId, _):       return "/circles/\(circleId)/members"
+        case .removeMember(let circleId, let userId):   return "/circles/\(circleId)/members/\(userId)"
+        case .shareItemToCircle(let circleId, _):       return "/circles/\(circleId)/items"
+        case .listCircleItems(let circleId):            return "/circles/\(circleId)/items"
+        case .unshareItem(let circleId, let itemId):    return "/circles/\(circleId)/items/\(itemId)"
+        case .getCircleFeed(let circleId, _, _):        return "/circles/\(circleId)/feed"
+
+        // Friends
+        case .searchUsers:                              return "/users/search"
+        case .sendFriendRequest:                        return "/me/friend-requests"
+        case .listPendingFriendRequests:                return "/me/friend-requests"
+        case .listSentFriendRequests:                   return "/me/friend-requests/sent"
+        case .acceptFriendRequest(let id):              return "/me/friend-requests/\(id)/accept"
+        case .declineFriendRequest(let id):             return "/me/friend-requests/\(id)"
+        case .cancelFriendRequest(let id):              return "/me/friend-requests/\(id)/cancel"
+        case .listFriends:                              return "/me/friends"
+        case .removeFriend(let userId):                 return "/me/friends/\(userId)"
         }
     }
 
@@ -169,6 +221,31 @@ extension APIEndpoint {
         case .getSharedView:    return .GET
         case .claimViaShare:    return .POST
         case .unclaimViaShare:  return .DELETE
+
+        // Circles
+        case .listCircles:          return .GET
+        case .createCircle:         return .POST
+        case .getCircle:            return .GET
+        case .updateCircle:         return .PATCH
+        case .deleteCircle:         return .DELETE
+        case .createDirectCircle:   return .POST
+        case .addMemberToCircle:    return .POST
+        case .removeMember:         return .DELETE
+        case .shareItemToCircle:    return .POST
+        case .listCircleItems:      return .GET
+        case .unshareItem:          return .DELETE
+        case .getCircleFeed:        return .GET
+
+        // Friends
+        case .searchUsers:              return .GET
+        case .sendFriendRequest:        return .POST
+        case .listPendingFriendRequests: return .GET
+        case .listSentFriendRequests:   return .GET
+        case .acceptFriendRequest:      return .POST
+        case .declineFriendRequest:     return .DELETE
+        case .cancelFriendRequest:      return .DELETE
+        case .listFriends:              return .GET
+        case .removeFriend:             return .DELETE
         }
     }
 
@@ -208,6 +285,13 @@ extension APIEndpoint {
                 items.append(.init(name: "per_page", value: String(perPage)))
             }
             return items.isEmpty ? nil : items
+        case .searchUsers(let query):
+            return [URLQueryItem(name: "q", value: query)]
+        case .getCircleFeed(_, let page, let perPage):
+            return [
+                URLQueryItem(name: "page", value: String(page)),
+                URLQueryItem(name: "per_page", value: String(perPage)),
+            ]
         default:
             return nil
         }
@@ -228,6 +312,11 @@ extension APIEndpoint {
         case .updateProfile(let body):      return body
         case .registerToken(let body):      return body
         case .createShareLink(let body):    return body
+        case .createCircle(let body):       return body
+        case .updateCircle(_, let body):    return body
+        case .addMemberToCircle(_, let body): return body
+        case .shareItemToCircle(_, let body): return body
+        case .sendFriendRequest(let body):  return body
         default:                            return nil
         }
     }
@@ -414,4 +503,36 @@ struct CreateShareLinkBody: Encodable {
     enum CodingKeys: String, CodingKey {
         case expiresAt = "expires_at"
     }
+}
+
+// MARK: - Circle Body Types
+
+struct CreateCircleBody: Encodable {
+    let name: String
+}
+
+struct UpdateCircleBody: Encodable {
+    let name: String
+}
+
+struct AddMemberBody: Encodable {
+    let userId: UUID
+
+    enum CodingKeys: String, CodingKey {
+        case userId = "user_id"
+    }
+}
+
+struct ShareItemBody: Encodable {
+    let itemId: UUID
+
+    enum CodingKeys: String, CodingKey {
+        case itemId = "item_id"
+    }
+}
+
+// MARK: - Friend Body Types
+
+struct SendFriendRequestBody: Encodable {
+    let username: String
 }

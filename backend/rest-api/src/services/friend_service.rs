@@ -1,0 +1,492 @@
+use std::sync::Arc;
+
+use async_trait::async_trait;
+use uuid::Uuid;
+
+use crate::dto::friends::{
+    FriendRequestResponse, FriendResponse, SentFriendRequestResponse, UserSearchResult,
+};
+use crate::errors::AppError;
+use crate::repositories::friend_repo;
+use crate::traits::{self, NotificationRequest};
+
+// ── Concrete implementation ──────────────────────────────────────────
+
+pub struct PgFriendService {
+    pool: sqlx::PgPool,
+    friend_repo: Arc<dyn traits::FriendRepo>,
+    user_repo: Arc<dyn traits::UserRepo>,
+    push_token_repo: Arc<dyn traits::PushTokenRepo>,
+    notification_svc: Arc<dyn traits::NotificationService>,
+}
+
+impl PgFriendService {
+    pub fn new(
+        pool: sqlx::PgPool,
+        friend_repo: Arc<dyn traits::FriendRepo>,
+        user_repo: Arc<dyn traits::UserRepo>,
+        push_token_repo: Arc<dyn traits::PushTokenRepo>,
+        notification_svc: Arc<dyn traits::NotificationService>,
+    ) -> Self {
+        Self {
+            pool,
+            friend_repo,
+            user_repo,
+            push_token_repo,
+            notification_svc,
+        }
+    }
+
+    fn notify_user(&self, user_id: Uuid, title: String, body: String) {
+        let push_token_repo = self.push_token_repo.clone();
+        let notification_svc = self.notification_svc.clone();
+
+        tokio::spawn(async move {
+            let tokens = match push_token_repo.find_by_user(user_id).await {
+                Ok(t) => t,
+                Err(e) => {
+                    tracing::warn!(%user_id, error = %e, "failed to fetch push tokens for friend notification");
+                    return;
+                }
+            };
+
+            let requests: Vec<NotificationRequest> = tokens
+                .into_iter()
+                .map(|pt| NotificationRequest {
+                    device_token: pt.token,
+                    title: title.clone(),
+                    body: body.clone(),
+                })
+                .collect();
+
+            if !requests.is_empty() {
+                notification_svc.send_batch(&requests).await;
+            }
+        });
+    }
+}
+
+#[async_trait]
+impl traits::FriendService for PgFriendService {
+    #[tracing::instrument(skip(self))]
+    async fn search_users(
+        &self,
+        query: &str,
+        requester_id: Uuid,
+    ) -> Result<Vec<UserSearchResult>, AppError> {
+        let query = query.trim();
+        if query.is_empty() || query.len() > 50 {
+            return Ok(vec![]);
+        }
+
+        let pattern = format!("{query}%");
+        let rows: Vec<(String, Option<String>)> = sqlx::query_as(
+            "SELECT username, display_name FROM users \
+             WHERE username ILIKE $1 AND id != $2 \
+             ORDER BY username \
+             LIMIT 10",
+        )
+        .bind(&pattern)
+        .bind(requester_id)
+        .fetch_all(&self.pool)
+        .await
+        .map_err(|e| AppError::Internal(e.into()))?;
+
+        Ok(rows
+            .into_iter()
+            .map(|(username, display_name)| UserSearchResult {
+                username,
+                display_name,
+            })
+            .collect())
+    }
+
+    #[tracing::instrument(skip(self))]
+    async fn send_request(
+        &self,
+        from_user_id: Uuid,
+        to_username: &str,
+    ) -> Result<FriendRequestResponse, AppError> {
+        // Find target user by username
+        let target = self
+            .user_repo
+            .find_by_username(to_username)
+            .await
+            .map_err(AppError::Internal)?
+            .ok_or_else(|| AppError::NotFound("user not found".into()))?;
+
+        // Cannot friend yourself
+        if target.id == from_user_id {
+            return Err(AppError::BadRequest(
+                "cannot send a friend request to yourself".into(),
+            ));
+        }
+
+        // Check not already friends
+        let already_friends = self
+            .friend_repo
+            .are_friends(from_user_id, target.id)
+            .await
+            .map_err(AppError::Internal)?;
+
+        if already_friends {
+            return Err(AppError::Conflict("already friends".into()));
+        }
+
+        // Check no pending request in either direction
+        let existing = self
+            .friend_repo
+            .find_pending_between(from_user_id, target.id)
+            .await
+            .map_err(AppError::Internal)?;
+
+        if existing.is_some() {
+            return Err(AppError::Conflict("friend request already pending".into()));
+        }
+
+        let reverse = self
+            .friend_repo
+            .find_pending_between(target.id, from_user_id)
+            .await
+            .map_err(AppError::Internal)?;
+
+        if reverse.is_some() {
+            return Err(AppError::Conflict(
+                "this user has already sent you a friend request".into(),
+            ));
+        }
+
+        // Clean up any old non-pending request (declined/accepted) so re-requesting works
+        sqlx::query(
+            "DELETE FROM friend_requests \
+             WHERE from_user_id = $1 AND to_user_id = $2 AND status != 'pending'",
+        )
+        .bind(from_user_id)
+        .bind(target.id)
+        .execute(&self.pool)
+        .await
+        .map_err(|e| AppError::Internal(e.into()))?;
+
+        let req = self
+            .friend_repo
+            .create_friend_request(from_user_id, target.id)
+            .await
+            .map_err(AppError::Internal)?;
+
+        // Look up sender info for the response
+        let sender = self
+            .user_repo
+            .find_by_id(from_user_id)
+            .await
+            .map_err(AppError::Internal)?
+            .ok_or_else(|| AppError::Internal(anyhow::anyhow!("sender not found")))?;
+
+        // Notify the target user
+        self.notify_user(
+            target.id,
+            "Demande d'ami".to_string(),
+            format!("{} veut être votre ami", sender.username),
+        );
+
+        Ok(FriendRequestResponse {
+            id: req.id,
+            from_user_id: req.from_user_id,
+            from_username: sender.username,
+            from_display_name: sender.display_name,
+            status: req.status,
+            created_at: req.created_at,
+        })
+    }
+
+    #[tracing::instrument(skip(self))]
+    async fn list_pending_requests(
+        &self,
+        user_id: Uuid,
+    ) -> Result<Vec<FriendRequestResponse>, AppError> {
+        let reqs = self
+            .friend_repo
+            .find_pending_requests(user_id)
+            .await
+            .map_err(AppError::Internal)?;
+
+        if reqs.is_empty() {
+            return Ok(vec![]);
+        }
+
+        let sender_ids: Vec<Uuid> = reqs.iter().map(|r| r.from_user_id).collect();
+        let users = self
+            .user_repo
+            .find_by_ids(&sender_ids)
+            .await
+            .map_err(AppError::Internal)?;
+
+        let user_map: std::collections::HashMap<Uuid, _> = users
+            .into_iter()
+            .map(|u| (u.id, (u.username, u.display_name)))
+            .collect();
+
+        let responses = reqs
+            .into_iter()
+            .map(|r| {
+                let (username, display_name) = user_map
+                    .get(&r.from_user_id)
+                    .cloned()
+                    .unwrap_or_else(|| ("unknown".to_string(), None));
+                FriendRequestResponse {
+                    id: r.id,
+                    from_user_id: r.from_user_id,
+                    from_username: username,
+                    from_display_name: display_name,
+                    status: r.status,
+                    created_at: r.created_at,
+                }
+            })
+            .collect();
+
+        Ok(responses)
+    }
+
+    #[tracing::instrument(skip(self))]
+    async fn accept_request(
+        &self,
+        request_id: Uuid,
+        user_id: Uuid,
+    ) -> Result<FriendResponse, AppError> {
+        let req = self
+            .friend_repo
+            .find_request_by_id(request_id)
+            .await
+            .map_err(AppError::Internal)?
+            .ok_or_else(|| AppError::NotFound("friend request not found".into()))?;
+
+        // Verify this user is the recipient
+        if req.to_user_id != user_id {
+            return Err(AppError::Forbidden(
+                "only the recipient can accept a friend request".into(),
+            ));
+        }
+
+        if req.status != "pending" {
+            return Err(AppError::BadRequest(
+                "friend request is no longer pending".into(),
+            ));
+        }
+
+        // Transaction: update status + create friendship
+        let mut tx = self
+            .pool
+            .begin()
+            .await
+            .map_err(|e| AppError::Internal(e.into()))?;
+
+        friend_repo::update_request_status(&mut *tx, request_id, "accepted")
+            .await
+            .map_err(AppError::Internal)?;
+
+        let friendship = friend_repo::create_friendship(&mut *tx, req.from_user_id, user_id)
+            .await
+            .map_err(AppError::Internal)?;
+
+        tx.commit()
+            .await
+            .map_err(|e| AppError::Internal(e.into()))?;
+
+        // Fetch the sender's info for the response
+        let friend_user = self
+            .user_repo
+            .find_by_id(req.from_user_id)
+            .await
+            .map_err(AppError::Internal)?
+            .ok_or_else(|| AppError::Internal(anyhow::anyhow!("friend user not found")))?;
+
+        // Notify the sender that request was accepted
+        if let Some(acceptor) = self
+            .user_repo
+            .find_by_id(user_id)
+            .await
+            .map_err(AppError::Internal)?
+        {
+            self.notify_user(
+                req.from_user_id,
+                "Demande acceptée !".to_string(),
+                format!("{} a accepté votre demande d'ami", acceptor.username),
+            );
+        }
+
+        Ok(FriendResponse {
+            user_id: friend_user.id,
+            username: friend_user.username,
+            display_name: friend_user.display_name,
+            since: friendship.created_at,
+        })
+    }
+
+    #[tracing::instrument(skip(self))]
+    async fn decline_request(&self, request_id: Uuid, user_id: Uuid) -> Result<(), AppError> {
+        let req = self
+            .friend_repo
+            .find_request_by_id(request_id)
+            .await
+            .map_err(AppError::Internal)?
+            .ok_or_else(|| AppError::NotFound("friend request not found".into()))?;
+
+        if req.to_user_id != user_id {
+            return Err(AppError::Forbidden(
+                "only the recipient can decline a friend request".into(),
+            ));
+        }
+
+        if req.status != "pending" {
+            return Err(AppError::BadRequest(
+                "friend request is no longer pending".into(),
+            ));
+        }
+
+        self.friend_repo
+            .update_request_status(request_id, "declined")
+            .await
+            .map_err(AppError::Internal)?;
+
+        Ok(())
+    }
+
+    #[tracing::instrument(skip(self))]
+    async fn list_friends(&self, user_id: Uuid) -> Result<Vec<FriendResponse>, AppError> {
+        let friend_ids = self
+            .friend_repo
+            .list_friends(user_id)
+            .await
+            .map_err(AppError::Internal)?;
+
+        if friend_ids.is_empty() {
+            return Ok(vec![]);
+        }
+
+        let users = self
+            .user_repo
+            .find_by_ids(&friend_ids)
+            .await
+            .map_err(AppError::Internal)?;
+
+        // We need friendship created_at — query friendships for each
+        // For efficiency, get all friendships in one query
+        let mut responses = Vec::with_capacity(users.len());
+        for user in users {
+            // Determine canonical order
+            let (a, b) = if user_id < user.id {
+                (user_id, user.id)
+            } else {
+                (user.id, user_id)
+            };
+            let since: (chrono::DateTime<chrono::Utc>,) = sqlx::query_as(
+                "SELECT created_at FROM friendships WHERE user_a_id = $1 AND user_b_id = $2",
+            )
+            .bind(a)
+            .bind(b)
+            .fetch_one(&self.pool)
+            .await
+            .map_err(|e| AppError::Internal(e.into()))?;
+
+            responses.push(FriendResponse {
+                user_id: user.id,
+                username: user.username,
+                display_name: user.display_name,
+                since: since.0,
+            });
+        }
+
+        Ok(responses)
+    }
+
+    #[tracing::instrument(skip(self))]
+    async fn list_sent_requests(
+        &self,
+        user_id: Uuid,
+    ) -> Result<Vec<SentFriendRequestResponse>, AppError> {
+        let reqs = self
+            .friend_repo
+            .find_sent_requests(user_id)
+            .await
+            .map_err(AppError::Internal)?;
+
+        if reqs.is_empty() {
+            return Ok(vec![]);
+        }
+
+        let target_ids: Vec<Uuid> = reqs.iter().map(|r| r.to_user_id).collect();
+        let users = self
+            .user_repo
+            .find_by_ids(&target_ids)
+            .await
+            .map_err(AppError::Internal)?;
+
+        let user_map: std::collections::HashMap<Uuid, _> = users
+            .into_iter()
+            .map(|u| (u.id, (u.username, u.display_name)))
+            .collect();
+
+        let responses = reqs
+            .into_iter()
+            .map(|r| {
+                let (username, display_name) = user_map
+                    .get(&r.to_user_id)
+                    .cloned()
+                    .unwrap_or_else(|| ("unknown".to_string(), None));
+                SentFriendRequestResponse {
+                    id: r.id,
+                    to_user_id: r.to_user_id,
+                    to_username: username,
+                    to_display_name: display_name,
+                    status: r.status,
+                    created_at: r.created_at,
+                }
+            })
+            .collect();
+
+        Ok(responses)
+    }
+
+    #[tracing::instrument(skip(self))]
+    async fn cancel_request(&self, request_id: Uuid, user_id: Uuid) -> Result<(), AppError> {
+        let req = self
+            .friend_repo
+            .find_request_by_id(request_id)
+            .await
+            .map_err(AppError::Internal)?
+            .ok_or_else(|| AppError::NotFound("friend request not found".into()))?;
+
+        if req.from_user_id != user_id {
+            return Err(AppError::Forbidden(
+                "only the sender can cancel a friend request".into(),
+            ));
+        }
+
+        if req.status != "pending" {
+            return Err(AppError::BadRequest(
+                "friend request is no longer pending".into(),
+            ));
+        }
+
+        self.friend_repo
+            .update_request_status(request_id, "cancelled")
+            .await
+            .map_err(AppError::Internal)?;
+
+        Ok(())
+    }
+
+    #[tracing::instrument(skip(self))]
+    async fn remove_friend(&self, user_id: Uuid, friend_id: Uuid) -> Result<(), AppError> {
+        let removed = self
+            .friend_repo
+            .delete_friendship(user_id, friend_id)
+            .await
+            .map_err(AppError::Internal)?;
+
+        if !removed {
+            return Err(AppError::NotFound("friendship not found".into()));
+        }
+
+        Ok(())
+    }
+}

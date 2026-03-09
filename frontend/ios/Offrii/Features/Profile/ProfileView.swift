@@ -82,6 +82,22 @@ struct ProfileView: View {
                             }
                         }
 
+                        // Friends section
+                        profileSection(
+                            title: NSLocalizedString("profile.friends", comment: ""),
+                            icon: "person.2.fill"
+                        ) {
+                            NavigationLink {
+                                FriendsView()
+                                    .environment(authManager)
+                            } label: {
+                                profileRow(
+                                    title: NSLocalizedString("friends.title", comment: ""),
+                                    value: nil
+                                )
+                            }
+                        }
+
                         // Account section
                         profileSection(
                             title: NSLocalizedString("profile.account", comment: ""),
