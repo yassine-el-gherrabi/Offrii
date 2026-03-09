@@ -18,12 +18,13 @@ pub fn router() -> Router<AppState> {
     )
 }
 
-/// Check if the Accept header prefers JSON.
-fn wants_json(headers: &HeaderMap) -> bool {
+/// Check if the Accept header explicitly requests HTML.
+/// Returns JSON by default (for API clients, `*/*`, or missing Accept header).
+fn wants_html(headers: &HeaderMap) -> bool {
     if let Some(accept) = headers.get(ACCEPT)
         && let Ok(val) = accept.to_str()
     {
-        return val.contains("application/json");
+        return val.contains("text/html");
     }
     false
 }
@@ -36,11 +37,11 @@ async fn get_shared_view(
 ) -> Result<Response, AppError> {
     let response = state.share_links.get_shared_view(&token).await?;
 
-    if wants_json(&headers) {
-        Ok(Json(response).into_response())
-    } else {
+    if wants_html(&headers) {
         let html = render_shared_view_html(&response, &token);
         Ok(Html(html).into_response())
+    } else {
+        Ok(Json(response).into_response())
     }
 }
 
@@ -85,7 +86,10 @@ fn render_shared_view_html(view: &SharedViewResponse, token: &str) -> String {
 
         let price_html = item
             .estimated_price
-            .map(|p| format!(r#"<span class="price">{p} €</span>"#))
+            .map(|p| {
+                let escaped = html_escape(&p.to_string());
+                format!(r#"<span class="price">{escaped} €</span>"#)
+            })
             .unwrap_or_default();
 
         let desc_html = item
@@ -101,7 +105,7 @@ fn render_shared_view_html(view: &SharedViewResponse, token: &str) -> String {
 
         let claim_button = if view.permissions == "view_and_claim" && !item.is_claimed {
             format!(
-                r#"<a class="btn" href="offrii://claim/{token}/{item_id}">Je m'en occupe</a>"#,
+                r#"<a class="btn" href="https://apps.apple.com/app/offrii/id0000000000" onclick="window.location='offrii://claim/{token}/{item_id}';return false;">Je m'en occupe</a>"#,
                 item_id = item.id
             )
         } else {
