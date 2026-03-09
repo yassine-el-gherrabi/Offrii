@@ -13,11 +13,11 @@ struct OffriiTextField: View {
     let label: String
     @Binding var text: String
     var placeholder: String = ""
-    var errorMessage: String? = nil
+    var errorMessage: String?
     var isSecure: Bool = false
     var style: OffriiTextFieldStyle = .bordered
     var keyboardType: UIKeyboardType = .default
-    var textContentType: UITextContentType? = nil
+    var textContentType: UITextContentType?
     var autocapitalization: TextInputAutocapitalization = .sentences
 
     @FocusState private var isFocused: Bool

@@ -36,7 +36,8 @@ struct LegalView: View {
 
             Contact : Pour toute question, vous pouvez nous contacter via l'application.
 
-            Propriété intellectuelle : L'ensemble des éléments composant l'application Offrii (textes, images, logiciels) sont protégés par le droit de la propriété intellectuelle.
+            Propriété intellectuelle : L'ensemble des éléments composant l'application Offrii \
+            (textes, images, logiciels) sont protégés par le droit de la propriété intellectuelle.
             """)
         }
     }

@@ -167,21 +167,14 @@ final class APIClient: Sendable {
         }
 
         // Error responses -- parse the backend error envelope.
-        let errorMessage = parseErrorMessage(from: data)
-
+        let errMsg = parseErrorMessage(from: data)
         switch statusCode {
-        case 400:
-            throw APIError.badRequest(errorMessage)
-        case 401:
-            throw APIError.unauthorized(errorMessage)
-        case 404:
-            throw APIError.notFound(errorMessage)
-        case 409:
-            throw APIError.conflict(errorMessage)
-        case 500..<600:
-            throw APIError.serverError
-        default:
-            throw APIError.unknown(statusCode, errorMessage)
+        case 400: throw APIError.badRequest(errMsg)
+        case 401: throw APIError.unauthorized(errMsg)
+        case 404: throw APIError.notFound(errMsg)
+        case 409: throw APIError.conflict(errMsg)
+        case 500..<600: throw APIError.serverError
+        default: throw APIError.unknown(statusCode, errMsg)
         }
     }
 
@@ -245,7 +238,4 @@ private struct AnyEncodable: Encodable {
 }
 
 /// Placeholder type for endpoints that return no body (204 No Content).
-struct EmptyResponse: Decodable {
-    init() {}
-}
-
+struct EmptyResponse: Decodable {}

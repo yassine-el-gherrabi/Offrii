@@ -4,7 +4,7 @@ import SwiftUI
 
 struct HeaderView: View {
     let title: String
-    var subtitle: String? = nil
+    var subtitle: String?
 
     var body: some View {
         ZStack {
