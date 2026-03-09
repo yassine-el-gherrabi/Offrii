@@ -13,6 +13,12 @@ use crate::models::User;
 pub struct UpdateProfileRequest {
     #[validate(length(max = 100, message = "display name must be at most 100 characters"))]
     pub display_name: Option<String>,
+    #[validate(length(
+        min = 3,
+        max = 30,
+        message = "username must be between 3 and 30 characters"
+    ))]
+    pub username: Option<String>,
     pub reminder_freq: Option<String>,
     pub reminder_time: Option<NaiveTime>,
     pub timezone: Option<String>,
@@ -26,6 +32,7 @@ pub struct UpdateProfileRequest {
 pub struct UserProfileResponse {
     pub id: Uuid,
     pub email: String,
+    pub username: String,
     pub display_name: Option<String>,
     pub reminder_freq: String,
     pub reminder_time: NaiveTime,
@@ -47,6 +54,7 @@ impl From<&User> for UserProfileResponse {
         Self {
             id: u.id,
             email: u.email.clone(),
+            username: u.username.clone(),
             display_name: u.display_name.clone(),
             reminder_freq: u.reminder_freq.clone(),
             reminder_time: u.reminder_time,

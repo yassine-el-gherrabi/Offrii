@@ -10,6 +10,7 @@ services:
       - backend_target:/app/target
       - ./jwt-keys/private.pem:/run/secrets/jwt_private_key:ro
       - ./jwt-keys/public.pem:/run/secrets/jwt_public_key:ro
+      - ./jwt-keys/AuthKey_DEV.p8:/run/secrets/apns_key:ro
     environment:
       DATABASE_URL: postgres://${POSTGRES_USER:-offrii}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-offrii}
       REDIS_URL: redis://redis:6379
@@ -18,6 +19,11 @@ services:
       JWT_PRIVATE_KEY_FILE: /run/secrets/jwt_private_key
       JWT_PUBLIC_KEY_FILE: /run/secrets/jwt_public_key
       RESEND_API_KEY: ${RESEND_API_KEY:-re_dev_fake_key_for_local_testing}
+      APNS_KEY_PATH: /run/secrets/apns_key
+      APNS_KEY_ID: DEV_KEY_ID
+      APNS_TEAM_ID: DEV_TEAM_ID
+      APNS_BUNDLE_ID: com.offrii.app
+      APNS_SANDBOX: "true"
     ports:
       - "3000:3000"
     depends_on:

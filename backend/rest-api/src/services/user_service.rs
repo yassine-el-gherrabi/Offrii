@@ -11,6 +11,20 @@ use crate::dto::users::{UpdateProfileRequest, UserDataExport, UserProfileRespons
 use crate::errors::AppError;
 use crate::traits;
 
+/// Validate username format: ^[a-z][a-z0-9_]{2,29}$
+fn is_valid_username(s: &str) -> bool {
+    if s.len() < 3 || s.len() > 30 {
+        return false;
+    }
+    let mut chars = s.chars();
+    let first = match chars.next() {
+        Some(c) if c.is_ascii_lowercase() => c,
+        _ => return false,
+    };
+    let _ = first;
+    chars.all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '_')
+}
+
 // ── Concrete implementation ──────────────────────────────────────────
 
 pub struct PgUserService {
@@ -53,12 +67,32 @@ impl traits::UserService for PgUserService {
     ) -> Result<UserProfileResponse, AppError> {
         // If nothing to update, just return current profile
         if req.display_name.is_none()
+            && req.username.is_none()
             && req.reminder_freq.is_none()
             && req.reminder_time.is_none()
             && req.timezone.is_none()
             && req.locale.is_none()
         {
             return self.get_profile(user_id).await;
+        }
+
+        // Validate username if provided
+        if let Some(ref username) = req.username {
+            if !is_valid_username(username) {
+                return Err(AppError::BadRequest(
+                    "username must be 3-30 characters, start with a letter, and contain only lowercase letters, digits, and underscores".into(),
+                ));
+            }
+
+            let taken = self
+                .user_repo
+                .is_username_taken(username, Some(user_id))
+                .await
+                .map_err(AppError::Internal)?;
+
+            if taken {
+                return Err(AppError::Conflict("username already taken".into()));
+            }
         }
 
         // Validate reminder_freq if provided
@@ -100,6 +134,7 @@ impl traits::UserService for PgUserService {
             .update_profile(
                 user_id,
                 req.display_name.as_deref(),
+                req.username.as_deref(),
                 req.reminder_freq.as_deref(),
                 req.reminder_time,
                 req.timezone.as_deref(),

@@ -12,6 +12,7 @@ pub struct Config {
     pub apns_team_id: String,
     pub apns_bundle_id: String,
     pub apns_sandbox: bool,
+    pub app_base_url: String,
 }
 
 impl Config {
@@ -49,6 +50,9 @@ impl Config {
             .parse::<bool>()
             .map_err(|_| anyhow::anyhow!("APNS_SANDBOX must be true or false"))?;
 
+        let app_base_url =
+            var("APP_BASE_URL").unwrap_or_else(|_| format!("http://localhost:{api_port}"));
+
         Ok(Self {
             database_url,
             redis_url,
@@ -60,6 +64,7 @@ impl Config {
             apns_team_id,
             apns_bundle_id,
             apns_sandbox,
+            app_base_url,
         })
     }
 }
@@ -105,6 +110,7 @@ mod tests {
         assert_eq!(cfg.apns_team_id, "TESTTEAM99");
         assert_eq!(cfg.apns_bundle_id, "com.offrii.test");
         assert!(cfg.apns_sandbox);
+        assert_eq!(cfg.app_base_url, "http://localhost:8080");
     }
 
     #[test]

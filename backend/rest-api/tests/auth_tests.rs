@@ -24,7 +24,16 @@ async fn register_success_201() {
     assert!(body["tokens"]["expires_in"].is_u64());
     assert_eq!(body["user"]["email"], TEST_EMAIL);
     assert!(body["user"]["id"].is_string());
+    assert!(body["user"]["username"].is_string());
     assert!(body["user"]["created_at"].is_string());
+
+    // Verify auto-generated username format
+    let username = body["user"]["username"].as_str().unwrap();
+    assert!(username.len() >= 3, "username too short: {username}");
+    assert!(
+        username.chars().next().unwrap().is_ascii_lowercase(),
+        "username should start with a letter: {username}"
+    );
 
     // Verify 6 default categories were copied
     let count: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM categories WHERE user_id IS NOT NULL")
@@ -87,6 +96,27 @@ async fn register_with_display_name_201() {
     assert_eq!(status, StatusCode::CREATED);
     assert_eq!(body["user"]["display_name"], "Alice");
     assert!(body["tokens"]["access_token"].is_string());
+
+    // Username should be derived from display_name
+    let username = body["user"]["username"].as_str().unwrap();
+    assert!(
+        username.starts_with("alice"),
+        "username should start with slugified display_name, got: {username}"
+    );
+}
+
+#[tokio::test]
+async fn register_without_display_name_generates_username_from_email() {
+    let app = TestApp::new().await;
+
+    let (status, body) = app.register_user("bob@example.com", TEST_PASSWORD).await;
+
+    assert_eq!(status, StatusCode::CREATED);
+    let username = body["user"]["username"].as_str().unwrap();
+    assert!(
+        username.starts_with("bob"),
+        "username should be derived from email prefix, got: {username}"
+    );
 }
 
 #[tokio::test]
@@ -142,6 +172,7 @@ async fn login_success_200() {
     assert!(resp["tokens"]["expires_in"].is_u64());
     assert_eq!(resp["user"]["email"], TEST_EMAIL);
     assert!(resp["user"]["id"].is_string());
+    assert!(resp["user"]["username"].is_string());
     assert!(resp["user"]["created_at"].is_string());
 }
 

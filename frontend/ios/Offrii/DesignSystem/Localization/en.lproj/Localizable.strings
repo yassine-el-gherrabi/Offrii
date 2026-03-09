@@ -1,0 +1,143 @@
+/* Tabs */
+"tab.envies" = "Wishes";
+"tab.cercles" = "Circles";
+"tab.entraide" = "Help";
+"tab.profil" = "Profile";
+
+/* Auth */
+"auth.login" = "Sign in";
+"auth.register" = "Get started";
+"auth.logout" = "Sign out";
+"auth.email" = "Email";
+"auth.password" = "Password";
+"auth.displayName" = "First name or nickname";
+"auth.forgotPassword" = "Forgot password?";
+"auth.alreadyAccount" = "Already have an account?";
+"auth.noAccount" = "No account yet?";
+"auth.signIn" = "Sign in";
+"auth.signUp" = "Sign up";
+"auth.resetPassword" = "Reset";
+"auth.enterEmail" = "Enter your email";
+"auth.enterCode" = "Verification code";
+"auth.newPassword" = "New password";
+"auth.codeSent" = "A code has been sent to your email";
+"auth.step" = "Step %d of %d";
+"auth.loginSubtitle" = "Find your wishes";
+"auth.registerSubtitle" = "Create your wishlist";
+"auth.displayNamePlaceholder" = "E.g. Marie";
+"auth.passwordPlaceholder" = "At least 8 characters";
+"auth.confirmPassword" = "Confirm password";
+"auth.confirmPasswordPlaceholder" = "Re-enter your password";
+"auth.forgotSubtitle" = "Enter your email to receive a code";
+"auth.codeSentTo" = "Code sent to";
+"auth.newPasswordSubtitle" = "Choose a new password";
+"auth.continueWithGoogle" = "Google";
+"auth.continueWithFacebook" = "Facebook";
+"auth.continueWithApple" = "Continue with Apple";
+"auth.or" = "or";
+
+/* Errors */
+"error.emailTaken" = "This email is already taken";
+"error.invalidCredentials" = "Invalid email or password";
+"error.invalidCode" = "The code must be 6 digits";
+"error.invalidURL" = "Invalid URL";
+"error.serverError" = "Server error, please try again later";
+"error.networkError" = "Unable to connect";
+"error.decodingError" = "Data error";
+"error.emailRequired" = "Email is required";
+"error.passwordRequired" = "Password is required";
+"error.passwordTooShort" = "Password must be at least 8 characters";
+"error.invalidEmail" = "Invalid email format";
+"error.rateLimited" = "Too many attempts, please try again later";
+"error.passwordMismatch" = "Passwords do not match";
+"error.usernameTaken" = "This username is already taken";
+"error.usernameInvalid" = "3-30 characters, lowercase letters, digits and _";
+
+/* Onboarding */
+"onboarding.step1.title" = "Your wishes, all in one place";
+"onboarding.step1.subtitle" = "Create your wishlist and keep track of everything you want.";
+"onboarding.step2.title" = "Share with loved ones";
+"onboarding.step2.subtitle" = "Send your list to family and friends so they know what to get you.";
+"onboarding.step3.title" = "Give to those in need";
+"onboarding.step3.subtitle" = "Discover others' wishes and bring joy around you.";
+"onboarding.skip" = "Skip";
+"onboarding.continue" = "Continue";
+"onboarding.start" = "Get started";
+"onboarding.alreadyAccount" = "Already have an account? Sign in";
+
+/* Wishlist */
+"wishlist.title" = "My Wishes";
+"wishlist.empty" = "No wishes yet";
+"wishlist.emptySubtitle" = "Tap + to add your first wish";
+"wishlist.active" = "Active";
+"wishlist.purchased" = "Received";
+"wishlist.allCategories" = "All";
+"wishlist.quickAdd.title" = "Add a wish";
+"wishlist.quickAdd.placeholder" = "Wish name";
+"wishlist.quickAdd.button" = "Add";
+"wishlist.delete.title" = "Delete";
+"wishlist.delete.message" = "Are you sure you want to delete this wish?";
+"wishlist.delete.confirm" = "Delete";
+"wishlist.cancel" = "Cancel";
+"wishlist.claimed" = "Someone is on it!";
+"wishlist.markReceived" = "Mark received";
+"wishlist.share" = "Share";
+"wishlist.edit" = "Edit";
+"wishlist.sort.date" = "Date";
+"wishlist.sort.priority" = "Priority";
+"wishlist.sort.name" = "Name";
+"wishlist.reserved" = "Reserved";
+
+/* Item */
+"item.name" = "Name";
+"item.description" = "Description";
+"item.url" = "Link";
+"item.estimatedPrice" = "Estimated price";
+"item.priority" = "Priority";
+"item.category" = "Category";
+"item.save" = "Save";
+
+/* Priority */
+"priority.low" = "Meh";
+"priority.medium" = "Want";
+"priority.high" = "Really want";
+
+/* Profile */
+"profile.title" = "Profile";
+"profile.reminders" = "Reminders";
+"profile.reminderFrequency" = "Frequency";
+"profile.reminderTime" = "Time";
+"profile.shares" = "Shares";
+"profile.data" = "Data";
+"profile.exportData" = "Export my data";
+"profile.deleteAccount" = "Delete my account";
+"profile.deleteAccount.title" = "Delete account";
+"profile.deleteAccount.message" = "This action is irreversible. All your data will be deleted.";
+"profile.deleteAccount.confirm" = "Type DELETE to confirm";
+"profile.deleteAccount.placeholder" = "DELETE";
+"profile.legal" = "Legal notice";
+"profile.privacy" = "Privacy policy";
+"profile.username" = "Username";
+"profile.editUsername" = "Edit username";
+"profile.usernamePlaceholder" = "e.g. marie_dupont";
+"profile.account" = "Account";
+"profile.replayTutorial" = "Replay tutorial";
+
+/* Reminder frequency */
+"reminder.never" = "Never";
+"reminder.daily" = "Daily";
+"reminder.weekly" = "Weekly";
+"reminder.monthly" = "Monthly";
+
+/* Placeholder */
+"comingSoon.title" = "Coming soon";
+"comingSoon.subtitle" = "This feature is coming soon.";
+
+/* Common */
+"common.save" = "Save";
+"common.cancel" = "Cancel";
+"common.delete" = "Delete";
+"common.edit" = "Edit";
+"common.loading" = "Loading...";
+"common.retry" = "Retry";
+"common.ok" = "OK";

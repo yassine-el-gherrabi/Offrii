@@ -7,9 +7,10 @@ use crate::dto::auth::{AuthResponse, RefreshResponse};
 use crate::dto::categories::CategoryResponse;
 use crate::dto::items::{ItemResponse, ItemsListResponse, ListItemsQuery};
 use crate::dto::push_tokens::PushTokenResponse;
+use crate::dto::share_links::{ShareLinkListItem, ShareLinkResponse, SharedViewResponse};
 use crate::dto::users::{UserDataExport, UserProfileResponse};
 use crate::errors::AppError;
-use crate::models::{Category, Item, PushToken, RefreshToken, User};
+use crate::models::{Category, Item, PushToken, RefreshToken, ShareLink, User};
 
 // ── Repository traits ────────────────────────────────────────────────
 
@@ -18,6 +19,7 @@ pub trait UserRepo: Send + Sync {
     async fn create_user(
         &self,
         email: &str,
+        username: &str,
         password_hash: &str,
         display_name: Option<&str>,
     ) -> Result<User>;
@@ -26,11 +28,20 @@ pub trait UserRepo: Send + Sync {
 
     async fn find_by_id(&self, id: Uuid) -> Result<Option<User>>;
 
+    async fn find_by_username(&self, username: &str) -> Result<Option<User>>;
+
+    async fn is_username_taken(
+        &self,
+        username: &str,
+        exclude_user_id: Option<Uuid>,
+    ) -> Result<bool>;
+
     #[allow(clippy::too_many_arguments)]
     async fn update_profile(
         &self,
         id: Uuid,
         display_name: Option<&str>,
+        username: Option<&str>,
         reminder_freq: Option<&str>,
         reminder_time: Option<NaiveTime>,
         timezone: Option<&str>,
@@ -287,6 +298,55 @@ pub trait PushTokenService: Send + Sync {
     ) -> Result<PushTokenResponse, AppError>;
 
     async fn unregister_token(&self, user_id: Uuid, token: &str) -> Result<(), AppError>;
+}
+
+// ── Share link traits ───────────────────────────────────────────────
+
+#[async_trait]
+pub trait ShareLinkRepo: Send + Sync {
+    async fn create(
+        &self,
+        user_id: Uuid,
+        token: &str,
+        expires_at: Option<DateTime<Utc>>,
+    ) -> Result<ShareLink>;
+
+    async fn list_by_user(&self, user_id: Uuid) -> Result<Vec<ShareLink>>;
+
+    async fn find_by_id(&self, id: Uuid, user_id: Uuid) -> Result<Option<ShareLink>>;
+
+    async fn find_by_token(&self, token: &str) -> Result<Option<ShareLink>>;
+
+    async fn delete(&self, id: Uuid, user_id: Uuid) -> Result<bool>;
+}
+
+#[async_trait]
+pub trait ShareLinkService: Send + Sync {
+    async fn create_share_link(
+        &self,
+        user_id: Uuid,
+        expires_at: Option<DateTime<Utc>>,
+    ) -> Result<ShareLinkResponse, AppError>;
+
+    async fn list_share_links(&self, user_id: Uuid) -> Result<Vec<ShareLinkListItem>, AppError>;
+
+    async fn delete_share_link(&self, id: Uuid, user_id: Uuid) -> Result<(), AppError>;
+
+    async fn get_shared_view(&self, token: &str) -> Result<SharedViewResponse, AppError>;
+
+    async fn claim_via_share(
+        &self,
+        token: &str,
+        item_id: Uuid,
+        claimer_id: Uuid,
+    ) -> Result<(), AppError>;
+
+    async fn unclaim_via_share(
+        &self,
+        token: &str,
+        item_id: Uuid,
+        claimer_id: Uuid,
+    ) -> Result<(), AppError>;
 }
 
 // ── Notification traits ─────────────────────────────────────────────

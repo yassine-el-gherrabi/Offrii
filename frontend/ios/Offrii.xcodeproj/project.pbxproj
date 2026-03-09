@@ -1,0 +1,772 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		B10000000000000000000001 /* OffriiApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000001 /* OffriiApp.swift */; };
+		B10000000000000000000002 /* AuthManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000002 /* AuthManager.swift */; };
+		B10000000000000000000003 /* KeychainService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000003 /* KeychainService.swift */; };
+		B10000000000000000000004 /* Color+Hex.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000004 /* Color+Hex.swift */; };
+		B10000000000000000000005 /* AppRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000005 /* AppRouter.swift */; };
+		B10000000000000000000006 /* APIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000006 /* APIClient.swift */; };
+		B10000000000000000000007 /* APIEndpoint.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000007 /* APIEndpoint.swift */; };
+		B10000000000000000000008 /* APIError.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000008 /* APIError.swift */; };
+		B10000000000000000000009 /* HeaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000009 /* HeaderView.swift */; };
+		B10000000000000000000010 /* OffriiButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000010 /* OffriiButton.swift */; };
+		B10000000000000000000011 /* OffriiCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000011 /* OffriiCard.swift */; };
+		B10000000000000000000012 /* OffriiChip.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000012 /* OffriiChip.swift */; };
+		B10000000000000000000013 /* OffriiTextField.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000013 /* OffriiTextField.swift */; };
+		B10000000000000000000014 /* TabBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000014 /* TabBarView.swift */; };
+		B10000000000000000000015 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000015 /* Theme.swift */; };
+		B10000000000000000000016 /* Typography.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000016 /* Typography.swift */; };
+		B10000000000000000000017 /* AuthViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000017 /* AuthViewModel.swift */; };
+		B10000000000000000000018 /* ForgotPasswordView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000018 /* ForgotPasswordView.swift */; };
+		B10000000000000000000019 /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000019 /* LoginView.swift */; };
+		B10000000000000000000020 /* RegisterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000020 /* RegisterView.swift */; };
+		B10000000000000000000021 /* CategoryPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000021 /* CategoryPickerView.swift */; };
+		B10000000000000000000022 /* LegalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000022 /* LegalView.swift */; };
+		B10000000000000000000023 /* OnboardingStep.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000023 /* OnboardingStep.swift */; };
+		B10000000000000000000024 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000024 /* OnboardingView.swift */; };
+		B10000000000000000000025 /* ComingSoonView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000025 /* ComingSoonView.swift */; };
+		B10000000000000000000026 /* DataManagementView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000026 /* DataManagementView.swift */; };
+		B10000000000000000000027 /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000027 /* ProfileView.swift */; };
+		B10000000000000000000028 /* ProfileViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000028 /* ProfileViewModel.swift */; };
+		B10000000000000000000029 /* ReminderSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000029 /* ReminderSettingsView.swift */; };
+		B10000000000000000000030 /* ItemDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000030 /* ItemDetailView.swift */; };
+		B10000000000000000000031 /* ItemDetailViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000031 /* ItemDetailViewModel.swift */; };
+		B10000000000000000000032 /* ItemEditView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000032 /* ItemEditView.swift */; };
+		B10000000000000000000033 /* ItemRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000033 /* ItemRow.swift */; };
+		B10000000000000000000034 /* QuickAddSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000034 /* QuickAddSheet.swift */; };
+		B10000000000000000000035 /* WishlistView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000035 /* WishlistView.swift */; };
+		B10000000000000000000036 /* WishlistViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000036 /* WishlistViewModel.swift */; };
+		B10000000000000000000037 /* APIResponses.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000037 /* APIResponses.swift */; };
+		B10000000000000000000038 /* AuthTokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000038 /* AuthTokens.swift */; };
+		B10000000000000000000039 /* Category.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000039 /* Category.swift */; };
+		B10000000000000000000040 /* Item.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000040 /* Item.swift */; };
+		B10000000000000000000041 /* User.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000041 /* User.swift */; };
+		B10000000000000000000042 /* CategoryService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000042 /* CategoryService.swift */; };
+		B10000000000000000000043 /* ItemService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000043 /* ItemService.swift */; };
+		B10000000000000000000044 /* PushTokenService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000044 /* PushTokenService.swift */; };
+		B10000000000000000000045 /* UserService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000045 /* UserService.swift */; };
+		B10000000000000000000046 /* SSOButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000046 /* SSOButton.swift */; };
+		B10000000000000000000047 /* AuthHeaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000047 /* AuthHeaderView.swift */; };
+		B10000000000000000000048 /* DecorativeSquares.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000048 /* DecorativeSquares.swift */; };
+		B10000000000000000000049 /* UsernameEditView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000049 /* UsernameEditView.swift */; };
+		B20000000000000000000001 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000001 /* Assets.xcassets */; };
+		B20000000000000000000002 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000002 /* Localizable.strings */; };
+		B20000000000000000000003 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000003 /* Localizable.strings */; };
+		B30000000000000000000001 /* APIEndpointTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000001 /* APIEndpointTests.swift */; };
+		B30000000000000000000002 /* AppRouterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000002 /* AppRouterTests.swift */; };
+		B30000000000000000000003 /* AuthViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000003 /* AuthViewModelTests.swift */; };
+		B30000000000000000000004 /* ModelCodableTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000004 /* ModelCodableTests.swift */; };
+		B30000000000000000000005 /* ProfileViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000005 /* ProfileViewModelTests.swift */; };
+		B30000000000000000000006 /* WishlistViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000006 /* WishlistViewModelTests.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		E00000000000000000000003 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = E00000000000000000000005 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = E00000000000000000000001;
+			remoteInfo = Offrii;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		A10000000000000000000001 /* OffriiApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OffriiApp.swift; sourceTree = "<group>"; };
+		A10000000000000000000002 /* AuthManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthManager.swift; sourceTree = "<group>"; };
+		A10000000000000000000003 /* KeychainService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainService.swift; sourceTree = "<group>"; };
+		A10000000000000000000004 /* Color+Hex.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Color+Hex.swift"; sourceTree = "<group>"; };
+		A10000000000000000000005 /* AppRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppRouter.swift; sourceTree = "<group>"; };
+		A10000000000000000000006 /* APIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIClient.swift; sourceTree = "<group>"; };
+		A10000000000000000000007 /* APIEndpoint.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIEndpoint.swift; sourceTree = "<group>"; };
+		A10000000000000000000008 /* APIError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIError.swift; sourceTree = "<group>"; };
+		A10000000000000000000009 /* HeaderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HeaderView.swift; sourceTree = "<group>"; };
+		A10000000000000000000010 /* OffriiButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OffriiButton.swift; sourceTree = "<group>"; };
+		A10000000000000000000011 /* OffriiCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OffriiCard.swift; sourceTree = "<group>"; };
+		A10000000000000000000012 /* OffriiChip.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OffriiChip.swift; sourceTree = "<group>"; };
+		A10000000000000000000013 /* OffriiTextField.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OffriiTextField.swift; sourceTree = "<group>"; };
+		A10000000000000000000014 /* TabBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabBarView.swift; sourceTree = "<group>"; };
+		A10000000000000000000015 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
+		A10000000000000000000016 /* Typography.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Typography.swift; sourceTree = "<group>"; };
+		A10000000000000000000017 /* AuthViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthViewModel.swift; sourceTree = "<group>"; };
+		A10000000000000000000018 /* ForgotPasswordView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ForgotPasswordView.swift; sourceTree = "<group>"; };
+		A10000000000000000000019 /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
+		A10000000000000000000020 /* RegisterView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RegisterView.swift; sourceTree = "<group>"; };
+		A10000000000000000000021 /* CategoryPickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategoryPickerView.swift; sourceTree = "<group>"; };
+		A10000000000000000000022 /* LegalView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LegalView.swift; sourceTree = "<group>"; };
+		A10000000000000000000023 /* OnboardingStep.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingStep.swift; sourceTree = "<group>"; };
+		A10000000000000000000024 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
+		A10000000000000000000025 /* ComingSoonView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComingSoonView.swift; sourceTree = "<group>"; };
+		A10000000000000000000026 /* DataManagementView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataManagementView.swift; sourceTree = "<group>"; };
+		A10000000000000000000027 /* ProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileView.swift; sourceTree = "<group>"; };
+		A10000000000000000000028 /* ProfileViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileViewModel.swift; sourceTree = "<group>"; };
+		A10000000000000000000029 /* ReminderSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReminderSettingsView.swift; sourceTree = "<group>"; };
+		A10000000000000000000030 /* ItemDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ItemDetailView.swift; sourceTree = "<group>"; };
+		A10000000000000000000031 /* ItemDetailViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ItemDetailViewModel.swift; sourceTree = "<group>"; };
+		A10000000000000000000032 /* ItemEditView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ItemEditView.swift; sourceTree = "<group>"; };
+		A10000000000000000000033 /* ItemRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ItemRow.swift; sourceTree = "<group>"; };
+		A10000000000000000000034 /* QuickAddSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickAddSheet.swift; sourceTree = "<group>"; };
+		A10000000000000000000035 /* WishlistView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WishlistView.swift; sourceTree = "<group>"; };
+		A10000000000000000000036 /* WishlistViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WishlistViewModel.swift; sourceTree = "<group>"; };
+		A10000000000000000000037 /* APIResponses.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIResponses.swift; sourceTree = "<group>"; };
+		A10000000000000000000038 /* AuthTokens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthTokens.swift; sourceTree = "<group>"; };
+		A10000000000000000000039 /* Category.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Category.swift; sourceTree = "<group>"; };
+		A10000000000000000000040 /* Item.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Item.swift; sourceTree = "<group>"; };
+		A10000000000000000000041 /* User.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = User.swift; sourceTree = "<group>"; };
+		A10000000000000000000042 /* CategoryService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategoryService.swift; sourceTree = "<group>"; };
+		A10000000000000000000043 /* ItemService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ItemService.swift; sourceTree = "<group>"; };
+		A10000000000000000000044 /* PushTokenService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PushTokenService.swift; sourceTree = "<group>"; };
+		A10000000000000000000045 /* UserService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserService.swift; sourceTree = "<group>"; };
+		A10000000000000000000046 /* SSOButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SSOButton.swift; sourceTree = "<group>"; };
+		A10000000000000000000047 /* AuthHeaderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthHeaderView.swift; sourceTree = "<group>"; };
+		A10000000000000000000048 /* DecorativeSquares.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DecorativeSquares.swift; sourceTree = "<group>"; };
+		A10000000000000000000049 /* UsernameEditView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsernameEditView.swift; sourceTree = "<group>"; };
+		A20000000000000000000001 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		A20000000000000000000002 /* Localizable.strings */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; path = Localizable.strings; sourceTree = "<group>"; };
+		A20000000000000000000003 /* Localizable.strings */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; path = Localizable.strings; sourceTree = "<group>"; };
+		A30000000000000000000001 /* APIEndpointTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIEndpointTests.swift; sourceTree = "<group>"; };
+		A30000000000000000000002 /* AppRouterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppRouterTests.swift; sourceTree = "<group>"; };
+		A30000000000000000000003 /* AuthViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthViewModelTests.swift; sourceTree = "<group>"; };
+		A30000000000000000000004 /* ModelCodableTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelCodableTests.swift; sourceTree = "<group>"; };
+		A30000000000000000000005 /* ProfileViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileViewModelTests.swift; sourceTree = "<group>"; };
+		A30000000000000000000006 /* WishlistViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WishlistViewModelTests.swift; sourceTree = "<group>"; };
+		A40000000000000000000001 /* Offrii.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Offrii.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A40000000000000000000002 /* OffriiTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = OffriiTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		D00000000000000000000003 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D00000000000000000000006 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		C00000000000000000000001 = {
+			isa = PBXGroup;
+			children = (
+				C00000000000000000000002 /* Offrii */,
+				C00000000000000000000003 /* OffriiTests */,
+				C00000000000000000000004 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		C00000000000000000000002 /* Offrii */ = {
+			isa = PBXGroup;
+			children = (
+				A10000000000000000000001 /* OffriiApp.swift */,
+				C00000000000000000000005 /* Core */,
+				C00000000000000000000009 /* DesignSystem */,
+				C00000000000000000000013 /* Features */,
+				C00000000000000000000021 /* Models */,
+				C00000000000000000000022 /* Services */,
+				C00000000000000000000023 /* Resources */,
+			);
+			path = Offrii;
+			sourceTree = "<group>";
+		};
+		C00000000000000000000003 /* OffriiTests */ = {
+			isa = PBXGroup;
+			children = (
+				A30000000000000000000001 /* APIEndpointTests.swift */,
+				A30000000000000000000002 /* AppRouterTests.swift */,
+				A30000000000000000000003 /* AuthViewModelTests.swift */,
+				A30000000000000000000004 /* ModelCodableTests.swift */,
+				A30000000000000000000005 /* ProfileViewModelTests.swift */,
+				A30000000000000000000006 /* WishlistViewModelTests.swift */,
+			);
+			path = OffriiTests;
+			sourceTree = "<group>";
+		};
+		C00000000000000000000004 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				A40000000000000000000001 /* Offrii.app */,
+				A40000000000000000000002 /* OffriiTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		C00000000000000000000005 /* Core */ = {
+			isa = PBXGroup;
+			children = (
+				C00000000000000000000006 /* Auth */,
+				C00000000000000000000007 /* Extensions */,
+				C00000000000000000000008 /* Navigation */,
+				C00000000000000000000024 /* Network */,
+			);
+			path = Core;
+			sourceTree = "<group>";
+		};
+		C00000000000000000000006 /* Auth */ = {
+			isa = PBXGroup;
+			children = (
+				A10000000000000000000002 /* AuthManager.swift */,
+				A10000000000000000000003 /* KeychainService.swift */,
+			);
+			path = Auth;
+			sourceTree = "<group>";
+		};
+		C00000000000000000000007 /* Extensions */ = {
+			isa = PBXGroup;
+			children = (
+				A10000000000000000000004 /* Color+Hex.swift */,
+			);
+			path = Extensions;
+			sourceTree = "<group>";
+		};
+		C00000000000000000000008 /* Navigation */ = {
+			isa = PBXGroup;
+			children = (
+				A10000000000000000000005 /* AppRouter.swift */,
+			);
+			path = Navigation;
+			sourceTree = "<group>";
+		};
+		C00000000000000000000009 /* DesignSystem */ = {
+			isa = PBXGroup;
+			children = (
+				C00000000000000000000010 /* Components */,
+				C00000000000000000000011 /* Localization */,
+				A10000000000000000000015 /* Theme.swift */,
+				A10000000000000000000016 /* Typography.swift */,
+			);
+			path = DesignSystem;
+			sourceTree = "<group>";
+		};
+		C00000000000000000000010 /* Components */ = {
+			isa = PBXGroup;
+			children = (
+				A10000000000000000000047 /* AuthHeaderView.swift */,
+				A10000000000000000000048 /* DecorativeSquares.swift */,
+				A10000000000000000000009 /* HeaderView.swift */,
+				A10000000000000000000010 /* OffriiButton.swift */,
+				A10000000000000000000011 /* OffriiCard.swift */,
+				A10000000000000000000012 /* OffriiChip.swift */,
+				A10000000000000000000013 /* OffriiTextField.swift */,
+				A10000000000000000000046 /* SSOButton.swift */,
+				A10000000000000000000014 /* TabBarView.swift */,
+			);
+			path = Components;
+			sourceTree = "<group>";
+		};
+		C00000000000000000000011 /* Localization */ = {
+			isa = PBXGroup;
+			children = (
+				C00000000000000000000025 /* fr.lproj */,
+				C00000000000000000000026 /* en.lproj */,
+			);
+			path = Localization;
+			sourceTree = "<group>";
+		};
+		C00000000000000000000013 /* Features */ = {
+			isa = PBXGroup;
+			children = (
+				C00000000000000000000014 /* Auth */,
+				C00000000000000000000015 /* Categories */,
+				C00000000000000000000016 /* Legal */,
+				C00000000000000000000017 /* Onboarding */,
+				C00000000000000000000018 /* Placeholder */,
+				C00000000000000000000019 /* Profile */,
+				C00000000000000000000020 /* Wishlist */,
+			);
+			path = Features;
+			sourceTree = "<group>";
+		};
+		C00000000000000000000014 /* Auth */ = {
+			isa = PBXGroup;
+			children = (
+				A10000000000000000000017 /* AuthViewModel.swift */,
+				A10000000000000000000018 /* ForgotPasswordView.swift */,
+				A10000000000000000000019 /* LoginView.swift */,
+				A10000000000000000000020 /* RegisterView.swift */,
+			);
+			path = Auth;
+			sourceTree = "<group>";
+		};
+		C00000000000000000000015 /* Categories */ = {
+			isa = PBXGroup;
+			children = (
+				A10000000000000000000021 /* CategoryPickerView.swift */,
+			);
+			path = Categories;
+			sourceTree = "<group>";
+		};
+		C00000000000000000000016 /* Legal */ = {
+			isa = PBXGroup;
+			children = (
+				A10000000000000000000022 /* LegalView.swift */,
+			);
+			path = Legal;
+			sourceTree = "<group>";
+		};
+		C00000000000000000000017 /* Onboarding */ = {
+			isa = PBXGroup;
+			children = (
+				A10000000000000000000023 /* OnboardingStep.swift */,
+				A10000000000000000000024 /* OnboardingView.swift */,
+			);
+			path = Onboarding;
+			sourceTree = "<group>";
+		};
+		C00000000000000000000018 /* Placeholder */ = {
+			isa = PBXGroup;
+			children = (
+				A10000000000000000000025 /* ComingSoonView.swift */,
+			);
+			path = Placeholder;
+			sourceTree = "<group>";
+		};
+		C00000000000000000000019 /* Profile */ = {
+			isa = PBXGroup;
+			children = (
+				A10000000000000000000026 /* DataManagementView.swift */,
+				A10000000000000000000027 /* ProfileView.swift */,
+				A10000000000000000000028 /* ProfileViewModel.swift */,
+				A10000000000000000000029 /* ReminderSettingsView.swift */,
+				A10000000000000000000049 /* UsernameEditView.swift */,
+			);
+			path = Profile;
+			sourceTree = "<group>";
+		};
+		C00000000000000000000020 /* Wishlist */ = {
+			isa = PBXGroup;
+			children = (
+				A10000000000000000000030 /* ItemDetailView.swift */,
+				A10000000000000000000031 /* ItemDetailViewModel.swift */,
+				A10000000000000000000032 /* ItemEditView.swift */,
+				A10000000000000000000033 /* ItemRow.swift */,
+				A10000000000000000000034 /* QuickAddSheet.swift */,
+				A10000000000000000000035 /* WishlistView.swift */,
+				A10000000000000000000036 /* WishlistViewModel.swift */,
+			);
+			path = Wishlist;
+			sourceTree = "<group>";
+		};
+		C00000000000000000000021 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				A10000000000000000000037 /* APIResponses.swift */,
+				A10000000000000000000038 /* AuthTokens.swift */,
+				A10000000000000000000039 /* Category.swift */,
+				A10000000000000000000040 /* Item.swift */,
+				A10000000000000000000041 /* User.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		C00000000000000000000022 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				A10000000000000000000042 /* CategoryService.swift */,
+				A10000000000000000000043 /* ItemService.swift */,
+				A10000000000000000000044 /* PushTokenService.swift */,
+				A10000000000000000000045 /* UserService.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		C00000000000000000000023 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				A20000000000000000000001 /* Assets.xcassets */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		C00000000000000000000024 /* Network */ = {
+			isa = PBXGroup;
+			children = (
+				A10000000000000000000006 /* APIClient.swift */,
+				A10000000000000000000007 /* APIEndpoint.swift */,
+				A10000000000000000000008 /* APIError.swift */,
+			);
+			path = Network;
+			sourceTree = "<group>";
+		};
+		C00000000000000000000025 /* fr.lproj */ = {
+			isa = PBXGroup;
+			children = (
+				A20000000000000000000002 /* Localizable.strings */,
+			);
+			path = fr.lproj;
+			sourceTree = "<group>";
+		};
+		C00000000000000000000026 /* en.lproj */ = {
+			isa = PBXGroup;
+			children = (
+				A20000000000000000000003 /* Localizable.strings */,
+			);
+			path = en.lproj;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		E00000000000000000000001 /* Offrii */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = F10000000000000000000002 /* Build configuration list for PBXNativeTarget "Offrii" */;
+			buildPhases = (
+				D00000000000000000000001 /* Sources */,
+				D00000000000000000000003 /* Frameworks */,
+				D00000000000000000000002 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = Offrii;
+			packageProductDependencies = (
+			);
+			productName = Offrii;
+			productReference = A40000000000000000000001 /* Offrii.app */;
+			productType = "com.apple.product-type.application";
+		};
+		E00000000000000000000002 /* OffriiTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = F10000000000000000000003 /* Build configuration list for PBXNativeTarget "OffriiTests" */;
+			buildPhases = (
+				D00000000000000000000004 /* Sources */,
+				D00000000000000000000006 /* Frameworks */,
+				D00000000000000000000005 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				E00000000000000000000004 /* PBXTargetDependency */,
+			);
+			name = OffriiTests;
+			productName = OffriiTests;
+			productReference = A40000000000000000000002 /* OffriiTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		E00000000000000000000005 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1600;
+				LastUpgradeCheck = 1600;
+				TargetAttributes = {
+					E00000000000000000000001 = {
+						CreatedOnToolsVersion = 16.0;
+					};
+					E00000000000000000000002 = {
+						CreatedOnToolsVersion = 16.0;
+						TestTargetID = E00000000000000000000001;
+					};
+				};
+			};
+			buildConfigurationList = F10000000000000000000001 /* Build configuration list for PBXProject "Offrii" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = fr;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				fr,
+				en,
+				Base,
+			);
+			mainGroup = C00000000000000000000001;
+			packageReferences = (
+			);
+			productRefGroup = C00000000000000000000004 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				E00000000000000000000001 /* Offrii */,
+				E00000000000000000000002 /* OffriiTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		D00000000000000000000002 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B20000000000000000000001 /* Assets.xcassets in Resources */,
+				B20000000000000000000002 /* Localizable.strings in Resources */,
+				B20000000000000000000003 /* Localizable.strings in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D00000000000000000000005 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		D00000000000000000000001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B10000000000000000000001 /* OffriiApp.swift in Sources */,
+				B10000000000000000000002 /* AuthManager.swift in Sources */,
+				B10000000000000000000003 /* KeychainService.swift in Sources */,
+				B10000000000000000000004 /* Color+Hex.swift in Sources */,
+				B10000000000000000000005 /* AppRouter.swift in Sources */,
+				B10000000000000000000006 /* APIClient.swift in Sources */,
+				B10000000000000000000007 /* APIEndpoint.swift in Sources */,
+				B10000000000000000000008 /* APIError.swift in Sources */,
+				B10000000000000000000009 /* HeaderView.swift in Sources */,
+				B10000000000000000000010 /* OffriiButton.swift in Sources */,
+				B10000000000000000000011 /* OffriiCard.swift in Sources */,
+				B10000000000000000000012 /* OffriiChip.swift in Sources */,
+				B10000000000000000000013 /* OffriiTextField.swift in Sources */,
+				B10000000000000000000014 /* TabBarView.swift in Sources */,
+				B10000000000000000000015 /* Theme.swift in Sources */,
+				B10000000000000000000016 /* Typography.swift in Sources */,
+				B10000000000000000000017 /* AuthViewModel.swift in Sources */,
+				B10000000000000000000018 /* ForgotPasswordView.swift in Sources */,
+				B10000000000000000000019 /* LoginView.swift in Sources */,
+				B10000000000000000000020 /* RegisterView.swift in Sources */,
+				B10000000000000000000021 /* CategoryPickerView.swift in Sources */,
+				B10000000000000000000022 /* LegalView.swift in Sources */,
+				B10000000000000000000023 /* OnboardingStep.swift in Sources */,
+				B10000000000000000000024 /* OnboardingView.swift in Sources */,
+				B10000000000000000000025 /* ComingSoonView.swift in Sources */,
+				B10000000000000000000026 /* DataManagementView.swift in Sources */,
+				B10000000000000000000027 /* ProfileView.swift in Sources */,
+				B10000000000000000000028 /* ProfileViewModel.swift in Sources */,
+				B10000000000000000000029 /* ReminderSettingsView.swift in Sources */,
+				B10000000000000000000049 /* UsernameEditView.swift in Sources */,
+				B10000000000000000000030 /* ItemDetailView.swift in Sources */,
+				B10000000000000000000031 /* ItemDetailViewModel.swift in Sources */,
+				B10000000000000000000032 /* ItemEditView.swift in Sources */,
+				B10000000000000000000033 /* ItemRow.swift in Sources */,
+				B10000000000000000000034 /* QuickAddSheet.swift in Sources */,
+				B10000000000000000000035 /* WishlistView.swift in Sources */,
+				B10000000000000000000036 /* WishlistViewModel.swift in Sources */,
+				B10000000000000000000037 /* APIResponses.swift in Sources */,
+				B10000000000000000000038 /* AuthTokens.swift in Sources */,
+				B10000000000000000000039 /* Category.swift in Sources */,
+				B10000000000000000000040 /* Item.swift in Sources */,
+				B10000000000000000000041 /* User.swift in Sources */,
+				B10000000000000000000042 /* CategoryService.swift in Sources */,
+				B10000000000000000000043 /* ItemService.swift in Sources */,
+				B10000000000000000000044 /* PushTokenService.swift in Sources */,
+				B10000000000000000000045 /* UserService.swift in Sources */,
+				B10000000000000000000046 /* SSOButton.swift in Sources */,
+				B10000000000000000000047 /* AuthHeaderView.swift in Sources */,
+				B10000000000000000000048 /* DecorativeSquares.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D00000000000000000000004 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B30000000000000000000001 /* APIEndpointTests.swift in Sources */,
+				B30000000000000000000002 /* AppRouterTests.swift in Sources */,
+				B30000000000000000000003 /* AuthViewModelTests.swift in Sources */,
+				B30000000000000000000004 /* ModelCodableTests.swift in Sources */,
+				B30000000000000000000005 /* ProfileViewModelTests.swift in Sources */,
+				B30000000000000000000006 /* WishlistViewModelTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		E00000000000000000000004 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = E00000000000000000000001 /* Offrii */;
+			targetProxy = E00000000000000000000003 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		F00000000000000000000001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		F00000000000000000000002 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_VERSION = 6.0;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		F00000000000000000000003 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 6SMPW6NUXP;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = Offrii;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UIUserInterfaceStyle = Light;
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.offrii.app;
+				PRODUCT_NAME = Offrii;
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		F00000000000000000000004 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 6SMPW6NUXP;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = Offrii;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UIUserInterfaceStyle = Light;
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.offrii.app;
+				PRODUCT_NAME = Offrii;
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+		F00000000000000000000005 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Manual;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.offrii.app.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Offrii.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Offrii";
+			};
+			name = Debug;
+		};
+		F00000000000000000000006 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Manual;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.offrii.app.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Offrii.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Offrii";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		F10000000000000000000001 /* Build configuration list for PBXProject "Offrii" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F00000000000000000000001 /* Debug */,
+				F00000000000000000000002 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		F10000000000000000000002 /* Build configuration list for PBXNativeTarget "Offrii" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F00000000000000000000003 /* Debug */,
+				F00000000000000000000004 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		F10000000000000000000003 /* Build configuration list for PBXNativeTarget "OffriiTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F00000000000000000000005 /* Debug */,
+				F00000000000000000000006 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = E00000000000000000000005 /* Project object */;
+}
