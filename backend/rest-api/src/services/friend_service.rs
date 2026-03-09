@@ -7,6 +7,7 @@ use crate::dto::friends::{
     FriendRequestResponse, FriendResponse, SentFriendRequestResponse, UserSearchResult,
 };
 use crate::errors::AppError;
+use crate::models::friend::FriendRequestStatus;
 use crate::repositories::friend_repo;
 use crate::traits::{self, NotificationRequest};
 
@@ -107,7 +108,7 @@ impl traits::FriendService for PgFriendService {
         from_user_id: Uuid,
         to_username: &str,
     ) -> Result<FriendRequestResponse, AppError> {
-        // Find target user by username
+        // Resolve target user (outside tx — read-only, no race concern)
         let target = self
             .user_repo
             .find_by_username(to_username)
@@ -115,17 +116,48 @@ impl traits::FriendService for PgFriendService {
             .map_err(AppError::Internal)?
             .ok_or_else(|| AppError::NotFound("user not found".into()))?;
 
-        // Cannot friend yourself
         if target.id == from_user_id {
             return Err(AppError::BadRequest(
                 "cannot send a friend request to yourself".into(),
             ));
         }
 
-        // Check not already friends
-        let already_friends = self
-            .friend_repo
-            .are_friends(from_user_id, target.id)
+        // All checks + mutations in a single transaction with row-level locking
+        let mut tx = self
+            .pool
+            .begin()
+            .await
+            .map_err(|e| AppError::Internal(e.into()))?;
+
+        // Lock existing friend_requests between these two users (both directions)
+        let existing: Vec<crate::models::FriendRequest> = sqlx::query_as(
+            "SELECT id, from_user_id, to_user_id, status, created_at \
+             FROM friend_requests \
+             WHERE (from_user_id = $1 AND to_user_id = $2) \
+                OR (from_user_id = $2 AND to_user_id = $1) \
+             FOR UPDATE",
+        )
+        .bind(from_user_id)
+        .bind(target.id)
+        .fetch_all(&mut *tx)
+        .await
+        .map_err(|e| AppError::Internal(e.into()))?;
+
+        // Check for pending requests in either direction
+        for req in &existing {
+            if req.status == "pending" {
+                if req.from_user_id == from_user_id {
+                    return Err(AppError::Conflict("friend request already pending".into()));
+                } else {
+                    return Err(AppError::Conflict(
+                        "this user has already sent you a friend request".into(),
+                    ));
+                }
+            }
+        }
+
+        // Check already friends (inside tx)
+        let already_friends = friend_repo::are_friends(&mut *tx, from_user_id, target.id)
             .await
             .map_err(AppError::Internal)?;
 
@@ -133,45 +165,26 @@ impl traits::FriendService for PgFriendService {
             return Err(AppError::Conflict("already friends".into()));
         }
 
-        // Check no pending request in either direction
-        let existing = self
-            .friend_repo
-            .find_pending_between(from_user_id, target.id)
-            .await
-            .map_err(AppError::Internal)?;
-
-        if existing.is_some() {
-            return Err(AppError::Conflict("friend request already pending".into()));
-        }
-
-        let reverse = self
-            .friend_repo
-            .find_pending_between(target.id, from_user_id)
-            .await
-            .map_err(AppError::Internal)?;
-
-        if reverse.is_some() {
-            return Err(AppError::Conflict(
-                "this user has already sent you a friend request".into(),
-            ));
-        }
-
-        // Clean up any old non-pending request (declined/accepted) so re-requesting works
+        // Clean up old non-pending requests so re-requesting works
         sqlx::query(
             "DELETE FROM friend_requests \
-             WHERE from_user_id = $1 AND to_user_id = $2 AND status != 'pending'",
+             WHERE ((from_user_id = $1 AND to_user_id = $2) \
+                OR (from_user_id = $2 AND to_user_id = $1)) \
+             AND status != 'pending'",
         )
         .bind(from_user_id)
         .bind(target.id)
-        .execute(&self.pool)
+        .execute(&mut *tx)
         .await
         .map_err(|e| AppError::Internal(e.into()))?;
 
-        let req = self
-            .friend_repo
-            .create_friend_request(from_user_id, target.id)
+        let req = friend_repo::create_friend_request(&mut *tx, from_user_id, target.id)
             .await
             .map_err(AppError::Internal)?;
+
+        tx.commit()
+            .await
+            .map_err(|e| AppError::Internal(e.into()))?;
 
         // Look up sender info for the response
         let sender = self
@@ -279,7 +292,7 @@ impl traits::FriendService for PgFriendService {
             .await
             .map_err(|e| AppError::Internal(e.into()))?;
 
-        friend_repo::update_request_status(&mut *tx, request_id, "accepted")
+        friend_repo::update_request_status(&mut *tx, request_id, FriendRequestStatus::Accepted)
             .await
             .map_err(AppError::Internal)?;
 
@@ -343,7 +356,7 @@ impl traits::FriendService for PgFriendService {
         }
 
         self.friend_repo
-            .update_request_status(request_id, "declined")
+            .update_request_status(request_id, FriendRequestStatus::Declined)
             .await
             .map_err(AppError::Internal)?;
 
@@ -352,50 +365,21 @@ impl traits::FriendService for PgFriendService {
 
     #[tracing::instrument(skip(self))]
     async fn list_friends(&self, user_id: Uuid) -> Result<Vec<FriendResponse>, AppError> {
-        let friend_ids = self
+        let friends = self
             .friend_repo
-            .list_friends(user_id)
+            .list_friends_with_since(user_id)
             .await
             .map_err(AppError::Internal)?;
 
-        if friend_ids.is_empty() {
-            return Ok(vec![]);
-        }
-
-        let users = self
-            .user_repo
-            .find_by_ids(&friend_ids)
-            .await
-            .map_err(AppError::Internal)?;
-
-        // We need friendship created_at — query friendships for each
-        // For efficiency, get all friendships in one query
-        let mut responses = Vec::with_capacity(users.len());
-        for user in users {
-            // Determine canonical order
-            let (a, b) = if user_id < user.id {
-                (user_id, user.id)
-            } else {
-                (user.id, user_id)
-            };
-            let since: (chrono::DateTime<chrono::Utc>,) = sqlx::query_as(
-                "SELECT created_at FROM friendships WHERE user_a_id = $1 AND user_b_id = $2",
-            )
-            .bind(a)
-            .bind(b)
-            .fetch_one(&self.pool)
-            .await
-            .map_err(|e| AppError::Internal(e.into()))?;
-
-            responses.push(FriendResponse {
-                user_id: user.id,
-                username: user.username,
-                display_name: user.display_name,
-                since: since.0,
-            });
-        }
-
-        Ok(responses)
+        Ok(friends
+            .into_iter()
+            .map(|f| FriendResponse {
+                user_id: f.user_id,
+                username: f.username,
+                display_name: f.display_name,
+                since: f.since,
+            })
+            .collect())
     }
 
     #[tracing::instrument(skip(self))]
@@ -468,7 +452,7 @@ impl traits::FriendService for PgFriendService {
         }
 
         self.friend_repo
-            .update_request_status(request_id, "cancelled")
+            .update_request_status(request_id, FriendRequestStatus::Cancelled)
             .await
             .map_err(AppError::Internal)?;
 
@@ -486,6 +470,18 @@ impl traits::FriendService for PgFriendService {
         if !removed {
             return Err(AppError::NotFound("friendship not found".into()));
         }
+
+        // Clean up any friend_requests between the two users
+        sqlx::query(
+            "DELETE FROM friend_requests \
+             WHERE (from_user_id = $1 AND to_user_id = $2) \
+                OR (from_user_id = $2 AND to_user_id = $1)",
+        )
+        .bind(user_id)
+        .bind(friend_id)
+        .execute(&self.pool)
+        .await
+        .map_err(|e| AppError::Internal(e.into()))?;
 
         Ok(())
     }

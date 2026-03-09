@@ -4,6 +4,7 @@ struct PendingRequestsView: View {
     @Environment(AuthManager.self) private var authManager
     @State private var requests: [FriendRequestResponse] = []
     @State private var isLoading = false
+    @State private var error: String?
 
     var body: some View {
         ZStack {
@@ -78,6 +79,17 @@ struct PendingRequestsView: View {
         .task {
             await loadRequests()
         }
+        .alert(
+            NSLocalizedString("common.error", comment: ""),
+            isPresented: Binding(
+                get: { error != nil },
+                set: { if !$0 { error = nil } }
+            )
+        ) {
+            Button(NSLocalizedString("common.ok", comment: ""), role: .cancel) {}
+        } message: {
+            if let error { Text(error) }
+        }
     }
 
     private func loadRequests() async {
@@ -85,7 +97,7 @@ struct PendingRequestsView: View {
         do {
             requests = try await FriendService.shared.listPendingRequests()
         } catch {
-            // Silently fail
+            self.error = error.localizedDescription
         }
         isLoading = false
     }
@@ -95,7 +107,7 @@ struct PendingRequestsView: View {
             _ = try await FriendService.shared.acceptRequest(id: request.id)
             requests.removeAll { $0.id == request.id }
         } catch {
-            // Silently fail
+            self.error = error.localizedDescription
         }
     }
 
@@ -104,7 +116,7 @@ struct PendingRequestsView: View {
             try await FriendService.shared.declineRequest(id: request.id)
             requests.removeAll { $0.id == request.id }
         } catch {
-            // Silently fail
+            self.error = error.localizedDescription
         }
     }
 }

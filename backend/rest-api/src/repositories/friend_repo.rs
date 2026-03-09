@@ -3,7 +3,7 @@ use async_trait::async_trait;
 use sqlx::{PgExecutor, PgPool};
 use uuid::Uuid;
 
-use crate::models::friend::{FriendRequest, Friendship};
+use crate::models::friend::{FriendRequest, FriendRequestStatus, FriendWithSince, Friendship};
 use crate::traits;
 
 // ── Concrete implementation ──────────────────────────────────────────
@@ -36,7 +36,7 @@ impl traits::FriendRepo for PgFriendRepo {
         find_request_by_id(&self.pool, id).await
     }
 
-    async fn update_request_status(&self, id: Uuid, status: &str) -> Result<bool> {
+    async fn update_request_status(&self, id: Uuid, status: FriendRequestStatus) -> Result<bool> {
         update_request_status(&self.pool, id, status).await
     }
 
@@ -54,6 +54,10 @@ impl traits::FriendRepo for PgFriendRepo {
 
     async fn are_friends(&self, user_a_id: Uuid, user_b_id: Uuid) -> Result<bool> {
         are_friends(&self.pool, user_a_id, user_b_id).await
+    }
+
+    async fn list_friends_with_since(&self, user_id: Uuid) -> Result<Vec<FriendWithSince>> {
+        list_friends_with_since(&self.pool, user_id).await
     }
 
     async fn find_sent_requests(&self, from_user_id: Uuid) -> Result<Vec<FriendRequest>> {
@@ -124,11 +128,11 @@ pub(crate) async fn find_request_by_id(
 pub(crate) async fn update_request_status(
     exec: impl PgExecutor<'_>,
     id: Uuid,
-    status: &str,
+    status: FriendRequestStatus,
 ) -> Result<bool> {
     let result =
         sqlx::query("UPDATE friend_requests SET status = $1 WHERE id = $2 AND status = 'pending'")
-            .bind(status)
+            .bind(status.as_str())
             .bind(id)
             .execute(exec)
             .await?;
@@ -214,6 +218,24 @@ pub(crate) async fn are_friends(
     .await?;
 
     Ok(exists)
+}
+
+pub(crate) async fn list_friends_with_since(
+    exec: impl PgExecutor<'_>,
+    user_id: Uuid,
+) -> Result<Vec<FriendWithSince>> {
+    let rows = sqlx::query_as::<_, FriendWithSince>(
+        "SELECT u.id AS user_id, u.username, u.display_name, f.created_at AS since \
+         FROM friendships f \
+         JOIN users u ON u.id = CASE WHEN f.user_a_id = $1 THEN f.user_b_id ELSE f.user_a_id END \
+         WHERE f.user_a_id = $1 OR f.user_b_id = $1 \
+         ORDER BY f.created_at DESC",
+    )
+    .bind(user_id)
+    .fetch_all(exec)
+    .await?;
+
+    Ok(rows)
 }
 
 pub(crate) async fn find_sent_requests(
