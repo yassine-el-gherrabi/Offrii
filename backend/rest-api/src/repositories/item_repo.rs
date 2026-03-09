@@ -434,7 +434,7 @@ pub(crate) async fn find_by_ids(
 ) -> Result<Vec<Item>> {
     let sql = format!(
         "SELECT {ITEM_COLS} FROM items \
-         WHERE user_id = $1 AND id = ANY($2) AND status != 'deleted'"
+         WHERE user_id = $1 AND id = ANY($2) AND status = 'active'"
     );
     let items = sqlx::query_as::<_, Item>(&sql)
         .bind(user_id)
