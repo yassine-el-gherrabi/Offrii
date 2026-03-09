@@ -69,7 +69,7 @@ fn check_link_expiry(link: &ShareLink) -> Result<(), AppError> {
     if let Some(expires_at) = link.expires_at
         && expires_at < Utc::now()
     {
-        return Err(AppError::NotFound("share link has expired".into()));
+        return Err(AppError::Gone("share link has expired".into()));
     }
     Ok(())
 }
@@ -160,41 +160,60 @@ fn validate_scope_data(
 }
 
 /// Extract category_id from scope_data.
-fn extract_category_id(scope_data: &serde_json::Value) -> Uuid {
+fn extract_category_id(scope_data: &serde_json::Value) -> Result<Uuid, AppError> {
     scope_data["category_id"]
         .as_str()
-        .unwrap()
+        .ok_or_else(|| AppError::Internal(anyhow::anyhow!("scope_data missing category_id")))?
         .parse::<Uuid>()
-        .unwrap()
+        .map_err(|e| AppError::Internal(anyhow::anyhow!("corrupt category_id in scope_data: {e}")))
 }
 
 /// Extract item_ids from scope_data.
-fn extract_item_ids(scope_data: &serde_json::Value) -> Vec<Uuid> {
+fn extract_item_ids(scope_data: &serde_json::Value) -> Result<Vec<Uuid>, AppError> {
     scope_data["item_ids"]
         .as_array()
-        .unwrap()
+        .ok_or_else(|| AppError::Internal(anyhow::anyhow!("scope_data missing item_ids")))?
         .iter()
-        .map(|v| v.as_str().unwrap().parse::<Uuid>().unwrap())
+        .map(|v| {
+            v.as_str()
+                .ok_or_else(|| {
+                    AppError::Internal(anyhow::anyhow!("non-string element in scope_data.item_ids"))
+                })?
+                .parse::<Uuid>()
+                .map_err(|e| {
+                    AppError::Internal(anyhow::anyhow!("corrupt UUID in scope_data.item_ids: {e}"))
+                })
+        })
         .collect()
 }
 
 /// Check if an item is within the scope of a share link.
-fn item_in_scope(link: &ShareLink, item_id: Uuid) -> bool {
+fn item_in_scope(link: &ShareLink, item: &crate::models::Item) -> Result<(), AppError> {
     match link.scope.as_str() {
-        "all" => true,
+        "all" => Ok(()),
         "category" => {
-            // We can't check category from here without the item; caller handles this
-            true
-        }
-        "selection" => {
-            if let Some(ref data) = link.scope_data {
-                let ids = extract_item_ids(data);
-                ids.contains(&item_id)
+            let data = link.scope_data.as_ref().ok_or_else(|| {
+                AppError::Internal(anyhow::anyhow!("scope_data missing for category scope"))
+            })?;
+            let cat_id = extract_category_id(data)?;
+            if item.category_id == Some(cat_id) {
+                Ok(())
             } else {
-                false
+                Err(AppError::NotFound("item not found".into()))
             }
         }
-        _ => false,
+        "selection" => {
+            let data = link.scope_data.as_ref().ok_or_else(|| {
+                AppError::Internal(anyhow::anyhow!("scope_data missing for selection scope"))
+            })?;
+            let ids = extract_item_ids(data)?;
+            if ids.contains(&item.id) {
+                Ok(())
+            } else {
+                Err(AppError::NotFound("item not found".into()))
+            }
+        }
+        _ => Err(AppError::NotFound("item not found".into())),
     }
 }
 
@@ -217,7 +236,10 @@ async fn fetch_scoped_items(
             .await
             .map_err(AppError::Internal),
         "category" => {
-            let cat_id = extract_category_id(link.scope_data.as_ref().unwrap());
+            let data = link.scope_data.as_ref().ok_or_else(|| {
+                AppError::Internal(anyhow::anyhow!("scope_data missing for category scope"))
+            })?;
+            let cat_id = extract_category_id(data)?;
             item_repo
                 .list(
                     link.user_id,
@@ -232,7 +254,10 @@ async fn fetch_scoped_items(
                 .map_err(AppError::Internal)
         }
         "selection" => {
-            let ids = extract_item_ids(link.scope_data.as_ref().unwrap());
+            let data = link.scope_data.as_ref().ok_or_else(|| {
+                AppError::Internal(anyhow::anyhow!("scope_data missing for selection scope"))
+            })?;
+            let ids = extract_item_ids(data)?;
             item_repo
                 .find_by_ids(link.user_id, &ids)
                 .await
@@ -286,8 +311,13 @@ impl traits::ShareLinkService for PgShareLinkService {
         // Validate scope_data references belong to the user
         match scope {
             "category" => {
-                let cat_id = extract_category_id(scope_data.unwrap());
-                let cat = self
+                let data = scope_data.ok_or_else(|| {
+                    AppError::Internal(anyhow::anyhow!(
+                        "scope_data missing after validation for category scope"
+                    ))
+                })?;
+                let cat_id = extract_category_id(data)?;
+                let _ = self
                     .item_repo
                     .list(
                         user_id,
@@ -300,17 +330,14 @@ impl traits::ShareLinkService for PgShareLinkService {
                     )
                     .await
                     .map_err(AppError::Internal)?;
-                // Actually, we should check the category exists for this user.
-                // The item_repo.list with category_id filter will just return empty if
-                // the category doesn't belong to the user. Let's verify via a simpler check.
-                // We don't have category_repo here, but we can at least proceed — the link
-                // will just show 0 items if the category doesn't match.
-                // For a stronger check, let's accept the category_id as-is;
-                // the shared view will simply be empty if invalid.
-                let _ = cat;
             }
             "selection" => {
-                let ids = extract_item_ids(scope_data.unwrap());
+                let data = scope_data.ok_or_else(|| {
+                    AppError::Internal(anyhow::anyhow!(
+                        "scope_data missing after validation for selection scope"
+                    ))
+                })?;
+                let ids = extract_item_ids(data)?;
                 let found_items = self
                     .item_repo
                     .find_by_ids(user_id, &ids)
@@ -439,6 +466,17 @@ impl traits::ShareLinkService for PgShareLinkService {
         user_id: Uuid,
         req: &UpdateShareLinkRequest,
     ) -> Result<ShareLinkResponse, AppError> {
+        // Reject empty PATCH body
+        if req.label.is_none()
+            && req.is_active.is_none()
+            && req.permissions.is_none()
+            && req.expires_at.is_none()
+        {
+            return Err(AppError::BadRequest(
+                "at least one field must be provided".into(),
+            ));
+        }
+
         // Validate permissions if provided
         if let Some(ref p) = req.permissions
             && !VALID_PERMISSIONS.contains(&p.as_str())
@@ -498,11 +536,6 @@ impl traits::ShareLinkService for PgShareLinkService {
             ));
         }
 
-        // Check item is in scope
-        if !item_in_scope(&link, item_id) {
-            return Err(AppError::NotFound("item not found".into()));
-        }
-
         // Verify item belongs to the share link owner
         let item = self
             .item_repo
@@ -511,12 +544,8 @@ impl traits::ShareLinkService for PgShareLinkService {
             .map_err(AppError::Internal)?
             .ok_or_else(|| AppError::NotFound("item not found".into()))?;
 
-        // For category scope, verify item is in the right category
-        if link.scope == "category"
-            && item.category_id != Some(extract_category_id(link.scope_data.as_ref().unwrap()))
-        {
-            return Err(AppError::NotFound("item not found".into()));
-        }
+        // Check item is in scope (includes category check)
+        item_in_scope(&link, &item)?;
 
         // Cannot claim your own item
         if item.user_id == claimer_id {
@@ -566,12 +595,23 @@ impl traits::ShareLinkService for PgShareLinkService {
         check_link_active(&link)?;
         check_link_expiry(&link)?;
 
+        // Check permissions
+        if link.permissions != "view_and_claim" {
+            return Err(AppError::Forbidden(
+                "this share link does not allow claiming items".into(),
+            ));
+        }
+
         // Verify item belongs to the share link owner
-        self.item_repo
+        let item = self
+            .item_repo
             .find_by_id(item_id, link.user_id)
             .await
             .map_err(AppError::Internal)?
             .ok_or_else(|| AppError::NotFound("item not found".into()))?;
+
+        // Check item is in scope (includes category check)
+        item_in_scope(&link, &item)?;
 
         let owner_id = self
             .item_repo

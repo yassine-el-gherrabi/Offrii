@@ -242,7 +242,7 @@ async fn shared_view_returns_user_username() {
 }
 
 #[tokio::test]
-async fn expired_link_returns_404() {
+async fn expired_link_returns_410() {
     let app = TestApp::new().await;
     let token = app.setup_user_token("alice@test.com", TEST_PASSWORD).await;
 
@@ -260,12 +260,12 @@ async fn expired_link_returns_404() {
     let (status, body) = app
         .get_json_no_auth(&format!("/shared/{share_token}"))
         .await;
-    assert_eq!(status, StatusCode::NOT_FOUND);
-    common::assert_error(&body, "NOT_FOUND");
+    assert_eq!(status, StatusCode::GONE);
+    common::assert_error(&body, "GONE");
 }
 
 #[tokio::test]
-async fn claim_expired_link_returns_404() {
+async fn claim_expired_link_returns_410() {
     let app = TestApp::new().await;
     let alice_token = app.setup_user_token("alice@test.com", TEST_PASSWORD).await;
     let bob_token = app.setup_user_token("bob@test.com", TEST_PASSWORD).await;
@@ -293,8 +293,8 @@ async fn claim_expired_link_returns_404() {
         )
         .await;
 
-    assert_eq!(status, StatusCode::NOT_FOUND);
-    common::assert_error(&body, "NOT_FOUND");
+    assert_eq!(status, StatusCode::GONE);
+    common::assert_error(&body, "GONE");
 }
 
 #[tokio::test]
@@ -775,6 +775,68 @@ async fn html_page_respects_scope() {
     let html = String::from_utf8(bytes).unwrap();
     assert!(html.contains("PS5"));
     assert!(!html.contains("Xbox"));
+}
+
+// ── Empty PATCH body test ────────────────────────────────────────────
+
+#[tokio::test]
+async fn empty_patch_body_returns_400() {
+    let app = TestApp::new().await;
+    let token = app.setup_user_token("alice@test.com", TEST_PASSWORD).await;
+
+    let (_, link_body) = app.post_with_auth("/share-links", &token).await;
+    let link_id = link_body["id"].as_str().unwrap();
+
+    let patch = serde_json::json!({});
+    let (status, body) = app
+        .patch_json_with_auth(&format!("/share-links/{link_id}"), &patch, &token)
+        .await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    common::assert_error(&body, "BAD_REQUEST");
+}
+
+// ── Unclaim permissions test ─────────────────────────────────────────
+
+#[tokio::test]
+async fn unclaim_view_only_link_returns_403() {
+    let app = TestApp::new().await;
+    let alice_token = app.setup_user_token("alice@test.com", TEST_PASSWORD).await;
+    let bob_token = app.setup_user_token("bob@test.com", TEST_PASSWORD).await;
+
+    let item = app
+        .create_item(&alice_token, &serde_json::json!({ "name": "PS5" }))
+        .await;
+    let item_id = item["id"].as_str().unwrap();
+
+    // Create a view_and_claim link first so Bob can claim
+    let (_, claim_link) = app.post_with_auth("/share-links", &alice_token).await;
+    let claim_token = claim_link["token"].as_str().unwrap();
+
+    // Bob claims via the view_and_claim link
+    let (status, _) = app
+        .post_with_auth(
+            &format!("/shared/{claim_token}/items/{item_id}/claim"),
+            &bob_token,
+        )
+        .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+
+    // Create a view_only link
+    let body = serde_json::json!({ "permissions": "view_only" });
+    let (_, view_link) = app
+        .post_json_with_auth("/share-links", &body, &alice_token)
+        .await;
+    let view_token = view_link["token"].as_str().unwrap();
+
+    // Bob tries to unclaim via the view_only link
+    let (status, resp) = app
+        .delete_with_auth(
+            &format!("/shared/{view_token}/items/{item_id}/claim"),
+            &bob_token,
+        )
+        .await;
+    assert_eq!(status, StatusCode::FORBIDDEN);
+    common::assert_error(&resp, "FORBIDDEN");
 }
 
 // ── Retrocompatibility: default shared view returns JSON via get_no_auth ──
