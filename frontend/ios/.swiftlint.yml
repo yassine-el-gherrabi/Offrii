@@ -2,6 +2,7 @@ excluded:
   - Offrii.xcodeproj
   - DerivedData
   - .build
+  - build
   - Package.swift
 
 disabled_rules:
