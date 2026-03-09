@@ -204,13 +204,14 @@ async fn migration_001_creates_users_table() {
     let mdb = MigrationDb::new().await;
 
     assert!(mdb.table_exists("users").await);
-    assert_eq!(mdb.column_count("users").await, 12);
+    assert_eq!(mdb.column_count("users").await, 13);
 
     // Column types & nullability
     mdb.assert_not_null("users", "id").await;
     mdb.assert_not_null("users", "email").await;
     mdb.assert_not_null("users", "password_hash").await;
     mdb.assert_nullable("users", "display_name").await;
+    mdb.assert_not_null("users", "username").await;
     mdb.assert_not_null("users", "reminder_freq").await;
     mdb.assert_not_null("users", "reminder_time").await;
     mdb.assert_not_null("users", "timezone").await;
@@ -239,8 +240,9 @@ async fn migration_001_creates_users_table() {
         "expected default 'weekly', got {default:?}"
     );
 
-    // UNIQUE on email
+    // UNIQUE on email and username
     assert!(mdb.unique_constraint_exists("users", &["email"]).await);
+    assert!(mdb.unique_constraint_exists("users", &["username"]).await);
 
     // Trigger
     assert!(mdb.trigger_exists("trg_users_updated_at").await);
@@ -515,7 +517,7 @@ async fn triggers_behave_correctly() {
 
     // -- setup: insert a user ------------------------------------------------
     let user_id: (sqlx::types::Uuid,) = sqlx::query_as(
-        "INSERT INTO users (email, password_hash) VALUES ('trigger@test.com', 'hash123')
+        "INSERT INTO users (email, password_hash, username) VALUES ('trigger@test.com', 'hash123', 'trigger_user')
          RETURNING id",
     )
     .fetch_one(&mdb.db)
@@ -649,7 +651,7 @@ async fn check_constraints_reject_invalid_data() {
 
     // Setup user
     let user_id: (sqlx::types::Uuid,) = sqlx::query_as(
-        "INSERT INTO users (email, password_hash) VALUES ('check@test.com', 'hash123')
+        "INSERT INTO users (email, password_hash, username) VALUES ('check@test.com', 'hash123', 'check_user')
          RETURNING id",
     )
     .fetch_one(&mdb.db)
@@ -659,8 +661,8 @@ async fn check_constraints_reject_invalid_data() {
 
     // -- users: invalid reminder_freq ----------------------------------------
     let result = sqlx::query(
-        "INSERT INTO users (email, password_hash, reminder_freq)
-         VALUES ('bad_freq@test.com', 'hash', 'hourly')",
+        "INSERT INTO users (email, password_hash, username, reminder_freq)
+         VALUES ('bad_freq@test.com', 'hash', 'badfreq_user', 'hourly')",
     )
     .execute(&mdb.db)
     .await;
@@ -717,7 +719,7 @@ async fn check_constraints_reject_invalid_data() {
     // The owner trigger already inserted (circle_id, uid) with role='owner',
     // so use a second user to test the CHECK constraint.
     let user2: (sqlx::types::Uuid,) = sqlx::query_as(
-        "INSERT INTO users (email, password_hash) VALUES ('check2@test.com', 'hash123')
+        "INSERT INTO users (email, password_hash, username) VALUES ('check2@test.com', 'hash123', 'check2_user')
          RETURNING id",
     )
     .fetch_one(&mdb.db)
