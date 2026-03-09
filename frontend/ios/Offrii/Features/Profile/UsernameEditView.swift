@@ -79,6 +79,6 @@ struct UsernameEditView: View {
     private func isValidUsername(_ s: String) -> Bool {
         guard s.count >= 3, s.count <= 30 else { return false }
         guard let first = s.first, first.isLowercase, first.isASCII else { return false }
-        return s.dropFirst().allSatisfy { ($0.isLowercase && $0.isASCII) || $0.isNumber || $0 == "_" }
+        return s.dropFirst().allSatisfy { ($0.isLowercase && $0.isASCII) || ($0.isASCII && $0.isNumber) || $0 == "_" }
     }
 }

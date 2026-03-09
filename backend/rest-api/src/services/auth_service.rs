@@ -136,7 +136,14 @@ impl traits::AuthService for PgAuthService {
                 .await
                 .map_err(|e| {
                     if is_unique_violation(&e) {
-                        AppError::Conflict("email already registered".into())
+                        let msg = format!("{e}");
+                        if msg.contains("users_username_unique") || msg.contains("username") {
+                            AppError::Internal(anyhow::anyhow!(
+                                "username collision during registration"
+                            ))
+                        } else {
+                            AppError::Conflict("email already registered".into())
+                        }
                     } else {
                         AppError::Internal(e)
                     }

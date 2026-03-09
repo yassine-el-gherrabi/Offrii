@@ -211,7 +211,7 @@ final class APIClient: Sendable {
             throw APIError.unauthorized("Token refresh failed")
         }
 
-        let refreshResponse = try decoder.decode(RefreshTokenResponse.self, from: data)
+        let refreshResponse = try decoder.decode(RefreshResponse.self, from: data)
         KeychainService.shared.accessToken = refreshResponse.tokens.accessToken
         KeychainService.shared.refreshToken = refreshResponse.tokens.refreshToken
     }
@@ -249,12 +249,3 @@ struct EmptyResponse: Decodable {
     init() {}
 }
 
-/// Mirrors the refresh endpoint response: `{ "tokens": { ... } }`.
-private struct RefreshTokenResponse: Decodable {
-    let tokens: TokenPairResponse
-
-    struct TokenPairResponse: Decodable {
-        let accessToken: String
-        let refreshToken: String
-    }
-}

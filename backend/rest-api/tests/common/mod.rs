@@ -162,6 +162,7 @@ impl TestApp {
         // Share link service (before user_svc which consumes user_repo/item_repo)
         let share_link_repo: Arc<dyn ShareLinkRepo> = Arc::new(PgShareLinkRepo::new(db.clone()));
         let share_link_svc: Arc<dyn ShareLinkService> = Arc::new(PgShareLinkService::new(
+            db.clone(),
             share_link_repo,
             item_repo.clone(),
             user_repo.clone(),

@@ -219,6 +219,112 @@ async fn share_link_requires_auth_for_protected_endpoints() {
 }
 
 #[tokio::test]
+async fn shared_view_returns_user_username() {
+    let app = TestApp::new().await;
+    let token = app.setup_user_token("alice@test.com", TEST_PASSWORD).await;
+
+    // Create share link
+    let (_, link_body) = app.post_with_auth("/share-links", &token).await;
+    let share_token = link_body["token"].as_str().unwrap();
+
+    let (status, body) = app.get_no_auth(&format!("/shared/{share_token}")).await;
+    assert_eq!(status, StatusCode::OK);
+    assert!(
+        body["user_username"].is_string(),
+        "expected user_username string, got {body}"
+    );
+}
+
+#[tokio::test]
+async fn expired_link_returns_404() {
+    let app = TestApp::new().await;
+    let token = app.setup_user_token("alice@test.com", TEST_PASSWORD).await;
+
+    // Create a share link via API
+    let (_, link_body) = app.post_with_auth("/share-links", &token).await;
+    let share_token = link_body["token"].as_str().unwrap();
+
+    // Manually set expires_at to the past via direct SQL
+    sqlx::query("UPDATE share_links SET expires_at = NOW() - INTERVAL '1 hour' WHERE token = $1")
+        .bind(share_token)
+        .execute(&app.db)
+        .await
+        .unwrap();
+
+    let (status, body) = app.get_no_auth(&format!("/shared/{share_token}")).await;
+    assert_eq!(status, StatusCode::NOT_FOUND);
+    common::assert_error(&body, "NOT_FOUND");
+}
+
+#[tokio::test]
+async fn claim_expired_link_returns_404() {
+    let app = TestApp::new().await;
+    let alice_token = app.setup_user_token("alice@test.com", TEST_PASSWORD).await;
+    let bob_token = app.setup_user_token("bob@test.com", TEST_PASSWORD).await;
+
+    // Alice creates item + share link
+    let item = app
+        .create_item(&alice_token, &serde_json::json!({ "name": "PS5" }))
+        .await;
+    let item_id = item["id"].as_str().unwrap();
+    let (_, link_body) = app.post_with_auth("/share-links", &alice_token).await;
+    let share_token = link_body["token"].as_str().unwrap();
+
+    // Expire the link
+    sqlx::query("UPDATE share_links SET expires_at = NOW() - INTERVAL '1 hour' WHERE token = $1")
+        .bind(share_token)
+        .execute(&app.db)
+        .await
+        .unwrap();
+
+    // Bob tries to claim
+    let (status, body) = app
+        .post_with_auth(
+            &format!("/shared/{share_token}/items/{item_id}/claim"),
+            &bob_token,
+        )
+        .await;
+
+    assert_eq!(status, StatusCode::NOT_FOUND);
+    common::assert_error(&body, "NOT_FOUND");
+}
+
+#[tokio::test]
+async fn double_claim_returns_409() {
+    let app = TestApp::new().await;
+    let alice_token = app.setup_user_token("alice@test.com", TEST_PASSWORD).await;
+    let bob_token = app.setup_user_token("bob@test.com", TEST_PASSWORD).await;
+    let carol_token = app.setup_user_token("carol@test.com", TEST_PASSWORD).await;
+
+    // Alice creates item + share link
+    let item = app
+        .create_item(&alice_token, &serde_json::json!({ "name": "PS5" }))
+        .await;
+    let item_id = item["id"].as_str().unwrap();
+    let (_, link_body) = app.post_with_auth("/share-links", &alice_token).await;
+    let share_token = link_body["token"].as_str().unwrap();
+
+    // Bob claims first
+    let (status, _) = app
+        .post_with_auth(
+            &format!("/shared/{share_token}/items/{item_id}/claim"),
+            &bob_token,
+        )
+        .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+
+    // Carol tries to claim the same item
+    let (status, body) = app
+        .post_with_auth(
+            &format!("/shared/{share_token}/items/{item_id}/claim"),
+            &carol_token,
+        )
+        .await;
+    assert_eq!(status, StatusCode::CONFLICT);
+    common::assert_error(&body, "CONFLICT");
+}
+
+#[tokio::test]
 async fn shared_view_does_not_show_deleted_items() {
     let app = TestApp::new().await;
     let token = app.setup_user_token("alice@test.com", TEST_PASSWORD).await;

@@ -46,6 +46,26 @@ struct ProfileView: View {
                     .frame(minHeight: 200)
 
                     VStack(spacing: OffriiTheme.spacingMD) {
+                        if let error = viewModel.loadError {
+                            HStack {
+                                Image(systemName: "exclamationmark.triangle.fill")
+                                    .foregroundColor(.orange)
+                                Text(error)
+                                    .font(OffriiTypography.subheadline)
+                                    .foregroundColor(OffriiTheme.text)
+                                Spacer()
+                                Button(NSLocalizedString("common.retry", comment: "")) {
+                                    Task { await viewModel.loadProfile() }
+                                }
+                                .font(OffriiTypography.subheadline)
+                                .foregroundColor(OffriiTheme.primary)
+                            }
+                            .padding(OffriiTheme.spacingMD)
+                            .background(Color.orange.opacity(0.1))
+                            .cornerRadius(8)
+                            .padding(.horizontal, OffriiTheme.spacingLG)
+                        }
+
                         // Reminders section
                         profileSection(
                             title: NSLocalizedString("profile.reminders", comment: ""),

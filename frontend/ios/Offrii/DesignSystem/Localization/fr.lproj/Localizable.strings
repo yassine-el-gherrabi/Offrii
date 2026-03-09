@@ -52,6 +52,7 @@
 "error.passwordMismatch" = "Les mots de passe ne correspondent pas";
 "error.usernameTaken" = "Ce nom d'utilisateur est déjà pris";
 "error.usernameInvalid" = "3-30 caractères, lettres minuscules, chiffres et _";
+"error.loadProfileFailed" = "Impossible de charger le profil";
 
 /* Onboarding */
 "onboarding.step1.title" = "Tes envies, au même endroit";

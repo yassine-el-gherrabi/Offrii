@@ -17,11 +17,10 @@ fn is_valid_username(s: &str) -> bool {
         return false;
     }
     let mut chars = s.chars();
-    let first = match chars.next() {
-        Some(c) if c.is_ascii_lowercase() => c,
+    match chars.next() {
+        Some(c) if c.is_ascii_lowercase() => {}
         _ => return false,
-    };
-    let _ = first;
+    }
     chars.all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '_')
 }
 

@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		B40000000000000000000001 /* KeychainAccess in Frameworks */ = {isa = PBXBuildFile; productRef = P10000000000000000000001 /* KeychainAccess */; };
 		B10000000000000000000001 /* OffriiApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000001 /* OffriiApp.swift */; };
 		B10000000000000000000002 /* AuthManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000002 /* AuthManager.swift */; };
 		B10000000000000000000003 /* KeychainService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000003 /* KeychainService.swift */; };
@@ -145,6 +146,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				B40000000000000000000001 /* KeychainAccess in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -433,6 +435,7 @@
 			);
 			name = Offrii;
 			packageProductDependencies = (
+				P10000000000000000000001 /* KeychainAccess */,
 			);
 			productName = Offrii;
 			productReference = A40000000000000000000001 /* Offrii.app */;
@@ -486,6 +489,7 @@
 			);
 			mainGroup = C00000000000000000000001;
 			packageReferences = (
+				R10000000000000000000001 /* XCRemoteSwiftPackageReference "KeychainAccess" */,
 			);
 			productRefGroup = C00000000000000000000004 /* Products */;
 			projectDirPath = "";
@@ -767,6 +771,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		R10000000000000000000001 /* XCRemoteSwiftPackageReference "KeychainAccess" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/kishikawakatsumi/KeychainAccess.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 4.2.2;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		P10000000000000000000001 /* KeychainAccess */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = R10000000000000000000001 /* XCRemoteSwiftPackageReference "KeychainAccess" */;
+			productName = KeychainAccess;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = E00000000000000000000005 /* Project object */;
 }
