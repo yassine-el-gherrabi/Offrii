@@ -6,14 +6,12 @@ final class AppRouterTests: XCTestCase {
 
     private var sut: AppRouter!
 
-    override func setUp() {
-        super.setUp()
+    override func setUp() async throws {
         sut = AppRouter()
     }
 
-    override func tearDown() {
+    override func tearDown() async throws {
         sut = nil
-        super.tearDown()
     }
 
     func testDetermineInitialScreen_notOnboarded_notAuth_showsOnboarding() {
