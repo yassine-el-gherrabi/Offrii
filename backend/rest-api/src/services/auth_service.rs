@@ -117,6 +117,13 @@ impl traits::AuthService for PgAuthService {
                 .map_err(|e| AppError::Internal(anyhow::anyhow!("spawn_blocking join error: {e}")))?
                 .map_err(AppError::Internal)?;
 
+        // Auto-generate username from display_name or email prefix
+        let base: &str = match display_name {
+            Some(name) => name,
+            None => email.split('@').next().unwrap_or("user"),
+        };
+        let username = generate_unique_username(base, &self.pool).await?;
+
         // Transaction: create user + copy categories + insert refresh token
         let mut tx = self
             .pool
@@ -124,15 +131,16 @@ impl traits::AuthService for PgAuthService {
             .await
             .map_err(|e| AppError::Internal(e.into()))?;
 
-        let user = user_repo::create_user(&mut *tx, &email, &password_hash, display_name)
-            .await
-            .map_err(|e| {
-                if is_unique_violation(&e) {
-                    AppError::Conflict("email already registered".into())
-                } else {
-                    AppError::Internal(e)
-                }
-            })?;
+        let user =
+            user_repo::create_user(&mut *tx, &email, &username, &password_hash, display_name)
+                .await
+                .map_err(|e| {
+                    if is_unique_violation(&e) {
+                        AppError::Conflict("email already registered".into())
+                    } else {
+                        AppError::Internal(e)
+                    }
+                })?;
 
         category_repo::copy_defaults_for_user(&mut *tx, user.id)
             .await
@@ -527,4 +535,65 @@ impl traits::AuthService for PgAuthService {
 
         Ok(())
     }
+}
+
+// ── Username helpers ──────────────────────────────────────────────────
+
+/// Slugify a string into lowercase alphanumeric characters only.
+fn slugify(input: &str) -> String {
+    input
+        .chars()
+        .filter_map(|c| {
+            if c.is_ascii_alphanumeric() {
+                Some(c.to_ascii_lowercase())
+            } else {
+                None
+            }
+        })
+        .collect()
+}
+
+/// Generate a username candidate: slugified base + '_' + 4 random hex chars.
+fn generate_username_candidate(base: &str) -> String {
+    let slug = slugify(base);
+
+    // Ensure slug starts with a letter; prepend 'u' if it starts with a digit or is empty
+    let slug = if slug.is_empty() || slug.starts_with(|c: char| c.is_ascii_digit()) {
+        format!("u{slug}")
+    } else {
+        slug
+    };
+
+    // Truncate to leave room for _xxxx suffix (5 chars)
+    let max_base_len = 25;
+    let truncated = if slug.len() > max_base_len {
+        &slug[..max_base_len]
+    } else {
+        &slug
+    };
+
+    let suffix: u32 = rand::random_range(0..0x10000);
+    format!("{truncated}_{suffix:04x}")
+}
+
+/// Generate a unique username, retrying up to 5 times if collisions occur.
+async fn generate_unique_username(base: &str, pool: &PgPool) -> Result<String, AppError> {
+    for _ in 0..5 {
+        let candidate = generate_username_candidate(base);
+        let taken: bool =
+            sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM users WHERE username = $1)")
+                .bind(&candidate)
+                .fetch_one(pool)
+                .await
+                .map_err(|e| AppError::Internal(e.into()))?;
+
+        if !taken {
+            return Ok(candidate);
+        }
+    }
+
+    // Extremely unlikely: 5 collisions in a row
+    Err(AppError::Internal(anyhow::anyhow!(
+        "failed to generate unique username after 5 attempts"
+    )))
 }

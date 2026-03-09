@@ -1,0 +1,4 @@
+// Dev environment configuration
+API_BASE_URL = https:/$()/nylah-archetypic-unfrequently.ngrok-free.dev
+PRODUCT_BUNDLE_IDENTIFIER = com.offrii.app.dev
+PRODUCT_NAME = Offrii Dev

@@ -1,0 +1,143 @@
+/* Tabs */
+"tab.envies" = "Envies";
+"tab.cercles" = "Cercles";
+"tab.entraide" = "Entraide";
+"tab.profil" = "Profil";
+
+/* Auth */
+"auth.login" = "Se connecter";
+"auth.register" = "Commencer";
+"auth.logout" = "Se déconnecter";
+"auth.email" = "Email";
+"auth.password" = "Mot de passe";
+"auth.displayName" = "Prénom ou pseudo";
+"auth.forgotPassword" = "Mot de passe oublié ?";
+"auth.alreadyAccount" = "Déjà un compte ?";
+"auth.noAccount" = "Pas de compte ?";
+"auth.signIn" = "Se connecter";
+"auth.signUp" = "S'inscrire";
+"auth.resetPassword" = "Réinitialiser";
+"auth.enterEmail" = "Saisissez votre email";
+"auth.enterCode" = "Code de vérification";
+"auth.newPassword" = "Nouveau mot de passe";
+"auth.codeSent" = "Un code a été envoyé à votre email";
+"auth.step" = "Étape %d sur %d";
+"auth.loginSubtitle" = "Retrouvez vos envies";
+"auth.registerSubtitle" = "Créez votre liste de souhaits";
+"auth.displayNamePlaceholder" = "Ex : Marie";
+"auth.passwordPlaceholder" = "8 caractères minimum";
+"auth.confirmPassword" = "Confirmer le mot de passe";
+"auth.confirmPasswordPlaceholder" = "Retapez votre mot de passe";
+"auth.forgotSubtitle" = "Entrez votre email pour recevoir un code";
+"auth.codeSentTo" = "Code envoyé à";
+"auth.newPasswordSubtitle" = "Choisissez un nouveau mot de passe";
+"auth.continueWithGoogle" = "Google";
+"auth.continueWithFacebook" = "Facebook";
+"auth.continueWithApple" = "Continuer avec Apple";
+"auth.or" = "ou";
+
+/* Errors */
+"error.emailTaken" = "Cet email est déjà utilisé";
+"error.invalidCredentials" = "Email ou mot de passe incorrect";
+"error.invalidCode" = "Le code doit contenir 6 chiffres";
+"error.invalidURL" = "URL invalide";
+"error.serverError" = "Erreur serveur, réessayez plus tard";
+"error.networkError" = "Connexion impossible";
+"error.decodingError" = "Erreur de données";
+"error.emailRequired" = "L'email est requis";
+"error.passwordRequired" = "Le mot de passe est requis";
+"error.passwordTooShort" = "Le mot de passe doit contenir au moins 8 caractères";
+"error.invalidEmail" = "Format d'email invalide";
+"error.rateLimited" = "Trop de tentatives, réessayez plus tard";
+"error.passwordMismatch" = "Les mots de passe ne correspondent pas";
+"error.usernameTaken" = "Ce nom d'utilisateur est déjà pris";
+"error.usernameInvalid" = "3-30 caractères, lettres minuscules, chiffres et _";
+
+/* Onboarding */
+"onboarding.step1.title" = "Tes envies, au même endroit";
+"onboarding.step1.subtitle" = "Crée ta liste de souhaits et garde une trace de tout ce qui te fait envie.";
+"onboarding.step2.title" = "Partage avec tes proches";
+"onboarding.step2.subtitle" = "Envoie ta liste à ta famille et tes amis pour qu'ils sachent quoi t'offrir.";
+"onboarding.step3.title" = "Offre à ceux qui en ont besoin";
+"onboarding.step3.subtitle" = "Découvre les envies des autres et fais plaisir autour de toi.";
+"onboarding.skip" = "Passer";
+"onboarding.continue" = "Continuer";
+"onboarding.start" = "Commencer";
+"onboarding.alreadyAccount" = "Déjà un compte ? Se connecter";
+
+/* Wishlist */
+"wishlist.title" = "Mes Envies";
+"wishlist.empty" = "Aucune envie pour le moment";
+"wishlist.emptySubtitle" = "Appuyez sur + pour ajouter votre première envie";
+"wishlist.active" = "En cours";
+"wishlist.purchased" = "Offerts";
+"wishlist.allCategories" = "Toutes";
+"wishlist.quickAdd.title" = "Ajouter une envie";
+"wishlist.quickAdd.placeholder" = "Nom de l'envie";
+"wishlist.quickAdd.button" = "Ajouter";
+"wishlist.delete.title" = "Supprimer";
+"wishlist.delete.message" = "Êtes-vous sûr de vouloir supprimer cette envie ?";
+"wishlist.delete.confirm" = "Supprimer";
+"wishlist.cancel" = "Annuler";
+"wishlist.claimed" = "Quelqu'un s'en occupe !";
+"wishlist.markReceived" = "Marquer reçu";
+"wishlist.share" = "Partager";
+"wishlist.edit" = "Modifier";
+"wishlist.sort.date" = "Date";
+"wishlist.sort.priority" = "Priorité";
+"wishlist.sort.name" = "Nom";
+"wishlist.reserved" = "Réservé";
+
+/* Item */
+"item.name" = "Nom";
+"item.description" = "Description";
+"item.url" = "Lien";
+"item.estimatedPrice" = "Prix estimé";
+"item.priority" = "Priorité";
+"item.category" = "Catégorie";
+"item.save" = "Enregistrer";
+
+/* Priority */
+"priority.low" = "Bof";
+"priority.medium" = "Envie";
+"priority.high" = "Très envie";
+
+/* Profile */
+"profile.title" = "Profil";
+"profile.reminders" = "Rappels";
+"profile.reminderFrequency" = "Fréquence";
+"profile.reminderTime" = "Heure";
+"profile.shares" = "Partages";
+"profile.data" = "Données";
+"profile.exportData" = "Exporter mes données";
+"profile.deleteAccount" = "Supprimer mon compte";
+"profile.deleteAccount.title" = "Supprimer le compte";
+"profile.deleteAccount.message" = "Cette action est irréversible. Toutes vos données seront supprimées.";
+"profile.deleteAccount.confirm" = "Tapez SUPPRIMER pour confirmer";
+"profile.deleteAccount.placeholder" = "SUPPRIMER";
+"profile.legal" = "Mentions légales";
+"profile.privacy" = "Politique de confidentialité";
+"profile.username" = "Nom d'utilisateur";
+"profile.editUsername" = "Modifier le nom d'utilisateur";
+"profile.usernamePlaceholder" = "ex : marie_dupont";
+"profile.account" = "Compte";
+"profile.replayTutorial" = "Revoir le tutoriel";
+
+/* Reminder frequency */
+"reminder.never" = "Jamais";
+"reminder.daily" = "Quotidien";
+"reminder.weekly" = "Hebdomadaire";
+"reminder.monthly" = "Mensuel";
+
+/* Placeholder */
+"comingSoon.title" = "Bientôt disponible";
+"comingSoon.subtitle" = "Cette fonctionnalité arrive prochainement.";
+
+/* Common */
+"common.save" = "Enregistrer";
+"common.cancel" = "Annuler";
+"common.delete" = "Supprimer";
+"common.edit" = "Modifier";
+"common.loading" = "Chargement...";
+"common.retry" = "Réessayer";
+"common.ok" = "OK";

@@ -25,15 +25,17 @@ if git diff --cached --name-only | grep -q '^backend/'; then
     echo "==> Backend checks passed"
 fi
 
-# Frontend checks (only if frontend files are staged)
-if git diff --cached --name-only | grep -q '^frontend/'; then
-    echo "==> Frontend pre-commit checks"
+# iOS frontend checks (only if frontend/ios files are staged)
+if git diff --cached --name-only | grep -q '^frontend/ios/'; then
+    echo "==> iOS frontend pre-commit checks"
     (
-        cd frontend
-        echo "  expo lint"
-        npx expo lint
-        echo "  tsc --noEmit"
-        npx tsc --noEmit
+        cd frontend/ios
+        if command -v swiftlint &> /dev/null; then
+            echo "  swiftlint"
+            swiftlint lint --quiet --config .swiftlint.yml
+        else
+            echo "  swiftlint not found, skipping"
+        fi
     )
-    echo "==> Frontend checks passed"
+    echo "==> iOS frontend checks passed"
 fi

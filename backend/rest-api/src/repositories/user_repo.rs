@@ -8,7 +8,7 @@ use crate::models::User;
 use crate::traits;
 
 /// Shared column list for all user queries (avoids duplication).
-const USER_COLS: &str = "id, email, password_hash, display_name, \
+const USER_COLS: &str = "id, email, username, password_hash, display_name, \
                          reminder_freq, reminder_time, timezone, \
                          utc_reminder_hour, locale, token_version, \
                          created_at, updated_at";
@@ -30,10 +30,11 @@ impl traits::UserRepo for PgUserRepo {
     async fn create_user(
         &self,
         email: &str,
+        username: &str,
         password_hash: &str,
         display_name: Option<&str>,
     ) -> Result<User> {
-        create_user(&self.pool, email, password_hash, display_name).await
+        create_user(&self.pool, email, username, password_hash, display_name).await
     }
 
     async fn find_by_email(&self, email: &str) -> Result<Option<User>> {
@@ -44,10 +45,23 @@ impl traits::UserRepo for PgUserRepo {
         find_by_id(&self.pool, id).await
     }
 
+    async fn find_by_username(&self, username: &str) -> Result<Option<User>> {
+        find_by_username(&self.pool, username).await
+    }
+
+    async fn is_username_taken(
+        &self,
+        username: &str,
+        exclude_user_id: Option<Uuid>,
+    ) -> Result<bool> {
+        is_username_taken(&self.pool, username, exclude_user_id).await
+    }
+
     async fn update_profile(
         &self,
         id: Uuid,
         display_name: Option<&str>,
+        username: Option<&str>,
         reminder_freq: Option<&str>,
         reminder_time: Option<NaiveTime>,
         timezone: Option<&str>,
@@ -58,6 +72,7 @@ impl traits::UserRepo for PgUserRepo {
             &self.pool,
             id,
             display_name,
+            username,
             reminder_freq,
             reminder_time,
             timezone,
@@ -89,22 +104,63 @@ impl traits::UserRepo for PgUserRepo {
 pub(crate) async fn create_user(
     exec: impl PgExecutor<'_>,
     email: &str,
+    username: &str,
     password_hash: &str,
     display_name: Option<&str>,
 ) -> Result<User> {
     let sql = format!(
-        "INSERT INTO users (email, password_hash, display_name) \
-         VALUES ($1, $2, $3) \
+        "INSERT INTO users (email, username, password_hash, display_name) \
+         VALUES ($1, $2, $3, $4) \
          RETURNING {USER_COLS}"
     );
     let user = sqlx::query_as::<_, User>(&sql)
         .bind(email)
+        .bind(username)
         .bind(password_hash)
         .bind(display_name)
         .fetch_one(exec)
         .await?;
 
     Ok(user)
+}
+
+pub(crate) async fn find_by_username(
+    exec: impl PgExecutor<'_>,
+    username: &str,
+) -> Result<Option<User>> {
+    let sql = format!("SELECT {USER_COLS} FROM users WHERE username = $1");
+    let user = sqlx::query_as::<_, User>(&sql)
+        .bind(username)
+        .fetch_optional(exec)
+        .await?;
+
+    Ok(user)
+}
+
+pub(crate) async fn is_username_taken(
+    exec: impl PgExecutor<'_>,
+    username: &str,
+    exclude_user_id: Option<Uuid>,
+) -> Result<bool> {
+    let exists: bool = match exclude_user_id {
+        Some(uid) => {
+            sqlx::query_scalar(
+                "SELECT EXISTS(SELECT 1 FROM users WHERE username = $1 AND id != $2)",
+            )
+            .bind(username)
+            .bind(uid)
+            .fetch_one(exec)
+            .await?
+        }
+        None => {
+            sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM users WHERE username = $1)")
+                .bind(username)
+                .fetch_one(exec)
+                .await?
+        }
+    };
+
+    Ok(exists)
 }
 
 pub(crate) async fn find_by_email(exec: impl PgExecutor<'_>, email: &str) -> Result<Option<User>> {
@@ -132,6 +188,7 @@ pub(crate) async fn update_profile(
     exec: impl PgExecutor<'_>,
     id: Uuid,
     display_name: Option<&str>,
+    username: Option<&str>,
     reminder_freq: Option<&str>,
     reminder_time: Option<NaiveTime>,
     timezone: Option<&str>,
@@ -140,6 +197,7 @@ pub(crate) async fn update_profile(
 ) -> Result<Option<User>> {
     // If nothing to update, short-circuit with a SELECT instead of invalid SQL
     if display_name.is_none()
+        && username.is_none()
         && reminder_freq.is_none()
         && reminder_time.is_none()
         && timezone.is_none()
@@ -154,6 +212,10 @@ pub(crate) async fn update_profile(
 
     if let Some(v) = display_name {
         separated.push("display_name = ");
+        separated.push_bind_unseparated(v);
+    }
+    if let Some(v) = username {
+        separated.push("username = ");
         separated.push_bind_unseparated(v);
     }
     if let Some(v) = reminder_freq {

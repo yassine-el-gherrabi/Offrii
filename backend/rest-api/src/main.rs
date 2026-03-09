@@ -13,11 +13,12 @@ use rest_api::AppState;
 use rest_api::config::app::Config;
 use rest_api::config::database::{create_pg_pool, create_redis_client};
 use rest_api::handlers::health::{health_check, health_live};
-use rest_api::handlers::{auth, categories, items, push_tokens, users};
+use rest_api::handlers::{auth, categories, items, push_tokens, share_links, shared, users};
 use rest_api::repositories::category_repo::PgCategoryRepo;
 use rest_api::repositories::item_repo::PgItemRepo;
 use rest_api::repositories::push_token_repo::PgPushTokenRepo;
 use rest_api::repositories::refresh_token_repo::PgRefreshTokenRepo;
+use rest_api::repositories::share_link_repo::PgShareLinkRepo;
 use rest_api::repositories::user_repo::PgUserRepo;
 use rest_api::services::apns_notification_service::ApnsNotificationService;
 use rest_api::services::auth_service::PgAuthService;
@@ -27,11 +28,12 @@ use rest_api::services::health_check::PgHealthCheck;
 use rest_api::services::item_service::PgItemService;
 use rest_api::services::push_token_service::PgPushTokenService;
 use rest_api::services::reminder_service::PgReminderService;
+use rest_api::services::share_link_service::PgShareLinkService;
 use rest_api::services::user_service::PgUserService;
 use rest_api::traits::{
     AuthService, CategoryRepo, CategoryService, EmailService, HealthCheck, ItemRepo, ItemService,
     NotificationService, PushTokenRepo, PushTokenService, RefreshTokenRepo, ReminderService,
-    UserRepo, UserService,
+    ShareLinkRepo, ShareLinkService, UserRepo, UserService,
 };
 use rest_api::utils::jwt::JwtKeys;
 
@@ -99,6 +101,15 @@ async fn main() -> anyhow::Result<()> {
     let push_token_svc: Arc<dyn PushTokenService> =
         Arc::new(PgPushTokenService::new(push_token_repo.clone()));
 
+    // Share link service
+    let share_link_repo: Arc<dyn ShareLinkRepo> = Arc::new(PgShareLinkRepo::new(db.clone()));
+    let share_link_svc: Arc<dyn ShareLinkService> = Arc::new(PgShareLinkService::new(
+        share_link_repo,
+        item_repo.clone(),
+        user_repo.clone(),
+        config.app_base_url,
+    ));
+
     // APNs notification service
     let apns_key = std::fs::read(&config.apns_key_path)
         .map_err(|e| anyhow::anyhow!("Failed to read APNs key at {}: {e}", config.apns_key_path))?;
@@ -131,6 +142,7 @@ async fn main() -> anyhow::Result<()> {
         categories,
         users: user_svc,
         push_tokens: push_token_svc,
+        share_links: share_link_svc,
     };
 
     let app = Router::new()
@@ -142,6 +154,8 @@ async fn main() -> anyhow::Result<()> {
         .nest("/categories", categories::router())
         .nest("/users", users::router())
         .nest("/push-tokens", push_tokens::router())
+        .nest("/share-links", share_links::router())
+        .nest("/shared", shared::router())
         .layer(TraceLayer::new_for_http())
         .with_state(state);
 

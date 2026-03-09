@@ -1,0 +1,72 @@
+excluded:
+  - Offrii.xcodeproj
+  - DerivedData
+  - .build
+  - Package.swift
+
+disabled_rules:
+  - trailing_comma
+  - todo
+  - opening_brace
+  - multiple_closures_with_trailing_closure
+
+opt_in_rules:
+  - empty_count
+  - empty_string
+  - fatal_error_message
+  - first_where
+  - last_where
+  - contains_over_first_not_nil
+  - sorted_first_last
+  - redundant_nil_coalescing
+  - closure_spacing
+  - overridden_super_call
+  - unused_declaration
+  - private_over_fileprivate
+
+line_length:
+  warning: 150
+  error: 200
+  ignores_comments: true
+  ignores_urls: true
+
+type_body_length:
+  warning: 400
+  error: 600
+
+file_length:
+  warning: 500
+  error: 800
+
+function_body_length:
+  warning: 60
+  error: 100
+
+cyclomatic_complexity:
+  warning: 15
+  error: 25
+
+type_name:
+  min_length: 3
+  max_length: 50
+  allowed_symbols: ["_"]
+
+identifier_name:
+  min_length:
+    warning: 2
+    error: 1
+  max_length:
+    warning: 50
+    error: 60
+  excluded:
+    - id
+    - x
+    - y
+    - i
+    - n
+
+nesting:
+  type_level: 3
+  function_level: 3
+
+reporter: xcode

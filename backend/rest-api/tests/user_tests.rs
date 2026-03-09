@@ -114,6 +114,106 @@ async fn delete_account_cascades() {
     assert_eq!(status, StatusCode::UNAUTHORIZED);
 }
 
+// ── Username tests ──────────────────────────────────────────────────
+
+#[tokio::test]
+async fn get_profile_includes_username() {
+    let app = TestApp::new().await;
+    let token = app
+        .setup_user_token("user@example.com", TEST_PASSWORD)
+        .await;
+
+    let (status, body) = app.get_with_auth("/users/me", &token).await;
+
+    assert_eq!(status, StatusCode::OK);
+    assert!(body["username"].is_string());
+    let username = body["username"].as_str().unwrap();
+    assert!(username.len() >= 3);
+}
+
+#[tokio::test]
+async fn update_username_valid() {
+    let app = TestApp::new().await;
+    let token = app
+        .setup_user_token("user@example.com", TEST_PASSWORD)
+        .await;
+
+    let patch_body = serde_json::json!({ "username": "newname_123" });
+    let (status, body) = app
+        .patch_json_with_auth("/users/me", &patch_body, &token)
+        .await;
+
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(body["username"], "newname_123");
+}
+
+#[tokio::test]
+async fn update_username_already_taken_409() {
+    let app = TestApp::new().await;
+    let token_a = app
+        .setup_user_token("alice@example.com", TEST_PASSWORD)
+        .await;
+    let token_b = app.setup_user_token("bob@example.com", TEST_PASSWORD).await;
+
+    // Set Alice's username
+    let patch = serde_json::json!({ "username": "uniquename" });
+    let (status, _) = app
+        .patch_json_with_auth("/users/me", &patch, &token_a)
+        .await;
+    assert_eq!(status, StatusCode::OK);
+
+    // Bob tries the same username
+    let (status, body) = app
+        .patch_json_with_auth("/users/me", &patch, &token_b)
+        .await;
+    assert_eq!(status, StatusCode::CONFLICT);
+    assert_error(&body, "CONFLICT");
+}
+
+#[tokio::test]
+async fn update_username_invalid_format_400() {
+    let app = TestApp::new().await;
+    let token = app
+        .setup_user_token("user@example.com", TEST_PASSWORD)
+        .await;
+
+    // Starts with digit
+    let patch = serde_json::json!({ "username": "1invalid" });
+    let (status, body) = app.patch_json_with_auth("/users/me", &patch, &token).await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    assert_error(&body, "BAD_REQUEST");
+
+    // Too short
+    let patch = serde_json::json!({ "username": "ab" });
+    let (status, body) = app.patch_json_with_auth("/users/me", &patch, &token).await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    assert_error(&body, "BAD_REQUEST");
+
+    // Contains uppercase
+    let patch = serde_json::json!({ "username": "HasUpper" });
+    let (status, body) = app.patch_json_with_auth("/users/me", &patch, &token).await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    assert_error(&body, "BAD_REQUEST");
+}
+
+#[tokio::test]
+async fn update_username_same_user_keeps_own_username() {
+    let app = TestApp::new().await;
+    let token = app
+        .setup_user_token("user@example.com", TEST_PASSWORD)
+        .await;
+
+    // Set username
+    let patch = serde_json::json!({ "username": "myname" });
+    let (status, _) = app.patch_json_with_auth("/users/me", &patch, &token).await;
+    assert_eq!(status, StatusCode::OK);
+
+    // Re-submit same username — should succeed (own username is excluded from uniqueness check)
+    let (status, body) = app.patch_json_with_auth("/users/me", &patch, &token).await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(body["username"], "myname");
+}
+
 // ── Auth guard tests (401) ──────────────────────────────────────────
 
 #[tokio::test]

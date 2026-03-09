@@ -94,6 +94,7 @@ pub struct RefreshResponse {
 pub struct UserResponse {
     pub id: Uuid,
     pub email: String,
+    pub username: String,
     pub display_name: Option<String>,
     pub created_at: DateTime<Utc>,
 }
@@ -103,6 +104,7 @@ impl From<&User> for UserResponse {
         Self {
             id: u.id,
             email: u.email.clone(),
+            username: u.username.clone(),
             display_name: u.display_name.clone(),
             created_at: u.created_at,
         }

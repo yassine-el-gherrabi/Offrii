@@ -9,19 +9,21 @@ yarn-debug.log*
 yarn-error.log*
 .npm
 
-# Expo / React Native
-.expo/
-dist/
-*.jks
+# Xcode
+*.xcuserdata/
+xcuserdata/
+DerivedData/
+*.xcworkspace/xcuserdata/
+*.xcscmblueprint
+*.xccheckout
+build/
+
+# iOS signing (keep generic, specific keys still ignored below)
 *.p8
 *.p12
 *.key
 *.mobileprovision
-*.orig.*
-web-build/
-ios/
-android/
-expo-env.d.ts
+*.ipa
 
 # Environment
 .env

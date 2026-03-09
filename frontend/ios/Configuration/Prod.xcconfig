@@ -1,0 +1,4 @@
+// Production environment configuration
+API_BASE_URL = https:/$()/api.offrii.com
+PRODUCT_BUNDLE_IDENTIFIER = com.offrii.app
+PRODUCT_NAME = Offrii
