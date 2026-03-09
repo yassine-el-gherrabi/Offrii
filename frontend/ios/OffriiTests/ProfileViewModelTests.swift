@@ -6,14 +6,12 @@ final class ProfileViewModelTests: XCTestCase {
 
     private var sut: ProfileViewModel!
 
-    override func setUp() {
-        super.setUp()
+    override func setUp() async throws {
         sut = ProfileViewModel()
     }
 
-    override func tearDown() {
+    override func tearDown() async throws {
         sut = nil
-        super.tearDown()
     }
 
     // MARK: - Initials

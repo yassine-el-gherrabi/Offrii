@@ -6,14 +6,12 @@ final class WishlistViewModelTests: XCTestCase {
 
     private var sut: WishlistViewModel!
 
-    override func setUp() {
-        super.setUp()
+    override func setUp() async throws {
         sut = WishlistViewModel()
     }
 
-    override func tearDown() {
+    override func tearDown() async throws {
         sut = nil
-        super.tearDown()
     }
 
     // MARK: - Has More Pages
