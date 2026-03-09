@@ -6,14 +6,12 @@ final class AuthViewModelTests: XCTestCase {
 
     private var sut: AuthViewModel!
 
-    override func setUp() {
-        super.setUp()
+    override func setUp() async throws {
         sut = AuthViewModel()
     }
 
-    override func tearDown() {
+    override func tearDown() async throws {
         sut = nil
-        super.tearDown()
     }
 
     // MARK: - Email Validation
