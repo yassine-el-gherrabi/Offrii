@@ -73,7 +73,9 @@ struct MainTabView: View {
                         WishlistView()
                     }
                 case .cercles:
-                    ComingSoonView(icon: "person.2.fill", featureName: "Cercles")
+                    NavigationStack {
+                        CirclesListView()
+                    }
                 case .entraide:
                     ComingSoonView(icon: "hand.raised.fill", featureName: "Entraide")
                 case .profil:

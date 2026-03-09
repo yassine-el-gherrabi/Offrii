@@ -7,8 +7,9 @@ use validator::Validate;
 
 use crate::AppState;
 use crate::dto::circles::{
-    CircleDetailResponse, CircleResponse, CreateCircleRequest, CreateInviteRequest, FeedQuery,
-    FeedResponse, InviteResponse, JoinResponse, ShareItemRequest, UpdateCircleRequest,
+    AddMemberRequest, CircleDetailResponse, CircleResponse, CreateCircleRequest,
+    CreateInviteRequest, FeedQuery, FeedResponse, InviteResponse, JoinResponse, ShareItemRequest,
+    UpdateCircleRequest,
 };
 use crate::errors::AppError;
 use crate::middleware::AuthUser;
@@ -28,6 +29,7 @@ pub fn router() -> Router<AppState> {
         .route("/direct/{user_id}", post(create_direct_circle))
         .route("/{id}/invite", post(create_invite))
         .route("/join/{token}", post(join_via_invite))
+        .route("/{id}/members", post(add_member))
         .route("/{id}/members/{uid}", delete(remove_member))
         .route("/{id}/invites", get(list_invites))
         .route("/{id}/invites/{iid}", delete(revoke_invite))
@@ -105,6 +107,20 @@ async fn create_direct_circle(
         .create_direct_circle(auth_user.user_id, user_id)
         .await?;
     Ok((StatusCode::CREATED, Json(response)))
+}
+
+#[tracing::instrument(skip(state))]
+async fn add_member(
+    State(state): State<AppState>,
+    auth_user: AuthUser,
+    Path(id): Path<Uuid>,
+    Json(req): Json<AddMemberRequest>,
+) -> Result<StatusCode, AppError> {
+    state
+        .circles
+        .add_member_by_id(id, req.user_id, auth_user.user_id)
+        .await?;
+    Ok(StatusCode::CREATED)
 }
 
 #[tracing::instrument(skip(state))]

@@ -134,6 +134,61 @@
 "comingSoon.title" = "Coming soon";
 "comingSoon.subtitle" = "This feature is coming soon.";
 
+/* Circles */
+"circles.title" = "Circles";
+"circles.create" = "Create a circle";
+"circles.shareTo" = "Share with...";
+"circles.empty" = "No circles yet.\nCreate one or add a friend to get started.";
+"circles.unnamed" = "Unnamed circle";
+"circles.memberCount" = "%d members";
+"circles.createName" = "Circle name";
+"circles.createNamePlaceholder" = "E.g. Family, Colleagues...";
+"circles.createButton" = "Create";
+"circles.detail.items" = "Items";
+"circles.detail.activity" = "Activity";
+"circles.detail.noItems" = "No items shared yet";
+"circles.detail.noActivity" = "No activity yet";
+"circles.detail.myWishes" = "My wishes";
+"circles.detail.handleIt" = "I'll handle it";
+"circles.detail.claimed" = "Claimed";
+"circles.detail.someone" = "Someone";
+"circles.event.itemShared" = "%@ shared %@";
+"circles.event.itemClaimed" = "%@ is handling %@";
+"circles.event.itemClaimedAnti" = "Someone is handling %@";
+"circles.event.itemUnclaimed" = "%@ unclaimed %@";
+"circles.event.memberJoined" = "%@ joined the circle";
+"circles.event.memberLeft" = "%@ left the circle";
+"circles.invite.title" = "Invite friends";
+"circles.invite.noFriends" = "No friends to invite.\nAdd friends first!";
+"circles.invite.alreadyMember" = "Already member";
+"circles.invite.addCount" = "Add %d friend(s)";
+"circles.members.title" = "Members";
+"circles.members.you" = "(you)";
+"circles.members.owner" = "Owner";
+"circles.members.leave" = "Leave circle";
+"circles.members.leaveConfirm.title" = "Leave circle?";
+"circles.members.leaveConfirm.message" = "You will no longer see items shared in this circle.";
+
+/* Friends */
+"friends.title" = "My friends";
+"friends.empty" = "No friends yet";
+"friends.count" = "%d friend(s)";
+"friends.pendingSection" = "Pending requests (%d)";
+"friends.accept" = "Accept";
+"friends.decline" = "Decline";
+"friends.add.title" = "Add a friend";
+"friends.add.searchPlaceholder" = "Search by username...";
+"friends.add.noResults" = "No users found";
+"friends.add.send" = "Add";
+"friends.add.sent" = "Sent";
+"friends.pending.title" = "Friend requests";
+"friends.pending.empty" = "No pending requests";
+"friends.sentSection" = "Sent requests (%d)";
+"friends.sent.cancel" = "Cancel";
+
+/* Profile - Friends */
+"profile.friends" = "Friends";
+
 /* Common */
 "common.save" = "Save";
 "common.cancel" = "Cancel";

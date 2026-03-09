@@ -9,6 +9,9 @@ use crate::dto::circles::{
     CircleDetailResponse, CircleItemResponse, CircleResponse, FeedResponse, InviteResponse,
     JoinResponse,
 };
+use crate::dto::friends::{
+    FriendRequestResponse, FriendResponse, SentFriendRequestResponse, UserSearchResult,
+};
 use crate::dto::items::{ItemResponse, ItemsListResponse, ListItemsQuery};
 use crate::dto::push_tokens::PushTokenResponse;
 use crate::dto::share_links::{
@@ -17,8 +20,8 @@ use crate::dto::share_links::{
 use crate::dto::users::{UserDataExport, UserProfileResponse};
 use crate::errors::AppError;
 use crate::models::{
-    Category, Circle, CircleEvent, CircleInvite, CircleItem, CircleMember, Item, PushToken,
-    RefreshToken, ShareLink, User,
+    Category, Circle, CircleEvent, CircleInvite, CircleItem, CircleMember, FriendRequest,
+    Friendship, Item, PushToken, RefreshToken, ShareLink, User,
 };
 
 // ── Repository traits ────────────────────────────────────────────────
@@ -316,6 +319,78 @@ pub trait PushTokenService: Send + Sync {
     async fn unregister_token(&self, user_id: Uuid, token: &str) -> Result<(), AppError>;
 }
 
+// ── Friend traits ──────────────────────────────────────────────────
+
+#[async_trait]
+pub trait FriendRepo: Send + Sync {
+    async fn create_friend_request(
+        &self,
+        from_user_id: Uuid,
+        to_user_id: Uuid,
+    ) -> Result<FriendRequest>;
+
+    async fn find_pending_requests(&self, to_user_id: Uuid) -> Result<Vec<FriendRequest>>;
+
+    async fn find_request_by_id(&self, id: Uuid) -> Result<Option<FriendRequest>>;
+
+    async fn update_request_status(&self, id: Uuid, status: &str) -> Result<bool>;
+
+    async fn create_friendship(&self, user_a_id: Uuid, user_b_id: Uuid) -> Result<Friendship>;
+
+    async fn delete_friendship(&self, user_a_id: Uuid, user_b_id: Uuid) -> Result<bool>;
+
+    async fn list_friends(&self, user_id: Uuid) -> Result<Vec<Uuid>>;
+
+    async fn are_friends(&self, user_a_id: Uuid, user_b_id: Uuid) -> Result<bool>;
+
+    async fn find_sent_requests(&self, from_user_id: Uuid) -> Result<Vec<FriendRequest>>;
+
+    async fn find_pending_between(
+        &self,
+        from_user_id: Uuid,
+        to_user_id: Uuid,
+    ) -> Result<Option<FriendRequest>>;
+}
+
+#[async_trait]
+pub trait FriendService: Send + Sync {
+    async fn search_users(
+        &self,
+        query: &str,
+        requester_id: Uuid,
+    ) -> Result<Vec<UserSearchResult>, AppError>;
+
+    async fn send_request(
+        &self,
+        from_user_id: Uuid,
+        to_username: &str,
+    ) -> Result<FriendRequestResponse, AppError>;
+
+    async fn list_pending_requests(
+        &self,
+        user_id: Uuid,
+    ) -> Result<Vec<FriendRequestResponse>, AppError>;
+
+    async fn accept_request(
+        &self,
+        request_id: Uuid,
+        user_id: Uuid,
+    ) -> Result<FriendResponse, AppError>;
+
+    async fn decline_request(&self, request_id: Uuid, user_id: Uuid) -> Result<(), AppError>;
+
+    async fn list_friends(&self, user_id: Uuid) -> Result<Vec<FriendResponse>, AppError>;
+
+    async fn list_sent_requests(
+        &self,
+        user_id: Uuid,
+    ) -> Result<Vec<SentFriendRequestResponse>, AppError>;
+
+    async fn cancel_request(&self, request_id: Uuid, user_id: Uuid) -> Result<(), AppError>;
+
+    async fn remove_friend(&self, user_id: Uuid, friend_id: Uuid) -> Result<(), AppError>;
+}
+
 // ── Circle traits ──────────────────────────────────────────────────
 
 #[async_trait]
@@ -493,6 +568,13 @@ pub trait CircleService: Send + Sync {
         page: Option<i64>,
         per_page: Option<i64>,
     ) -> Result<FeedResponse, AppError>;
+
+    async fn add_member_by_id(
+        &self,
+        circle_id: Uuid,
+        user_id: Uuid,
+        requester_id: Uuid,
+    ) -> Result<(), AppError>;
 
     async fn on_item_claimed(&self, item_id: Uuid, claimer_id: Uuid) -> Result<(), AppError>;
 
