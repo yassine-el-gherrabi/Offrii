@@ -75,6 +75,20 @@ jobs:
         working-directory: frontend/ios
     steps:
       - uses: actions/checkout@v4
+      - name: Select Xcode 16.4
+        run: sudo xcode-select -s /Applications/Xcode_16.4.app/Contents/Developer
+      - name: Ensure iOS simulator runtime
+        working-directory: .
+        run: |
+          if xcrun simctl list runtimes | grep -q "iOS.*18"; then
+            echo "iOS simulator runtime already installed"
+          else
+            echo "Downloading iOS simulator runtime..."
+            xcodebuild -downloadPlatform iOS
+          fi
+      - name: List available simulators
+        working-directory: .
+        run: xcrun simctl list devices available iOS
       - name: Cache DerivedData
         uses: actions/cache@v4
         with:
