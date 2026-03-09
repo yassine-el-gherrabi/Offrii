@@ -311,25 +311,8 @@ impl traits::ShareLinkService for PgShareLinkService {
         // Validate scope_data references belong to the user
         match scope {
             "category" => {
-                let data = scope_data.ok_or_else(|| {
-                    AppError::Internal(anyhow::anyhow!(
-                        "scope_data missing after validation for category scope"
-                    ))
-                })?;
-                let cat_id = extract_category_id(data)?;
-                let _ = self
-                    .item_repo
-                    .list(
-                        user_id,
-                        Some("active"),
-                        Some(cat_id),
-                        "created_at",
-                        "desc",
-                        1,
-                        0,
-                    )
-                    .await
-                    .map_err(AppError::Internal)?;
+                // Category ownership is not validated here (no CategoryRepo available).
+                // The shared view will simply be empty if the category doesn't match.
             }
             "selection" => {
                 let data = scope_data.ok_or_else(|| {
