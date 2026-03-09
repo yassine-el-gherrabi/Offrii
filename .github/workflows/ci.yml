@@ -75,8 +75,6 @@ jobs:
         working-directory: frontend/ios
     steps:
       - uses: actions/checkout@v4
-      - name: Select Xcode
-        run: sudo xcode-select -s /Applications/Xcode_16.2.app/Contents/Developer
       - name: Cache DerivedData
         uses: actions/cache@v4
         with:
