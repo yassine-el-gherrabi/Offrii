@@ -1283,11 +1283,11 @@ async fn get_feed_returns_events() {
         .get_with_auth(&format!("/circles/{circle_id}/feed"), &alice)
         .await;
     assert_eq!(status, StatusCode::OK);
-    assert_eq!(feed["total"].as_i64().unwrap(), 2); // member_joined + item_shared
-    assert_eq!(feed["page"], 1);
-    assert_eq!(feed["per_page"], 20);
+    assert_eq!(feed["pagination"]["total"].as_i64().unwrap(), 2); // member_joined + item_shared
+    assert_eq!(feed["pagination"]["page"], 1);
+    assert_eq!(feed["pagination"]["limit"], 20);
 
-    let events = feed["events"].as_array().unwrap();
+    let events = feed["data"].as_array().unwrap();
     assert_eq!(events.len(), 2);
 
     let event_types: Vec<&str> = events
@@ -1322,10 +1322,10 @@ async fn feed_empty_circle_returns_empty() {
         .get_with_auth(&format!("/circles/{circle_id}/feed"), &alice)
         .await;
     assert_eq!(status, StatusCode::OK);
-    assert_eq!(feed["total"], 0);
-    assert_eq!(feed["events"].as_array().unwrap().len(), 0);
-    assert_eq!(feed["page"], 1);
-    assert_eq!(feed["per_page"], 20);
+    assert_eq!(feed["pagination"]["total"], 0);
+    assert_eq!(feed["data"].as_array().unwrap().len(), 0);
+    assert_eq!(feed["pagination"]["page"], 1);
+    assert_eq!(feed["pagination"]["limit"], 20);
 }
 
 #[tokio::test]
@@ -1345,38 +1345,32 @@ async fn feed_pagination() {
             .await;
     }
 
-    // Page 1 with per_page=2
+    // Page 1 with limit=2
     let (status, feed) = app
-        .get_with_auth(
-            &format!("/circles/{circle_id}/feed?page=1&per_page=2"),
-            &alice,
-        )
+        .get_with_auth(&format!("/circles/{circle_id}/feed?page=1&limit=2"), &alice)
         .await;
     assert_eq!(status, StatusCode::OK);
-    assert_eq!(feed["total"], 3);
-    assert_eq!(feed["page"], 1);
-    assert_eq!(feed["per_page"], 2);
-    assert_eq!(feed["events"].as_array().unwrap().len(), 2);
+    assert_eq!(feed["pagination"]["total"], 3);
+    assert_eq!(feed["pagination"]["page"], 1);
+    assert_eq!(feed["pagination"]["limit"], 2);
+    assert_eq!(feed["data"].as_array().unwrap().len(), 2);
 
     // Page 2
     let (_, feed2) = app
-        .get_with_auth(
-            &format!("/circles/{circle_id}/feed?page=2&per_page=2"),
-            &alice,
-        )
+        .get_with_auth(&format!("/circles/{circle_id}/feed?page=2&limit=2"), &alice)
         .await;
-    assert_eq!(feed2["total"], 3);
-    assert_eq!(feed2["page"], 2);
-    assert_eq!(feed2["events"].as_array().unwrap().len(), 1);
+    assert_eq!(feed2["pagination"]["total"], 3);
+    assert_eq!(feed2["pagination"]["page"], 2);
+    assert_eq!(feed2["data"].as_array().unwrap().len(), 1);
 
     // Page beyond total
     let (_, feed3) = app
         .get_with_auth(
-            &format!("/circles/{circle_id}/feed?page=10&per_page=2"),
+            &format!("/circles/{circle_id}/feed?page=10&limit=2"),
             &alice,
         )
         .await;
-    assert_eq!(feed3["events"].as_array().unwrap().len(), 0);
+    assert_eq!(feed3["data"].as_array().unwrap().len(), 0);
 }
 
 #[tokio::test]
@@ -1427,7 +1421,7 @@ async fn feed_anti_spoiler_hides_claimer_from_item_owner() {
         .await;
     assert_eq!(status, StatusCode::OK);
 
-    let events = feed["events"].as_array().unwrap();
+    let events = feed["data"].as_array().unwrap();
     let claim_event = events
         .iter()
         .find(|e| e["event_type"] == "item_claimed")
@@ -1444,7 +1438,7 @@ async fn feed_anti_spoiler_hides_claimer_from_item_owner() {
     let (_, bob_feed) = app
         .get_with_auth(&format!("/circles/{circle_id}/feed"), &bob_token)
         .await;
-    let bob_events = bob_feed["events"].as_array().unwrap();
+    let bob_events = bob_feed["data"].as_array().unwrap();
     let bob_claim_event = bob_events
         .iter()
         .find(|e| e["event_type"] == "item_claimed")
@@ -1558,7 +1552,7 @@ async fn claim_creates_item_claimed_event_in_feed() {
     let (_, feed) = app
         .get_with_auth(&format!("/circles/{circle_id}/feed"), &bob)
         .await;
-    let events = feed["events"].as_array().unwrap();
+    let events = feed["data"].as_array().unwrap();
     let event_types: Vec<&str> = events
         .iter()
         .map(|e| e["event_type"].as_str().unwrap())
@@ -1606,7 +1600,7 @@ async fn unclaim_creates_item_unclaimed_event_in_feed() {
     let (_, feed) = app
         .get_with_auth(&format!("/circles/{circle_id}/feed"), &bob)
         .await;
-    let events = feed["events"].as_array().unwrap();
+    let events = feed["data"].as_array().unwrap();
     let event_types: Vec<&str> = events
         .iter()
         .map(|e| e["event_type"].as_str().unwrap())
@@ -1667,7 +1661,7 @@ async fn claim_item_in_multiple_circles_creates_events_in_all() {
         .await;
 
     let has_claim_event = |feed: &serde_json::Value| -> bool {
-        feed["events"]
+        feed["data"]
             .as_array()
             .unwrap()
             .iter()
@@ -1734,7 +1728,7 @@ async fn claim_event_has_correct_target_item_name() {
     let (_, feed) = app
         .get_with_auth(&format!("/circles/{circle_id}/feed"), &bob)
         .await;
-    let claim_event = feed["events"]
+    let claim_event = feed["data"]
         .as_array()
         .unwrap()
         .iter()

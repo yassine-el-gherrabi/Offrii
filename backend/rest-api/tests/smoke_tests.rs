@@ -222,8 +222,8 @@ async fn smoke_full_items_crud_flow() {
         .unwrap();
     assert_eq!(resp.status(), 200);
     let list: serde_json::Value = resp.json().await.unwrap();
-    assert_eq!(list["total"], 0);
-    assert_eq!(list["items"].as_array().unwrap().len(), 0);
+    assert_eq!(list["pagination"]["total"], 0);
+    assert_eq!(list["data"].as_array().unwrap().len(), 0);
 
     // ── Step 2: Create item (quick capture) ─────────────────────
     let resp = app
@@ -337,8 +337,8 @@ async fn smoke_full_items_crud_flow() {
         .unwrap();
     assert_eq!(resp.status(), 200);
     let list: serde_json::Value = resp.json().await.unwrap();
-    assert_eq!(list["total"], 1);
-    assert_eq!(list["items"][0]["id"], item_id);
+    assert_eq!(list["pagination"]["total"], 1);
+    assert_eq!(list["data"][0]["id"], item_id);
 
     // ── Step 7: Delete item (soft-delete) ───────────────────────
     let resp = app

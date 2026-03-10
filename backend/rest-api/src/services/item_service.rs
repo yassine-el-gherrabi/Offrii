@@ -7,7 +7,8 @@ use rust_decimal::Decimal;
 use sqlx::PgPool;
 use uuid::Uuid;
 
-use crate::dto::items::{ItemResponse, ItemsListResponse, ListItemsQuery};
+use crate::dto::items::{ItemResponse, ListItemsQuery};
+use crate::dto::pagination::{PaginatedResponse, normalize_pagination};
 use crate::errors::AppError;
 use crate::traits;
 
@@ -16,10 +17,6 @@ const ALLOWED_SORTS: &[&str] = &["created_at", "priority", "name"];
 
 /// Allowed order directions.
 const ALLOWED_ORDERS: &[&str] = &["asc", "desc"];
-
-/// Default and max per_page.
-const DEFAULT_PER_PAGE: i64 = 50;
-const MAX_PER_PAGE: i64 = 100;
 
 /// Maximum page number to prevent huge OFFSET scans.
 const MAX_PAGE: i64 = 1000;
@@ -127,14 +124,14 @@ impl PgItemService {
 }
 
 /// Hash the query parameters to create a unique cache key suffix.
-fn hash_query(query: &ListItemsQuery, sort: &str, order: &str, page: i64, per_page: i64) -> u64 {
+fn hash_query(query: &ListItemsQuery, sort: &str, order: &str, page: i64, limit: i64) -> u64 {
     let mut hasher = DefaultHasher::new();
     query.status.hash(&mut hasher);
     query.category_id.hash(&mut hasher);
     sort.hash(&mut hasher);
     order.hash(&mut hasher);
     page.hash(&mut hasher);
-    per_page.hash(&mut hasher);
+    limit.hash(&mut hasher);
     hasher.finish()
 }
 
@@ -205,7 +202,7 @@ impl traits::ItemService for PgItemService {
         &self,
         user_id: Uuid,
         query: &ListItemsQuery,
-    ) -> Result<ItemsListResponse, AppError> {
+    ) -> Result<PaginatedResponse<ItemResponse>, AppError> {
         // Validate & normalize query params
         let sort = query.sort.as_deref().unwrap_or("created_at");
         if !ALLOWED_SORTS.contains(&sort) {
@@ -222,17 +219,12 @@ impl traits::ItemService for PgItemService {
             )));
         }
 
-        let per_page = query
-            .per_page
-            .unwrap_or(DEFAULT_PER_PAGE)
-            .clamp(1, MAX_PER_PAGE);
-        let page = query.page.unwrap_or(1).max(1);
+        let (page, limit, offset) = normalize_pagination(query.page, query.limit);
         if page > MAX_PAGE {
             return Err(AppError::BadRequest(format!(
                 "page must be at most {MAX_PAGE}"
             )));
         }
-        let offset = (page - 1) * per_page;
 
         if let Some(ref s) = query.status
             && s != "active"
@@ -246,11 +238,11 @@ impl traits::ItemService for PgItemService {
         // Try Redis cache (fail-open). Treat missing version key as 0 so the
         // cache can be hit even before the first mutation.
         let ver = self.get_version(user_id).await.unwrap_or(0);
-        let query_hash = hash_query(query, sort, order, page, per_page);
+        let query_hash = hash_query(query, sort, order, page, limit);
 
         let cache_key = format!("items:{user_id}:v{ver}:{query_hash}");
         if let Some(cached) = self.get_cached_list(&cache_key).await
-            && let Ok(resp) = serde_json::from_str::<ItemsListResponse>(&cached)
+            && let Ok(resp) = serde_json::from_str::<PaginatedResponse<ItemResponse>>(&cached)
         {
             return Ok(resp);
         }
@@ -266,7 +258,7 @@ impl traits::ItemService for PgItemService {
                         query.category_id,
                         sort,
                         order,
-                        per_page,
+                        limit,
                         offset,
                     )
                     .await
@@ -280,12 +272,12 @@ impl traits::ItemService for PgItemService {
             },
         )?;
 
-        let response = ItemsListResponse {
-            items: items.into_iter().map(ItemResponse::from).collect(),
+        let response = PaginatedResponse::new(
+            items.into_iter().map(ItemResponse::from).collect(),
             total,
             page,
-            per_page,
-        };
+            limit,
+        );
 
         // Cache the result (fail-open) — reuse the same cache_key from the read path
         if let Ok(serialized) = serde_json::to_string(&response) {

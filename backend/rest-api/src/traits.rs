@@ -6,13 +6,13 @@ use uuid::Uuid;
 use crate::dto::auth::{AuthResponse, RefreshResponse};
 use crate::dto::categories::CategoryResponse;
 use crate::dto::circles::{
-    CircleDetailResponse, CircleItemResponse, CircleResponse, FeedResponse, InviteResponse,
-    JoinResponse,
+    CircleDetailResponse, CircleItemResponse, CircleResponse, InviteResponse, JoinResponse,
 };
 use crate::dto::friends::{
     FriendRequestResponse, FriendResponse, SentFriendRequestResponse, UserSearchResult,
 };
-use crate::dto::items::{ItemResponse, ItemsListResponse, ListItemsQuery};
+use crate::dto::items::{ItemResponse, ListItemsQuery};
+use crate::dto::pagination::PaginatedResponse;
 use crate::dto::push_tokens::PushTokenResponse;
 use crate::dto::share_links::{
     ShareLinkListItem, ShareLinkResponse, SharedViewResponse, UpdateShareLinkRequest,
@@ -252,7 +252,7 @@ pub trait ItemService: Send + Sync {
         &self,
         user_id: Uuid,
         query: &ListItemsQuery,
-    ) -> Result<ItemsListResponse, AppError>;
+    ) -> Result<PaginatedResponse<ItemResponse>, AppError>;
 
     async fn update_item(
         &self,
@@ -572,9 +572,10 @@ pub trait CircleService: Send + Sync {
         &self,
         circle_id: Uuid,
         user_id: Uuid,
-        page: Option<i64>,
-        per_page: Option<i64>,
-    ) -> Result<FeedResponse, AppError>;
+        page: i64,
+        limit: i64,
+        offset: i64,
+    ) -> Result<PaginatedResponse<crate::dto::circles::CircleEventResponse>, AppError>;
 
     async fn add_member_by_id(
         &self,
@@ -830,9 +831,13 @@ pub trait CommunityWishService: Send + Sync {
         &self,
         caller_id: Option<Uuid>,
         category: Option<&str>,
+        page: i64,
         limit: i64,
         offset: i64,
-    ) -> Result<crate::dto::community_wishes::WishListResponse, crate::errors::AppError>;
+    ) -> Result<
+        PaginatedResponse<crate::dto::community_wishes::WishResponse>,
+        crate::errors::AppError,
+    >;
 
     async fn get_wish(
         &self,
@@ -898,9 +903,13 @@ pub trait CommunityWishService: Send + Sync {
 
     async fn admin_list_flagged(
         &self,
+        page: i64,
         limit: i64,
         offset: i64,
-    ) -> Result<crate::dto::community_wishes::AdminWishListResponse, crate::errors::AppError>;
+    ) -> Result<
+        PaginatedResponse<crate::dto::community_wishes::AdminWishResponse>,
+        crate::errors::AppError,
+    >;
 
     async fn admin_approve(&self, wish_id: Uuid) -> Result<(), crate::errors::AppError>;
 
@@ -920,7 +929,11 @@ pub trait WishMessageService: Send + Sync {
         &self,
         wish_id: Uuid,
         user_id: Uuid,
+        page: i64,
         limit: i64,
         offset: i64,
-    ) -> Result<crate::dto::wish_messages::MessageListResponse, crate::errors::AppError>;
+    ) -> Result<
+        PaginatedResponse<crate::dto::wish_messages::MessageResponse>,
+        crate::errors::AppError,
+    >;
 }

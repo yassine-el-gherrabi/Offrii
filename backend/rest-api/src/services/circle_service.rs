@@ -9,8 +9,9 @@ use uuid::Uuid;
 
 use crate::dto::circles::{
     CircleDetailResponse, CircleEventResponse, CircleItemResponse, CircleMemberResponse,
-    CircleResponse, ClaimedByInfo, FeedResponse, InviteResponse, JoinResponse,
+    CircleResponse, ClaimedByInfo, InviteResponse, JoinResponse,
 };
+use crate::dto::pagination::PaginatedResponse;
 use crate::errors::AppError;
 use crate::repositories::{circle_event_repo, circle_invite_repo, circle_member_repo};
 use crate::traits::{self, NotificationRequest};
@@ -926,18 +927,15 @@ impl traits::CircleService for PgCircleService {
         &self,
         circle_id: Uuid,
         user_id: Uuid,
-        page: Option<i64>,
-        per_page: Option<i64>,
-    ) -> Result<FeedResponse, AppError> {
+        page: i64,
+        limit: i64,
+        offset: i64,
+    ) -> Result<PaginatedResponse<CircleEventResponse>, AppError> {
         self.require_membership(circle_id, user_id).await?;
-
-        let page = page.unwrap_or(1).max(1);
-        let per_page = per_page.unwrap_or(20).clamp(1, 100);
-        let offset = (page - 1) * per_page;
 
         let events = self
             .circle_event_repo
-            .list_by_circle(circle_id, per_page, offset)
+            .list_by_circle(circle_id, limit, offset)
             .await
             .map_err(AppError::Internal)?;
 
@@ -1009,11 +1007,6 @@ impl traits::CircleService for PgCircleService {
             })
             .collect();
 
-        Ok(FeedResponse {
-            events: event_responses,
-            total,
-            page,
-            per_page,
-        })
+        Ok(PaginatedResponse::new(event_responses, total, page, limit))
     }
 }

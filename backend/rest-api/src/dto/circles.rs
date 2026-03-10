@@ -36,7 +36,7 @@ pub struct AddMemberRequest {
 #[derive(Debug, Deserialize)]
 pub struct FeedQuery {
     pub page: Option<i64>,
-    pub per_page: Option<i64>,
+    pub limit: Option<i64>,
 }
 
 // ── Response DTOs ────────────────────────────────────────────────────
@@ -114,14 +114,6 @@ pub struct CircleEventResponse {
     pub target_user_id: Option<Uuid>,
     pub target_username: Option<String>,
     pub created_at: DateTime<Utc>,
-}
-
-#[derive(Debug, Clone, Serialize)]
-pub struct FeedResponse {
-    pub events: Vec<CircleEventResponse>,
-    pub total: i64,
-    pub page: i64,
-    pub per_page: i64,
 }
 
 #[derive(Debug, Clone, Serialize)]

@@ -456,8 +456,8 @@ async fn list_wishes_no_auth_returns_open_200() {
 
     let (status, body) = app.get_no_auth("/community/wishes").await;
     assert_eq!(status, StatusCode::OK);
-    assert_eq!(body["wishes"].as_array().unwrap().len(), 1);
-    assert_eq!(body["total"].as_i64(), Some(1));
+    assert_eq!(body["data"].as_array().unwrap().len(), 1);
+    assert_eq!(body["pagination"]["total"].as_i64(), Some(1));
 }
 
 #[tokio::test]
@@ -469,14 +469,14 @@ async fn list_wishes_with_auth_200() {
     let viewer_token = setup_aged_user(&app, "viewer@test.com").await;
     let (status, body) = app.get_with_auth("/community/wishes", &viewer_token).await;
     assert_eq!(status, StatusCode::OK);
-    let wish = &body["wishes"].as_array().unwrap()[0];
+    let wish = &body["data"].as_array().unwrap()[0];
     assert_eq!(wish["is_mine"].as_bool(), Some(false));
     assert_eq!(wish["is_matched_by_me"].as_bool(), Some(false));
 
     // Owner sees is_mine=true
     let (status, body) = app.get_with_auth("/community/wishes", &owner_token).await;
     assert_eq!(status, StatusCode::OK);
-    let wish = &body["wishes"].as_array().unwrap()[0];
+    let wish = &body["data"].as_array().unwrap()[0];
     assert_eq!(wish["is_mine"].as_bool(), Some(true));
 }
 
@@ -485,8 +485,8 @@ async fn list_wishes_empty_200() {
     let app = TestApp::new().await;
     let (status, body) = app.get_no_auth("/community/wishes").await;
     assert_eq!(status, StatusCode::OK);
-    assert_eq!(body["wishes"].as_array().unwrap().len(), 0);
-    assert_eq!(body["total"].as_i64(), Some(0));
+    assert_eq!(body["data"].as_array().unwrap().len(), 0);
+    assert_eq!(body["pagination"]["total"].as_i64(), Some(0));
 }
 
 #[tokio::test]
@@ -514,9 +514,9 @@ async fn list_wishes_filter_by_category_200() {
 
     let (status, body) = app.get_no_auth("/community/wishes?category=clothing").await;
     assert_eq!(status, StatusCode::OK);
-    assert_eq!(body["total"].as_i64(), Some(1));
+    assert_eq!(body["pagination"]["total"].as_i64(), Some(1));
     assert_eq!(
-        body["wishes"].as_array().unwrap()[0]["category"].as_str(),
+        body["data"].as_array().unwrap()[0]["category"].as_str(),
         Some("clothing")
     );
 }
@@ -542,17 +542,23 @@ async fn list_wishes_pagination_200() {
         wait_for_wish_status(&app, wid, "open").await;
     }
 
-    // Page 1: limit=2, offset=0
-    let (status, body) = app.get_no_auth("/community/wishes?limit=2&offset=0").await;
+    // Page 1: limit=2, page=1
+    let (status, body) = app.get_no_auth("/community/wishes?limit=2&page=1").await;
     assert_eq!(status, StatusCode::OK);
-    assert_eq!(body["wishes"].as_array().unwrap().len(), 2);
-    assert_eq!(body["total"].as_i64(), Some(3));
+    assert_eq!(body["data"].as_array().unwrap().len(), 2);
+    assert_eq!(body["pagination"]["total"].as_i64(), Some(3));
+    assert_eq!(body["pagination"]["page"].as_i64(), Some(1));
+    assert_eq!(body["pagination"]["limit"].as_i64(), Some(2));
+    assert_eq!(body["pagination"]["total_pages"].as_i64(), Some(2));
+    assert_eq!(body["pagination"]["has_more"].as_bool(), Some(true));
 
-    // Page 2: limit=2, offset=2
-    let (status, body) = app.get_no_auth("/community/wishes?limit=2&offset=2").await;
+    // Page 2: limit=2, page=2
+    let (status, body) = app.get_no_auth("/community/wishes?limit=2&page=2").await;
     assert_eq!(status, StatusCode::OK);
-    assert_eq!(body["wishes"].as_array().unwrap().len(), 1);
-    assert_eq!(body["total"].as_i64(), Some(3));
+    assert_eq!(body["data"].as_array().unwrap().len(), 1);
+    assert_eq!(body["pagination"]["total"].as_i64(), Some(3));
+    assert_eq!(body["pagination"]["page"].as_i64(), Some(2));
+    assert_eq!(body["pagination"]["has_more"].as_bool(), Some(false));
 }
 
 #[tokio::test]
@@ -562,7 +568,7 @@ async fn list_wishes_invalid_limit_400() {
     assert_eq!(status, StatusCode::BAD_REQUEST);
     assert_error(&resp, "BAD_REQUEST");
 
-    let (status, resp) = app.get_no_auth("/community/wishes?limit=51").await;
+    let (status, resp) = app.get_no_auth("/community/wishes?limit=101").await;
     assert_eq!(status, StatusCode::BAD_REQUEST);
     assert_error(&resp, "BAD_REQUEST");
 }
@@ -586,7 +592,7 @@ async fn list_wishes_anonymous_hides_display_name() {
 
     let (status, body) = app.get_no_auth("/community/wishes").await;
     assert_eq!(status, StatusCode::OK);
-    let wish = &body["wishes"].as_array().unwrap()[0];
+    let wish = &body["data"].as_array().unwrap()[0];
     assert!(
         wish["display_name"].is_null(),
         "display_name should be null for anonymous wishes"
@@ -615,7 +621,7 @@ async fn list_wishes_excludes_non_open() {
 
     let (status, body) = app.get_no_auth("/community/wishes").await;
     assert_eq!(status, StatusCode::OK);
-    assert_eq!(body["wishes"].as_array().unwrap().len(), 0);
+    assert_eq!(body["data"].as_array().unwrap().len(), 0);
 }
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -1939,7 +1945,7 @@ async fn admin_list_pending_returns_flagged_and_review_200() {
         .get_with_auth("/admin/wishes/pending", &admin_token)
         .await;
     assert_eq!(status, StatusCode::OK);
-    let wishes = body["wishes"].as_array().unwrap();
+    let wishes = body["data"].as_array().unwrap();
     assert_eq!(wishes.len(), 2);
     let statuses: Vec<&str> = wishes
         .iter()
@@ -1947,7 +1953,7 @@ async fn admin_list_pending_returns_flagged_and_review_200() {
         .collect();
     assert!(statuses.contains(&"flagged"));
     assert!(statuses.contains(&"review"));
-    assert!(body["total"].as_i64().unwrap() >= 2);
+    assert!(body["pagination"]["total"].as_i64().unwrap() >= 2);
 }
 
 #[tokio::test]
@@ -1960,8 +1966,8 @@ async fn admin_list_pending_empty_200() {
         .get_with_auth("/admin/wishes/pending", &admin_token)
         .await;
     assert_eq!(status, StatusCode::OK);
-    assert_eq!(body["wishes"].as_array().unwrap().len(), 0);
-    assert_eq!(body["total"].as_i64().unwrap(), 0);
+    assert_eq!(body["data"].as_array().unwrap().len(), 0);
+    assert_eq!(body["pagination"]["total"].as_i64().unwrap(), 0);
 }
 
 #[tokio::test]
@@ -2252,7 +2258,7 @@ async fn list_wishes_cache_invalidated_after_create() {
 
     // List → 0 wishes (possibly cached)
     let (_, body) = app.get_no_auth("/community/wishes").await;
-    assert_eq!(body["wishes"].as_array().unwrap().len(), 0);
+    assert_eq!(body["data"].as_array().unwrap().len(), 0);
 
     // Create a wish
     let token = setup_aged_user(&app, "owner@test.com").await;
@@ -2261,7 +2267,7 @@ async fn list_wishes_cache_invalidated_after_create() {
 
     // List again → should see the wish (cache was invalidated)
     let (_, body) = app.get_no_auth("/community/wishes").await;
-    assert_eq!(body["wishes"].as_array().unwrap().len(), 1);
+    assert_eq!(body["data"].as_array().unwrap().len(), 1);
 }
 
 #[tokio::test]
@@ -2272,7 +2278,7 @@ async fn list_wishes_cache_invalidated_after_close() {
 
     // List → 1 wish
     let (_, body) = app.get_no_auth("/community/wishes").await;
-    assert_eq!(body["wishes"].as_array().unwrap().len(), 1);
+    assert_eq!(body["data"].as_array().unwrap().len(), 1);
 
     // Close it
     app.post_with_auth(&format!("/community/wishes/{wish_id}/close"), &token)
@@ -2280,7 +2286,7 @@ async fn list_wishes_cache_invalidated_after_close() {
 
     // List again → 0 wishes
     let (_, body) = app.get_no_auth("/community/wishes").await;
-    assert_eq!(body["wishes"].as_array().unwrap().len(), 0);
+    assert_eq!(body["data"].as_array().unwrap().len(), 0);
 }
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -2409,7 +2415,7 @@ async fn list_wishes_includes_image_and_links() {
     // List endpoint should include the fields
     let (status, body) = app.get_no_auth("/community/wishes").await;
     assert_eq!(status, StatusCode::OK);
-    let wishes = body["wishes"].as_array().unwrap();
+    let wishes = body["data"].as_array().unwrap();
     assert_eq!(wishes.len(), 1);
     assert_eq!(
         wishes[0]["image_url"].as_str(),
@@ -2560,7 +2566,7 @@ async fn admin_list_pending_includes_image_url_and_links() {
 
     let (status, resp) = app.get_with_auth("/admin/wishes/pending", &token).await;
     assert_eq!(status, StatusCode::OK);
-    let wishes = resp["wishes"].as_array().unwrap();
+    let wishes = resp["data"].as_array().unwrap();
     assert_eq!(wishes.len(), 1);
     assert_eq!(
         wishes[0]["image_url"].as_str(),

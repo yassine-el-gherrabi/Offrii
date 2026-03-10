@@ -5,6 +5,7 @@ pub mod community_wishes;
 pub mod friends;
 pub mod health;
 pub mod items;
+pub mod pagination;
 pub mod push_tokens;
 pub mod share_links;
 pub mod users;
