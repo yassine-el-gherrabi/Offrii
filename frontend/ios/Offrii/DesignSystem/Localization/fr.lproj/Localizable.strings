@@ -189,6 +189,85 @@
 /* Profile - Friends */
 "profile.friends" = "Amis";
 
+/* Entraide */
+"entraide.title" = "Entraide";
+"entraide.subtitle" = "Des gestes simples, des impacts réels";
+"entraide.empty" = "Aucun souhait pour le moment";
+"entraide.emptySubtitle" = "Soyez le premier à publier un souhait";
+"entraide.anonymous" = "Anonyme";
+"entraide.offer" = "Je veux offrir";
+"entraide.fab.publish" = "Publier";
+
+/* Entraide - Catégories */
+"entraide.category.all" = "Tous";
+"entraide.category.education" = "Éducation";
+"entraide.category.clothing" = "Vêtements";
+"entraide.category.health" = "Santé";
+"entraide.category.religion" = "Religion";
+"entraide.category.home" = "Maison";
+"entraide.category.children" = "Enfants";
+"entraide.category.other" = "Autre";
+
+/* Entraide - Statuts */
+"entraide.status.open" = "Ouvert";
+"entraide.status.matched" = "En cours...";
+"entraide.status.fulfilled" = "Offert !";
+"entraide.status.closed" = "Fermé";
+"entraide.status.pending" = "En attente";
+"entraide.status.review" = "En révision";
+"entraide.status.flagged" = "Signalé";
+"entraide.status.rejected" = "Rejeté";
+
+/* Entraide - Création */
+"entraide.create.title" = "Publier un souhait";
+"entraide.create.titleLabel" = "Titre";
+"entraide.create.titlePlaceholder" = "De quoi avez-vous besoin ?";
+"entraide.create.descriptionLabel" = "Description (optionnel)";
+"entraide.create.categoryLabel" = "Catégorie";
+"entraide.create.anonymous" = "Publier anonymement";
+"entraide.create.anonymousHint" = "Votre nom ne sera pas visible";
+"entraide.create.imageUrlLabel" = "Lien image (optionnel)";
+"entraide.create.linksLabel" = "Liens (optionnel)";
+"entraide.create.addLink" = "Ajouter un lien";
+"entraide.create.submit" = "Publier";
+
+/* Entraide - Détail */
+"entraide.detail.matchedBy" = "Pris en charge par %@";
+"entraide.detail.alreadyMatched" = "Quelqu'un s'en occupe déjà";
+"entraide.detail.fulfilled" = "Ce souhait a été offert !";
+"entraide.detail.fulfilledThanks" = "Offert ! Merci pour votre générosité";
+
+/* Entraide - Actions */
+"entraide.action.close" = "Fermer le souhait";
+"entraide.action.confirm" = "Confirmer la réception";
+"entraide.action.reject" = "Rejeter l'offre";
+"entraide.action.withdraw" = "Se retirer";
+"entraide.action.messages" = "Messages";
+"entraide.action.offerSuccess" = "Merci pour votre générosité !";
+"entraide.action.withdrawSuccess" = "Vous vous êtes retiré";
+"entraide.action.confirmSuccess" = "Souhait confirmé ! Merci";
+
+/* Entraide - Messages */
+"entraide.messages.placeholder" = "Votre message...";
+
+/* Entraide - Signalement */
+"entraide.report.title" = "Signaler ce souhait";
+"entraide.report.subtitle" = "Choisissez la raison du signalement";
+"entraide.report.submit" = "Envoyer le signalement";
+"entraide.report.inappropriate" = "Inapproprié";
+"entraide.report.spam" = "Spam";
+"entraide.report.scam" = "Arnaque";
+"entraide.report.other" = "Autre";
+
+/* Entraide - Mes souhaits */
+"entraide.myWishes.title" = "Mes souhaits";
+"entraide.myWishes.empty" = "Aucun souhait";
+"entraide.myWishes.emptySubtitle" = "Vous n'avez pas encore publié de souhait";
+"entraide.myWishes.reports" = "%d signalement(s)";
+
+/* Profile - Community */
+"profile.communityWishes" = "Entraide";
+
 /* Common */
 "common.save" = "Enregistrer";
 "common.cancel" = "Annuler";

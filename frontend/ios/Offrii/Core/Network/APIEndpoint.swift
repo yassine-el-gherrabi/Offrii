@@ -99,6 +99,26 @@ enum APIEndpoint {
     case cancelFriendRequest(id: UUID)
     case listFriends
     case removeFriend(userId: UUID)
+
+    // MARK: Community Wishes
+
+    case listCommunityWishes(ListCommunityWishesQuery)
+    case createCommunityWish(CreateCommunityWishBody)
+    case getCommunityWish(id: UUID)
+    case updateCommunityWish(id: UUID, body: UpdateCommunityWishBody)
+    case closeCommunityWish(id: UUID)
+    case reopenCommunityWish(id: UUID)
+    case offerCommunityWish(id: UUID)
+    case withdrawOfferCommunityWish(id: UUID)
+    case rejectOfferCommunityWish(id: UUID)
+    case confirmCommunityWish(id: UUID)
+    case reportCommunityWish(id: UUID, body: ReportCommunityWishBody)
+    case listMyCommunityWishes
+
+    // MARK: Wish Messages
+
+    case listWishMessages(wishId: UUID, query: ListWishMessagesQuery)
+    case sendWishMessage(wishId: UUID, body: SendWishMessageBody)
 }
 
 // MARK: - Endpoint Properties
@@ -174,6 +194,24 @@ extension APIEndpoint {
         case .cancelFriendRequest(let id):              return "/me/friend-requests/\(id)/cancel"
         case .listFriends:                              return "/me/friends"
         case .removeFriend(let userId):                 return "/me/friends/\(userId)"
+
+        // Community Wishes
+        case .listCommunityWishes:                      return "/community/wishes"
+        case .createCommunityWish:                      return "/community/wishes"
+        case .listMyCommunityWishes:                    return "/community/wishes/mine"
+        case .getCommunityWish(let id):                 return "/community/wishes/\(id)"
+        case .updateCommunityWish(let id, _):           return "/community/wishes/\(id)"
+        case .closeCommunityWish(let id):               return "/community/wishes/\(id)/close"
+        case .reopenCommunityWish(let id):              return "/community/wishes/\(id)/reopen"
+        case .offerCommunityWish(let id):               return "/community/wishes/\(id)/offer"
+        case .withdrawOfferCommunityWish(let id):       return "/community/wishes/\(id)/offer"
+        case .rejectOfferCommunityWish(let id):         return "/community/wishes/\(id)/reject"
+        case .confirmCommunityWish(let id):             return "/community/wishes/\(id)/confirm"
+        case .reportCommunityWish(let id, _):           return "/community/wishes/\(id)/report"
+
+        // Wish Messages
+        case .listWishMessages(let wishId, _):          return "/community/wishes/\(wishId)/messages"
+        case .sendWishMessage(let wishId, _):           return "/community/wishes/\(wishId)/messages"
         }
     }
 
@@ -246,6 +284,24 @@ extension APIEndpoint {
         case .cancelFriendRequest:      return .DELETE
         case .listFriends:              return .GET
         case .removeFriend:             return .DELETE
+
+        // Community Wishes
+        case .listCommunityWishes:              return .GET
+        case .createCommunityWish:              return .POST
+        case .listMyCommunityWishes:            return .GET
+        case .getCommunityWish:                 return .GET
+        case .updateCommunityWish:              return .PATCH
+        case .closeCommunityWish:               return .POST
+        case .reopenCommunityWish:              return .POST
+        case .offerCommunityWish:               return .POST
+        case .withdrawOfferCommunityWish:       return .DELETE
+        case .rejectOfferCommunityWish:         return .POST
+        case .confirmCommunityWish:             return .POST
+        case .reportCommunityWish:              return .POST
+
+        // Wish Messages
+        case .listWishMessages:                 return .GET
+        case .sendWishMessage:                  return .POST
         }
     }
 
@@ -292,6 +348,19 @@ extension APIEndpoint {
                 URLQueryItem(name: "page", value: String(page)),
                 URLQueryItem(name: "per_page", value: String(perPage)),
             ]
+        case .listCommunityWishes(let query):
+            var items: [URLQueryItem] = []
+            if let category = query.category {
+                items.append(.init(name: "category", value: category))
+            }
+            items.append(.init(name: "page", value: String(query.page)))
+            items.append(.init(name: "limit", value: String(query.limit)))
+            return items.isEmpty ? nil : items
+        case .listWishMessages(_, let query):
+            return [
+                URLQueryItem(name: "page", value: String(query.page)),
+                URLQueryItem(name: "limit", value: String(query.limit)),
+            ]
         default:
             return nil
         }
@@ -316,8 +385,12 @@ extension APIEndpoint {
         case .updateCircle(_, let body):    return body
         case .addMemberToCircle(_, let body): return body
         case .shareItemToCircle(_, let body): return body
-        case .sendFriendRequest(let body):  return body
-        default:                            return nil
+        case .sendFriendRequest(let body):          return body
+        case .createCommunityWish(let body):        return body
+        case .updateCommunityWish(_, let body):     return body
+        case .reportCommunityWish(_, let body):     return body
+        case .sendWishMessage(_, let body):         return body
+        default:                                    return nil
         }
     }
 

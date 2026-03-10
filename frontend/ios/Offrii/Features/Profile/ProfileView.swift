@@ -98,6 +98,21 @@ struct ProfileView: View {
                             }
                         }
 
+                        // Community wishes section
+                        profileSection(
+                            title: NSLocalizedString("profile.communityWishes", comment: ""),
+                            icon: "hand.raised.fill"
+                        ) {
+                            NavigationLink {
+                                MyWishesView()
+                            } label: {
+                                profileRow(
+                                    title: NSLocalizedString("entraide.myWishes.title", comment: ""),
+                                    value: nil
+                                )
+                            }
+                        }
+
                         // Account section
                         profileSection(
                             title: NSLocalizedString("profile.account", comment: ""),

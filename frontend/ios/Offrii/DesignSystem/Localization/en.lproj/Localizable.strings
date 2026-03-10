@@ -189,6 +189,85 @@
 /* Profile - Friends */
 "profile.friends" = "Friends";
 
+/* Entraide */
+"entraide.title" = "Community";
+"entraide.subtitle" = "Simple gestures, real impact";
+"entraide.empty" = "No wishes yet";
+"entraide.emptySubtitle" = "Be the first to publish a wish";
+"entraide.anonymous" = "Anonymous";
+"entraide.offer" = "I want to help";
+"entraide.fab.publish" = "Publish";
+
+/* Entraide - Categories */
+"entraide.category.all" = "All";
+"entraide.category.education" = "Education";
+"entraide.category.clothing" = "Clothing";
+"entraide.category.health" = "Health";
+"entraide.category.religion" = "Religion";
+"entraide.category.home" = "Home";
+"entraide.category.children" = "Children";
+"entraide.category.other" = "Other";
+
+/* Entraide - Statuses */
+"entraide.status.open" = "Open";
+"entraide.status.matched" = "In progress...";
+"entraide.status.fulfilled" = "Fulfilled!";
+"entraide.status.closed" = "Closed";
+"entraide.status.pending" = "Pending";
+"entraide.status.review" = "Under review";
+"entraide.status.flagged" = "Flagged";
+"entraide.status.rejected" = "Rejected";
+
+/* Entraide - Creation */
+"entraide.create.title" = "Publish a wish";
+"entraide.create.titleLabel" = "Title";
+"entraide.create.titlePlaceholder" = "What do you need?";
+"entraide.create.descriptionLabel" = "Description (optional)";
+"entraide.create.categoryLabel" = "Category";
+"entraide.create.anonymous" = "Publish anonymously";
+"entraide.create.anonymousHint" = "Your name will not be visible";
+"entraide.create.imageUrlLabel" = "Image link (optional)";
+"entraide.create.linksLabel" = "Links (optional)";
+"entraide.create.addLink" = "Add a link";
+"entraide.create.submit" = "Publish";
+
+/* Entraide - Detail */
+"entraide.detail.matchedBy" = "Taken care of by %@";
+"entraide.detail.alreadyMatched" = "Someone is already on it";
+"entraide.detail.fulfilled" = "This wish has been fulfilled!";
+"entraide.detail.fulfilledThanks" = "Fulfilled! Thank you for your generosity";
+
+/* Entraide - Actions */
+"entraide.action.close" = "Close wish";
+"entraide.action.confirm" = "Confirm received";
+"entraide.action.reject" = "Reject offer";
+"entraide.action.withdraw" = "Withdraw";
+"entraide.action.messages" = "Messages";
+"entraide.action.offerSuccess" = "Thank you for your generosity!";
+"entraide.action.withdrawSuccess" = "You have withdrawn";
+"entraide.action.confirmSuccess" = "Wish confirmed! Thank you";
+
+/* Entraide - Messages */
+"entraide.messages.placeholder" = "Your message...";
+
+/* Entraide - Report */
+"entraide.report.title" = "Report this wish";
+"entraide.report.subtitle" = "Choose the reason for reporting";
+"entraide.report.submit" = "Submit report";
+"entraide.report.inappropriate" = "Inappropriate";
+"entraide.report.spam" = "Spam";
+"entraide.report.scam" = "Scam";
+"entraide.report.other" = "Other";
+
+/* Entraide - My wishes */
+"entraide.myWishes.title" = "My wishes";
+"entraide.myWishes.empty" = "No wishes";
+"entraide.myWishes.emptySubtitle" = "You haven't published any wishes yet";
+"entraide.myWishes.reports" = "%d report(s)";
+
+/* Profile - Community */
+"profile.communityWishes" = "Community";
+
 /* Common */
 "common.save" = "Save";
 "common.cancel" = "Cancel";
