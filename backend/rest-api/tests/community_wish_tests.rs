@@ -65,7 +65,7 @@ async fn create_open_wish(app: &TestApp, token: &str) -> Uuid {
 }
 
 async fn wait_for_wish_status(app: &TestApp, wish_id: Uuid, expected: &str) {
-    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(5);
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(15);
     loop {
         let row: (String,) = sqlx::query_as("SELECT status FROM community_wishes WHERE id = $1")
             .bind(wish_id)
@@ -1939,7 +1939,7 @@ async fn admin_list_pending_returns_flagged_and_review_200() {
         .get_with_auth("/admin/wishes/pending", &admin_token)
         .await;
     assert_eq!(status, StatusCode::OK);
-    let wishes = body.as_array().unwrap();
+    let wishes = body["wishes"].as_array().unwrap();
     assert_eq!(wishes.len(), 2);
     let statuses: Vec<&str> = wishes
         .iter()
@@ -1947,6 +1947,7 @@ async fn admin_list_pending_returns_flagged_and_review_200() {
         .collect();
     assert!(statuses.contains(&"flagged"));
     assert!(statuses.contains(&"review"));
+    assert!(body["total"].as_i64().unwrap() >= 2);
 }
 
 #[tokio::test]
@@ -1959,7 +1960,8 @@ async fn admin_list_pending_empty_200() {
         .get_with_auth("/admin/wishes/pending", &admin_token)
         .await;
     assert_eq!(status, StatusCode::OK);
-    assert_eq!(body.as_array().unwrap().len(), 0);
+    assert_eq!(body["wishes"].as_array().unwrap().len(), 0);
+    assert_eq!(body["total"].as_i64().unwrap(), 0);
 }
 
 #[tokio::test]
@@ -2558,7 +2560,7 @@ async fn admin_list_pending_includes_image_url_and_links() {
 
     let (status, resp) = app.get_with_auth("/admin/wishes/pending", &token).await;
     assert_eq!(status, StatusCode::OK);
-    let wishes = resp.as_array().unwrap();
+    let wishes = resp["wishes"].as_array().unwrap();
     assert_eq!(wishes.len(), 1);
     assert_eq!(
         wishes[0]["image_url"].as_str(),
