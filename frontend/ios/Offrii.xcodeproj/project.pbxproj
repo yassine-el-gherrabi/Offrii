@@ -25,6 +25,7 @@
 		B10000000000000000000005 /* AppRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000005 /* AppRouter.swift */; };
 		B10000000000000000000006 /* APIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000006 /* APIClient.swift */; };
 		B10000000000000000000007 /* APIEndpoint.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000007 /* APIEndpoint.swift */; };
+		B10000000000000000000050 /* APIRequestBodies.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000050 /* APIRequestBodies.swift */; };
 		B10000000000000000000008 /* APIError.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000008 /* APIError.swift */; };
 		B10000000000000000000009 /* HeaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000009 /* HeaderView.swift */; };
 		B10000000000000000000010 /* OffriiButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000010 /* OffriiButton.swift */; };
@@ -114,6 +115,7 @@
 		A10000000000000000000005 /* AppRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppRouter.swift; sourceTree = "<group>"; };
 		A10000000000000000000006 /* APIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIClient.swift; sourceTree = "<group>"; };
 		A10000000000000000000007 /* APIEndpoint.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIEndpoint.swift; sourceTree = "<group>"; };
+		A10000000000000000000050 /* APIRequestBodies.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIRequestBodies.swift; sourceTree = "<group>"; };
 		A10000000000000000000008 /* APIError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIError.swift; sourceTree = "<group>"; };
 		A10000000000000000000009 /* HeaderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HeaderView.swift; sourceTree = "<group>"; };
 		A10000000000000000000010 /* OffriiButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OffriiButton.swift; sourceTree = "<group>"; };
@@ -469,6 +471,7 @@
 			children = (
 				A10000000000000000000006 /* APIClient.swift */,
 				A10000000000000000000007 /* APIEndpoint.swift */,
+				A10000000000000000000050 /* APIRequestBodies.swift */,
 				A10000000000000000000008 /* APIError.swift */,
 			);
 			path = Network;
@@ -605,6 +608,7 @@
 				B10000000000000000000005 /* AppRouter.swift in Sources */,
 				B10000000000000000000006 /* APIClient.swift in Sources */,
 				B10000000000000000000007 /* APIEndpoint.swift in Sources */,
+				B10000000000000000000050 /* APIRequestBodies.swift in Sources */,
 				B10000000000000000000008 /* APIError.swift in Sources */,
 				B10000000000000000000009 /* HeaderView.swift in Sources */,
 				B10000000000000000000010 /* OffriiButton.swift in Sources */,
