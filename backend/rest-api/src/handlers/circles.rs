@@ -7,10 +7,11 @@ use validator::Validate;
 
 use crate::AppState;
 use crate::dto::circles::{
-    AddMemberRequest, CircleDetailResponse, CircleResponse, CreateCircleRequest,
-    CreateInviteRequest, FeedQuery, FeedResponse, InviteResponse, JoinResponse, ShareItemRequest,
-    UpdateCircleRequest,
+    AddMemberRequest, CircleDetailResponse, CircleEventResponse, CircleResponse,
+    CreateCircleRequest, CreateInviteRequest, FeedQuery, InviteResponse, JoinResponse,
+    ShareItemRequest, UpdateCircleRequest,
 };
+use crate::dto::pagination::{PaginatedResponse, normalize_pagination};
 use crate::errors::AppError;
 use crate::middleware::AuthUser;
 
@@ -236,10 +237,11 @@ async fn get_feed(
     auth_user: AuthUser,
     Path(id): Path<Uuid>,
     Query(q): Query<FeedQuery>,
-) -> Result<Json<FeedResponse>, AppError> {
+) -> Result<Json<PaginatedResponse<CircleEventResponse>>, AppError> {
+    let (page, limit, offset) = normalize_pagination(q.page, q.limit);
     let response = state
         .circles
-        .get_feed(id, auth_user.user_id, q.page, q.per_page)
+        .get_feed(id, auth_user.user_id, page, limit, offset)
         .await?;
     Ok(Json(response))
 }

@@ -358,8 +358,8 @@ async fn list_messages_matched_owner_200() {
         )
         .await;
     assert_eq!(status, StatusCode::OK);
-    assert_eq!(resp["messages"].as_array().unwrap().len(), 2);
-    assert_eq!(resp["total"].as_i64(), Some(2));
+    assert_eq!(resp["data"].as_array().unwrap().len(), 2);
+    assert_eq!(resp["pagination"]["total"].as_i64(), Some(2));
 }
 
 #[tokio::test]
@@ -382,7 +382,7 @@ async fn list_messages_matched_donor_200() {
         )
         .await;
     assert_eq!(status, StatusCode::OK);
-    assert_eq!(resp["messages"].as_array().unwrap().len(), 1);
+    assert_eq!(resp["data"].as_array().unwrap().len(), 1);
 }
 
 #[tokio::test]
@@ -416,7 +416,7 @@ async fn list_messages_fulfilled_200() {
         )
         .await;
     assert_eq!(status, StatusCode::OK);
-    assert_eq!(resp["messages"].as_array().unwrap().len(), 1);
+    assert_eq!(resp["data"].as_array().unwrap().len(), 1);
 }
 
 #[tokio::test]
@@ -447,7 +447,7 @@ async fn list_messages_closed_200() {
         )
         .await;
     assert_eq!(status, StatusCode::OK);
-    assert_eq!(resp["messages"].as_array().unwrap().len(), 1);
+    assert_eq!(resp["data"].as_array().unwrap().len(), 1);
 }
 
 #[tokio::test]
@@ -494,8 +494,8 @@ async fn list_messages_empty_200() {
         )
         .await;
     assert_eq!(status, StatusCode::OK);
-    assert_eq!(resp["messages"].as_array().unwrap().len(), 0);
-    assert_eq!(resp["total"].as_i64(), Some(0));
+    assert_eq!(resp["data"].as_array().unwrap().len(), 0);
+    assert_eq!(resp["pagination"]["total"].as_i64(), Some(0));
 }
 
 #[tokio::test]
@@ -521,23 +521,29 @@ async fn list_messages_pagination_200() {
 
     let (status, resp) = app
         .get_with_auth(
-            &format!("/community/wishes/{wish_id}/messages?limit=2&offset=0"),
+            &format!("/community/wishes/{wish_id}/messages?limit=2&page=1"),
             &owner_token,
         )
         .await;
     assert_eq!(status, StatusCode::OK);
-    assert_eq!(resp["messages"].as_array().unwrap().len(), 2);
-    assert_eq!(resp["total"].as_i64(), Some(5));
+    assert_eq!(resp["data"].as_array().unwrap().len(), 2);
+    assert_eq!(resp["pagination"]["total"].as_i64(), Some(5));
+    assert_eq!(resp["pagination"]["page"].as_i64(), Some(1));
+    assert_eq!(resp["pagination"]["limit"].as_i64(), Some(2));
+    assert_eq!(resp["pagination"]["total_pages"].as_i64(), Some(3));
+    assert_eq!(resp["pagination"]["has_more"].as_bool(), Some(true));
 
     let (status, resp) = app
         .get_with_auth(
-            &format!("/community/wishes/{wish_id}/messages?limit=2&offset=4"),
+            &format!("/community/wishes/{wish_id}/messages?limit=2&page=3"),
             &owner_token,
         )
         .await;
     assert_eq!(status, StatusCode::OK);
-    assert_eq!(resp["messages"].as_array().unwrap().len(), 1);
-    assert_eq!(resp["total"].as_i64(), Some(5));
+    assert_eq!(resp["data"].as_array().unwrap().len(), 1);
+    assert_eq!(resp["pagination"]["total"].as_i64(), Some(5));
+    assert_eq!(resp["pagination"]["page"].as_i64(), Some(3));
+    assert_eq!(resp["pagination"]["has_more"].as_bool(), Some(false));
 }
 
 #[tokio::test]
@@ -570,7 +576,7 @@ async fn list_messages_is_mine_flag_correct() {
             &owner_token,
         )
         .await;
-    let msgs = resp["messages"].as_array().unwrap();
+    let msgs = resp["data"].as_array().unwrap();
     // Find the message from owner and donor
     let owner_msg = msgs
         .iter()
@@ -590,7 +596,7 @@ async fn list_messages_is_mine_flag_correct() {
             &donor_token,
         )
         .await;
-    let msgs = resp["messages"].as_array().unwrap();
+    let msgs = resp["data"].as_array().unwrap();
     let owner_msg = msgs
         .iter()
         .find(|m| m["body"].as_str() == Some("From owner"))
@@ -663,7 +669,7 @@ async fn e2e_message_exchange_then_confirm() {
         )
         .await;
     assert_eq!(status, StatusCode::OK);
-    assert_eq!(resp["messages"].as_array().unwrap().len(), 2);
+    assert_eq!(resp["data"].as_array().unwrap().len(), 2);
 }
 
 #[tokio::test]
@@ -696,7 +702,7 @@ async fn e2e_message_exchange_then_close() {
         )
         .await;
     assert_eq!(status, StatusCode::OK);
-    assert_eq!(resp["messages"].as_array().unwrap().len(), 1);
+    assert_eq!(resp["data"].as_array().unwrap().len(), 1);
 }
 
 // ═══════════════════════════════════════════════════════════════════════

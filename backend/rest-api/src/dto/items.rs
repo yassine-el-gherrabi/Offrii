@@ -50,7 +50,7 @@ pub struct ListItemsQuery {
     pub sort: Option<String>,
     pub order: Option<String>,
     pub page: Option<i64>,
-    pub per_page: Option<i64>,
+    pub limit: Option<i64>,
 }
 
 // ── Response DTOs ────────────────────────────────────────────────────
@@ -88,12 +88,4 @@ impl From<Item> for ItemResponse {
             is_claimed: i.claimed_by.is_some(),
         }
     }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ItemsListResponse {
-    pub items: Vec<ItemResponse>,
-    pub total: i64,
-    pub page: i64,
-    pub per_page: i64,
 }

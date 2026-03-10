@@ -6,9 +6,8 @@ use uuid::Uuid;
 use validator::Validate;
 
 use crate::AppState;
-use crate::dto::items::{
-    CreateItemRequest, ItemResponse, ItemsListResponse, ListItemsQuery, UpdateItemRequest,
-};
+use crate::dto::items::{CreateItemRequest, ItemResponse, ListItemsQuery, UpdateItemRequest};
+use crate::dto::pagination::PaginatedResponse;
 use crate::errors::AppError;
 use crate::middleware::AuthUser;
 
@@ -56,7 +55,7 @@ async fn list_items(
     State(state): State<AppState>,
     auth_user: AuthUser,
     Query(query): Query<ListItemsQuery>,
-) -> Result<Json<ItemsListResponse>, AppError> {
+) -> Result<Json<PaginatedResponse<ItemResponse>>, AppError> {
     let response = state.items.list_items(auth_user.user_id, &query).await?;
 
     Ok(Json(response))

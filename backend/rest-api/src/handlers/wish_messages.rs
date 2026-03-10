@@ -6,9 +6,8 @@ use uuid::Uuid;
 use validator::Validate;
 
 use crate::AppState;
-use crate::dto::wish_messages::{
-    ListMessagesQuery, MessageListResponse, MessageResponse, SendMessageRequest,
-};
+use crate::dto::pagination::{PaginatedResponse, normalize_pagination};
+use crate::dto::wish_messages::{ListMessagesQuery, MessageResponse, SendMessageRequest};
 use crate::errors::AppError;
 use crate::middleware::AuthUser;
 
@@ -45,13 +44,12 @@ async fn list_messages(
     auth_user: AuthUser,
     Path(wish_id): Path<Uuid>,
     Query(q): Query<ListMessagesQuery>,
-) -> Result<Json<MessageListResponse>, AppError> {
+) -> Result<Json<PaginatedResponse<MessageResponse>>, AppError> {
     validate_request(&q)?;
-    let limit = q.limit.unwrap_or(50);
-    let offset = q.offset.unwrap_or(0);
+    let (page, limit, offset) = normalize_pagination(q.page, q.limit);
     let response = state
         .wish_messages
-        .list_messages(wish_id, auth_user.user_id, limit, offset)
+        .list_messages(wish_id, auth_user.user_id, page, limit, offset)
         .await?;
     Ok(Json(response))
 }

@@ -8,8 +8,9 @@ use validator::Validate;
 use crate::AppState;
 use crate::dto::community_wishes::{
     CreateWishRequest, ListWishesQuery, MyWishResponse, ReportWishRequest, UpdateWishRequest,
-    WishDetailResponse, WishListResponse,
+    WishDetailResponse, WishResponse,
 };
+use crate::dto::pagination::{PaginatedResponse, normalize_pagination};
 use crate::errors::AppError;
 use crate::middleware::{AuthUser, OptionalAuthUser};
 
@@ -58,14 +59,13 @@ async fn list_wishes(
     State(state): State<AppState>,
     opt_auth: OptionalAuthUser,
     Query(q): Query<ListWishesQuery>,
-) -> Result<Json<WishListResponse>, AppError> {
+) -> Result<Json<PaginatedResponse<WishResponse>>, AppError> {
     validate_request(&q)?;
     let caller_id = opt_auth.0.map(|a| a.user_id);
-    let limit = q.limit.unwrap_or(20);
-    let offset = q.offset.unwrap_or(0);
+    let (page, limit, offset) = normalize_pagination(q.page, q.limit);
     let response = state
         .community_wishes
-        .list_wishes(caller_id, q.category.as_deref(), limit, offset)
+        .list_wishes(caller_id, q.category.as_deref(), page, limit, offset)
         .await?;
     Ok(Json(response))
 }

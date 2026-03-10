@@ -5,8 +5,9 @@ use chrono::Utc;
 use uuid::Uuid;
 
 use crate::dto::community_wishes::{
-    AdminWishResponse, MyWishResponse, WishDetailResponse, WishListResponse, WishResponse,
+    AdminWishResponse, MyWishResponse, WishDetailResponse, WishResponse,
 };
+use crate::dto::pagination::PaginatedResponse;
 use crate::errors::AppError;
 use crate::models::community_wish::WishStatus;
 use crate::services::moderation_service::ModerationResult;
@@ -374,16 +375,17 @@ impl traits::CommunityWishService for PgCommunityWishService {
         &self,
         caller_id: Option<Uuid>,
         category: Option<&str>,
+        page: i64,
         limit: i64,
         offset: i64,
-    ) -> Result<WishListResponse, AppError> {
+    ) -> Result<PaginatedResponse<WishResponse>, AppError> {
         // Check cache
         let query_hash = format!("{:?}:{limit}:{offset}", category);
         if let Some(ver) = self.get_cache_version().await {
             let cache_key = format!("community_wishes:v{ver}:{query_hash}");
             if caller_id.is_none()
                 && let Some(cached) = self.get_cached(&cache_key).await
-                && let Ok(resp) = serde_json::from_str::<WishListResponse>(&cached)
+                && let Ok(resp) = serde_json::from_str::<PaginatedResponse<WishResponse>>(&cached)
             {
                 return Ok(resp);
             }
@@ -423,10 +425,7 @@ impl traits::CommunityWishService for PgCommunityWishService {
             })
             .collect();
 
-        let resp = WishListResponse {
-            wishes: wish_responses,
-            total,
-        };
+        let resp = PaginatedResponse::new(wish_responses, total, page, limit);
 
         // Cache only for unauthenticated (public) requests
         if caller_id.is_none()
@@ -958,9 +957,10 @@ impl traits::CommunityWishService for PgCommunityWishService {
     #[tracing::instrument(skip(self))]
     async fn admin_list_flagged(
         &self,
+        page: i64,
         limit: i64,
         offset: i64,
-    ) -> Result<crate::dto::community_wishes::AdminWishListResponse, AppError> {
+    ) -> Result<PaginatedResponse<AdminWishResponse>, AppError> {
         let wishes = self
             .wish_repo
             .list_flagged(limit, offset)
@@ -989,10 +989,7 @@ impl traits::CommunityWishService for PgCommunityWishService {
             })
             .collect();
 
-        Ok(crate::dto::community_wishes::AdminWishListResponse {
-            wishes: items,
-            total,
-        })
+        Ok(PaginatedResponse::new(items, total, page, limit))
     }
 
     #[tracing::instrument(skip(self))]

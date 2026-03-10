@@ -38,10 +38,10 @@ pub struct UpdateWishRequest {
 #[derive(Debug, Deserialize, Validate)]
 pub struct ListWishesQuery {
     pub category: Option<String>,
-    #[validate(range(min = 1, max = 50, message = "limit must be 1-50"))]
+    #[validate(range(min = 1, max = 100, message = "limit must be 1-100"))]
     pub limit: Option<i64>,
-    #[validate(range(min = 0, message = "offset must be >= 0"))]
-    pub offset: Option<i64>,
+    #[validate(range(min = 1, message = "page must be >= 1"))]
+    pub page: Option<i64>,
 }
 
 #[derive(Debug, Deserialize, Validate)]
@@ -105,12 +105,6 @@ pub struct MyWishResponse {
     pub closed_at: Option<DateTime<Utc>>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct WishListResponse {
-    pub wishes: Vec<WishResponse>,
-    pub total: i64,
-}
-
 #[derive(Debug, Clone, Serialize)]
 pub struct AdminWishResponse {
     pub id: Uuid,
@@ -124,12 +118,6 @@ pub struct AdminWishResponse {
     pub links: Option<Vec<String>>,
     pub report_count: i32,
     pub created_at: DateTime<Utc>,
-}
-
-#[derive(Debug, Clone, Serialize)]
-pub struct AdminWishListResponse {
-    pub wishes: Vec<AdminWishResponse>,
-    pub total: i64,
 }
 
 // ── Validators ───────────────────────────────────────────────────────

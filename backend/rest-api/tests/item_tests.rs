@@ -312,10 +312,10 @@ async fn list_items_default_200() {
     let (status, body) = app.get_with_auth("/items", &token).await;
 
     assert_eq!(status, StatusCode::OK);
-    assert_eq!(body["items"].as_array().unwrap().len(), 2);
-    assert_eq!(body["total"], 2);
-    assert_eq!(body["page"], 1);
-    assert_eq!(body["per_page"], 50);
+    assert_eq!(body["data"].as_array().unwrap().len(), 2);
+    assert_eq!(body["pagination"]["total"], 2);
+    assert_eq!(body["pagination"]["page"], 1);
+    assert_eq!(body["pagination"]["limit"], 20);
 }
 
 #[tokio::test]
@@ -328,13 +328,13 @@ async fn list_items_pagination() {
             .await;
     }
 
-    let (status, body) = app.get_with_auth("/items?page=2&per_page=2", &token).await;
+    let (status, body) = app.get_with_auth("/items?page=2&limit=2", &token).await;
 
     assert_eq!(status, StatusCode::OK);
-    assert_eq!(body["items"].as_array().unwrap().len(), 2);
-    assert_eq!(body["total"], 5);
-    assert_eq!(body["page"], 2);
-    assert_eq!(body["per_page"], 2);
+    assert_eq!(body["data"].as_array().unwrap().len(), 2);
+    assert_eq!(body["pagination"]["total"], 5);
+    assert_eq!(body["pagination"]["page"], 2);
+    assert_eq!(body["pagination"]["limit"], 2);
 }
 
 #[tokio::test]
@@ -345,29 +345,27 @@ async fn list_items_page_beyond_total_returns_empty() {
     app.create_item(&token, &serde_json::json!({ "name": "x" }))
         .await;
 
-    let (status, body) = app
-        .get_with_auth("/items?page=100&per_page=50", &token)
-        .await;
+    let (status, body) = app.get_with_auth("/items?page=100&limit=50", &token).await;
 
     assert_eq!(status, StatusCode::OK);
-    assert_eq!(body["items"].as_array().unwrap().len(), 0);
-    assert_eq!(body["total"], 1);
+    assert_eq!(body["data"].as_array().unwrap().len(), 0);
+    assert_eq!(body["pagination"]["total"], 1);
 }
 
 #[tokio::test]
-async fn list_items_per_page_clamped() {
+async fn list_items_limit_clamped() {
     let app = TestApp::new().await;
     let token = app.setup_user_token(TEST_EMAIL, TEST_PASSWORD).await;
 
-    // per_page=0 should clamp to 1
-    let (status, body) = app.get_with_auth("/items?per_page=0", &token).await;
+    // limit=0 should clamp to 1
+    let (status, body) = app.get_with_auth("/items?limit=0", &token).await;
     assert_eq!(status, StatusCode::OK);
-    assert_eq!(body["per_page"], 1);
+    assert_eq!(body["pagination"]["limit"], 1);
 
-    // per_page=200 should clamp to 100
-    let (status, body) = app.get_with_auth("/items?per_page=200", &token).await;
+    // limit=200 should clamp to 100
+    let (status, body) = app.get_with_auth("/items?limit=200", &token).await;
     assert_eq!(status, StatusCode::OK);
-    assert_eq!(body["per_page"], 100);
+    assert_eq!(body["pagination"]["limit"], 100);
 }
 
 #[tokio::test]
@@ -377,7 +375,7 @@ async fn list_items_page_zero_clamps_to_1() {
 
     let (status, body) = app.get_with_auth("/items?page=0", &token).await;
     assert_eq!(status, StatusCode::OK);
-    assert_eq!(body["page"], 1);
+    assert_eq!(body["pagination"]["page"], 1);
 }
 
 #[tokio::test]
@@ -401,13 +399,13 @@ async fn list_items_filter_status() {
 
     // Filter purchased
     let (_, body) = app.get_with_auth("/items?status=purchased", &token).await;
-    assert_eq!(body["items"].as_array().unwrap().len(), 1);
-    assert_eq!(body["items"][0]["name"], "bought");
+    assert_eq!(body["data"].as_array().unwrap().len(), 1);
+    assert_eq!(body["data"][0]["name"], "bought");
 
     // Filter active
     let (_, body) = app.get_with_auth("/items?status=active", &token).await;
-    assert_eq!(body["items"].as_array().unwrap().len(), 1);
-    assert_eq!(body["items"][0]["name"], "active_one");
+    assert_eq!(body["data"].as_array().unwrap().len(), 1);
+    assert_eq!(body["data"][0]["name"], "active_one");
 }
 
 #[tokio::test]
@@ -475,8 +473,8 @@ async fn list_items_filter_category() {
         .await;
 
     assert_eq!(status, StatusCode::OK);
-    assert_eq!(body["items"].as_array().unwrap().len(), 1);
-    assert_eq!(body["items"][0]["name"], "with_cat");
+    assert_eq!(body["data"].as_array().unwrap().len(), 1);
+    assert_eq!(body["data"][0]["name"], "with_cat");
 }
 
 #[tokio::test]
@@ -501,7 +499,7 @@ async fn list_items_sort_priority() {
         .get_with_auth("/items?sort=priority&order=asc", &token)
         .await;
 
-    let items = body["items"].as_array().unwrap();
+    let items = body["data"].as_array().unwrap();
     assert_eq!(items[0]["name"], "high");
     assert_eq!(items[1]["name"], "medium");
     assert_eq!(items[2]["name"], "low");
@@ -523,7 +521,7 @@ async fn list_items_sort_name() {
         .get_with_auth("/items?sort=name&order=asc", &token)
         .await;
 
-    let items = body["items"].as_array().unwrap();
+    let items = body["data"].as_array().unwrap();
     assert_eq!(items[0]["name"], "Apple");
     assert_eq!(items[1]["name"], "Banana");
     assert_eq!(items[2]["name"], "Cherry");
@@ -537,8 +535,8 @@ async fn list_items_empty_200() {
     let (status, body) = app.get_with_auth("/items", &token).await;
 
     assert_eq!(status, StatusCode::OK);
-    assert_eq!(body["items"].as_array().unwrap().len(), 0);
-    assert_eq!(body["total"], 0);
+    assert_eq!(body["data"].as_array().unwrap().len(), 0);
+    assert_eq!(body["pagination"]["total"], 0);
 }
 
 #[tokio::test]
@@ -564,10 +562,10 @@ async fn list_items_isolation_between_users() {
     let (_, body_a) = app.get_with_auth("/items", &token_a).await;
     let (_, body_b) = app.get_with_auth("/items", &token_b).await;
 
-    assert_eq!(body_a["total"], 1);
-    assert_eq!(body_a["items"][0]["name"], "a_item");
-    assert_eq!(body_b["total"], 1);
-    assert_eq!(body_b["items"][0]["name"], "b_item");
+    assert_eq!(body_a["pagination"]["total"], 1);
+    assert_eq!(body_a["data"][0]["name"], "a_item");
+    assert_eq!(body_b["pagination"]["total"], 1);
+    assert_eq!(body_b["data"][0]["name"], "b_item");
 }
 
 // ── Update ──────────────────────────────────────────────────────────
@@ -1054,7 +1052,7 @@ async fn delete_item_not_in_list() {
 
     // Not in list
     let (_, body) = app.get_with_auth("/items", &token).await;
-    assert_eq!(body["items"].as_array().unwrap().len(), 0);
+    assert_eq!(body["data"].as_array().unwrap().len(), 0);
 
     // Not findable by ID
     let (status, resp) = app.get_with_auth(&format!("/items/{id}"), &token).await;
@@ -1594,7 +1592,7 @@ async fn is_claimed_visible_in_list_endpoint() {
 
     // Before claim — list shows is_claimed: false
     let (_, body) = app.get_with_auth("/items", &owner_token).await;
-    let items = body["items"].as_array().unwrap();
+    let items = body["data"].as_array().unwrap();
     assert_eq!(items[0]["is_claimed"], false);
 
     // Claim
@@ -1603,7 +1601,7 @@ async fn is_claimed_visible_in_list_endpoint() {
 
     // After claim — list shows is_claimed: true
     let (_, body) = app.get_with_auth("/items", &owner_token).await;
-    let items = body["items"].as_array().unwrap();
+    let items = body["data"].as_array().unwrap();
     assert_eq!(items[0]["is_claimed"], true);
 }
 
@@ -1616,7 +1614,7 @@ async fn list_items_consistent_after_mutations() {
 
     // List (cache miss)
     let (_, body) = app.get_with_auth("/items", &token).await;
-    assert_eq!(body["total"], 0);
+    assert_eq!(body["pagination"]["total"], 0);
 
     // Create
     let item = app
@@ -1626,7 +1624,7 @@ async fn list_items_consistent_after_mutations() {
 
     // List should reflect creation
     let (_, body) = app.get_with_auth("/items", &token).await;
-    assert_eq!(body["total"], 1);
+    assert_eq!(body["pagination"]["total"], 1);
 
     // Update
     app.put_json_with_auth(
@@ -1637,11 +1635,11 @@ async fn list_items_consistent_after_mutations() {
     .await;
 
     let (_, body) = app.get_with_auth("/items", &token).await;
-    assert_eq!(body["items"][0]["name"], "updated");
+    assert_eq!(body["data"][0]["name"], "updated");
 
     // Delete
     app.delete_with_auth(&format!("/items/{id}"), &token).await;
 
     let (_, body) = app.get_with_auth("/items", &token).await;
-    assert_eq!(body["total"], 0);
+    assert_eq!(body["pagination"]["total"], 0);
 }

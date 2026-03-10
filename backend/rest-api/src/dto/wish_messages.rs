@@ -13,10 +13,10 @@ pub struct SendMessageRequest {
 
 #[derive(Debug, Deserialize, Validate)]
 pub struct ListMessagesQuery {
-    #[validate(range(min = 1, max = 50, message = "limit must be 1-50"))]
+    #[validate(range(min = 1, max = 100, message = "limit must be 1-100"))]
     pub limit: Option<i64>,
-    #[validate(range(min = 0, message = "offset must be >= 0"))]
-    pub offset: Option<i64>,
+    #[validate(range(min = 1, message = "page must be >= 1"))]
+    pub page: Option<i64>,
 }
 
 // ── Response DTOs ────────────────────────────────────────────────────
@@ -28,10 +28,4 @@ pub struct MessageResponse {
     pub is_mine: bool,
     pub body: String,
     pub created_at: DateTime<Utc>,
-}
-
-#[derive(Debug, Clone, Serialize)]
-pub struct MessageListResponse {
-    pub messages: Vec<MessageResponse>,
-    pub total: i64,
 }

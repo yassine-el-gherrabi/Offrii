@@ -943,13 +943,13 @@ async fn add_member_creates_member_joined_event() {
     // Check feed for member_joined event
     let (status, feed) = app
         .get_with_auth(
-            &format!("/circles/{circle_id}/feed?page=1&per_page=10"),
+            &format!("/circles/{circle_id}/feed?page=1&limit=10"),
             &alice_token,
         )
         .await;
     assert_eq!(status, StatusCode::OK);
 
-    let events = feed["events"].as_array().expect("events array");
+    let events = feed["data"].as_array().expect("data array");
     let joined_events: Vec<_> = events
         .iter()
         .filter(|e| e["event_type"].as_str() == Some("member_joined"))

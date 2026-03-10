@@ -3,7 +3,8 @@ use std::sync::Arc;
 use async_trait::async_trait;
 use uuid::Uuid;
 
-use crate::dto::wish_messages::{MessageListResponse, MessageResponse};
+use crate::dto::pagination::PaginatedResponse;
+use crate::dto::wish_messages::MessageResponse;
 use crate::errors::AppError;
 use crate::models::community_wish::WishStatus;
 use crate::traits::{self, NotificationRequest};
@@ -142,9 +143,10 @@ impl traits::WishMessageService for PgWishMessageService {
         &self,
         wish_id: Uuid,
         user_id: Uuid,
+        page: i64,
         limit: i64,
         offset: i64,
-    ) -> Result<MessageListResponse, AppError> {
+    ) -> Result<PaginatedResponse<MessageResponse>, AppError> {
         let wish = self
             .wish_repo
             .find_by_id(wish_id)
@@ -222,9 +224,6 @@ impl traits::WishMessageService for PgWishMessageService {
             })
             .collect();
 
-        Ok(MessageListResponse {
-            messages: responses,
-            total,
-        })
+        Ok(PaginatedResponse::new(responses, total, page, limit))
     }
 }
