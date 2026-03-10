@@ -1,6 +1,6 @@
 use anyhow::Result;
 use async_trait::async_trait;
-use chrono::NaiveTime;
+use chrono::{DateTime, NaiveTime, Utc};
 use sqlx::{PgExecutor, PgPool, QueryBuilder};
 use uuid::Uuid;
 
@@ -100,6 +100,10 @@ impl traits::UserRepo for PgUserRepo {
 
     async fn increment_token_version(&self, id: Uuid) -> Result<i32> {
         increment_token_version(&self.pool, id).await
+    }
+
+    async fn get_user_created_at(&self, user_id: Uuid) -> Result<Option<DateTime<Utc>>> {
+        get_user_created_at(&self.pool, user_id).await
     }
 }
 
@@ -314,4 +318,16 @@ pub(crate) async fn increment_token_version(exec: impl PgExecutor<'_>, id: Uuid)
     .await?;
 
     Ok(row.0)
+}
+
+pub(crate) async fn get_user_created_at(
+    exec: impl PgExecutor<'_>,
+    user_id: Uuid,
+) -> Result<Option<DateTime<Utc>>> {
+    let row: Option<(DateTime<Utc>,)> =
+        sqlx::query_as("SELECT created_at FROM users WHERE id = $1")
+            .bind(user_id)
+            .fetch_optional(exec)
+            .await?;
+    Ok(row.map(|r| r.0))
 }

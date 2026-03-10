@@ -18,6 +18,7 @@ use crate::utils::jwt::JwtKeys;
 pub struct AppState {
     pub auth: Arc<dyn traits::AuthService>,
     pub jwt: Arc<JwtKeys>,
+    pub db: sqlx::PgPool,
     pub redis: redis::Client,
     pub health: Arc<dyn traits::HealthCheck>,
     pub items: Arc<dyn traits::ItemService>,
@@ -27,4 +28,6 @@ pub struct AppState {
     pub share_links: Arc<dyn traits::ShareLinkService>,
     pub circles: Arc<dyn traits::CircleService>,
     pub friends: Arc<dyn traits::FriendService>,
+    pub community_wishes: Arc<dyn traits::CommunityWishService>,
+    pub wish_messages: Arc<dyn traits::WishMessageService>,
 }

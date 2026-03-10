@@ -29,7 +29,8 @@ use rest_api::config::database::{create_pg_pool, create_redis_client};
 use rest_api::errors::AppError;
 use rest_api::handlers::health::health_check;
 use rest_api::handlers::{
-    auth, categories, circles, friends, items, push_tokens, share_links, shared, users,
+    admin, auth, categories, circles, community_wishes, friends, items, push_tokens, share_links,
+    shared, users, wish_messages,
 };
 use rest_api::repositories::category_repo::PgCategoryRepo;
 use rest_api::repositories::circle_event_repo::PgCircleEventRepo;
@@ -37,27 +38,34 @@ use rest_api::repositories::circle_invite_repo::PgCircleInviteRepo;
 use rest_api::repositories::circle_item_repo::PgCircleItemRepo;
 use rest_api::repositories::circle_member_repo::PgCircleMemberRepo;
 use rest_api::repositories::circle_repo::PgCircleRepo;
+use rest_api::repositories::community_wish_repo::PgCommunityWishRepo;
 use rest_api::repositories::friend_repo::PgFriendRepo;
 use rest_api::repositories::item_repo::PgItemRepo;
 use rest_api::repositories::push_token_repo::PgPushTokenRepo;
 use rest_api::repositories::refresh_token_repo::PgRefreshTokenRepo;
 use rest_api::repositories::share_link_repo::PgShareLinkRepo;
 use rest_api::repositories::user_repo::PgUserRepo;
+use rest_api::repositories::wish_message_repo::PgWishMessageRepo;
+use rest_api::repositories::wish_report_repo::PgWishReportRepo;
 use rest_api::services::auth_service::PgAuthService;
 use rest_api::services::category_service::PgCategoryService;
 use rest_api::services::circle_service::PgCircleService;
+use rest_api::services::community_wish_service::PgCommunityWishService;
 use rest_api::services::friend_service::PgFriendService;
 use rest_api::services::health_check::PgHealthCheck;
 use rest_api::services::item_service::PgItemService;
+use rest_api::services::moderation_service::NoopModerationService;
 use rest_api::services::push_token_service::PgPushTokenService;
 use rest_api::services::share_link_service::PgShareLinkService;
 use rest_api::services::user_service::PgUserService;
+use rest_api::services::wish_message_service::PgWishMessageService;
 use rest_api::traits::{
     AuthService, CategoryRepo, CategoryService, CircleEventRepo, CircleInviteRepo, CircleItemRepo,
-    CircleMemberRepo, CircleRepo, CircleService, EmailService, FriendRepo, FriendService,
-    HealthCheck, ItemRepo, ItemService, NotificationOutcome, NotificationRequest,
-    NotificationService, PushTokenRepo, PushTokenService, RefreshTokenRepo, ShareLinkRepo,
-    ShareLinkService, UserRepo, UserService,
+    CircleMemberRepo, CircleRepo, CircleService, CommunityWishRepo, CommunityWishService,
+    EmailService, FriendRepo, FriendService, HealthCheck, ItemRepo, ItemService, ModerationService,
+    NotificationOutcome, NotificationRequest, NotificationService, PushTokenRepo, PushTokenService,
+    RefreshTokenRepo, ShareLinkRepo, ShareLinkService, UserRepo, UserService, WishMessageRepo,
+    WishMessageService, WishReportRepo,
 };
 use rest_api::utils::jwt::JwtKeys;
 
@@ -217,18 +225,48 @@ impl TestApp {
             friend_repo,
             user_repo.clone(),
             push_token_repo.clone(),
-            notification_svc,
+            notification_svc.clone(),
         ));
 
-        let user_svc: Arc<dyn UserService> =
-            Arc::new(PgUserService::new(user_repo, item_repo, category_repo));
+        let user_svc: Arc<dyn UserService> = Arc::new(PgUserService::new(
+            user_repo.clone(),
+            item_repo,
+            category_repo,
+        ));
         let push_token_svc: Arc<dyn PushTokenService> =
-            Arc::new(PgPushTokenService::new(push_token_repo));
+            Arc::new(PgPushTokenService::new(push_token_repo.clone()));
+
+        // Community wish wiring
+        let wish_repo: Arc<dyn CommunityWishRepo> = Arc::new(PgCommunityWishRepo::new(db.clone()));
+        let report_repo: Arc<dyn WishReportRepo> = Arc::new(PgWishReportRepo::new(db.clone()));
+        let message_repo: Arc<dyn WishMessageRepo> = Arc::new(PgWishMessageRepo::new(db.clone()));
+        let moderation_svc: Arc<dyn ModerationService> = Arc::new(NoopModerationService);
+
+        let community_wish_svc: Arc<dyn CommunityWishService> =
+            Arc::new(PgCommunityWishService::new(
+                db.clone(),
+                wish_repo.clone(),
+                report_repo,
+                user_repo.clone(),
+                push_token_repo.clone(),
+                notification_svc.clone(),
+                moderation_svc,
+                redis.clone(),
+            ));
+
+        let wish_message_svc: Arc<dyn WishMessageService> = Arc::new(PgWishMessageService::new(
+            wish_repo,
+            message_repo,
+            user_repo,
+            push_token_repo,
+            notification_svc,
+        ));
 
         let redis_for_app = redis.clone();
         let state = AppState {
             auth,
             jwt,
+            db: db.clone(),
             redis: redis_for_app,
             health,
             items,
@@ -238,6 +276,8 @@ impl TestApp {
             share_links: share_link_svc,
             circles: circle_svc,
             friends: friend_svc,
+            community_wishes: community_wish_svc,
+            wish_messages: wish_message_svc,
         };
 
         let router = Router::new()
@@ -252,6 +292,9 @@ impl TestApp {
             .nest("/circles", circles::router())
             .nest("/me", friends::router())
             .nest("/users", friends::search_router())
+            .nest("/community/wishes", community_wishes::router())
+            .merge(wish_messages::router())
+            .nest("/admin", admin::router())
             .layer(TraceLayer::new_for_http())
             .with_state(state);
 
