@@ -37,30 +37,39 @@ impl AuthUser {
             .parse()
             .map_err(|_| AppError::Unauthorized("invalid token subject".into()))?;
 
-        // Redis-based revocation checks (fail-open if Redis unavailable)
-        if let Ok(mut conn) = state.redis.get_multiplexed_async_connection().await {
-            // Pipeline: check JTI blacklist + token version in one round-trip
-            let blacklist_key = format!("blacklist:{}", claims.jti);
-            let tkver_key = format!("tkver:{user_id}");
+        // Redis-based revocation checks (fail-closed if Redis unavailable)
+        let mut conn = state
+            .redis
+            .get_multiplexed_async_connection()
+            .await
+            .map_err(|e| {
+                tracing::error!(error = %e, "Redis unavailable - cannot verify token revocation");
+                AppError::Internal(anyhow::anyhow!("authentication service unavailable"))
+            })?;
 
-            let result: Result<(i64, Option<i32>), _> = redis::pipe()
-                .cmd("EXISTS")
-                .arg(&blacklist_key)
-                .cmd("GET")
-                .arg(&tkver_key)
-                .query_async(&mut conn)
-                .await;
+        // Pipeline: check JTI blacklist + token version in one round-trip
+        let blacklist_key = format!("blacklist:{}", claims.jti);
+        let tkver_key = format!("tkver:{user_id}");
 
-            if let Ok((blacklisted, cached_version)) = result {
-                if blacklisted == 1 {
-                    return Err(AppError::Unauthorized("token has been revoked".into()));
-                }
-                if let Some(ver) = cached_version
-                    && claims.token_version < ver
-                {
-                    return Err(AppError::Unauthorized("token version revoked".into()));
-                }
-            }
+        let (blacklisted, cached_version): (i64, Option<i32>) = redis::pipe()
+            .cmd("EXISTS")
+            .arg(&blacklist_key)
+            .cmd("GET")
+            .arg(&tkver_key)
+            .query_async(&mut conn)
+            .await
+            .map_err(|e| {
+                tracing::error!(error = %e, "Redis query failed during token validation");
+                AppError::Internal(anyhow::anyhow!("authentication service unavailable"))
+            })?;
+
+        if blacklisted == 1 {
+            return Err(AppError::Unauthorized("token has been revoked".into()));
+        }
+        if let Some(ver) = cached_version
+            && claims.token_version < ver
+        {
+            return Err(AppError::Unauthorized("token version revoked".into()));
         }
 
         Ok(AuthUser {

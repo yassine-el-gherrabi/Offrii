@@ -1,13 +1,20 @@
-use axum::extract::{Path, State};
+use axum::extract::{Path, Query, State};
 use axum::http::StatusCode;
 use axum::routing::{get, post};
 use axum::{Json, Router};
+use serde::Deserialize;
 use uuid::Uuid;
 
 use crate::AppState;
-use crate::dto::community_wishes::AdminWishResponse;
+use crate::dto::community_wishes::AdminWishListResponse;
 use crate::errors::AppError;
 use crate::middleware::AdminUser;
+
+#[derive(Debug, Deserialize)]
+struct ListFlaggedQuery {
+    limit: Option<i64>,
+    offset: Option<i64>,
+}
 
 pub fn router() -> Router<AppState> {
     Router::new()
@@ -20,8 +27,14 @@ pub fn router() -> Router<AppState> {
 async fn list_pending(
     State(state): State<AppState>,
     _admin: AdminUser,
-) -> Result<Json<Vec<AdminWishResponse>>, AppError> {
-    let response = state.community_wishes.admin_list_flagged().await?;
+    Query(query): Query<ListFlaggedQuery>,
+) -> Result<Json<AdminWishListResponse>, AppError> {
+    let limit = query.limit.unwrap_or(20).clamp(1, 100);
+    let offset = query.offset.unwrap_or(0).max(0);
+    let response = state
+        .community_wishes
+        .admin_list_flagged(limit, offset)
+        .await?;
     Ok(Json(response))
 }
 

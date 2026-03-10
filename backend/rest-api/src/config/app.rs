@@ -1,6 +1,5 @@
 use std::env;
 
-#[derive(Debug)]
 pub struct Config {
     pub database_url: String,
     pub redis_url: String,
@@ -15,6 +14,29 @@ pub struct Config {
     pub app_base_url: String,
     pub moderation_enabled: bool,
     pub openai_api_key: Option<String>,
+}
+
+impl std::fmt::Debug for Config {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Config")
+            .field("api_port", &self.api_port)
+            .field("database_url", &"[REDACTED]")
+            .field("redis_url", &"[REDACTED]")
+            .field("resend_api_key", &"[REDACTED]")
+            .field(
+                "openai_api_key",
+                &self.openai_api_key.as_ref().map(|_| "[REDACTED]"),
+            )
+            .field("email_from", &self.email_from)
+            .field("apns_key_path", &self.apns_key_path)
+            .field("apns_key_id", &self.apns_key_id)
+            .field("apns_team_id", &self.apns_team_id)
+            .field("apns_bundle_id", &self.apns_bundle_id)
+            .field("apns_sandbox", &self.apns_sandbox)
+            .field("app_base_url", &self.app_base_url)
+            .field("moderation_enabled", &self.moderation_enabled)
+            .finish()
+    }
 }
 
 impl Config {

@@ -365,14 +365,27 @@ impl traits::AuthService for PgAuthService {
             return Err(AppError::Unauthorized("invalid current password".into()));
         }
 
-        // 3. Hash new password on blocking thread
+        // 3. Enforce password policy on new password
+        password_policy::check(new_password)
+            .await
+            .map_err(|v| match v {
+                PasswordPolicyViolation::Common => AppError::BadRequest("password_common".into()),
+                PasswordPolicyViolation::Breached => {
+                    AppError::BadRequest("password_breached".into())
+                }
+                PasswordPolicyViolation::TooShort | PasswordPolicyViolation::TooLong => {
+                    AppError::BadRequest("password_length".into())
+                }
+            })?;
+
+        // 4. Hash new password on blocking thread
         let new_owned = new_password.to_string();
         let new_hash = tokio::task::spawn_blocking(move || hash::hash_password(&new_owned))
             .await
             .map_err(|e| AppError::Internal(anyhow::anyhow!("spawn_blocking join error: {e}")))?
             .map_err(AppError::Internal)?;
 
-        // 4. Persist new hash
+        // 5. Persist new hash
         let updated = self
             .user_repo
             .update_password_hash(user_id, &new_hash)
@@ -469,17 +482,48 @@ impl traits::AuthService for PgAuthService {
         let email = email.trim().to_lowercase();
 
         // Read stored hash from Redis
-        let stored_hash: Option<String> =
-            if let Ok(mut conn) = self.redis.get_multiplexed_async_connection().await {
-                let key = format!("pwreset:{email}");
-                redis::cmd("GET")
-                    .arg(&key)
-                    .query_async(&mut conn)
-                    .await
-                    .ok()
-            } else {
-                None
-            };
+        let mut conn = self
+            .redis
+            .get_multiplexed_async_connection()
+            .await
+            .map_err(|e| {
+                tracing::error!(error = %e, "redis unavailable for password reset");
+                AppError::Internal(anyhow::anyhow!("service unavailable"))
+            })?;
+
+        // Brute-force protection: limit verification attempts
+        let attempt_key = format!("pwreset:attempts:{email}");
+        let attempts: i64 = redis::cmd("INCR")
+            .arg(&attempt_key)
+            .query_async(&mut conn)
+            .await
+            .unwrap_or(1);
+        if attempts == 1 {
+            let _: Result<(), _> = redis::cmd("EXPIRE")
+                .arg(&attempt_key)
+                .arg(1800)
+                .query_async(&mut conn)
+                .await;
+        }
+        if attempts > 5 {
+            // Invalidate the reset code entirely
+            let _: Result<(), _> = redis::cmd("DEL")
+                .arg(format!("pwreset:{email}"))
+                .arg(&attempt_key)
+                .arg(format!("pwreset:rate:{email}"))
+                .query_async(&mut conn)
+                .await;
+            return Err(AppError::BadRequest("too_many_attempts".into()));
+        }
+
+        let stored_hash: Option<String> = {
+            let key = format!("pwreset:{email}");
+            redis::cmd("GET")
+                .arg(&key)
+                .query_async(&mut conn)
+                .await
+                .ok()
+        };
 
         let stored_hash =
             stored_hash.ok_or_else(|| AppError::BadRequest("invalid_or_expired_code".into()))?;
@@ -490,14 +534,13 @@ impl traits::AuthService for PgAuthService {
             return Err(AppError::BadRequest("invalid_or_expired_code".into()));
         }
 
-        // Clean up Redis keys
-        if let Ok(mut conn) = self.redis.get_multiplexed_async_connection().await {
-            let _: Result<(), _> = redis::cmd("DEL")
-                .arg(format!("pwreset:{email}"))
-                .arg(format!("pwreset:rate:{email}"))
-                .query_async(&mut conn)
-                .await;
-        }
+        // Clean up Redis keys (including attempt counter)
+        let _: Result<(), _> = redis::cmd("DEL")
+            .arg(format!("pwreset:{email}"))
+            .arg(format!("pwreset:rate:{email}"))
+            .arg(&attempt_key)
+            .query_async(&mut conn)
+            .await;
 
         // Find user
         let user = self
@@ -506,6 +549,19 @@ impl traits::AuthService for PgAuthService {
             .await
             .map_err(AppError::Internal)?
             .ok_or_else(|| AppError::BadRequest("invalid_or_expired_code".into()))?;
+
+        // Enforce password policy on new password
+        password_policy::check(new_password)
+            .await
+            .map_err(|v| match v {
+                PasswordPolicyViolation::Common => AppError::BadRequest("password_common".into()),
+                PasswordPolicyViolation::Breached => {
+                    AppError::BadRequest("password_breached".into())
+                }
+                PasswordPolicyViolation::TooShort | PasswordPolicyViolation::TooLong => {
+                    AppError::BadRequest("password_length".into())
+                }
+            })?;
 
         // Hash new password
         let new_owned = new_password.to_string();

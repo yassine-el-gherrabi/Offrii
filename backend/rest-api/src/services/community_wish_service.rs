@@ -722,10 +722,16 @@ impl traits::CommunityWishService for PgCommunityWishService {
             return Err(AppError::BadRequest("wish is not open for offers".into()));
         }
 
-        self.wish_repo
+        let matched = self
+            .wish_repo
             .set_matched(wish_id, donor_id, Utc::now())
             .await
             .map_err(AppError::Internal)?;
+        if !matched {
+            return Err(AppError::Conflict(
+                "wish was already matched by another donor".into(),
+            ));
+        }
 
         self.bump_cache_version().await;
 
@@ -945,14 +951,23 @@ impl traits::CommunityWishService for PgCommunityWishService {
     // ── Admin actions ────────────────────────────────────────────────
 
     #[tracing::instrument(skip(self))]
-    async fn admin_list_flagged(&self) -> Result<Vec<AdminWishResponse>, AppError> {
+    async fn admin_list_flagged(
+        &self,
+        limit: i64,
+        offset: i64,
+    ) -> Result<crate::dto::community_wishes::AdminWishListResponse, AppError> {
         let wishes = self
             .wish_repo
-            .list_flagged()
+            .list_flagged(limit, offset)
+            .await
+            .map_err(AppError::Internal)?;
+        let total = self
+            .wish_repo
+            .count_flagged()
             .await
             .map_err(AppError::Internal)?;
 
-        Ok(wishes
+        let items: Vec<AdminWishResponse> = wishes
             .into_iter()
             .map(|w| AdminWishResponse {
                 id: w.id,
@@ -967,7 +982,12 @@ impl traits::CommunityWishService for PgCommunityWishService {
                 report_count: w.report_count,
                 created_at: w.created_at,
             })
-            .collect())
+            .collect();
+
+        Ok(crate::dto::community_wishes::AdminWishListResponse {
+            wishes: items,
+            total,
+        })
     }
 
     #[tracing::instrument(skip(self))]
