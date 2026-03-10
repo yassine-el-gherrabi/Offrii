@@ -139,8 +139,12 @@ impl traits::CommunityWishRepo for PgCommunityWishRepo {
         .await
     }
 
-    async fn list_flagged(&self) -> Result<Vec<CommunityWish>> {
-        list_flagged(&self.pool).await
+    async fn list_flagged(&self, limit: i64, offset: i64) -> Result<Vec<CommunityWish>> {
+        list_flagged(&self.pool, limit, offset).await
+    }
+
+    async fn count_flagged(&self) -> Result<i64> {
+        count_flagged(&self.pool).await
     }
 
     async fn find_user_is_admin(&self, user_id: Uuid) -> Result<bool> {
@@ -308,7 +312,7 @@ pub(crate) async fn set_matched(
     let rows = sqlx::query(
         "UPDATE community_wishes \
          SET status = 'matched', matched_with = $1, matched_at = $2 \
-         WHERE id = $3",
+         WHERE id = $3 AND status = 'open'",
     )
     .bind(donor_id)
     .bind(matched_at)
@@ -456,16 +460,32 @@ pub(crate) async fn update_content(
     Ok(wish)
 }
 
-pub(crate) async fn list_flagged(exec: impl PgExecutor<'_>) -> Result<Vec<CommunityWish>> {
+pub(crate) async fn list_flagged(
+    exec: impl PgExecutor<'_>,
+    limit: i64,
+    offset: i64,
+) -> Result<Vec<CommunityWish>> {
     let sql = format!(
         "SELECT {WISH_COLS} FROM community_wishes \
          WHERE status IN ('flagged', 'review') \
-         ORDER BY created_at ASC"
+         ORDER BY created_at ASC \
+         LIMIT $1 OFFSET $2"
     );
     let wishes = sqlx::query_as::<_, CommunityWish>(&sql)
+        .bind(limit)
+        .bind(offset)
         .fetch_all(exec)
         .await?;
     Ok(wishes)
+}
+
+pub(crate) async fn count_flagged(exec: impl PgExecutor<'_>) -> Result<i64> {
+    let count: (i64,) = sqlx::query_as(
+        "SELECT COUNT(*) FROM community_wishes WHERE status IN ('flagged', 'review')",
+    )
+    .fetch_one(exec)
+    .await?;
+    Ok(count.0)
 }
 
 pub(crate) async fn find_user_is_admin(exec: impl PgExecutor<'_>, user_id: Uuid) -> Result<bool> {

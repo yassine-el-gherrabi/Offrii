@@ -764,7 +764,9 @@ pub trait CommunityWishRepo: Send + Sync {
         links: Option<&[String]>,
     ) -> Result<Option<CommunityWish>>;
 
-    async fn list_flagged(&self) -> Result<Vec<CommunityWish>>;
+    async fn list_flagged(&self, limit: i64, offset: i64) -> Result<Vec<CommunityWish>>;
+
+    async fn count_flagged(&self) -> Result<i64>;
 
     async fn find_user_is_admin(&self, user_id: Uuid) -> Result<bool>;
 }
@@ -896,7 +898,9 @@ pub trait CommunityWishService: Send + Sync {
 
     async fn admin_list_flagged(
         &self,
-    ) -> Result<Vec<crate::dto::community_wishes::AdminWishResponse>, crate::errors::AppError>;
+        limit: i64,
+        offset: i64,
+    ) -> Result<crate::dto::community_wishes::AdminWishListResponse, crate::errors::AppError>;
 
     async fn admin_approve(&self, wish_id: Uuid) -> Result<(), crate::errors::AppError>;
 

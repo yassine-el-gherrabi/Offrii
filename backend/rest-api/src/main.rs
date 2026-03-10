@@ -1,9 +1,11 @@
 use std::sync::Arc;
 
 use axum::Router;
+use axum::http::{Method, header};
 use axum::routing::get;
 use tokio::net::TcpListener;
 use tokio_cron_scheduler::{Job, JobScheduler};
+use tower_http::cors::CorsLayer;
 use tower_http::trace::TraceLayer;
 use tracing_subscriber::EnvFilter;
 use tracing_subscriber::layer::SubscriberExt as _;
@@ -257,6 +259,20 @@ async fn main() -> anyhow::Result<()> {
         .merge(wish_messages::router())
         .nest("/admin", admin::router())
         .layer(TraceLayer::new_for_http())
+        .layer(
+            CorsLayer::new()
+                .allow_origin(tower_http::cors::Any)
+                .allow_methods([
+                    Method::GET,
+                    Method::POST,
+                    Method::PUT,
+                    Method::PATCH,
+                    Method::DELETE,
+                    Method::OPTIONS,
+                ])
+                .allow_headers([header::AUTHORIZATION, header::CONTENT_TYPE, header::ACCEPT]),
+        )
+        .layer(axum::middleware::from_fn(security_headers))
         .with_state(state);
 
     // CRON scheduler: run reminder job every hour at minute 0
@@ -280,4 +296,19 @@ async fn main() -> anyhow::Result<()> {
     axum::serve(listener, app).await?;
 
     Ok(())
+}
+
+async fn security_headers(
+    req: axum::http::Request<axum::body::Body>,
+    next: axum::middleware::Next,
+) -> axum::response::Response {
+    let mut resp = next.run(req).await;
+    let headers = resp.headers_mut();
+    headers.insert(header::X_CONTENT_TYPE_OPTIONS, "nosniff".parse().unwrap());
+    headers.insert(header::X_FRAME_OPTIONS, "DENY".parse().unwrap());
+    headers.insert(
+        header::STRICT_TRANSPORT_SECURITY,
+        "max-age=31536000; includeSubDomains".parse().unwrap(),
+    );
+    resp
 }

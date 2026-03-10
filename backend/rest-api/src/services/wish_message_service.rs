@@ -145,8 +145,9 @@ impl traits::WishMessageService for PgWishMessageService {
             Some(wish.owner_id)
         };
         if let Some(recipient_id) = other_id {
-            let preview = if body.len() > 50 {
-                format!("{}...", &body[..50])
+            let preview = if body.chars().count() > 50 {
+                let truncated: String = body.chars().take(50).collect();
+                format!("{truncated}...")
             } else {
                 body.to_string()
             };

@@ -126,6 +126,12 @@ pub struct AdminWishResponse {
     pub created_at: DateTime<Utc>,
 }
 
+#[derive(Debug, Clone, Serialize)]
+pub struct AdminWishListResponse {
+    pub wishes: Vec<AdminWishResponse>,
+    pub total: i64,
+}
+
 // ── Validators ───────────────────────────────────────────────────────
 
 const VALID_CATEGORIES: &[&str] = &[
