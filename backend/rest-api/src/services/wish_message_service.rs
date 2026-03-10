@@ -35,32 +35,6 @@ impl PgWishMessageService {
         }
     }
 
-    /// Check that caller is a participant (owner or matched donor).
-    #[allow(dead_code)]
-    async fn check_participant(
-        &self,
-        wish_id: Uuid,
-        user_id: Uuid,
-    ) -> Result<(Uuid, Option<Uuid>), AppError> {
-        let wish = self
-            .wish_repo
-            .find_by_id(wish_id)
-            .await
-            .map_err(AppError::Internal)?
-            .ok_or_else(|| AppError::NotFound("wish not found".into()))?;
-
-        let is_owner = wish.owner_id == user_id;
-        let is_donor = wish.matched_with == Some(user_id);
-
-        if !is_owner && !is_donor {
-            return Err(AppError::Forbidden(
-                "only participants can access messages".into(),
-            ));
-        }
-
-        Ok((wish.owner_id, wish.matched_with))
-    }
-
     fn notify_user(&self, user_id: Uuid, title: String, body: String) {
         let push_token_repo = self.push_token_repo.clone();
         let notification_svc = self.notification_svc.clone();
@@ -209,8 +183,13 @@ impl traits::WishMessageService for PgWishMessageService {
             .await
             .map_err(AppError::Internal)?;
 
-        // Batch-fetch sender names
-        let sender_ids: Vec<Uuid> = messages.iter().map(|m| m.sender_id).collect();
+        // Batch-fetch sender names (dedup to reduce query size)
+        let sender_ids: Vec<Uuid> = messages
+            .iter()
+            .map(|m| m.sender_id)
+            .collect::<std::collections::HashSet<_>>()
+            .into_iter()
+            .collect();
         let users = self
             .user_repo
             .find_by_ids(&sender_ids)

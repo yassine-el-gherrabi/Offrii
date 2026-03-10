@@ -400,8 +400,13 @@ impl traits::CommunityWishService for PgCommunityWishService {
             .await
             .map_err(AppError::Internal)?;
 
-        // Batch-fetch owner display names
-        let owner_ids: Vec<Uuid> = wishes.iter().map(|w| w.owner_id).collect();
+        // Batch-fetch owner display names (dedup to reduce query size)
+        let owner_ids: Vec<Uuid> = wishes
+            .iter()
+            .map(|w| w.owner_id)
+            .collect::<std::collections::HashSet<_>>()
+            .into_iter()
+            .collect();
         let users = self
             .user_repo
             .find_by_ids(&owner_ids)

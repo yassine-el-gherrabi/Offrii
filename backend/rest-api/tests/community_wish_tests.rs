@@ -2714,7 +2714,7 @@ async fn get_wish_rejected_not_visible_to_stranger_404() {
 }
 
 #[tokio::test]
-async fn get_wish_with_unknown_db_status_500() {
+async fn get_wish_with_unknown_db_status_does_not_panic() {
     let app = TestApp::new().await;
     let token = setup_aged_user(&app, "owner@test.com").await;
     let wish_id = create_open_wish(&app, &token).await;
