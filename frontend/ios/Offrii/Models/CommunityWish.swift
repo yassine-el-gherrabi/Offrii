@@ -73,7 +73,7 @@ enum WishReportReason: String, Codable, CaseIterable, Identifiable {
 
 // MARK: - Wish Response (public feed item)
 
-struct CommunityWish: Codable, Identifiable, Equatable {
+struct CommunityWish: Codable, Identifiable, Equatable, Sendable {
     let id: UUID
     let displayName: String?
     let title: String
@@ -98,7 +98,7 @@ struct CommunityWish: Codable, Identifiable, Equatable {
 
 // MARK: - Wish Detail Response
 
-struct WishDetail: Codable, Identifiable, Equatable {
+struct WishDetail: Codable, Identifiable, Equatable, Sendable {
     let id: UUID
     let displayName: String?
     let title: String
@@ -129,7 +129,7 @@ struct WishDetail: Codable, Identifiable, Equatable {
 
 // MARK: - My Wish Response (owner view)
 
-struct MyWish: Codable, Identifiable, Equatable {
+struct MyWish: Codable, Identifiable, Equatable, Sendable {
     let id: UUID
     let title: String
     let description: String?
@@ -164,7 +164,7 @@ struct MyWish: Codable, Identifiable, Equatable {
 
 // MARK: - Wish Message
 
-struct WishMessage: Codable, Identifiable, Equatable {
+struct WishMessage: Codable, Identifiable, Equatable, Sendable {
     let id: UUID
     let senderDisplayName: String
     let isMine: Bool
@@ -181,7 +181,7 @@ struct WishMessage: Codable, Identifiable, Equatable {
 
 // MARK: - Pagination Meta
 
-struct PaginationMeta: Codable, Equatable {
+struct PaginationMeta: Codable, Equatable, Sendable {
     let total: Int
     let page: Int
     let limit: Int
@@ -197,7 +197,7 @@ struct PaginationMeta: Codable, Equatable {
 
 // MARK: - Paginated Response (generic)
 
-struct PaginatedResponse<T: Codable>: Codable where T: Equatable {
+struct PaginatedResponse<T: Codable & Equatable & Sendable>: Codable, Sendable {
     let data: [T]
     let pagination: PaginationMeta
 }
