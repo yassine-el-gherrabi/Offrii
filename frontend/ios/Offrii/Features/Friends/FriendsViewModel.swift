@@ -13,29 +13,33 @@ final class FriendsViewModel {
         isLoading = true
         error = nil
 
-        async let friendsResult: Result<[FriendResponse], Error> = Result {
-            try await FriendService.shared.listFriends()
-        }
-        async let pendingResult: Result<[FriendRequestResponse], Error> = Result {
-            try await FriendService.shared.listPendingRequests()
-        }
-        async let sentResult: Result<[SentFriendRequestResponse], Error> = Result {
-            try await FriendService.shared.listSentRequests()
+        var failCount = 0
+        var lastError: String?
+
+        do {
+            friends = try await FriendService.shared.listFriends()
+        } catch {
+            failCount += 1
+            lastError = error.localizedDescription
         }
 
-        let (fr, pr, sr) = await (friendsResult, pendingResult, sentResult)
+        do {
+            pendingRequests = try await FriendService.shared.listPendingRequests()
+        } catch {
+            failCount += 1
+            lastError = error.localizedDescription
+        }
 
-        if case .success(let val) = fr { friends = val }
-        if case .success(let val) = pr { pendingRequests = val }
-        if case .success(let val) = sr { sentRequests = val }
+        do {
+            sentRequests = try await FriendService.shared.listSentRequests()
+        } catch {
+            failCount += 1
+            lastError = error.localizedDescription
+        }
 
         // Show error only if all three failed
-        var errors: [Error] = []
-        if case .failure(let err) = fr { errors.append(err) }
-        if case .failure(let err) = pr { errors.append(err) }
-        if case .failure(let err) = sr { errors.append(err) }
-        if errors.count == 3 {
-            self.error = errors.first?.localizedDescription
+        if failCount == 3 {
+            self.error = lastError
         }
 
         isLoading = false
