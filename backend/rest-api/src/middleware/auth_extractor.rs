@@ -22,19 +22,9 @@ fn parse_bearer_token(header_value: &str) -> Result<&str, AppError> {
         .ok_or_else(|| AppError::Unauthorized("invalid authorization header format".into()))
 }
 
-impl FromRequestParts<AppState> for AuthUser {
-    type Rejection = AppError;
-
-    async fn from_request_parts(
-        parts: &mut Parts,
-        state: &AppState,
-    ) -> Result<Self, Self::Rejection> {
-        let header = parts
-            .headers
-            .get(axum::http::header::AUTHORIZATION)
-            .and_then(|v| v.to_str().ok())
-            .ok_or_else(|| AppError::Unauthorized("missing authorization header".into()))?;
-
+impl AuthUser {
+    /// Shared logic for validating a Bearer token header value.
+    async fn from_header(header: &str, state: &AppState) -> Result<Self, AppError> {
         let token = parse_bearer_token(header)?;
 
         let claims = state
@@ -78,6 +68,81 @@ impl FromRequestParts<AppState> for AuthUser {
             jti: claims.jti,
             exp: claims.exp,
         })
+    }
+}
+
+impl FromRequestParts<AppState> for AuthUser {
+    type Rejection = AppError;
+
+    async fn from_request_parts(
+        parts: &mut Parts,
+        state: &AppState,
+    ) -> Result<Self, Self::Rejection> {
+        let header = parts
+            .headers
+            .get(axum::http::header::AUTHORIZATION)
+            .and_then(|v| v.to_str().ok())
+            .ok_or_else(|| AppError::Unauthorized("missing authorization header".into()))?;
+
+        Self::from_header(header, state).await
+    }
+}
+
+/// Extracted from the `Authorization: Bearer <access_token>` header.
+/// Returns `None` if no token is present (public access), or `Some(AuthUser)` if valid.
+#[derive(Debug, Clone)]
+pub struct OptionalAuthUser(pub Option<AuthUser>);
+
+impl FromRequestParts<AppState> for OptionalAuthUser {
+    type Rejection = AppError;
+
+    async fn from_request_parts(
+        parts: &mut Parts,
+        state: &AppState,
+    ) -> Result<Self, Self::Rejection> {
+        let header = parts
+            .headers
+            .get(axum::http::header::AUTHORIZATION)
+            .and_then(|v| v.to_str().ok());
+
+        let Some(header) = header else {
+            return Ok(OptionalAuthUser(None));
+        };
+
+        // If a header is present, it must be valid
+        let auth_user = AuthUser::from_header(header, state).await?;
+        Ok(OptionalAuthUser(Some(auth_user)))
+    }
+}
+
+/// Admin-only extractor. Validates that the authenticated user has is_admin = true.
+#[derive(Debug, Clone)]
+pub struct AdminUser {
+    pub user_id: Uuid,
+}
+
+impl FromRequestParts<AppState> for AdminUser {
+    type Rejection = AppError;
+
+    async fn from_request_parts(
+        parts: &mut Parts,
+        state: &AppState,
+    ) -> Result<Self, Self::Rejection> {
+        let auth_user = AuthUser::from_request_parts(parts, state).await?;
+
+        // Check admin status via a quick DB query
+        let is_admin: Option<(bool,)> = sqlx::query_as("SELECT is_admin FROM users WHERE id = $1")
+            .bind(auth_user.user_id)
+            .fetch_optional(&state.db)
+            .await
+            .map_err(|e| AppError::Internal(anyhow::anyhow!(e)))?;
+
+        match is_admin {
+            Some((true,)) => Ok(AdminUser {
+                user_id: auth_user.user_id,
+            }),
+            _ => Err(AppError::Forbidden("admin access required".into())),
+        }
     }
 }
 

@@ -1,9 +1,11 @@
 pub mod auth;
 pub mod categories;
 pub mod circles;
+pub mod community_wishes;
 pub mod friends;
 pub mod health;
 pub mod items;
 pub mod push_tokens;
 pub mod share_links;
 pub mod users;
+pub mod wish_messages;

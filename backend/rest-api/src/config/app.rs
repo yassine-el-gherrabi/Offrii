@@ -13,6 +13,8 @@ pub struct Config {
     pub apns_bundle_id: String,
     pub apns_sandbox: bool,
     pub app_base_url: String,
+    pub moderation_enabled: bool,
+    pub openai_api_key: Option<String>,
 }
 
 impl Config {
@@ -53,6 +55,13 @@ impl Config {
         let app_base_url =
             var("APP_BASE_URL").unwrap_or_else(|_| format!("http://localhost:{api_port}"));
 
+        let moderation_enabled = var("MODERATION_ENABLED")
+            .unwrap_or_else(|_| "false".to_string())
+            .parse::<bool>()
+            .map_err(|_| anyhow::anyhow!("MODERATION_ENABLED must be true or false"))?;
+
+        let openai_api_key = var("OPENAI_API_KEY").ok();
+
         Ok(Self {
             database_url,
             redis_url,
@@ -65,6 +74,8 @@ impl Config {
             apns_bundle_id,
             apns_sandbox,
             app_base_url,
+            moderation_enabled,
+            openai_api_key,
         })
     }
 }
@@ -322,5 +333,99 @@ mod tests {
                 .contains("APNS_SANDBOX must be true or false"),
             "unexpected error: {err}"
         );
+    }
+
+    #[test]
+    fn from_vars_moderation_enabled_true() {
+        let cfg = Config::from_vars(vars! {
+            "DATABASE_URL" => "postgres://localhost/test",
+            "RESEND_API_KEY" => "re_test",
+            "APNS_KEY_PATH" => "./key.p8",
+            "APNS_KEY_ID" => "K1",
+            "APNS_TEAM_ID" => "T1",
+            "APNS_BUNDLE_ID" => "com.test",
+            "MODERATION_ENABLED" => "true",
+            "OPENAI_API_KEY" => "sk-test",
+        })
+        .unwrap();
+        assert!(cfg.moderation_enabled);
+        assert_eq!(cfg.openai_api_key, Some("sk-test".to_string()));
+    }
+
+    #[test]
+    fn from_vars_moderation_enabled_false() {
+        let cfg = Config::from_vars(vars! {
+            "DATABASE_URL" => "postgres://localhost/test",
+            "RESEND_API_KEY" => "re_test",
+            "APNS_KEY_PATH" => "./key.p8",
+            "APNS_KEY_ID" => "K1",
+            "APNS_TEAM_ID" => "T1",
+            "APNS_BUNDLE_ID" => "com.test",
+            "MODERATION_ENABLED" => "false",
+        })
+        .unwrap();
+        assert!(!cfg.moderation_enabled);
+    }
+
+    #[test]
+    fn from_vars_moderation_enabled_defaults_to_false() {
+        let cfg = Config::from_vars(vars! {
+            "DATABASE_URL" => "postgres://localhost/test",
+            "RESEND_API_KEY" => "re_test",
+            "APNS_KEY_PATH" => "./key.p8",
+            "APNS_KEY_ID" => "K1",
+            "APNS_TEAM_ID" => "T1",
+            "APNS_BUNDLE_ID" => "com.test",
+        })
+        .unwrap();
+        assert!(!cfg.moderation_enabled);
+    }
+
+    #[test]
+    fn from_vars_moderation_enabled_invalid() {
+        let err = Config::from_vars(vars! {
+            "DATABASE_URL" => "postgres://localhost/test",
+            "RESEND_API_KEY" => "re_test",
+            "APNS_KEY_PATH" => "./key.p8",
+            "APNS_KEY_ID" => "K1",
+            "APNS_TEAM_ID" => "T1",
+            "APNS_BUNDLE_ID" => "com.test",
+            "MODERATION_ENABLED" => "yes",
+        })
+        .unwrap_err();
+        assert!(
+            err.to_string()
+                .contains("MODERATION_ENABLED must be true or false"),
+            "unexpected error: {err}"
+        );
+    }
+
+    #[test]
+    fn from_vars_openai_api_key_present() {
+        let cfg = Config::from_vars(vars! {
+            "DATABASE_URL" => "postgres://localhost/test",
+            "RESEND_API_KEY" => "re_test",
+            "APNS_KEY_PATH" => "./key.p8",
+            "APNS_KEY_ID" => "K1",
+            "APNS_TEAM_ID" => "T1",
+            "APNS_BUNDLE_ID" => "com.test",
+            "OPENAI_API_KEY" => "sk-test-123",
+        })
+        .unwrap();
+        assert_eq!(cfg.openai_api_key, Some("sk-test-123".to_string()));
+    }
+
+    #[test]
+    fn from_vars_openai_api_key_absent() {
+        let cfg = Config::from_vars(vars! {
+            "DATABASE_URL" => "postgres://localhost/test",
+            "RESEND_API_KEY" => "re_test",
+            "APNS_KEY_PATH" => "./key.p8",
+            "APNS_KEY_ID" => "K1",
+            "APNS_TEAM_ID" => "T1",
+            "APNS_BUNDLE_ID" => "com.test",
+        })
+        .unwrap();
+        assert_eq!(cfg.openai_api_key, None);
     }
 }

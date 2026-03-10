@@ -1,3 +1,3 @@
 pub mod auth_extractor;
 
-pub use auth_extractor::AuthUser;
+pub use auth_extractor::{AdminUser, AuthUser, OptionalAuthUser};
