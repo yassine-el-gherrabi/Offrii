@@ -193,3 +193,65 @@ struct ShareItemBody: Encodable {
 struct SendFriendRequestBody: Encodable {
     let username: String
 }
+
+// MARK: - Community Wish Body Types
+
+struct ListCommunityWishesQuery {
+    let category: String?
+    let page: Int
+    let limit: Int
+
+    init(category: String? = nil, page: Int = 1, limit: Int = 20) {
+        self.category = category
+        self.page = page
+        self.limit = limit
+    }
+}
+
+struct CreateCommunityWishBody: Encodable {
+    let title: String
+    let description: String?
+    let category: String
+    let isAnonymous: Bool
+    let imageUrl: String?
+    let links: [String]?
+
+    enum CodingKeys: String, CodingKey {
+        case title, description, category, links
+        case isAnonymous = "is_anonymous"
+        case imageUrl = "image_url"
+    }
+}
+
+struct UpdateCommunityWishBody: Encodable {
+    let title: String?
+    let description: String?
+    let category: String?
+    let imageUrl: String?
+    let links: [String]?
+
+    enum CodingKeys: String, CodingKey {
+        case title, description, category, links
+        case imageUrl = "image_url"
+    }
+}
+
+struct ReportCommunityWishBody: Encodable {
+    let reason: String?
+}
+
+// MARK: - Wish Message Body Types
+
+struct ListWishMessagesQuery {
+    let page: Int
+    let limit: Int
+
+    init(page: Int = 1, limit: Int = 20) {
+        self.page = page
+        self.limit = limit
+    }
+}
+
+struct SendWishMessageBody: Encodable {
+    let body: String
+}

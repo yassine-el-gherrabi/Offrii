@@ -3,6 +3,7 @@ excluded:
   - DerivedData
   - .build
   - build
+  - Offrii/.build
   - Package.swift
 
 disabled_rules:
