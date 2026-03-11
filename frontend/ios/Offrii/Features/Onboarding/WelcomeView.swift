@@ -122,7 +122,7 @@ struct WelcomeView: View {
             }
 
             Button {
-                router.completeOnboarding()
+                router.completeOnboardingToLogin()
             } label: {
                 Text(NSLocalizedString("onboarding.alreadyAccount", comment: ""))
                     .font(OffriiTypography.subheadline)

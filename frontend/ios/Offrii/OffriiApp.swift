@@ -40,6 +40,7 @@ struct OffriiApp: App {
                         }
                 }
             }
+            .animation(OffriiAnimation.modal, value: router.currentScreen)
             .environment(authManager)
             .environment(router)
         }
@@ -48,11 +49,13 @@ struct OffriiApp: App {
 
 struct AuthContainerView: View {
     @Environment(AppRouter.self) private var router
-    @State private var showLogin = true
+    @State private var showLogin: Bool?
     let onAuthenticated: (_ isNewUser: Bool) -> Void
 
+    private var isLogin: Bool { showLogin ?? !router.preferRegister }
+
     var body: some View {
-        if showLogin {
+        if isLogin {
             LoginView(
                 isReturningUser: router.isReturningUser,
                 onAuthenticated: { onAuthenticated(false) },
@@ -99,3 +102,4 @@ struct MainTabView: View {
         .ignoresSafeArea(.keyboard)
     }
 }
+

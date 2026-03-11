@@ -36,9 +36,20 @@ final class AppRouter {
         }
     }
 
-    /// Marks onboarding as complete and navigates to auth.
+    /// Whether the auth screen should start on register (true) or login (false).
+    var preferRegister = true
+
+    /// Marks onboarding as complete and navigates to auth (register).
     func completeOnboarding() {
         hasSeenWelcome = true
+        preferRegister = true
+        currentScreen = .auth
+    }
+
+    /// Marks onboarding as complete and navigates to auth (login).
+    func completeOnboardingToLogin() {
+        hasSeenWelcome = true
+        preferRegister = false
         currentScreen = .auth
     }
 
