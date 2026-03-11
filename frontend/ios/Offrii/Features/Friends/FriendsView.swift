@@ -7,10 +7,12 @@ struct FriendsView: View {
 
     var body: some View {
         ZStack {
-            OffriiTheme.cardSurface.ignoresSafeArea()
+            OffriiTheme.background.ignoresSafeArea()
 
             if viewModel.isLoading && viewModel.friends.isEmpty && viewModel.pendingRequests.isEmpty && viewModel.sentRequests.isEmpty {
-                ProgressView()
+                VStack(spacing: OffriiTheme.spacingSM) {
+                    SkeletonList(count: 5)
+                }
             } else {
                 List {
                     // Pending requests section

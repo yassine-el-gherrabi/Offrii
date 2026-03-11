@@ -5,21 +5,49 @@ import SwiftUI
 struct OffriiChip: View {
     let title: String
     let isSelected: Bool
+    var backgroundColor: Color?
+    var textColor: Color?
     let action: () -> Void
 
+    @State private var isPressed = false
+
     var body: some View {
-        Button(action: action) {
+        Button(action: {
+            OffriiHaptics.selection()
+            action()
+        }) {
             Text(title)
                 .font(OffriiTypography.footnote)
                 .fontWeight(isSelected ? .semibold : .regular)
-                .foregroundColor(isSelected ? .white : OffriiTheme.textSecondary)
+                .foregroundColor(chipTextColor)
                 .padding(.horizontal, OffriiTheme.spacingMD)
                 .padding(.vertical, OffriiTheme.spacingSM)
-                .background(isSelected ? OffriiTheme.primary : OffriiTheme.cardSurface)
-                .cornerRadius(OffriiTheme.cornerRadiusXL)
+                .background(chipBackground)
+                .cornerRadius(OffriiTheme.cornerRadiusSM)
         }
         .buttonStyle(.plain)
-        .animation(OffriiTheme.defaultAnimation, value: isSelected)
+        .scaleEffect(isPressed ? 1.05 : 1.0)
+        .animation(OffriiAnimation.snappy, value: isSelected)
+        .animation(OffriiAnimation.micro, value: isPressed)
+        .pressEvents {
+            isPressed = true
+        } onRelease: {
+            isPressed = false
+        }
+    }
+
+    private var chipBackground: Color {
+        if let backgroundColor, isSelected {
+            return backgroundColor
+        }
+        return isSelected ? OffriiTheme.primary : OffriiTheme.surface
+    }
+
+    private var chipTextColor: Color {
+        if let textColor, isSelected {
+            return textColor
+        }
+        return isSelected ? .white : OffriiTheme.textSecondary
     }
 }
 
@@ -46,7 +74,7 @@ struct OffriiChipGroup: View {
                     )
                 }
             }
-            .padding(.horizontal, OffriiTheme.spacingMD)
+            .padding(.horizontal, OffriiTheme.spacingBase)
         }
     }
 }
@@ -74,40 +102,7 @@ struct OffriiChipGroupMulti: View {
                     )
                 }
             }
-            .padding(.horizontal, OffriiTheme.spacingMD)
+            .padding(.horizontal, OffriiTheme.spacingBase)
         }
     }
 }
-
-// MARK: - Preview
-
-#if DEBUG
-struct OffriiChip_Previews: PreviewProvider {
-    struct PreviewWrapper: View {
-        @State private var selected: String? = "Maison"
-        @State private var multiSelected: Set<String> = ["Sport"]
-        private let categories = ["Tout", "Maison", "Sport", "Tech", "Mode", "Cuisine"]
-
-        var body: some View {
-            VStack(alignment: .leading, spacing: OffriiTheme.spacingLG) {
-                Text("Single Select")
-                    .font(OffriiTypography.headline)
-                    .foregroundColor(OffriiTheme.text)
-                OffriiChipGroup(items: categories, selectedItem: $selected)
-
-                Text("Multi Select")
-                    .font(OffriiTypography.headline)
-                    .foregroundColor(OffriiTheme.text)
-                OffriiChipGroupMulti(items: categories, selectedItems: $multiSelected)
-            }
-            .padding(.vertical, OffriiTheme.spacingLG)
-            .background(OffriiTheme.card)
-        }
-    }
-
-    static var previews: some View {
-        PreviewWrapper()
-            .previewLayout(.sizeThatFits)
-    }
-}
-#endif

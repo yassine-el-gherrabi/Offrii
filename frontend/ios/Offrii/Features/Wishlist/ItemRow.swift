@@ -5,7 +5,7 @@ struct ItemRow: View {
     let categoryName: String?
 
     var body: some View {
-        HStack(spacing: OffriiTheme.spacingMD) {
+        HStack(spacing: OffriiTheme.spacingBase) {
             // Gift icon
             RoundedRectangle(cornerRadius: OffriiTheme.cornerRadiusSM)
                 .fill(OffriiTheme.primary.opacity(0.1))
@@ -55,7 +55,7 @@ struct ItemRow: View {
                         .padding(.horizontal, 6)
                         .padding(.vertical, 2)
                         .background(OffriiTheme.accent.opacity(0.15))
-                        .cornerRadius(4)
+                        .cornerRadius(OffriiTheme.cornerRadiusXS)
                 }
             }
         }
@@ -74,6 +74,6 @@ struct ItemRow: View {
         let formatter = NumberFormatter()
         formatter.numberStyle = .currency
         formatter.currencyCode = "EUR"
-        return formatter.string(from: price as NSDecimalNumber) ?? "\(price) €"
+        return formatter.string(from: price as NSDecimalNumber) ?? "\(price) \u{20AC}"
     }
 }

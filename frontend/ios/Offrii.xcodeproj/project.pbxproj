@@ -27,7 +27,6 @@
 		B10000000000000000000007 /* APIEndpoint.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000007 /* APIEndpoint.swift */; };
 		B10000000000000000000050 /* APIRequestBodies.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000050 /* APIRequestBodies.swift */; };
 		B10000000000000000000008 /* APIError.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000008 /* APIError.swift */; };
-		B10000000000000000000009 /* HeaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000009 /* HeaderView.swift */; };
 		B10000000000000000000010 /* OffriiButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000010 /* OffriiButton.swift */; };
 		B10000000000000000000011 /* OffriiCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000011 /* OffriiCard.swift */; };
 		B10000000000000000000012 /* OffriiChip.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000012 /* OffriiChip.swift */; };
@@ -41,8 +40,6 @@
 		B10000000000000000000020 /* RegisterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000020 /* RegisterView.swift */; };
 		B10000000000000000000021 /* CategoryPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000021 /* CategoryPickerView.swift */; };
 		B10000000000000000000022 /* LegalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000022 /* LegalView.swift */; };
-		B10000000000000000000023 /* OnboardingStep.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000023 /* OnboardingStep.swift */; };
-		B10000000000000000000024 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000024 /* OnboardingView.swift */; };
 		B10000000000000000000025 /* ComingSoonView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000025 /* ComingSoonView.swift */; };
 		B10000000000000000000026 /* DataManagementView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000026 /* DataManagementView.swift */; };
 		B10000000000000000000027 /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000027 /* ProfileView.swift */; };
@@ -65,8 +62,6 @@
 		B10000000000000000000044 /* PushTokenService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000044 /* PushTokenService.swift */; };
 		B10000000000000000000045 /* UserService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000045 /* UserService.swift */; };
 		B10000000000000000000046 /* SSOButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000046 /* SSOButton.swift */; };
-		B10000000000000000000047 /* AuthHeaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000047 /* AuthHeaderView.swift */; };
-		B10000000000000000000048 /* DecorativeSquares.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000048 /* DecorativeSquares.swift */; };
 		B10000000000000000000049 /* UsernameEditView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000049 /* UsernameEditView.swift */; };
 		B20000000000000000000001 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000001 /* Assets.xcassets */; };
 		B20000000000000000000002 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000002 /* Localizable.strings */; };
@@ -104,6 +99,21 @@
 		AE91A25ABF5AC3210209D492 /* WishStatusBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB746F8E4C0CA62230678B26 /* WishStatusBadge.swift */; };
 		0EB44304D486DC547B3D90E6 /* WishCategoryChip.swift in Sources */ = {isa = PBXBuildFile; fileRef = 692F105AB59AB2CCA6E9CE33 /* WishCategoryChip.swift */; };
 		1FDC83C57F2C7F0F487A12BE /* CategoryGridPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8262AB8C23B2EE20424C1B5D /* CategoryGridPicker.swift */; };
+		BB0000000000000000000001 /* Spacing.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000001 /* Spacing.swift */; };
+		BB0000000000000000000002 /* Radius.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000002 /* Radius.swift */; };
+		BB0000000000000000000003 /* Shadows.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000003 /* Shadows.swift */; };
+		BB0000000000000000000004 /* Animations.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000004 /* Animations.swift */; };
+		BB0000000000000000000005 /* Skeletons.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000005 /* Skeletons.swift */; };
+		BB0000000000000000000006 /* BlobShape.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000006 /* BlobShape.swift */; };
+		BB0000000000000000000007 /* AnimatableVector.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000007 /* AnimatableVector.swift */; };
+		BB0000000000000000000008 /* SectionHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000008 /* SectionHeader.swift */; };
+		BB0000000000000000000009 /* OffriiEmptyState.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000009 /* OffriiEmptyState.swift */; };
+		BB0000000000000000000010 /* OffriiErrorState.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000010 /* OffriiErrorState.swift */; };
+		BB0000000000000000000011 /* OffriiFloatingActionButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000011 /* OffriiFloatingActionButton.swift */; };
+		BB0000000000000000000012 /* OffriiToast.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000012 /* OffriiToast.swift */; };
+		BB0000000000000000000013 /* OffriiTooltip.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000013 /* OffriiTooltip.swift */; };
+		BB0000000000000000000014 /* OffriiSpinner.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000014 /* OffriiSpinner.swift */; };
+		BB0000000000000000000015 /* OnboardingTipManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000015 /* OnboardingTipManager.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -136,7 +146,6 @@
 		A10000000000000000000007 /* APIEndpoint.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIEndpoint.swift; sourceTree = "<group>"; };
 		A10000000000000000000050 /* APIRequestBodies.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIRequestBodies.swift; sourceTree = "<group>"; };
 		A10000000000000000000008 /* APIError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIError.swift; sourceTree = "<group>"; };
-		A10000000000000000000009 /* HeaderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HeaderView.swift; sourceTree = "<group>"; };
 		A10000000000000000000010 /* OffriiButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OffriiButton.swift; sourceTree = "<group>"; };
 		A10000000000000000000011 /* OffriiCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OffriiCard.swift; sourceTree = "<group>"; };
 		A10000000000000000000012 /* OffriiChip.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OffriiChip.swift; sourceTree = "<group>"; };
@@ -150,8 +159,6 @@
 		A10000000000000000000020 /* RegisterView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RegisterView.swift; sourceTree = "<group>"; };
 		A10000000000000000000021 /* CategoryPickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategoryPickerView.swift; sourceTree = "<group>"; };
 		A10000000000000000000022 /* LegalView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LegalView.swift; sourceTree = "<group>"; };
-		A10000000000000000000023 /* OnboardingStep.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingStep.swift; sourceTree = "<group>"; };
-		A10000000000000000000024 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
 		A10000000000000000000025 /* ComingSoonView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComingSoonView.swift; sourceTree = "<group>"; };
 		A10000000000000000000026 /* DataManagementView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataManagementView.swift; sourceTree = "<group>"; };
 		A10000000000000000000027 /* ProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileView.swift; sourceTree = "<group>"; };
@@ -174,8 +181,6 @@
 		A10000000000000000000044 /* PushTokenService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PushTokenService.swift; sourceTree = "<group>"; };
 		A10000000000000000000045 /* UserService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserService.swift; sourceTree = "<group>"; };
 		A10000000000000000000046 /* SSOButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SSOButton.swift; sourceTree = "<group>"; };
-		A10000000000000000000047 /* AuthHeaderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthHeaderView.swift; sourceTree = "<group>"; };
-		A10000000000000000000048 /* DecorativeSquares.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DecorativeSquares.swift; sourceTree = "<group>"; };
 		A10000000000000000000049 /* UsernameEditView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsernameEditView.swift; sourceTree = "<group>"; };
 		A20000000000000000000001 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A20000000000000000000002 /* Localizable.strings */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; path = Localizable.strings; sourceTree = "<group>"; };
@@ -215,6 +220,21 @@
 		AB746F8E4C0CA62230678B26 /* WishStatusBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WishStatusBadge.swift; sourceTree = "<group>"; };
 		692F105AB59AB2CCA6E9CE33 /* WishCategoryChip.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WishCategoryChip.swift; sourceTree = "<group>"; };
 		8262AB8C23B2EE20424C1B5D /* CategoryGridPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategoryGridPicker.swift; sourceTree = "<group>"; };
+		AA0000000000000000000001 /* Spacing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Spacing.swift; sourceTree = "<group>"; };
+		AA0000000000000000000002 /* Radius.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Radius.swift; sourceTree = "<group>"; };
+		AA0000000000000000000003 /* Shadows.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Shadows.swift; sourceTree = "<group>"; };
+		AA0000000000000000000004 /* Animations.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Animations.swift; sourceTree = "<group>"; };
+		AA0000000000000000000005 /* Skeletons.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Skeletons.swift; sourceTree = "<group>"; };
+		AA0000000000000000000006 /* BlobShape.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BlobShape.swift; sourceTree = "<group>"; };
+		AA0000000000000000000007 /* AnimatableVector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnimatableVector.swift; sourceTree = "<group>"; };
+		AA0000000000000000000008 /* SectionHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SectionHeader.swift; sourceTree = "<group>"; };
+		AA0000000000000000000009 /* OffriiEmptyState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OffriiEmptyState.swift; sourceTree = "<group>"; };
+		AA0000000000000000000010 /* OffriiErrorState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OffriiErrorState.swift; sourceTree = "<group>"; };
+		AA0000000000000000000011 /* OffriiFloatingActionButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OffriiFloatingActionButton.swift; sourceTree = "<group>"; };
+		AA0000000000000000000012 /* OffriiToast.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OffriiToast.swift; sourceTree = "<group>"; };
+		AA0000000000000000000013 /* OffriiTooltip.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OffriiTooltip.swift; sourceTree = "<group>"; };
+		AA0000000000000000000014 /* OffriiSpinner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OffriiSpinner.swift; sourceTree = "<group>"; };
+		AA0000000000000000000015 /* OnboardingTipManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingTipManager.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -351,6 +371,12 @@
 				C00000000000000000000011 /* Localization */,
 				A10000000000000000000015 /* Theme.swift */,
 				A10000000000000000000016 /* Typography.swift */,
+				AA0000000000000000000001 /* Spacing.swift */,
+				AA0000000000000000000002 /* Radius.swift */,
+				AA0000000000000000000003 /* Shadows.swift */,
+				AA0000000000000000000004 /* Animations.swift */,
+				AA0000000000000000000005 /* Skeletons.swift */,
+				CC0000000000000000000001 /* Shapes */,
 			);
 			path = DesignSystem;
 			sourceTree = "<group>";
@@ -359,10 +385,7 @@
 			isa = PBXGroup;
 			children = (
 				58F0F5B130F191CB76DB83CC /* MessageBubble.swift */,
-				A10000000000000000000047 /* AuthHeaderView.swift */,
-				A10000000000000000000048 /* DecorativeSquares.swift */,
-				A10000000000000000000009 /* HeaderView.swift */,
-				A10000000000000000000010 /* OffriiButton.swift */,
+										A10000000000000000000010 /* OffriiButton.swift */,
 				A10000000000000000000011 /* OffriiCard.swift */,
 				A10000000000000000000012 /* OffriiChip.swift */,
 				A10000000000000000000013 /* OffriiTextField.swift */,
@@ -370,6 +393,13 @@
 				A10000000000000000000014 /* TabBarView.swift */,
 				2CC946E23E60A612A2F1640C /* AvatarView.swift */,
 				F19D296A0047D817CD0475CC /* StackedAvatarsView.swift */,
+				AA0000000000000000000008 /* SectionHeader.swift */,
+				AA0000000000000000000009 /* OffriiEmptyState.swift */,
+				AA0000000000000000000010 /* OffriiErrorState.swift */,
+				AA0000000000000000000011 /* OffriiFloatingActionButton.swift */,
+				AA0000000000000000000012 /* OffriiToast.swift */,
+				AA0000000000000000000013 /* OffriiTooltip.swift */,
+				AA0000000000000000000014 /* OffriiSpinner.swift */,
 			);
 			path = Components;
 			sourceTree = "<group>";
@@ -430,8 +460,7 @@
 		C00000000000000000000017 /* Onboarding */ = {
 			isa = PBXGroup;
 			children = (
-				A10000000000000000000023 /* OnboardingStep.swift */,
-				A10000000000000000000024 /* OnboardingView.swift */,
+				AA0000000000000000000015 /* OnboardingTipManager.swift */,
 			);
 			path = Onboarding;
 			sourceTree = "<group>";
@@ -558,6 +587,15 @@
 			path = Entraide;
 			sourceTree = "<group>";
 		};
+		CC0000000000000000000001 /* Shapes */ = {
+			isa = PBXGroup;
+			children = (
+				AA0000000000000000000006 /* BlobShape.swift */,
+				AA0000000000000000000007 /* AnimatableVector.swift */,
+			);
+			path = Shapes;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -675,7 +713,6 @@
 				B10000000000000000000007 /* APIEndpoint.swift in Sources */,
 				B10000000000000000000050 /* APIRequestBodies.swift in Sources */,
 				B10000000000000000000008 /* APIError.swift in Sources */,
-				B10000000000000000000009 /* HeaderView.swift in Sources */,
 				B10000000000000000000010 /* OffriiButton.swift in Sources */,
 				B10000000000000000000011 /* OffriiCard.swift in Sources */,
 				B10000000000000000000012 /* OffriiChip.swift in Sources */,
@@ -689,8 +726,6 @@
 				B10000000000000000000020 /* RegisterView.swift in Sources */,
 				B10000000000000000000021 /* CategoryPickerView.swift in Sources */,
 				B10000000000000000000022 /* LegalView.swift in Sources */,
-				B10000000000000000000023 /* OnboardingStep.swift in Sources */,
-				B10000000000000000000024 /* OnboardingView.swift in Sources */,
 				B10000000000000000000025 /* ComingSoonView.swift in Sources */,
 				B10000000000000000000026 /* DataManagementView.swift in Sources */,
 				B10000000000000000000027 /* ProfileView.swift in Sources */,
@@ -714,8 +749,6 @@
 				B10000000000000000000044 /* PushTokenService.swift in Sources */,
 				B10000000000000000000045 /* UserService.swift in Sources */,
 				B10000000000000000000046 /* SSOButton.swift in Sources */,
-				B10000000000000000000047 /* AuthHeaderView.swift in Sources */,
-				B10000000000000000000048 /* DecorativeSquares.swift in Sources */,
 				FE208C7C4F62D4FA39CE6566 /* Circle.swift in Sources */,
 				103EEE9EB1A6E8CF566004BD /* CircleModels.swift in Sources */,
 				D650FB03CE091B982E86B409 /* Friend.swift in Sources */,
@@ -753,6 +786,21 @@
 				AE91A25ABF5AC3210209D492 /* WishStatusBadge.swift in Sources */,
 				0EB44304D486DC547B3D90E6 /* WishCategoryChip.swift in Sources */,
 				1FDC83C57F2C7F0F487A12BE /* CategoryGridPicker.swift in Sources */,
+				BB0000000000000000000001 /* Spacing.swift in Sources */,
+				BB0000000000000000000002 /* Radius.swift in Sources */,
+				BB0000000000000000000003 /* Shadows.swift in Sources */,
+				BB0000000000000000000004 /* Animations.swift in Sources */,
+				BB0000000000000000000005 /* Skeletons.swift in Sources */,
+				BB0000000000000000000006 /* BlobShape.swift in Sources */,
+				BB0000000000000000000007 /* AnimatableVector.swift in Sources */,
+				BB0000000000000000000008 /* SectionHeader.swift in Sources */,
+				BB0000000000000000000009 /* OffriiEmptyState.swift in Sources */,
+				BB0000000000000000000010 /* OffriiErrorState.swift in Sources */,
+				BB0000000000000000000011 /* OffriiFloatingActionButton.swift in Sources */,
+				BB0000000000000000000012 /* OffriiToast.swift in Sources */,
+				BB0000000000000000000013 /* OffriiTooltip.swift in Sources */,
+				BB0000000000000000000014 /* OffriiSpinner.swift in Sources */,
+				BB0000000000000000000015 /* OnboardingTipManager.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -8,7 +8,7 @@ struct QuickAddSheet: View {
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: OffriiTheme.spacingMD) {
+            VStack(spacing: OffriiTheme.spacingBase) {
                 OffriiTextField(
                     label: NSLocalizedString("wishlist.quickAdd.placeholder", comment: ""),
                     text: $name,
@@ -33,7 +33,7 @@ struct QuickAddSheet: View {
                 Spacer()
             }
             .padding(OffriiTheme.spacingLG)
-            .background(OffriiTheme.cardSurface.ignoresSafeArea())
+            .background(OffriiTheme.background.ignoresSafeArea())
             .navigationTitle(NSLocalizedString("wishlist.quickAdd.title", comment: ""))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

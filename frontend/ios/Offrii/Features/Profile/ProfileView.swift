@@ -2,50 +2,37 @@ import SwiftUI
 
 struct ProfileView: View {
     @Environment(AuthManager.self) private var authManager
+    @Environment(OnboardingTipManager.self) private var tipManager
     @State private var viewModel = ProfileViewModel()
-    @State private var showOnboarding = false
-
     var body: some View {
         ZStack {
-            OffriiTheme.cardSurface.ignoresSafeArea()
+            OffriiTheme.background.ignoresSafeArea()
 
             ScrollView {
                 VStack(spacing: 0) {
                     // Header with avatar
-                    ZStack {
-                        OffriiTheme.primary.ignoresSafeArea(edges: .top)
-                        DecorativeSquares(preset: .header)
+                    ZStack(alignment: .bottom) {
+                        SectionHeader(
+                            title: viewModel.displayName,
+                            subtitle: viewModel.email,
+                            variant: .profil
+                        )
 
+                        // Avatar overlapping the header bottom
                         VStack(spacing: OffriiTheme.spacingSM) {
-                            // Avatar initials
-                            Circle()
-                                .fill(Color.white.opacity(0.2))
-                                .frame(width: 72, height: 72)
-                                .overlay(
-                                    Text(viewModel.initials)
-                                        .font(.system(size: 28, weight: .bold))
-                                        .foregroundColor(.white)
-                                )
-
-                            Text(viewModel.displayName)
-                                .font(OffriiTypography.title)
-                                .foregroundColor(.white)
+                            AvatarView(viewModel.displayName, size: .xl)
 
                             if !viewModel.username.isEmpty {
                                 Text("@\(viewModel.username)")
                                     .font(OffriiTypography.subheadline)
                                     .foregroundColor(.white.opacity(0.8))
                             }
-
-                            Text(viewModel.email)
-                                .font(OffriiTypography.subheadline)
-                                .foregroundColor(.white.opacity(0.8))
                         }
-                        .padding(.vertical, OffriiTheme.spacingXL)
+                        .padding(.bottom, -OffriiTheme.spacingXXL)
                     }
-                    .frame(minHeight: 200)
+                    .padding(.bottom, OffriiTheme.spacingXXL)
 
-                    VStack(spacing: OffriiTheme.spacingMD) {
+                    VStack(spacing: OffriiTheme.spacingBase) {
                         if let error = viewModel.loadError {
                             HStack {
                                 Image(systemName: "exclamationmark.triangle.fill")
@@ -60,9 +47,9 @@ struct ProfileView: View {
                                 .font(OffriiTypography.subheadline)
                                 .foregroundColor(OffriiTheme.primary)
                             }
-                            .padding(OffriiTheme.spacingMD)
+                            .padding(OffriiTheme.spacingBase)
                             .background(Color.orange.opacity(0.1))
-                            .cornerRadius(8)
+                            .cornerRadius(OffriiTheme.cornerRadiusSM)
                             .padding(.horizontal, OffriiTheme.spacingLG)
                         }
 
@@ -79,6 +66,17 @@ struct ProfileView: View {
                                     title: NSLocalizedString("profile.reminderFrequency", comment: ""),
                                     value: viewModel.reminderFreqLabel
                                 )
+                            }
+                        }
+                        .overlay(alignment: .bottom) {
+                            if tipManager.activeTip == .profileReminders {
+                                OffriiTooltip(
+                                    message: OnboardingTipManager.message(for: .profileReminders),
+                                    arrow: .top
+                                ) {
+                                    tipManager.dismiss(.profileReminders)
+                                }
+                                .offset(y: 50)
                             }
                         }
 
@@ -127,6 +125,17 @@ struct ProfileView: View {
                                 )
                             }
                         }
+                        .overlay(alignment: .bottom) {
+                            if tipManager.activeTip == .profileUsername {
+                                OffriiTooltip(
+                                    message: OnboardingTipManager.message(for: .profileUsername),
+                                    arrow: .top
+                                ) {
+                                    tipManager.dismiss(.profileUsername)
+                                }
+                                .offset(y: 50)
+                            }
+                        }
 
                         // Data section
                         profileSection(
@@ -144,7 +153,7 @@ struct ProfileView: View {
                                     )
                                 }
 
-                                Divider().padding(.leading, OffriiTheme.spacingMD)
+                                Divider().padding(.leading, OffriiTheme.spacingBase)
 
                                 NavigationLink {
                                     LegalView()
@@ -155,7 +164,7 @@ struct ProfileView: View {
                                     )
                                 }
 
-                                Divider().padding(.leading, OffriiTheme.spacingMD)
+                                Divider().padding(.leading, OffriiTheme.spacingBase)
 
                                 NavigationLink {
                                     LegalView(showPrivacy: true)
@@ -168,12 +177,12 @@ struct ProfileView: View {
                             }
                         }
 
-                        // Tutorial replay
+                        // Reset tips
                         Button {
-                            showOnboarding = true
+                            tipManager.resetAllTips()
                         } label: {
                             profileRow(
-                                title: NSLocalizedString("profile.replayTutorial", comment: ""),
+                                title: NSLocalizedString("profile.resetTips", comment: ""),
                                 value: nil
                             )
                         }
@@ -192,22 +201,21 @@ struct ProfileView: View {
                             }
                         }
                         .padding(.horizontal, OffriiTheme.spacingLG)
-                        .padding(.top, OffriiTheme.spacingMD)
+                        .padding(.top, OffriiTheme.spacingBase)
                     }
-                    .padding(.top, -OffriiTheme.spacingLG)
+                    .padding(.top, OffriiTheme.spacingBase)
                     .padding(.bottom, OffriiTheme.spacingXL)
                 }
             }
         }
         .navigationBarHidden(true)
-        .fullScreenCover(isPresented: $showOnboarding) {
-            OnboardingView(
-                onComplete: { showOnboarding = false },
-                onSignIn: { showOnboarding = false }
-            )
-        }
         .task {
             await viewModel.loadProfile()
+            if viewModel.username.isEmpty {
+                tipManager.showIfNeeded(.profileUsername)
+            } else if viewModel.reminderFreqLabel == NSLocalizedString("reminder.never", comment: "") {
+                tipManager.showIfNeeded(.profileReminders)
+            }
         }
     }
 

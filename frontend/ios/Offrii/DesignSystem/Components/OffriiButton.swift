@@ -5,7 +5,9 @@ import SwiftUI
 enum OffriiButtonVariant {
     case primary
     case secondary
+    case tertiary
     case danger
+    case ghost
     case dark
 }
 
@@ -17,6 +19,8 @@ struct OffriiButton: View {
     let isLoading: Bool
     let isDisabled: Bool
     let action: () -> Void
+
+    @State private var isPressed = false
 
     init(
         _ title: String,
@@ -35,65 +39,60 @@ struct OffriiButton: View {
     var body: some View {
         Button(action: {
             guard !isLoading && !isDisabled else { return }
+            OffriiHaptics.tap()
             action()
         }) {
             HStack(spacing: OffriiTheme.spacingSM) {
                 if isLoading {
-                    ProgressView()
-                        .progressViewStyle(CircularProgressViewStyle(tint: foregroundColor))
+                    OffriiSpinner(color: foregroundColor)
+                } else {
+                    Text(title)
+                        .font(OffriiTypography.headline)
+                        .foregroundColor(foregroundColor)
                 }
-
-                Text(title)
-                    .font(OffriiTypography.headline)
-                    .foregroundColor(foregroundColor)
             }
             .frame(maxWidth: .infinity)
-            .padding(.vertical, OffriiTheme.spacingMD)
+            .frame(minHeight: 48)
             .padding(.horizontal, OffriiTheme.spacingLG)
             .background(backgroundColor)
-            .cornerRadius(buttonCornerRadius)
+            .cornerRadius(OffriiTheme.cornerRadiusMD)
             .overlay(borderOverlay)
         }
+        .buttonStyle(.plain)
         .disabled(isDisabled || isLoading)
         .opacity(isDisabled ? 0.5 : 1.0)
-        .animation(OffriiTheme.defaultAnimation, value: isDisabled)
-        .animation(OffriiTheme.defaultAnimation, value: isLoading)
+        .scaleEffect(isPressed ? 0.97 : 1.0)
+        .animation(OffriiAnimation.micro, value: isPressed)
+        .animation(OffriiAnimation.defaultSpring, value: isDisabled)
+        .animation(OffriiAnimation.defaultSpring, value: isLoading)
+        .pressEvents {
+            isPressed = true
+        } onRelease: {
+            isPressed = false
+        }
     }
 
     // MARK: - Computed Style Properties
 
     private var backgroundColor: Color {
         switch variant {
-        case .primary:
-            return OffriiTheme.primary
-        case .secondary:
-            return Color.clear
-        case .danger:
-            return OffriiTheme.danger
-        case .dark:
-            return OffriiTheme.text
+        case .primary:   return OffriiTheme.primary
+        case .secondary: return Color.clear
+        case .tertiary:  return OffriiTheme.primaryLight
+        case .danger:    return OffriiTheme.danger
+        case .ghost:     return Color.clear
+        case .dark:      return OffriiTheme.text
         }
     }
 
     private var foregroundColor: Color {
         switch variant {
-        case .primary:
-            return .white
-        case .secondary:
-            return OffriiTheme.primary
-        case .danger:
-            return .white
-        case .dark:
-            return .white
-        }
-    }
-
-    private var buttonCornerRadius: CGFloat {
-        switch variant {
-        case .dark:
-            return OffriiTheme.cornerRadiusXL
-        default:
-            return OffriiTheme.cornerRadiusMD
+        case .primary:   return .white
+        case .secondary: return OffriiTheme.primary
+        case .tertiary:  return OffriiTheme.primary
+        case .danger:    return .white
+        case .ghost:     return OffriiTheme.primary
+        case .dark:      return .white
         }
     }
 
@@ -108,22 +107,3 @@ struct OffriiButton: View {
         }
     }
 }
-
-// MARK: - Preview
-
-#if DEBUG
-struct OffriiButton_Previews: PreviewProvider {
-    static var previews: some View {
-        VStack(spacing: OffriiTheme.spacingMD) {
-            OffriiButton("Valider", variant: .primary) {}
-            OffriiButton("Annuler", variant: .secondary) {}
-            OffriiButton("Supprimer", variant: .danger) {}
-            OffriiButton("Chargement...", variant: .primary, isLoading: true) {}
-            OffriiButton("Indisponible", variant: .primary, isDisabled: true) {}
-        }
-        .padding(OffriiTheme.spacingLG)
-        .background(OffriiTheme.cardSurface)
-        .previewLayout(.sizeThatFits)
-    }
-}
-#endif

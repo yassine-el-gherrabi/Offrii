@@ -1,19 +1,24 @@
 import SwiftUI
 
-// MARK: - Typography Scale (SF Pro)
+// MARK: - Typography Scale (SF Pro with Dynamic Type)
 
 enum OffriiTypography {
-    static let largeTitle = Font.system(size: 34, weight: .bold)
-    static let title = Font.system(size: 28, weight: .bold)
-    static let title2 = Font.system(size: 22, weight: .bold)
-    static let title3 = Font.system(size: 20, weight: .semibold)
-    static let headline = Font.system(size: 17, weight: .semibold)
-    static let body = Font.system(size: 17, weight: .regular)
-    static let callout = Font.system(size: 16, weight: .regular)
-    static let subheadline = Font.system(size: 15, weight: .regular)
-    static let footnote = Font.system(size: 13, weight: .regular)
-    static let caption = Font.system(size: 12, weight: .regular)
-    static let caption2 = Font.system(size: 11, weight: .regular)
+    static let displayLarge = Font.system(.largeTitle, weight: .bold)
+    static let largeTitle = Font.system(.largeTitle, weight: .bold)
+    static let titleLarge = Font.system(.title, weight: .bold)
+    static let title = Font.system(.title, weight: .bold)
+    static let titleMedium = Font.system(.title2, weight: .bold)
+    static let title2 = Font.system(.title2, weight: .bold)
+    static let titleSmall = Font.system(.title3, weight: .semibold)
+    static let title3 = Font.system(.title3, weight: .semibold)
+    static let headline = Font.system(.headline, weight: .semibold)
+    static let body = Font.system(.body, weight: .regular)
+    static let callout = Font.system(.callout, weight: .regular)
+    static let subheadline = Font.system(.subheadline, weight: .regular)
+    static let footnote = Font.system(.footnote, weight: .regular)
+    static let caption = Font.system(.caption, weight: .regular)
+    static let caption2 = Font.system(.caption2, weight: .regular)
+    static let captionSmall = Font.system(.caption2, weight: .regular)
 }
 
 // MARK: - Text Style Modifiers

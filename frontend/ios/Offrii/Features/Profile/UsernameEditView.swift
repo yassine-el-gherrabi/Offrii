@@ -21,12 +21,12 @@ struct UsernameEditView: View {
 
     var body: some View {
         ZStack {
-            OffriiTheme.cardSurface.ignoresSafeArea()
+            OffriiTheme.surface.ignoresSafeArea()
 
             ScrollView {
-                VStack(spacing: OffriiTheme.spacingMD) {
+                VStack(spacing: OffriiTheme.spacingBase) {
                     OffriiCard {
-                        VStack(spacing: OffriiTheme.spacingMD) {
+                        VStack(spacing: OffriiTheme.spacingBase) {
                             OffriiTextField(
                                 label: NSLocalizedString("profile.username", comment: ""),
                                 text: $newUsername,
@@ -46,7 +46,7 @@ struct UsernameEditView: View {
                     }
                     .padding(.horizontal, OffriiTheme.spacingLG)
                 }
-                .padding(.top, OffriiTheme.spacingMD)
+                .padding(.top, OffriiTheme.spacingBase)
             }
         }
         .navigationTitle(NSLocalizedString("profile.editUsername", comment: ""))

@@ -33,6 +33,7 @@ enum TabItem: Int, CaseIterable, Identifiable {
 
 struct TabBarView: View {
     @Binding var selectedTab: TabItem
+    @Namespace private var tabNamespace
 
     var body: some View {
         HStack {
@@ -58,7 +59,8 @@ struct TabBarView: View {
 
     private func tabButton(for tab: TabItem) -> some View {
         Button {
-            withAnimation(OffriiTheme.defaultAnimation) {
+            OffriiHaptics.selection()
+            withAnimation(OffriiAnimation.snappy) {
                 selectedTab = tab
             }
         } label: {
@@ -70,6 +72,15 @@ struct TabBarView: View {
                 Text(tab.label)
                     .font(OffriiTypography.caption2)
                     .foregroundColor(tabColor(for: tab))
+
+                // Dot indicator
+                Circle()
+                    .fill(selectedTab == tab ? OffriiTheme.primary : Color.clear)
+                    .frame(width: 4, height: 4)
+                    .matchedGeometryEffect(
+                        id: selectedTab == tab ? "tabDot" : "tabDot_\(tab.rawValue)",
+                        in: tabNamespace
+                    )
             }
             .frame(maxWidth: .infinity)
         }
@@ -83,33 +94,3 @@ struct TabBarView: View {
         selectedTab == tab ? OffriiTheme.primary : OffriiTheme.textMuted
     }
 }
-
-// MARK: - Preview
-
-#if DEBUG
-struct TabBarView_Previews: PreviewProvider {
-    struct PreviewWrapper: View {
-        @State private var selectedTab: TabItem = .envies
-
-        var body: some View {
-            VStack {
-                Spacer()
-
-                Text("Onglet : \(selectedTab.iconName)")
-                    .font(OffriiTypography.title2)
-                    .foregroundColor(OffriiTheme.text)
-
-                Spacer()
-
-                TabBarView(selectedTab: $selectedTab)
-            }
-            .background(OffriiTheme.cardSurface)
-        }
-    }
-
-    static var previews: some View {
-        PreviewWrapper()
-            .previewLayout(.device)
-    }
-}
-#endif

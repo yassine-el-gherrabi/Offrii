@@ -25,17 +25,6 @@ enum WishCategory: String, Codable, CaseIterable, Identifiable {
         }
     }
 
-    var emoji: String {
-        switch self {
-        case .education: return "📚"
-        case .clothing:  return "🧥"
-        case .health:    return "🏥"
-        case .religion:  return "🕌"
-        case .home:      return "🏠"
-        case .children:  return "👶"
-        case .other:     return "📦"
-        }
-    }
 }
 
 // MARK: - Wish Status

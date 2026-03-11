@@ -3,23 +3,48 @@ import SwiftUI
 // MARK: - OffriiCard
 
 struct OffriiCard<Content: View>: View {
+    let showAccentBar: Bool
+    let showBorder: Bool
     let content: Content
 
-    init(@ViewBuilder content: () -> Content) {
+    init(
+        showAccentBar: Bool = false,
+        showBorder: Bool = false,
+        @ViewBuilder content: () -> Content
+    ) {
+        self.showAccentBar = showAccentBar
+        self.showBorder = showBorder
         self.content = content()
     }
 
     var body: some View {
-        content
-            .padding(OffriiTheme.spacingMD)
-            .background(OffriiTheme.card)
-            .cornerRadius(OffriiTheme.cornerRadiusLG)
-            .shadow(
-                color: OffriiTheme.cardShadowColor,
-                radius: OffriiTheme.cardShadowRadius,
-                x: 0,
-                y: OffriiTheme.cardShadowY
-            )
+        HStack(spacing: 0) {
+            if showAccentBar {
+                RoundedRectangle(cornerRadius: 2)
+                    .fill(OffriiTheme.primary)
+                    .frame(width: 4)
+            }
+
+            content
+                .padding(OffriiTheme.spacingBase)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .background(OffriiTheme.card)
+        .cornerRadius(OffriiTheme.cornerRadiusLG)
+        .overlay(
+            Group {
+                if showBorder {
+                    RoundedRectangle(cornerRadius: OffriiTheme.cornerRadiusLG)
+                        .strokeBorder(OffriiTheme.primaryLight, lineWidth: 1)
+                }
+            }
+        )
+        .shadow(
+            color: OffriiTheme.cardShadowColor,
+            radius: OffriiTheme.cardShadowRadius,
+            x: 0,
+            y: OffriiTheme.cardShadowY
+        )
     }
 }
 
@@ -28,7 +53,7 @@ struct OffriiCard<Content: View>: View {
 struct OffriiCardModifier: ViewModifier {
     func body(content: Content) -> some View {
         content
-            .padding(OffriiTheme.spacingMD)
+            .padding(OffriiTheme.spacingBase)
             .background(OffriiTheme.card)
             .cornerRadius(OffriiTheme.cornerRadiusLG)
             .shadow(
@@ -45,33 +70,3 @@ extension View {
         modifier(OffriiCardModifier())
     }
 }
-
-// MARK: - Preview
-
-#if DEBUG
-struct OffriiCard_Previews: PreviewProvider {
-    static var previews: some View {
-        VStack(spacing: OffriiTheme.spacingMD) {
-            OffriiCard {
-                VStack(alignment: .leading, spacing: OffriiTheme.spacingSM) {
-                    Text("Titre de la carte")
-                        .font(OffriiTypography.headline)
-                        .foregroundColor(OffriiTheme.text)
-                    Text("Description de la carte avec du contenu.")
-                        .font(OffriiTypography.body)
-                        .foregroundColor(OffriiTheme.textSecondary)
-                }
-            }
-
-            Text("Utilisation via modifier")
-                .font(OffriiTypography.body)
-                .foregroundColor(OffriiTheme.text)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .offriiCard()
-        }
-        .padding(OffriiTheme.spacingLG)
-        .background(OffriiTheme.cardSurface)
-        .previewLayout(.sizeThatFits)
-    }
-}
-#endif

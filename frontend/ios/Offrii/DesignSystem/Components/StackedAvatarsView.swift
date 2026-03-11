@@ -27,7 +27,7 @@ struct StackedAvatarsView: View {
             if extraCount > 0 {
                 Circle()
                     .fill(OffriiTheme.textMuted.opacity(0.2))
-                    .frame(width: 28, height: 28)
+                    .frame(width: AvatarSize.small.dimension, height: AvatarSize.small.dimension)
                     .overlay(
                         Text("+\(extraCount)")
                             .font(.system(size: 10, weight: .semibold))

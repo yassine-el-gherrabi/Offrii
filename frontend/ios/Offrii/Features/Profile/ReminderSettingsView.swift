@@ -11,12 +11,12 @@ struct ReminderSettingsView: View {
 
     var body: some View {
         ZStack {
-            OffriiTheme.cardSurface.ignoresSafeArea()
+            OffriiTheme.surface.ignoresSafeArea()
 
             ScrollView {
-                VStack(spacing: OffriiTheme.spacingMD) {
+                VStack(spacing: OffriiTheme.spacingBase) {
                     OffriiCard {
-                        VStack(spacing: OffriiTheme.spacingMD) {
+                        VStack(spacing: OffriiTheme.spacingBase) {
                             // Frequency picker
                             VStack(alignment: .leading, spacing: OffriiTheme.spacingSM) {
                                 Text(NSLocalizedString("profile.reminderFrequency", comment: ""))
@@ -58,7 +58,7 @@ struct ReminderSettingsView: View {
                     }
                     .padding(.horizontal, OffriiTheme.spacingLG)
                 }
-                .padding(.top, OffriiTheme.spacingMD)
+                .padding(.top, OffriiTheme.spacingBase)
             }
         }
         .navigationTitle(NSLocalizedString("profile.reminders", comment: ""))

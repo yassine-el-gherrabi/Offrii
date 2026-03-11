@@ -16,8 +16,12 @@ struct LoginView: View {
 
     var body: some View {
         ZStack {
-            OffriiTheme.primary.ignoresSafeArea()
-            DecorativeSquares(preset: .authScreen)
+            // Warm white background
+            OffriiTheme.background.ignoresSafeArea()
+
+            // Blob decorations
+            BlobBackground(preset: .auth)
+                .ignoresSafeArea()
 
             GeometryReader { geometry in
                 ScrollView(showsIndicators: false) {
@@ -27,8 +31,8 @@ struct LoginView: View {
 
                         Spacer(minLength: 0)
 
-                        cardWithStackEffect
-                            .padding(.bottom, 14)
+                        cardSection
+                            .padding(.bottom, OffriiTheme.spacingBase)
                     }
                     .frame(minHeight: geometry.size.height)
                 }
@@ -48,59 +52,29 @@ struct LoginView: View {
 
     private var logoSection: some View {
         VStack(spacing: OffriiTheme.spacingMD) {
-            RoundedRectangle(cornerRadius: 24)
-                .fill(OffriiTheme.text)
-                .frame(width: 96, height: 90)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 26)
-                        .stroke(Color.white.opacity(0.20), lineWidth: 3)
-                        .frame(width: 100, height: 94)
-                )
+            RoundedRectangle(cornerRadius: OffriiTheme.cornerRadiusLG)
+                .fill(OffriiTheme.primary)
+                .frame(width: 72, height: 72)
                 .overlay(
                     Image(systemName: "gift.fill")
-                        .font(.system(size: 40))
+                        .font(.system(size: 32))
                         .foregroundColor(.white)
                 )
 
             Text("Offrii")
-                .font(OffriiTypography.title)
-                .foregroundColor(.white)
+                .font(OffriiTypography.titleLarge)
+                .foregroundColor(OffriiTheme.text)
         }
-    }
-
-    // MARK: - Card with Stack Effect
-
-    private var cardWithStackEffect: some View {
-        cardInner
-            .background(
-                RoundedRectangle(cornerRadius: 44)
-                    .fill(Color.white.opacity(0.20))
-                    .padding(.horizontal, 12)
-                    .offset(y: -16)
-            )
-            .background(
-                RoundedRectangle(cornerRadius: 44)
-                    .fill(Color.white.opacity(0.08))
-                    .padding(.horizontal, 24)
-                    .offset(y: -32)
-            )
-            .padding(.horizontal, 14)
     }
 
     // MARK: - Card
 
-    private var cardInner: some View {
+    private var cardSection: some View {
         VStack(alignment: .leading, spacing: OffriiTheme.spacingLG) {
-            // Sparkle + title
-            VStack(alignment: .leading, spacing: OffriiTheme.spacingXS) {
-                Image(systemName: "sparkle")
-                    .font(.system(size: 20, weight: .bold))
-                    .foregroundColor(OffriiTheme.text)
-
-                Text(NSLocalizedString("auth.login", comment: ""))
-                    .font(OffriiTypography.largeTitle)
-                    .foregroundColor(OffriiTheme.text)
-            }
+            // Title
+            Text(NSLocalizedString("auth.login", comment: ""))
+                .font(OffriiTypography.titleLarge)
+                .foregroundColor(OffriiTheme.text)
 
             // SSO buttons
             VStack(spacing: OffriiTheme.spacingSM) {
@@ -111,14 +85,23 @@ struct LoginView: View {
                 SSOButton(provider: .apple) {}
             }
 
+            // Divider
+            HStack {
+                Rectangle().fill(OffriiTheme.border).frame(height: 1)
+                Text(NSLocalizedString("auth.or", comment: ""))
+                    .font(OffriiTypography.caption)
+                    .foregroundColor(OffriiTheme.textMuted)
+                Rectangle().fill(OffriiTheme.border).frame(height: 1)
+            }
+
             // Fields
-            VStack(spacing: OffriiTheme.spacingSM) {
+            VStack(spacing: OffriiTheme.spacingMD) {
                 OffriiTextField(
                     label: "",
                     text: $viewModel.email,
                     placeholder: NSLocalizedString("auth.email", comment: ""),
                     errorMessage: viewModel.emailError,
-                    style: .underline,
+                    style: .filled,
                     keyboardType: .emailAddress,
                     textContentType: .emailAddress,
                     autocapitalization: .never
@@ -133,7 +116,7 @@ struct LoginView: View {
                     placeholder: NSLocalizedString("auth.password", comment: ""),
                     errorMessage: viewModel.passwordError,
                     isSecure: true,
-                    style: .underline,
+                    style: .filled,
                     textContentType: .password
                 )
                 .focused($focusedField, equals: .password)
@@ -152,7 +135,7 @@ struct LoginView: View {
                         showForgotPassword = true
                     }
                     .font(OffriiTypography.subheadline)
-                    .foregroundColor(OffriiTheme.text)
+                    .foregroundColor(OffriiTheme.secondary)
                 }
             }
 
@@ -167,7 +150,7 @@ struct LoginView: View {
 
                 OffriiButton(
                     NSLocalizedString("auth.login", comment: ""),
-                    variant: .dark,
+                    variant: .primary,
                     isLoading: viewModel.isLoading
                 ) {
                     Task {
@@ -178,7 +161,7 @@ struct LoginView: View {
                 }
             }
 
-            // Switch link — inside card
+            // Switch link
             Button {
                 onSwitchToRegister()
             } label: {
@@ -186,19 +169,18 @@ struct LoginView: View {
                     Text(NSLocalizedString("auth.noAccount", comment: ""))
                         .foregroundColor(OffriiTheme.textSecondary)
                     Text(NSLocalizedString("auth.signUp", comment: ""))
-                        .foregroundColor(OffriiTheme.text)
+                        .foregroundColor(OffriiTheme.primary)
                         .fontWeight(.semibold)
                 }
                 .font(OffriiTypography.subheadline)
                 .frame(maxWidth: .infinity)
             }
         }
-        .padding(.horizontal, 28)
-        .padding(.top, 30)
-        .padding(.bottom, 40)
-        .background(Color.white)
-        .cornerRadius(44)
+        .padding(.horizontal, OffriiTheme.spacingXL)
+        .padding(.vertical, OffriiTheme.spacingXXL)
+        .background(OffriiTheme.card)
+        .cornerRadius(OffriiTheme.cornerRadiusXXL)
         .shadow(color: .black.opacity(0.08), radius: 20, y: 8)
+        .padding(.horizontal, OffriiTheme.spacingBase)
     }
-
 }

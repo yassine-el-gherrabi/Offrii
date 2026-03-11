@@ -9,7 +9,7 @@ struct ComingSoonView: View {
             OffriiTheme.cardSurface.ignoresSafeArea()
 
             VStack(spacing: 0) {
-                HeaderView(title: featureName)
+                SectionHeader(title: featureName, variant: .detail)
 
                 Spacer()
 

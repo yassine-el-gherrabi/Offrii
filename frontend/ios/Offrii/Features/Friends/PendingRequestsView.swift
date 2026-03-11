@@ -11,7 +11,7 @@ struct PendingRequestsView: View {
             OffriiTheme.cardSurface.ignoresSafeArea()
 
             if isLoading && requests.isEmpty {
-                ProgressView()
+                SkeletonList(count: 3)
             } else if requests.isEmpty {
                 VStack(spacing: OffriiTheme.spacingMD) {
                     Image(systemName: "bell.slash")

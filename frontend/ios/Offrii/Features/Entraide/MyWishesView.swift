@@ -7,23 +7,33 @@ struct MyWishesView: View {
 
     var body: some View {
         ZStack {
-            OffriiTheme.cardSurface.ignoresSafeArea()
+            OffriiTheme.background.ignoresSafeArea()
 
             VStack(spacing: 0) {
                 // Header
-                HeaderView(
+                SectionHeader(
                     title: NSLocalizedString("entraide.myWishes.title", comment: ""),
-                    subtitle: nil
+                    variant: .entraide
                 )
 
                 // Content
                 if viewModel.isLoading {
-                    Spacer()
-                    ProgressView()
-                    Spacer()
+                    ScrollView {
+                        LazyVStack(spacing: OffriiTheme.spacingBase) {
+                            ForEach(0..<3, id: \.self) { _ in
+                                SkeletonCard()
+                            }
+                        }
+                        .padding(.horizontal, OffriiTheme.spacingLG)
+                        .padding(.vertical, OffriiTheme.spacingSM)
+                    }
                 } else if viewModel.wishes.isEmpty {
                     Spacer()
-                    emptyState
+                    OffriiEmptyState(
+                        icon: "tray",
+                        title: NSLocalizedString("entraide.myWishes.empty", comment: ""),
+                        subtitle: NSLocalizedString("entraide.myWishes.emptySubtitle", comment: "")
+                    )
                     Spacer()
                 } else {
                     wishList
@@ -40,7 +50,7 @@ struct MyWishesView: View {
 
     private var wishList: some View {
         ScrollView {
-            LazyVStack(spacing: OffriiTheme.spacingMD) {
+            LazyVStack(spacing: OffriiTheme.spacingBase) {
                 ForEach(viewModel.wishes) { wish in
                     NavigationLink {
                         WishDetailView(wishId: wish.id)
@@ -91,7 +101,7 @@ struct MyWishesView: View {
                     .foregroundColor(OffriiTheme.textMuted)
             }
         }
-        .padding(OffriiTheme.spacingMD)
+        .padding(OffriiTheme.spacingBase)
         .background(OffriiTheme.card)
         .cornerRadius(OffriiTheme.cornerRadiusLG)
         .shadow(
@@ -141,26 +151,6 @@ struct MyWishesView: View {
                     .font(OffriiTypography.caption)
                     .foregroundColor(OffriiTheme.accent)
             }
-        }
-    }
-
-    // MARK: - Empty State
-
-    private var emptyState: some View {
-        VStack(spacing: OffriiTheme.spacingMD) {
-            Image(systemName: "tray")
-                .font(.system(size: 48))
-                .foregroundColor(OffriiTheme.textMuted)
-
-            Text("entraide.myWishes.empty")
-                .font(OffriiTypography.title3)
-                .foregroundColor(OffriiTheme.text)
-
-            Text("entraide.myWishes.emptySubtitle")
-                .font(OffriiTypography.subheadline)
-                .foregroundColor(OffriiTheme.textSecondary)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, OffriiTheme.spacingXL)
         }
     }
 }

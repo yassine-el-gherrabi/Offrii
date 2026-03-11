@@ -4,16 +4,24 @@ import SwiftUI
 
 struct WishDetailView: View {
     let wishId: UUID
+    @Environment(OnboardingTipManager.self) private var tipManager
     @State private var viewModel = WishDetailViewModel()
     @State private var showReportSheet = false
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         ZStack {
-            OffriiTheme.cardSurface.ignoresSafeArea()
+            OffriiTheme.background.ignoresSafeArea()
 
             if viewModel.isLoading {
-                ProgressView()
+                ScrollView {
+                    VStack(spacing: OffriiTheme.spacingBase) {
+                        SkeletonCard()
+                        SkeletonCard()
+                    }
+                    .padding(.horizontal, OffriiTheme.spacingLG)
+                    .padding(.top, OffriiTheme.spacingLG)
+                }
             } else if let wish = viewModel.wish {
                 ScrollView {
                     VStack(spacing: 0) {
@@ -21,7 +29,7 @@ struct WishDetailView: View {
                         detailHeader(wish: wish)
 
                         // Content
-                        VStack(spacing: OffriiTheme.spacingMD) {
+                        VStack(spacing: OffriiTheme.spacingBase) {
                             mainCard(wish: wish)
                             actionButtons(wish: wish)
                         }
@@ -39,14 +47,14 @@ struct WishDetailView: View {
                             .font(OffriiTypography.footnote)
                             .fontWeight(.medium)
                             .foregroundColor(.white)
-                            .padding(.horizontal, OffriiTheme.spacingMD)
+                            .padding(.horizontal, OffriiTheme.spacingBase)
                             .padding(.vertical, OffriiTheme.spacingSM)
                             .background(OffriiTheme.success)
                             .cornerRadius(OffriiTheme.cornerRadiusMD)
                             .padding(.bottom, OffriiTheme.spacingXL)
                             .transition(.move(edge: .bottom).combined(with: .opacity))
                     }
-                    .animation(OffriiTheme.defaultAnimation, value: viewModel.actionSuccess)
+                    .animation(OffriiAnimation.defaultSpring, value: viewModel.actionSuccess)
                     .onAppear {
                         DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
                             viewModel.actionSuccess = nil
@@ -54,7 +62,7 @@ struct WishDetailView: View {
                     }
                 }
             } else if let error = viewModel.error {
-                VStack(spacing: OffriiTheme.spacingMD) {
+                VStack(spacing: OffriiTheme.spacingBase) {
                     Text(error)
                         .font(OffriiTypography.body)
                         .foregroundColor(OffriiTheme.danger)
@@ -71,36 +79,26 @@ struct WishDetailView: View {
         }
         .task {
             await viewModel.loadWish(id: wishId)
+            if let wish = viewModel.wish, !wish.isMine, wish.status == .open {
+                tipManager.showIfNeeded(.entraideOffer)
+            }
         }
     }
 
     // MARK: - Header
 
     private func detailHeader(wish: WishDetail) -> some View {
-        ZStack {
-            OffriiTheme.primary
-                .ignoresSafeArea(edges: .top)
-            DecorativeSquares(preset: .header)
-
-            VStack(alignment: .leading, spacing: OffriiTheme.spacingXS) {
-                Text(wish.title)
-                    .font(OffriiTypography.title2)
-                    .foregroundColor(.white)
-                    .lineLimit(2)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, OffriiTheme.spacingLG)
-            .padding(.bottom, OffriiTheme.spacingLG + OffriiTheme.spacingMD)
-            .padding(.top, OffriiTheme.spacingSM)
-        }
-        .frame(minHeight: 100)
+        SectionHeader(
+            title: wish.title,
+            variant: .detail
+        )
     }
 
     // MARK: - Main Card
 
     private func mainCard(wish: WishDetail) -> some View {
         OffriiCard {
-            VStack(alignment: .leading, spacing: OffriiTheme.spacingMD) {
+            VStack(alignment: .leading, spacing: OffriiTheme.spacingBase) {
                 HStack {
                     WishCategoryChip(category: wish.category)
                     Spacer()
@@ -161,9 +159,9 @@ struct WishDetailView: View {
                     .clipped()
             } placeholder: {
                 RoundedRectangle(cornerRadius: OffriiTheme.cornerRadiusSM)
-                    .fill(OffriiTheme.cardSurface)
+                    .fill(OffriiTheme.surface)
                     .frame(height: 120)
-                    .overlay(ProgressView())
+                    .shimmer()
             }
         }
     }
@@ -227,6 +225,17 @@ struct WishDetailView: View {
             ) {
                 Task { _ = await viewModel.offer(id: wish.id) }
             }
+            .overlay(alignment: .top) {
+                if tipManager.activeTip == .entraideOffer {
+                    OffriiTooltip(
+                        message: OnboardingTipManager.message(for: .entraideOffer),
+                        arrow: .bottom
+                    ) {
+                        tipManager.dismiss(.entraideOffer)
+                    }
+                    .offset(y: -70)
+                }
+            }
 
             Button {
                 showReportSheet = true
@@ -288,7 +297,7 @@ struct WishDetailView: View {
                 .font(OffriiTypography.headline)
                 .foregroundColor(OffriiTheme.primary)
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, OffriiTheme.spacingMD)
+                .padding(.vertical, OffriiTheme.spacingBase)
                 .background(Color.clear)
                 .cornerRadius(OffriiTheme.cornerRadiusMD)
                 .overlay(
@@ -326,7 +335,7 @@ struct WishDetailView: View {
             .font(OffriiTypography.headline)
             .foregroundColor(OffriiTheme.primary)
             .frame(maxWidth: .infinity)
-            .padding(.vertical, OffriiTheme.spacingMD)
+            .padding(.vertical, OffriiTheme.spacingBase)
             .background(Color.clear)
             .cornerRadius(OffriiTheme.cornerRadiusMD)
             .overlay(
@@ -346,7 +355,7 @@ struct WishDetailView: View {
                 .foregroundColor(color)
         }
         .frame(maxWidth: .infinity)
-        .padding(OffriiTheme.spacingMD)
+        .padding(OffriiTheme.spacingBase)
         .background(color.opacity(0.1))
         .cornerRadius(OffriiTheme.cornerRadiusMD)
     }

@@ -34,7 +34,7 @@ struct ReportWishSheet: View {
                                         .foregroundColor(OffriiTheme.primary)
                                 }
                             }
-                            .padding(OffriiTheme.spacingMD)
+                            .padding(OffriiTheme.spacingBase)
                             .background(
                                 selectedReason == reason
                                     ? OffriiTheme.primary.opacity(0.08)
@@ -74,7 +74,7 @@ struct ReportWishSheet: View {
                 }
             }
             .padding(OffriiTheme.spacingLG)
-            .background(OffriiTheme.cardSurface)
+            .background(OffriiTheme.background)
             .navigationTitle(NSLocalizedString("entraide.report.title", comment: ""))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

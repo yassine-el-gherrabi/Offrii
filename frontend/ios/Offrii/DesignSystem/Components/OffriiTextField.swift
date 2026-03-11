@@ -4,7 +4,7 @@ import SwiftUI
 
 enum OffriiTextFieldStyle {
     case bordered
-    case underline
+    case filled
 }
 
 // MARK: - OffriiTextField
@@ -33,132 +33,84 @@ struct OffriiTextField: View {
             }
 
             // Input field
-            VStack(spacing: 0) {
-                HStack(spacing: 0) {
-                    Group {
-                        if isSecure && !showPassword {
-                            SecureField(placeholder, text: $text)
-                                .textContentType(textContentType)
-                        } else {
-                            TextField(placeholder, text: $text)
-                                .keyboardType(keyboardType)
-                                .textContentType(textContentType)
-                                .textInputAutocapitalization(isSecure ? .never : autocapitalization)
-                        }
-                    }
-                    .font(OffriiTypography.body)
-                    .foregroundColor(OffriiTheme.text)
-
-                    if isSecure {
-                        Button {
-                            showPassword.toggle()
-                        } label: {
-                            Image(systemName: showPassword ? "eye.slash.fill" : "eye.fill")
-                                .foregroundColor(OffriiTheme.textMuted)
-                                .font(.system(size: 16))
-                        }
-                        .buttonStyle(.plain)
+            HStack(spacing: 0) {
+                Group {
+                    if isSecure && !showPassword {
+                        SecureField(placeholder, text: $text)
+                            .textContentType(textContentType)
+                    } else {
+                        TextField(placeholder, text: $text)
+                            .keyboardType(keyboardType)
+                            .textContentType(textContentType)
+                            .textInputAutocapitalization(isSecure ? .never : autocapitalization)
                     }
                 }
-                .padding(.vertical, style == .bordered ? 14 : 10)
-                .padding(.horizontal, style == .bordered ? OffriiTheme.spacingMD : 0)
+                .font(OffriiTypography.body)
+                .foregroundColor(OffriiTheme.text)
 
-                if style == .underline {
-                    Rectangle()
-                        .fill(dividerColor)
-                        .frame(height: 1)
+                if isSecure {
+                    Button {
+                        showPassword.toggle()
+                    } label: {
+                        Image(systemName: showPassword ? "eye.slash.fill" : "eye.fill")
+                            .foregroundColor(OffriiTheme.textMuted)
+                            .font(.system(size: 16))
+                    }
+                    .buttonStyle(.plain)
                 }
             }
-            .background(style == .bordered ? OffriiTheme.card : Color.clear)
-            .cornerRadius(style == .bordered ? OffriiTheme.cornerRadiusMD : 0)
+            .padding(.vertical, 14)
+            .padding(.horizontal, OffriiTheme.spacingBase)
+            .frame(minHeight: 48)
+            .background(fieldBackground)
+            .cornerRadius(OffriiTheme.cornerRadiusMD)
             .overlay(
-                Group {
-                    if style == .bordered {
-                        RoundedRectangle(cornerRadius: OffriiTheme.cornerRadiusMD)
-                            .strokeBorder(borderColor, lineWidth: 1.5)
-                    }
-                }
+                RoundedRectangle(cornerRadius: OffriiTheme.cornerRadiusMD)
+                    .strokeBorder(borderColor, lineWidth: style == .bordered ? 1.5 : 0)
             )
+            .overlay(focusGlow)
             .focused($isFocused)
-            .animation(OffriiTheme.defaultAnimation, value: isFocused)
-            .animation(OffriiTheme.defaultAnimation, value: errorMessage)
+            .animation(OffriiAnimation.defaultSpring, value: isFocused)
+            .animation(OffriiAnimation.defaultSpring, value: errorMessage)
 
-            // Error message
+            // Error message with slide-in
             if let errorMessage, !errorMessage.isEmpty {
-                Text(errorMessage)
-                    .font(OffriiTypography.caption)
-                    .foregroundColor(OffriiTheme.danger)
-                    .transition(.opacity.combined(with: .move(edge: .top)))
+                HStack(spacing: OffriiTheme.spacingXS) {
+                    Image(systemName: "exclamationmark.circle.fill")
+                        .font(.system(size: 12))
+                    Text(errorMessage)
+                        .font(OffriiTypography.caption)
+                }
+                .foregroundColor(OffriiTheme.danger)
+                .transition(.opacity.combined(with: .move(edge: .top)))
             }
         }
     }
 
     // MARK: - Computed Properties
 
+    private var fieldBackground: Color {
+        switch style {
+        case .bordered: return OffriiTheme.card
+        case .filled:   return OffriiTheme.surface
+        }
+    }
+
     private var borderColor: Color {
         if errorMessage != nil && !(errorMessage?.isEmpty ?? true) {
             return OffriiTheme.danger
         }
         if isFocused {
-            return OffriiTheme.primary
+            return OffriiTheme.borderFocused
         }
-        return OffriiTheme.border
+        return style == .bordered ? OffriiTheme.border : .clear
     }
 
-    private var dividerColor: Color {
-        if errorMessage != nil && !(errorMessage?.isEmpty ?? true) {
-            return OffriiTheme.danger
+    @ViewBuilder
+    private var focusGlow: some View {
+        if isFocused && errorMessage == nil {
+            RoundedRectangle(cornerRadius: OffriiTheme.cornerRadiusMD)
+                .strokeBorder(OffriiTheme.primary.opacity(0.1), lineWidth: 4)
         }
-        if isFocused {
-            return OffriiTheme.primary
-        }
-        return OffriiTheme.border
     }
 }
-
-// MARK: - Preview
-
-#if DEBUG
-struct OffriiTextField_Previews: PreviewProvider {
-    struct PreviewWrapper: View {
-        @State private var email = ""
-        @State private var password = ""
-        @State private var errorField = "Adresse invalide"
-
-        var body: some View {
-            VStack(spacing: OffriiTheme.spacingMD) {
-                OffriiTextField(
-                    label: "Adresse e-mail",
-                    text: $email,
-                    placeholder: "vous@exemple.com",
-                    keyboardType: .emailAddress,
-                    textContentType: .emailAddress,
-                    autocapitalization: .never
-                )
-
-                OffriiTextField(
-                    label: "Mot de passe",
-                    text: $password,
-                    placeholder: "Votre mot de passe",
-                    isSecure: true,
-                    textContentType: .password
-                )
-
-                OffriiTextField(
-                    label: "Champ avec erreur",
-                    text: $email,
-                    placeholder: "Saisir ici",
-                    errorMessage: errorField
-                )
-            }
-            .padding(OffriiTheme.spacingLG)
-            .background(OffriiTheme.cardSurface)
-        }
-    }
-
-    static var previews: some View {
-        PreviewWrapper()
-            .previewLayout(.sizeThatFits)
-    }
-}
-#endif

@@ -15,21 +15,17 @@ struct InviteFriendsSheet: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                OffriiTheme.cardSurface.ignoresSafeArea()
+                OffriiTheme.background.ignoresSafeArea()
 
                 if isLoading {
-                    ProgressView()
+                    SkeletonList(count: 5)
+                        .padding(.top, OffriiTheme.spacingBase)
                 } else if friends.isEmpty {
-                    VStack(spacing: OffriiTheme.spacingMD) {
-                        Image(systemName: "person.2.slash")
-                            .font(.system(size: 40))
-                            .foregroundColor(OffriiTheme.textMuted)
-                        Text(NSLocalizedString("circles.invite.noFriends", comment: ""))
-                            .font(OffriiTypography.body)
-                            .foregroundColor(OffriiTheme.textSecondary)
-                            .multilineTextAlignment(.center)
-                    }
-                    .padding(OffriiTheme.spacingXL)
+                    OffriiEmptyState(
+                        icon: "person.2.slash",
+                        title: NSLocalizedString("circles.invite.noFriends", comment: ""),
+                        subtitle: NSLocalizedString("circles.invite.noFriendsSubtitle", comment: "")
+                    )
                 } else {
                     VStack(spacing: 0) {
                         List {
@@ -153,7 +149,7 @@ struct InviteFriendsSheet: View {
             onInvited()
             dismiss()
         } else if !succeeded.isEmpty {
-            // Partial success — refresh parent but keep sheet open for retry
+            // Partial success -- refresh parent but keep sheet open for retry
             onInvited()
         }
     }

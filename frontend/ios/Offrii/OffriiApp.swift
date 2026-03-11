@@ -4,24 +4,12 @@ import SwiftUI
 struct OffriiApp: App {
     @State private var authManager = AuthManager()
     @State private var router = AppRouter()
-    @AppStorage("hasSeenOnboarding") private var hasSeenOnboarding = false
+    @State private var tipManager = OnboardingTipManager()
 
     var body: some Scene {
         WindowGroup {
             Group {
                 switch router.currentScreen {
-                case .onboarding:
-                    OnboardingView {
-                        hasSeenOnboarding = true
-                        router.determineInitialScreen(
-                            isAuthenticated: authManager.isAuthenticated,
-                            hasSeenOnboarding: true
-                        )
-                    } onSignIn: {
-                        hasSeenOnboarding = true
-                        router.currentScreen = .auth
-                    }
-
                 case .auth:
                     AuthContainerView {
                         router.currentScreen = .main
@@ -31,8 +19,9 @@ struct OffriiApp: App {
                 case .main:
                     MainTabView()
                         .environment(authManager)
-                        .onChange(of: authManager.currentUser == nil) { _, isNil in
-                            if isNil && !authManager.isAuthenticated {
+                        .environment(tipManager)
+                        .onChange(of: authManager.currentUser) { _, user in
+                            if user == nil {
                                 router.currentScreen = .auth
                             }
                         }
@@ -40,8 +29,7 @@ struct OffriiApp: App {
             }
             .onAppear {
                 router.determineInitialScreen(
-                    isAuthenticated: authManager.isAuthenticated,
-                    hasSeenOnboarding: hasSeenOnboarding
+                    isAuthenticated: authManager.isAuthenticated
                 )
             }
         }

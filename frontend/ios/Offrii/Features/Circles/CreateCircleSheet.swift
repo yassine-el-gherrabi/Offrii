@@ -10,7 +10,7 @@ struct CreateCircleSheet: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                OffriiTheme.cardSurface.ignoresSafeArea()
+                OffriiTheme.background.ignoresSafeArea()
 
                 VStack(spacing: OffriiTheme.spacingLG) {
                     VStack(alignment: .leading, spacing: OffriiTheme.spacingSM) {
@@ -23,11 +23,11 @@ struct CreateCircleSheet: View {
                             text: $circleName
                         )
                         .font(OffriiTypography.body)
-                        .padding(OffriiTheme.spacingMD)
+                        .padding(OffriiTheme.spacingBase)
                         .background(OffriiTheme.card)
-                        .cornerRadius(OffriiTheme.cornerRadiusSM)
+                        .cornerRadius(OffriiTheme.cornerRadiusLG)
                         .overlay(
-                            RoundedRectangle(cornerRadius: OffriiTheme.cornerRadiusSM)
+                            RoundedRectangle(cornerRadius: OffriiTheme.cornerRadiusLG)
                                 .stroke(OffriiTheme.border, lineWidth: 1)
                         )
                     }

@@ -11,39 +11,36 @@ struct ItemDetailView: View {
 
     var body: some View {
         ZStack {
-            OffriiTheme.cardSurface.ignoresSafeArea()
+            OffriiTheme.background.ignoresSafeArea()
 
             if viewModel.isLoading {
-                ProgressView()
+                VStack(spacing: OffriiTheme.spacingBase) {
+                    SkeletonRow(height: 120)
+                    SkeletonRow()
+                    SkeletonRow()
+                }
             } else if let item = viewModel.item {
                 ScrollView {
                     VStack(spacing: 0) {
                         // Header
-                        ZStack {
-                            OffriiTheme.primary.ignoresSafeArea(edges: .top)
-                            DecorativeSquares(preset: .header)
-
-                            VStack(spacing: OffriiTheme.spacingMD) {
-                                Image(systemName: "gift.fill")
-                                    .font(.system(size: 40))
-                                    .foregroundColor(.white)
-
-                                Text(item.name)
-                                    .font(OffriiTypography.title)
-                                    .foregroundColor(.white)
-                                    .multilineTextAlignment(.center)
-
-                                HStack(spacing: OffriiTheme.spacingSM) {
-                                    if let catName = viewModel.categoryName {
-                                        chipLabel(catName, color: .white.opacity(0.2))
-                                    }
-                                    chipLabel(item.priorityLabel, color: priorityColor(item.priority).opacity(0.3))
-                                }
-                            }
-                            .padding(.vertical, OffriiTheme.spacingXL)
-                            .padding(.horizontal, OffriiTheme.spacingLG)
+                        SectionHeader(
+                            title: item.name,
+                            variant: .detail
+                        ) {
+                            Image(systemName: "gift.fill")
+                                .font(.system(size: 28))
+                                .foregroundColor(.white.opacity(0.7))
                         }
-                        .frame(minHeight: 180)
+
+                        // Chips below header
+                        HStack(spacing: OffriiTheme.spacingSM) {
+                            if let catName = viewModel.categoryName {
+                                chipLabel(catName, bgColor: OffriiTheme.primary.opacity(0.1), fgColor: OffriiTheme.primary)
+                            }
+                            chipLabel(item.priorityLabel, bgColor: priorityColor(item.priority).opacity(0.1), fgColor: priorityColor(item.priority))
+                        }
+                        .padding(.horizontal, OffriiTheme.spacingLG)
+                        .padding(.top, OffriiTheme.spacingSM)
 
                         // Claimed banner
                         if item.isClaimed {
@@ -61,7 +58,7 @@ struct ItemDetailView: View {
 
                         // Content card
                         OffriiCard {
-                            VStack(alignment: .leading, spacing: OffriiTheme.spacingMD) {
+                            VStack(alignment: .leading, spacing: OffriiTheme.spacingBase) {
                                 if let price = item.estimatedPrice {
                                     detailRow(
                                         icon: "eurosign.circle",
@@ -92,7 +89,7 @@ struct ItemDetailView: View {
                             }
                         }
                         .padding(.horizontal, OffriiTheme.spacingLG)
-                        .padding(.top, -OffriiTheme.spacingMD)
+                        .padding(.top, OffriiTheme.spacingBase)
 
                         // Actions
                         VStack(spacing: OffriiTheme.spacingSM) {
@@ -118,7 +115,7 @@ struct ItemDetailView: View {
                             }
                         }
                         .padding(.horizontal, OffriiTheme.spacingLG)
-                        .padding(.top, OffriiTheme.spacingMD)
+                        .padding(.top, OffriiTheme.spacingBase)
                         .padding(.bottom, OffriiTheme.spacingXL)
                     }
                 }
@@ -164,15 +161,15 @@ struct ItemDetailView: View {
 
     // MARK: - Helpers
 
-    private func chipLabel(_ text: String, color: Color) -> some View {
+    private func chipLabel(_ text: String, bgColor: Color, fgColor: Color) -> some View {
         Text(text)
             .font(OffriiTypography.caption)
             .fontWeight(.medium)
-            .foregroundColor(.white)
+            .foregroundColor(fgColor)
             .padding(.horizontal, 10)
             .padding(.vertical, 4)
-            .background(color)
-            .cornerRadius(OffriiTheme.cornerRadiusXL)
+            .background(bgColor)
+            .cornerRadius(OffriiTheme.cornerRadiusSM)
     }
 
     private func detailRow(icon: String, title: String, value: String, isLink: Bool = false) -> some View {
@@ -214,6 +211,6 @@ struct ItemDetailView: View {
         let formatter = NumberFormatter()
         formatter.numberStyle = .currency
         formatter.currencyCode = "EUR"
-        return formatter.string(from: price as NSDecimalNumber) ?? "\(price) €"
+        return formatter.string(from: price as NSDecimalNumber) ?? "\(price) \u{20AC}"
     }
 }

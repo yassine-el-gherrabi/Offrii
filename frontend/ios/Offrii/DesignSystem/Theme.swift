@@ -4,59 +4,116 @@ import SwiftUI
 
 enum OffriiTheme {
 
-    // MARK: Colors
+    // MARK: - Primary Colors
 
-    static let primary = Color(hex: "#3B2FE0")
-    static let accent = Color(hex: "#F59E0B")
-    static let card = Color.white
-    static let cardSurface = Color(hex: "#F4F4F8")
-    static let success = Color(hex: "#10B981")
-    static let danger = Color(hex: "#EF4444")
-    static let text = Color(hex: "#1A1A2E")
-    static let textSecondary = Color(hex: "#6B7280")
-    static let textMuted = Color(hex: "#9CA3AF")
-    static let border = Color(hex: "#E8E8EE")
+    static let primary = Color("primary", bundle: nil)
+    static let primaryLight = Color("primaryLight", bundle: nil)
+    static let primaryDark = Color("primaryDark", bundle: nil)
+    static let secondary = Color("secondary", bundle: nil)
+    static let secondaryLight = Color("secondaryLight", bundle: nil)
+    static let accent = Color("accent", bundle: nil)
+    static let accentLight = Color("accentLight", bundle: nil)
 
-    // MARK: Spacing
+    // MARK: - Semantic Colors
 
-    static let spacingXS: CGFloat = 4
+    static let success = Color("success", bundle: nil)
+    static let successLight = Color("successLight", bundle: nil)
+    static let warning = Color("warning", bundle: nil)
+    static let warningLight = Color("warningLight", bundle: nil)
+    static let danger = Color("danger", bundle: nil)
+    static let dangerLight = Color("dangerLight", bundle: nil)
+
+    // MARK: - Surface Colors
+
+    static let background = Color("background", bundle: nil)
+    static let surface = Color("surface", bundle: nil)
+    static let card = Color("card", bundle: nil)
+    static let elevated = Color("elevated", bundle: nil)
+
+    // MARK: - Text Colors
+
+    static let text = Color("text", bundle: nil)
+    static let textSecondary = Color("textSecondary", bundle: nil)
+    static let textMuted = Color("textMuted", bundle: nil)
+    static let textInverse = Color("textInverse", bundle: nil)
+    static let border = Color("border", bundle: nil)
+    static let borderFocused = Color("borderFocused", bundle: nil)
+
+    // MARK: - Category Colors
+
+    static let categoryEducationBg = Color("categoryEducationBg", bundle: nil)
+    static let categoryEducationText = Color("categoryEducationText", bundle: nil)
+    static let categoryClothingBg = Color("categoryClothingBg", bundle: nil)
+    static let categoryClothingText = Color("categoryClothingText", bundle: nil)
+    static let categoryHealthBg = Color("categoryHealthBg", bundle: nil)
+    static let categoryHealthText = Color("categoryHealthText", bundle: nil)
+    static let categoryReligionBg = Color("categoryReligionBg", bundle: nil)
+    static let categoryReligionText = Color("categoryReligionText", bundle: nil)
+    static let categoryHomeBg = Color("categoryHomeBg", bundle: nil)
+    static let categoryHomeText = Color("categoryHomeText", bundle: nil)
+    static let categoryChildrenBg = Color("categoryChildrenBg", bundle: nil)
+    static let categoryChildrenText = Color("categoryChildrenText", bundle: nil)
+    static let categoryOtherBg = Color("categoryOtherBg", bundle: nil)
+    static let categoryOtherText = Color("categoryOtherText", bundle: nil)
+
+    // MARK: - Legacy Aliases (backward compatibility during migration)
+
+    static let cardSurface = surface
+
+    // MARK: - Spacing
+
+    static let spacingXXXS: CGFloat = 2
+    static let spacingXXS: CGFloat = 4
+    static let spacingXS: CGFloat = 6
     static let spacingSM: CGFloat = 8
-    static let spacingMD: CGFloat = 16
-    static let spacingLG: CGFloat = 24
-    static let spacingXL: CGFloat = 32
-    static let spacingXXL: CGFloat = 48
+    static let spacingMD: CGFloat = 12
+    static let spacingBase: CGFloat = 16
+    static let spacingLG: CGFloat = 20
+    static let spacingXL: CGFloat = 24
+    static let spacingXXL: CGFloat = 32
+    static let spacingXXXL: CGFloat = 40
+    static let spacingHuge: CGFloat = 48
+    static let spacingGiant: CGFloat = 64
 
-    // MARK: Corner Radius
+    // MARK: - Corner Radius
 
+    static let cornerRadiusXS: CGFloat = 4
     static let cornerRadiusSM: CGFloat = 8
-    static let cornerRadiusMD: CGFloat = 14
-    static let cornerRadiusLG: CGFloat = 20
-    static let cornerRadiusXL: CGFloat = 30
+    static let cornerRadiusMD: CGFloat = 12
+    static let cornerRadiusLG: CGFloat = 16
+    static let cornerRadiusXL: CGFloat = 20
+    static let cornerRadiusXXL: CGFloat = 28
+    static let cornerRadiusFull: CGFloat = 9999
 
-    // MARK: Shadows
+    // MARK: - Shadows
 
-    static let cardShadowColor = Color.black.opacity(0.06)
+    struct ShadowStyle {
+        let color: Color
+        let radius: CGFloat
+        let x: CGFloat
+        let y: CGFloat
+    }
+
+    static func shadowSM(_ scheme: ColorScheme = .light) -> ShadowStyle {
+        let opacity = scheme == .dark ? 0.25 : 0.06
+        return ShadowStyle(color: Color.black.opacity(opacity), radius: 4, x: 0, y: 2)
+    }
+
+    static func shadowMD(_ scheme: ColorScheme = .light) -> ShadowStyle {
+        let opacity = scheme == .dark ? 0.35 : 0.10
+        return ShadowStyle(color: Color.black.opacity(opacity), radius: 12, x: 0, y: 4)
+    }
+
+    static func shadowLG(_ scheme: ColorScheme = .light) -> ShadowStyle {
+        let opacity = scheme == .dark ? 0.45 : 0.15
+        return ShadowStyle(color: Color.black.opacity(opacity), radius: 24, x: 0, y: 8)
+    }
+
+    static let cardShadowColor = Color.black.opacity(0.10)
     static let cardShadowRadius: CGFloat = 12
     static let cardShadowY: CGFloat = 4
 
-    // MARK: Animation
+    // MARK: - Animation
 
-    static let defaultAnimation: Animation = .easeInOut(duration: 0.2)
-
-    // MARK: Category Colors
-
-    static let categoryEducationBg = Color(hex: "#3B82F6").opacity(0.12)
-    static let categoryEducationText = Color(hex: "#2563EB")
-    static let categoryClothingBg = Color(hex: "#8B5CF6").opacity(0.12)
-    static let categoryClothingText = Color(hex: "#7C3AED")
-    static let categoryHealthBg = Color(hex: "#10B981").opacity(0.12)
-    static let categoryHealthText = Color(hex: "#059669")
-    static let categoryReligionBg = Color(hex: "#F59E0B").opacity(0.12)
-    static let categoryReligionText = Color(hex: "#D97706")
-    static let categoryHomeBg = Color(hex: "#EF4444").opacity(0.12)
-    static let categoryHomeText = Color(hex: "#DC2626")
-    static let categoryChildrenBg = Color(hex: "#EC4899").opacity(0.12)
-    static let categoryChildrenText = Color(hex: "#DB2777")
-    static let categoryOtherBg = Color(hex: "#6B7280").opacity(0.12)
-    static let categoryOtherText = Color(hex: "#4B5563")
+    static let defaultAnimation: Animation = .spring(response: 0.35, dampingFraction: 0.7)
 }

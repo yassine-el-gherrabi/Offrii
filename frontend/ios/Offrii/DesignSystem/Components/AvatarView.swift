@@ -1,26 +1,36 @@
 import SwiftUI
 
+// MARK: - Avatar Size
+
 enum AvatarSize {
+    case xs
     case small
     case medium
     case large
+    case xl
 
     var dimension: CGFloat {
         switch self {
-        case .small: return 28
-        case .medium: return 40
-        case .large: return 72
+        case .xs:     return 24
+        case .small:  return 32
+        case .medium: return 44
+        case .large:  return 72
+        case .xl:     return 96
         }
     }
 
     var fontSize: CGFloat {
         switch self {
-        case .small: return 11
+        case .xs:     return 9
+        case .small:  return 12
         case .medium: return 16
-        case .large: return 28
+        case .large:  return 28
+        case .xl:     return 36
         }
     }
 }
+
+// MARK: - AvatarView
 
 struct AvatarView: View {
     let name: String?
@@ -42,7 +52,13 @@ struct AvatarView: View {
 
     var body: some View {
         Circle()
-            .fill(OffriiTheme.primary.opacity(0.15))
+            .fill(
+                LinearGradient(
+                    colors: [OffriiTheme.primary.opacity(0.2), OffriiTheme.accent.opacity(0.15)],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+            )
             .frame(width: size.dimension, height: size.dimension)
             .overlay(
                 Text(initials)

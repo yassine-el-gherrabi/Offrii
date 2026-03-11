@@ -14,7 +14,7 @@ struct CircleMembersSheet: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                OffriiTheme.cardSurface.ignoresSafeArea()
+                OffriiTheme.background.ignoresSafeArea()
 
                 VStack(spacing: 0) {
                     List {
@@ -60,8 +60,7 @@ struct CircleMembersSheet: View {
                             HStack {
                                 Spacer()
                                 if isLeaving {
-                                    ProgressView()
-                                        .tint(.white)
+                                    OffriiSpinner(color: .white)
                                 } else {
                                     Text(NSLocalizedString("circles.members.leave", comment: ""))
                                         .font(OffriiTypography.body)
@@ -72,7 +71,7 @@ struct CircleMembersSheet: View {
                             .foregroundColor(.white)
                             .padding(.vertical, OffriiTheme.spacingSM)
                             .background(OffriiTheme.danger)
-                            .cornerRadius(OffriiTheme.cornerRadiusSM)
+                            .cornerRadius(OffriiTheme.cornerRadiusLG)
                         }
                         .disabled(isLeaving)
                         .padding(OffriiTheme.spacingLG)
@@ -110,7 +109,7 @@ struct CircleMembersSheet: View {
             onLeft()
             dismiss()
         } catch {
-            // Silently fail — user can retry
+            // Silently fail -- user can retry
         }
         isLeaving = false
     }

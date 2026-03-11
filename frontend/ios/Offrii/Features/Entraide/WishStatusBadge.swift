@@ -39,24 +39,17 @@ struct WishStatusBadge: View {
 
     private var dotColor: Color {
         switch status {
-        case .open:      return OffriiTheme.success
-        case .matched:   return OffriiTheme.accent
-        case .fulfilled: return OffriiTheme.primary
-        case .closed:    return OffriiTheme.textMuted
-        case .pending, .review: return OffriiTheme.accent
+        case .open:               return OffriiTheme.success
+        case .matched:            return OffriiTheme.accent
+        case .fulfilled:          return OffriiTheme.primary
+        case .closed:             return OffriiTheme.textMuted
+        case .pending, .review:   return OffriiTheme.warning
         case .flagged, .rejected: return OffriiTheme.danger
         }
     }
 
     private var labelColor: Color {
-        switch status {
-        case .open:      return OffriiTheme.success
-        case .matched:   return OffriiTheme.accent
-        case .fulfilled: return OffriiTheme.primary
-        case .closed:    return OffriiTheme.textMuted
-        case .pending, .review: return OffriiTheme.accent
-        case .flagged, .rejected: return OffriiTheme.danger
-        }
+        dotColor
     }
 
     private var badgeBackground: Color {

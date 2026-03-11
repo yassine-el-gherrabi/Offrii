@@ -66,7 +66,7 @@ struct WishCard: View {
                 .buttonStyle(.plain)
             }
         }
-        .padding(OffriiTheme.spacingMD)
+        .padding(OffriiTheme.spacingBase)
         .background(OffriiTheme.card)
         .cornerRadius(OffriiTheme.cornerRadiusLG)
         .shadow(

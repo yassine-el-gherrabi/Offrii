@@ -28,7 +28,7 @@ extension WishCategory {
     }
 
     var chipLabel: String {
-        "\(emoji) \(label)"
+        label
     }
 }
 

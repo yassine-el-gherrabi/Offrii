@@ -15,8 +15,9 @@ struct RegisterView: View {
 
     var body: some View {
         ZStack {
-            OffriiTheme.primary.ignoresSafeArea()
-            DecorativeSquares(preset: .authScreen)
+            OffriiTheme.background.ignoresSafeArea()
+            BlobBackground(preset: .auth)
+                .ignoresSafeArea()
 
             GeometryReader { geometry in
                 ScrollView(showsIndicators: false) {
@@ -26,8 +27,8 @@ struct RegisterView: View {
 
                         Spacer(minLength: 0)
 
-                        cardWithStackEffect
-                            .padding(.bottom, 14)
+                        cardSection
+                            .padding(.bottom, OffriiTheme.spacingBase)
                     }
                     .frame(minHeight: geometry.size.height)
                 }
@@ -43,59 +44,28 @@ struct RegisterView: View {
 
     private var logoSection: some View {
         VStack(spacing: OffriiTheme.spacingMD) {
-            RoundedRectangle(cornerRadius: 24)
-                .fill(OffriiTheme.text)
-                .frame(width: 96, height: 90)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 26)
-                        .stroke(Color.white.opacity(0.20), lineWidth: 3)
-                        .frame(width: 100, height: 94)
-                )
+            RoundedRectangle(cornerRadius: OffriiTheme.cornerRadiusLG)
+                .fill(OffriiTheme.primary)
+                .frame(width: 72, height: 72)
                 .overlay(
                     Image(systemName: "gift.fill")
-                        .font(.system(size: 40))
+                        .font(.system(size: 32))
                         .foregroundColor(.white)
                 )
 
             Text("Offrii")
-                .font(OffriiTypography.title)
-                .foregroundColor(.white)
+                .font(OffriiTypography.titleLarge)
+                .foregroundColor(OffriiTheme.text)
         }
-    }
-
-    // MARK: - Card with Stack Effect
-
-    private var cardWithStackEffect: some View {
-        cardInner
-            .background(
-                RoundedRectangle(cornerRadius: 44)
-                    .fill(Color.white.opacity(0.20))
-                    .padding(.horizontal, 12)
-                    .offset(y: -16)
-            )
-            .background(
-                RoundedRectangle(cornerRadius: 44)
-                    .fill(Color.white.opacity(0.08))
-                    .padding(.horizontal, 24)
-                    .offset(y: -32)
-            )
-            .padding(.horizontal, 14)
     }
 
     // MARK: - Card
 
-    private var cardInner: some View {
+    private var cardSection: some View {
         VStack(alignment: .leading, spacing: OffriiTheme.spacingLG) {
-            // Sparkle + title
-            VStack(alignment: .leading, spacing: OffriiTheme.spacingXS) {
-                Image(systemName: "sparkle")
-                    .font(.system(size: 20, weight: .bold))
-                    .foregroundColor(OffriiTheme.text)
-
-                Text(NSLocalizedString("auth.register", comment: ""))
-                    .font(OffriiTypography.largeTitle)
-                    .foregroundColor(OffriiTheme.text)
-            }
+            Text(NSLocalizedString("auth.register", comment: ""))
+                .font(OffriiTypography.titleLarge)
+                .foregroundColor(OffriiTheme.text)
 
             // SSO buttons
             VStack(spacing: OffriiTheme.spacingSM) {
@@ -106,13 +76,22 @@ struct RegisterView: View {
                 SSOButton(provider: .apple) {}
             }
 
+            // Divider
+            HStack {
+                Rectangle().fill(OffriiTheme.border).frame(height: 1)
+                Text(NSLocalizedString("auth.or", comment: ""))
+                    .font(OffriiTypography.caption)
+                    .foregroundColor(OffriiTheme.textMuted)
+                Rectangle().fill(OffriiTheme.border).frame(height: 1)
+            }
+
             // Fields
-            VStack(spacing: OffriiTheme.spacingSM) {
+            VStack(spacing: OffriiTheme.spacingMD) {
                 OffriiTextField(
                     label: "",
                     text: $viewModel.displayName,
                     placeholder: NSLocalizedString("auth.displayName", comment: ""),
-                    style: .underline,
+                    style: .filled,
                     textContentType: .name,
                     autocapitalization: .words
                 )
@@ -125,7 +104,7 @@ struct RegisterView: View {
                     text: $viewModel.email,
                     placeholder: NSLocalizedString("auth.enterEmail", comment: ""),
                     errorMessage: viewModel.emailError,
-                    style: .underline,
+                    style: .filled,
                     keyboardType: .emailAddress,
                     textContentType: .emailAddress,
                     autocapitalization: .never
@@ -140,7 +119,7 @@ struct RegisterView: View {
                     placeholder: NSLocalizedString("auth.password", comment: ""),
                     errorMessage: viewModel.passwordError,
                     isSecure: true,
-                    style: .underline,
+                    style: .filled,
                     textContentType: .newPassword
                 )
                 .focused($focusedField, equals: .password)
@@ -153,7 +132,7 @@ struct RegisterView: View {
                     placeholder: NSLocalizedString("auth.confirmPassword", comment: ""),
                     errorMessage: viewModel.confirmPasswordError,
                     isSecure: true,
-                    style: .underline,
+                    style: .filled,
                     textContentType: .newPassword
                 )
                 .focused($focusedField, equals: .confirmPassword)
@@ -178,7 +157,7 @@ struct RegisterView: View {
 
                 OffriiButton(
                     NSLocalizedString("auth.register", comment: ""),
-                    variant: .dark,
+                    variant: .primary,
                     isLoading: viewModel.isLoading
                 ) {
                     Task {
@@ -189,7 +168,7 @@ struct RegisterView: View {
                 }
             }
 
-            // Switch link — inside card
+            // Switch link
             Button {
                 onSwitchToLogin()
             } label: {
@@ -197,19 +176,18 @@ struct RegisterView: View {
                     Text(NSLocalizedString("auth.alreadyAccount", comment: ""))
                         .foregroundColor(OffriiTheme.textSecondary)
                     Text(NSLocalizedString("auth.signIn", comment: ""))
-                        .foregroundColor(OffriiTheme.text)
+                        .foregroundColor(OffriiTheme.primary)
                         .fontWeight(.semibold)
                 }
                 .font(OffriiTypography.subheadline)
                 .frame(maxWidth: .infinity)
             }
         }
-        .padding(.horizontal, 28)
-        .padding(.top, 30)
-        .padding(.bottom, 40)
-        .background(Color.white)
-        .cornerRadius(44)
+        .padding(.horizontal, OffriiTheme.spacingXL)
+        .padding(.vertical, OffriiTheme.spacingXXL)
+        .background(OffriiTheme.card)
+        .cornerRadius(OffriiTheme.cornerRadiusXXL)
         .shadow(color: .black.opacity(0.08), radius: 20, y: 8)
+        .padding(.horizontal, OffriiTheme.spacingBase)
     }
-
 }

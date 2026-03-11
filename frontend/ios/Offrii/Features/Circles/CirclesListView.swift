@@ -2,52 +2,41 @@ import SwiftUI
 
 struct CirclesListView: View {
     @Environment(AuthManager.self) private var authManager
+    @Environment(OnboardingTipManager.self) private var tipManager
     @State private var viewModel = CirclesViewModel()
     @State private var showCreateCircle = false
 
     var body: some View {
         ZStack {
-            OffriiTheme.cardSurface.ignoresSafeArea()
+            OffriiTheme.background.ignoresSafeArea()
 
             VStack(spacing: 0) {
                 // Header
-                ZStack {
-                    OffriiTheme.primary.ignoresSafeArea(edges: .top)
-                    DecorativeSquares(preset: .header)
+                SectionHeader(
+                    title: NSLocalizedString("circles.title", comment: ""),
+                    variant: .cercles
+                ) {
+                    NavigationLink {
+                        PendingRequestsView()
+                            .environment(authManager)
+                    } label: {
+                        ZStack(alignment: .topTrailing) {
+                            Image(systemName: "bell.fill")
+                                .font(.system(size: 20))
+                                .foregroundColor(.white)
 
-                    HStack {
-                        Text(NSLocalizedString("circles.title", comment: ""))
-                            .font(OffriiTypography.largeTitle)
-                            .foregroundColor(.white)
-
-                        Spacer()
-
-                        NavigationLink {
-                            PendingRequestsView()
-                                .environment(authManager)
-                        } label: {
-                            ZStack(alignment: .topTrailing) {
-                                Image(systemName: "bell.fill")
-                                    .font(.system(size: 20))
+                            if viewModel.pendingRequestsCount > 0 {
+                                Text("\(viewModel.pendingRequestsCount)")
+                                    .font(.system(size: 10, weight: .bold))
                                     .foregroundColor(.white)
-
-                                if viewModel.pendingRequestsCount > 0 {
-                                    Text("\(viewModel.pendingRequestsCount)")
-                                        .font(.system(size: 10, weight: .bold))
-                                        .foregroundColor(.white)
-                                        .padding(4)
-                                        .background(OffriiTheme.danger)
-                                        .clipShape(Circle())
-                                        .offset(x: 8, y: -8)
-                                }
+                                    .padding(4)
+                                    .background(OffriiTheme.danger)
+                                    .clipShape(Circle())
+                                    .offset(x: 8, y: -8)
                             }
                         }
                     }
-                    .padding(.horizontal, OffriiTheme.spacingLG)
-                    .padding(.bottom, OffriiTheme.spacingLG)
-                    .padding(.top, OffriiTheme.spacingXL)
                 }
-                .frame(minHeight: 140)
 
                 // Action buttons
                 HStack(spacing: OffriiTheme.spacingSM) {
@@ -58,10 +47,21 @@ struct CirclesListView: View {
                             .font(OffriiTypography.footnote)
                             .fontWeight(.semibold)
                             .foregroundColor(OffriiTheme.primary)
-                            .padding(.horizontal, OffriiTheme.spacingMD)
+                            .padding(.horizontal, OffriiTheme.spacingBase)
                             .padding(.vertical, OffriiTheme.spacingSM)
                             .background(OffriiTheme.primary.opacity(0.1))
                             .cornerRadius(OffriiTheme.cornerRadiusXL)
+                    }
+                    .overlay(alignment: .bottom) {
+                        if tipManager.activeTip == .circlesCreate {
+                            OffriiTooltip(
+                                message: OnboardingTipManager.message(for: .circlesCreate),
+                                arrow: .top
+                            ) {
+                                tipManager.dismiss(.circlesCreate)
+                            }
+                            .offset(y: 60)
+                        }
                     }
 
                     NavigationLink {
@@ -72,7 +72,7 @@ struct CirclesListView: View {
                             .font(OffriiTypography.footnote)
                             .fontWeight(.semibold)
                             .foregroundColor(OffriiTheme.primary)
-                            .padding(.horizontal, OffriiTheme.spacingMD)
+                            .padding(.horizontal, OffriiTheme.spacingBase)
                             .padding(.vertical, OffriiTheme.spacingSM)
                             .background(OffriiTheme.primary.opacity(0.1))
                             .cornerRadius(OffriiTheme.cornerRadiusXL)
@@ -85,21 +85,17 @@ struct CirclesListView: View {
 
                 // Content
                 if viewModel.isLoading && viewModel.circles.isEmpty {
-                    Spacer()
-                    ProgressView()
-                    Spacer()
+                    SkeletonList(count: 5)
+                        .padding(.top, OffriiTheme.spacingBase)
                 } else if viewModel.circles.isEmpty {
                     Spacer()
-                    VStack(spacing: OffriiTheme.spacingLG) {
-                        Image(systemName: "person.2.fill")
-                            .font(.system(size: 48))
-                            .foregroundStyle(OffriiTheme.textMuted)
-                        Text(NSLocalizedString("circles.empty", comment: ""))
-                            .font(OffriiTypography.body)
-                            .foregroundStyle(OffriiTheme.textSecondary)
-                            .multilineTextAlignment(.center)
-                    }
-                    .padding(.horizontal, OffriiTheme.spacingXL)
+                    OffriiEmptyState(
+                        icon: "person.2.fill",
+                        title: NSLocalizedString("circles.empty", comment: ""),
+                        subtitle: NSLocalizedString("circles.emptySubtitle", comment: ""),
+                        ctaTitle: NSLocalizedString("circles.create", comment: ""),
+                        ctaAction: { showCreateCircle = true }
+                    )
                     Spacer()
                 } else {
                     List {
@@ -136,6 +132,7 @@ struct CirclesListView: View {
         .task {
             await viewModel.loadCircles()
             await viewModel.loadPendingCount()
+            tipManager.showIfNeeded(.circlesCreate)
         }
     }
 

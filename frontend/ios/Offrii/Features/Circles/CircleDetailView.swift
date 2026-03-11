@@ -3,6 +3,7 @@ import SwiftUI
 struct CircleDetailView: View {
     let circleId: UUID
     @Environment(AuthManager.self) private var authManager
+    @Environment(OnboardingTipManager.self) private var tipManager
     @State private var viewModel = CircleDetailViewModel()
     @State private var showInvite = false
     @State private var showMembers = false
@@ -11,10 +12,11 @@ struct CircleDetailView: View {
 
     var body: some View {
         ZStack {
-            OffriiTheme.cardSurface.ignoresSafeArea()
+            OffriiTheme.background.ignoresSafeArea()
 
             if viewModel.isLoading && viewModel.detail == nil {
-                ProgressView()
+                SkeletonList(count: 4)
+                    .padding(.top, OffriiTheme.spacingBase)
             } else if let detail = viewModel.detail {
                 VStack(spacing: 0) {
                     // Segmented control
@@ -36,7 +38,7 @@ struct CircleDetailView: View {
                     }
                 }
             } else if let error = viewModel.error {
-                VStack(spacing: OffriiTheme.spacingMD) {
+                VStack(spacing: OffriiTheme.spacingBase) {
                     Text(error)
                         .font(OffriiTypography.body)
                         .foregroundColor(OffriiTheme.textSecondary)
@@ -64,6 +66,18 @@ struct CircleDetailView: View {
                     } label: {
                         Image(systemName: "person.badge.plus")
                             .font(.system(size: 16))
+                    }
+                    .overlay(alignment: .bottom) {
+                        if tipManager.activeTip == .circlesShare {
+                            OffriiTooltip(
+                                message: OnboardingTipManager.message(for: .circlesShare),
+                                arrow: .top
+                            ) {
+                                tipManager.dismiss(.circlesShare)
+                            }
+                            .frame(width: 220)
+                            .offset(y: 50)
+                        }
                     }
                 }
             }
@@ -94,6 +108,7 @@ struct CircleDetailView: View {
         .task {
             viewModel.currentUserId = currentUserId
             await reload()
+            tipManager.showIfNeeded(.circlesShare)
         }
     }
 
@@ -103,14 +118,11 @@ struct CircleDetailView: View {
     private func itemsContent(_ detail: CircleDetailResponse) -> some View {
         if viewModel.items.isEmpty {
             Spacer()
-            VStack(spacing: OffriiTheme.spacingMD) {
-                Image(systemName: "tray")
-                    .font(.system(size: 40))
-                    .foregroundColor(OffriiTheme.textMuted)
-                Text(NSLocalizedString("circles.detail.noItems", comment: ""))
-                    .font(OffriiTypography.body)
-                    .foregroundColor(OffriiTheme.textSecondary)
-            }
+            OffriiEmptyState(
+                icon: "tray",
+                title: NSLocalizedString("circles.detail.noItems", comment: ""),
+                subtitle: NSLocalizedString("circles.detail.noItemsSubtitle", comment: "")
+            )
             Spacer()
         } else {
             ScrollView {
@@ -119,7 +131,7 @@ struct CircleDetailView: View {
                         memberSection(section.member, items: section.items)
                     }
                 }
-                .padding(OffriiTheme.spacingLG)
+                .padding(OffriiTheme.spacingBase)
             }
         }
     }
@@ -208,9 +220,9 @@ struct CircleDetailView: View {
                 }
             }
         }
-        .padding(OffriiTheme.spacingSM)
+        .padding(OffriiTheme.spacingMD)
         .background(OffriiTheme.card)
-        .cornerRadius(OffriiTheme.cornerRadiusSM)
+        .cornerRadius(OffriiTheme.cornerRadiusLG)
     }
 
     // MARK: - Activity Tab
@@ -219,14 +231,11 @@ struct CircleDetailView: View {
     private func activityContent() -> some View {
         if viewModel.feed.isEmpty {
             Spacer()
-            VStack(spacing: OffriiTheme.spacingMD) {
-                Image(systemName: "bell.slash")
-                    .font(.system(size: 40))
-                    .foregroundColor(OffriiTheme.textMuted)
-                Text(NSLocalizedString("circles.detail.noActivity", comment: ""))
-                    .font(OffriiTypography.body)
-                    .foregroundColor(OffriiTheme.textSecondary)
-            }
+            OffriiEmptyState(
+                icon: "bell.slash",
+                title: NSLocalizedString("circles.detail.noActivity", comment: ""),
+                subtitle: NSLocalizedString("circles.detail.noActivitySubtitle", comment: "")
+            )
             Spacer()
         } else {
             List {

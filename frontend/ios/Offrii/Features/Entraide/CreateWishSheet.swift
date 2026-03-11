@@ -34,7 +34,7 @@ struct CreateWishSheet: View {
                             .font(OffriiTypography.body)
                             .frame(minHeight: 100)
                             .padding(OffriiTheme.spacingSM)
-                            .background(OffriiTheme.cardSurface)
+                            .background(OffriiTheme.surface)
                             .cornerRadius(OffriiTheme.cornerRadiusSM)
                             .overlay(
                                 RoundedRectangle(cornerRadius: OffriiTheme.cornerRadiusSM)
@@ -160,7 +160,7 @@ struct CreateWishSheet: View {
                 }
                 .padding(OffriiTheme.spacingLG)
             }
-            .background(OffriiTheme.cardSurface)
+            .background(OffriiTheme.background)
             .navigationTitle(NSLocalizedString("entraide.create.title", comment: ""))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

@@ -123,6 +123,7 @@
 "profile.usernamePlaceholder" = "e.g. marie_dupont";
 "profile.account" = "Account";
 "profile.replayTutorial" = "Replay tutorial";
+"profile.resetTips" = "Reset tips";
 
 /* Reminder frequency */
 "reminder.never" = "Never";
@@ -139,6 +140,7 @@
 "circles.create" = "Create a circle";
 "circles.shareTo" = "Share with...";
 "circles.empty" = "No circles yet.\nCreate one or add a friend to get started.";
+"circles.emptySubtitle" = "Create a circle or add a friend to get started";
 "circles.unnamed" = "Unnamed circle";
 "circles.memberCount" = "%d members";
 "circles.createName" = "Circle name";
@@ -276,3 +278,26 @@
 "common.loading" = "Loading...";
 "common.retry" = "Retry";
 "common.ok" = "OK";
+"common.continue" = "Continue";
+"common.error" = "Error";
+
+/* Tooltips - Onboarding */
+"tooltip.gotIt" = "Got it";
+"tip.wishlist.firstAdd" = "Tap here to add your first wish";
+"tip.wishlist.swipe" = "Swipe left to delete, right to mark received";
+"tip.circles.create" = "Create a circle to share your wishlist with loved ones";
+"tip.circles.share" = "Invite friends so they can see and reserve your wishes";
+"tip.entraide.browse" = "Filter wishes by category to find who to help";
+"tip.entraide.offer" = "Offer your help. You can message the person";
+"tip.profile.username" = "Choose a username so friends can find you";
+"tip.profile.reminders" = "Enable reminders to never forget a friend's wish";
+
+/* Profile - Data & Legal */
+"profile.dataAndLegal" = "Data & Legal";
+
+/* Circles - Invite */
+"circles.invite.noFriendsSubtitle" = "Add friends first to invite them to circles";
+
+/* Circles - Detail */
+"circles.detail.noItemsSubtitle" = "Share items from your wishlist to this circle";
+"circles.detail.noActivitySubtitle" = "Activity will appear when members interact";

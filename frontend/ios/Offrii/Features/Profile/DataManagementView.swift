@@ -12,13 +12,13 @@ struct DataManagementView: View {
 
     var body: some View {
         ZStack {
-            OffriiTheme.cardSurface.ignoresSafeArea()
+            OffriiTheme.surface.ignoresSafeArea()
 
             ScrollView {
-                VStack(spacing: OffriiTheme.spacingMD) {
+                VStack(spacing: OffriiTheme.spacingBase) {
                     // Export section
                     OffriiCard {
-                        VStack(spacing: OffriiTheme.spacingMD) {
+                        VStack(spacing: OffriiTheme.spacingBase) {
                             HStack {
                                 Image(systemName: "square.and.arrow.up")
                                     .foregroundColor(OffriiTheme.primary)
@@ -41,7 +41,7 @@ struct DataManagementView: View {
 
                     // Delete section
                     OffriiCard {
-                        VStack(spacing: OffriiTheme.spacingMD) {
+                        VStack(spacing: OffriiTheme.spacingBase) {
                             HStack {
                                 Image(systemName: "trash.fill")
                                     .foregroundColor(OffriiTheme.danger)
@@ -66,7 +66,7 @@ struct DataManagementView: View {
                     }
                     .padding(.horizontal, OffriiTheme.spacingLG)
                 }
-                .padding(.top, OffriiTheme.spacingMD)
+                .padding(.top, OffriiTheme.spacingBase)
             }
         }
         .navigationTitle(NSLocalizedString("profile.data", comment: ""))

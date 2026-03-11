@@ -2,25 +2,26 @@ import SwiftUI
 
 struct WishlistView: View {
     @Environment(AuthManager.self) private var authManager
+    @Environment(OnboardingTipManager.self) private var tipManager
     @State private var viewModel = WishlistViewModel()
     @State private var showQuickAdd = false
     @State private var showSortMenu = false
 
     var body: some View {
         ZStack(alignment: .bottomTrailing) {
-            OffriiTheme.cardSurface.ignoresSafeArea()
+            OffriiTheme.background.ignoresSafeArea()
 
             VStack(spacing: 0) {
                 // Header
-                HeaderView(
+                SectionHeader(
                     title: NSLocalizedString("wishlist.title", comment: ""),
-                    subtitle: nil
+                    variant: .envies
                 )
 
                 // Category chips
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: OffriiTheme.spacingSM) {
-                        chipButton(
+                        OffriiChip(
                             title: NSLocalizedString("wishlist.allCategories", comment: ""),
                             isSelected: viewModel.selectedCategoryId == nil
                         ) {
@@ -28,7 +29,7 @@ struct WishlistView: View {
                         }
 
                         ForEach(viewModel.categories, id: \.id) { category in
-                            chipButton(
+                            OffriiChip(
                                 title: category.name,
                                 isSelected: viewModel.selectedCategoryId == category.id
                             ) {
@@ -88,25 +89,21 @@ struct WishlistView: View {
                 // List
                 if viewModel.isLoading && viewModel.items.isEmpty {
                     Spacer()
-                    ProgressView()
+                    SkeletonList()
                     Spacer()
                 } else if viewModel.items.isEmpty {
                     Spacer()
-                    VStack(spacing: OffriiTheme.spacingSM) {
-                        Image(systemName: "gift")
-                            .font(.system(size: 48))
-                            .foregroundColor(OffriiTheme.textMuted)
-                        Text(NSLocalizedString("wishlist.empty", comment: ""))
-                            .font(OffriiTypography.headline)
-                            .foregroundColor(OffriiTheme.textSecondary)
-                        Text(NSLocalizedString("wishlist.emptySubtitle", comment: ""))
-                            .font(OffriiTypography.body)
-                            .foregroundColor(OffriiTheme.textMuted)
-                    }
+                    OffriiEmptyState(
+                        icon: "gift",
+                        title: NSLocalizedString("wishlist.empty", comment: ""),
+                        subtitle: NSLocalizedString("wishlist.emptySubtitle", comment: ""),
+                        ctaTitle: NSLocalizedString("wishlist.quickAdd.button", comment: ""),
+                        ctaAction: { showQuickAdd = true }
+                    )
                     Spacer()
                 } else {
                     List {
-                        ForEach(viewModel.items) { item in
+                        ForEach(Array(viewModel.items.enumerated()), id: \.element.id) { index, item in
                             NavigationLink(value: item.id) {
                                 ItemRow(
                                     item: item,
@@ -115,6 +112,17 @@ struct WishlistView: View {
                             }
                             .listRowBackground(OffriiTheme.card)
                             .listRowSeparatorTint(OffriiTheme.border)
+                            .overlay(alignment: .top) {
+                                if index == 0, tipManager.activeTip == .wishlistSwipe {
+                                    OffriiTooltip(
+                                        message: OnboardingTipManager.message(for: .wishlistSwipe),
+                                        arrow: .top
+                                    ) {
+                                        tipManager.dismiss(.wishlistSwipe)
+                                    }
+                                    .offset(y: -60)
+                                }
+                            }
                             .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                                 Button(role: .destructive) {
                                     Task { await viewModel.deleteItem(item) }
@@ -146,7 +154,7 @@ struct WishlistView: View {
                         if viewModel.isLoadingMore {
                             HStack {
                                 Spacer()
-                                ProgressView()
+                                SkeletonRow()
                                 Spacer()
                             }
                             .listRowBackground(Color.clear)
@@ -162,19 +170,28 @@ struct WishlistView: View {
             }
 
             // FAB
-            Button {
-                showQuickAdd = true
-            } label: {
-                Image(systemName: "plus")
-                    .font(.system(size: 24, weight: .semibold))
-                    .foregroundColor(.white)
-                    .frame(width: 56, height: 56)
-                    .background(OffriiTheme.primary)
-                    .clipShape(Circle())
-                    .shadow(color: OffriiTheme.primary.opacity(0.3), radius: 8, y: 4)
+            VStack {
+                Spacer()
+                HStack {
+                    Spacer()
+                    OffriiFloatingActionButton(icon: "plus") {
+                        showQuickAdd = true
+                    }
+                    .overlay(alignment: .top) {
+                        if tipManager.activeTip == .wishlistFirstAdd {
+                            OffriiTooltip(
+                                message: OnboardingTipManager.message(for: .wishlistFirstAdd),
+                                arrow: .bottom
+                            ) {
+                                tipManager.dismiss(.wishlistFirstAdd)
+                            }
+                            .offset(y: -80)
+                        }
+                    }
+                }
+                .padding(.trailing, OffriiTheme.spacingLG)
+                .padding(.bottom, OffriiTheme.spacingLG)
             }
-            .padding(.trailing, OffriiTheme.spacingLG)
-            .padding(.bottom, OffriiTheme.spacingLG)
         }
         .refreshable {
             await viewModel.loadItems()
@@ -187,26 +204,11 @@ struct WishlistView: View {
         .task {
             await viewModel.loadCategories()
             await viewModel.loadItems()
-        }
-    }
-
-    private func chipButton(title: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Text(title)
-                .font(OffriiTypography.subheadline)
-                .fontWeight(isSelected ? .semibold : .regular)
-                .foregroundColor(isSelected ? .white : OffriiTheme.textSecondary)
-                .padding(.horizontal, OffriiTheme.spacingMD)
-                .padding(.vertical, OffriiTheme.spacingSM)
-                .background(isSelected ? OffriiTheme.primary : OffriiTheme.card)
-                .cornerRadius(OffriiTheme.cornerRadiusXL)
-                .overlay(
-                    RoundedRectangle(cornerRadius: OffriiTheme.cornerRadiusXL)
-                        .strokeBorder(
-                            isSelected ? Color.clear : OffriiTheme.border,
-                            lineWidth: 1
-                        )
-                )
+            if viewModel.items.isEmpty {
+                tipManager.showIfNeeded(.wishlistFirstAdd)
+            } else {
+                tipManager.showIfNeeded(.wishlistSwipe)
+            }
         }
     }
 }

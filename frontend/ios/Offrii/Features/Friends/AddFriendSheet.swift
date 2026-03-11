@@ -13,7 +13,7 @@ struct AddFriendSheet: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                OffriiTheme.cardSurface.ignoresSafeArea()
+                OffriiTheme.background.ignoresSafeArea()
 
                 VStack(spacing: 0) {
                     // Search field
@@ -38,7 +38,7 @@ struct AddFriendSheet: View {
                             }
                         }
                     }
-                    .padding(OffriiTheme.spacingMD)
+                    .padding(OffriiTheme.spacingBase)
                     .background(OffriiTheme.card)
                     .cornerRadius(OffriiTheme.cornerRadiusSM)
                     .overlay(
@@ -58,7 +58,9 @@ struct AddFriendSheet: View {
 
                     if isSearching {
                         Spacer()
-                        ProgressView()
+                        VStack(spacing: OffriiTheme.spacingSM) {
+                            SkeletonList(count: 3)
+                        }
                         Spacer()
                     } else if results.isEmpty && !searchText.isEmpty {
                         Spacer()

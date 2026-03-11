@@ -25,6 +25,8 @@ struct SSOButton: View {
     let provider: SSOProvider
     let action: () -> Void
 
+    @State private var isPressed = false
+
     var body: some View {
         Button(action: action) {
             HStack(spacing: OffriiTheme.spacingSM) {
@@ -36,10 +38,21 @@ struct SSOButton: View {
             .foregroundColor(OffriiTheme.text)
             .frame(maxWidth: .infinity)
             .frame(height: 48)
-            .background(Color(hex: "#F2F2F7"))
+            .background(OffriiTheme.surface)
             .cornerRadius(OffriiTheme.cornerRadiusMD)
+            .overlay(
+                RoundedRectangle(cornerRadius: OffriiTheme.cornerRadiusMD)
+                    .strokeBorder(OffriiTheme.border, lineWidth: 1)
+            )
         }
         .buttonStyle(.plain)
+        .scaleEffect(isPressed ? 0.97 : 1.0)
+        .animation(OffriiAnimation.micro, value: isPressed)
+        .pressEvents {
+            isPressed = true
+        } onRelease: {
+            isPressed = false
+        }
     }
 
     // MARK: - Provider Icon
@@ -64,19 +77,3 @@ struct SSOButton: View {
         }
     }
 }
-
-// MARK: - Preview
-
-#if DEBUG
-struct SSOButton_Previews: PreviewProvider {
-    static var previews: some View {
-        HStack(spacing: OffriiTheme.spacingSM) {
-            SSOButton(provider: .google) {}
-            SSOButton(provider: .facebook) {}
-        }
-        .padding(OffriiTheme.spacingLG)
-        .background(Color.white)
-        .previewLayout(.sizeThatFits)
-    }
-}
-#endif

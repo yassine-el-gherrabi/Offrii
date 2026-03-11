@@ -18,12 +18,13 @@ struct WishMessagesView: View {
                                 text: message.body,
                                 senderName: message.isMine ? nil : message.senderDisplayName,
                                 timestamp: message.createdAt,
-                                isMine: message.isMine
+                                isMine: message.isMine,
+                                isNew: false
                             )
                             .id(message.id)
                         }
                     }
-                    .padding(.horizontal, OffriiTheme.spacingMD)
+                    .padding(.horizontal, OffriiTheme.spacingBase)
                     .padding(.vertical, OffriiTheme.spacingSM)
                 }
                 .onChange(of: viewModel.messages.count) { _, _ in
@@ -45,7 +46,7 @@ struct WishMessagesView: View {
             // Input bar
             inputBar
         }
-        .background(OffriiTheme.cardSurface)
+        .background(OffriiTheme.background)
         .navigationTitle(wishTitle)
         .navigationBarTitleDisplayMode(.inline)
         .task {
@@ -66,9 +67,9 @@ struct WishMessagesView: View {
                 text: $viewModel.messageText
             )
             .font(OffriiTypography.body)
-            .padding(.horizontal, OffriiTheme.spacingMD)
+            .padding(.horizontal, OffriiTheme.spacingBase)
             .padding(.vertical, OffriiTheme.spacingSM)
-            .background(OffriiTheme.card)
+            .background(OffriiTheme.surface)
             .cornerRadius(OffriiTheme.cornerRadiusXL)
 
             Button {
@@ -90,7 +91,7 @@ struct WishMessagesView: View {
                     || viewModel.isSending
             )
         }
-        .padding(.horizontal, OffriiTheme.spacingMD)
+        .padding(.horizontal, OffriiTheme.spacingBase)
         .padding(.vertical, OffriiTheme.spacingSM)
         .background(OffriiTheme.card)
     }

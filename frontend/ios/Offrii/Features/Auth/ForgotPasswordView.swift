@@ -11,18 +11,18 @@ struct ForgotPasswordView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                OffriiTheme.cardSurface.ignoresSafeArea()
+                OffriiTheme.background.ignoresSafeArea()
 
                 ScrollView {
                     VStack(spacing: 0) {
-                        HeaderView(
+                        SectionHeader(
                             title: NSLocalizedString("auth.resetPassword", comment: ""),
-                            subtitle: stepSubtitle
+                            subtitle: stepSubtitle,
+                            variant: .detail
                         )
 
                         OffriiCard {
                             VStack(spacing: OffriiTheme.spacingMD) {
-                                // Step indicator
                                 Text(String(
                                     format: NSLocalizedString("auth.step", comment: ""),
                                     viewModel.forgotStep.rawValue,
@@ -126,7 +126,7 @@ struct ForgotPasswordView: View {
         switch viewModel.forgotStep {
         case .email:
             OffriiButton(
-                NSLocalizedString("onboarding.continue", comment: ""),
+                NSLocalizedString("common.continue", comment: ""),
                 isLoading: viewModel.isLoading
             ) {
                 Task {
@@ -136,7 +136,7 @@ struct ForgotPasswordView: View {
 
         case .code:
             OffriiButton(
-                NSLocalizedString("onboarding.continue", comment: ""),
+                NSLocalizedString("common.continue", comment: ""),
                 isLoading: viewModel.isLoading
             ) {
                 Task {

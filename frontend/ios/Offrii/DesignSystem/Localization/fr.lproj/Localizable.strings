@@ -123,6 +123,7 @@
 "profile.usernamePlaceholder" = "ex : marie_dupont";
 "profile.account" = "Compte";
 "profile.replayTutorial" = "Revoir le tutoriel";
+"profile.resetTips" = "Réinitialiser les astuces";
 
 /* Reminder frequency */
 "reminder.never" = "Jamais";
@@ -139,6 +140,7 @@
 "circles.create" = "Créer un cercle";
 "circles.shareTo" = "Partager avec...";
 "circles.empty" = "Pas encore de cercles.\nCréez-en un ou ajoutez un ami pour commencer.";
+"circles.emptySubtitle" = "Créez un cercle ou ajoutez un ami pour commencer";
 "circles.unnamed" = "Cercle sans nom";
 "circles.memberCount" = "%d membres";
 "circles.createName" = "Nom du cercle";
@@ -276,3 +278,26 @@
 "common.loading" = "Chargement...";
 "common.retry" = "Réessayer";
 "common.ok" = "OK";
+"common.continue" = "Continuer";
+"common.error" = "Erreur";
+
+/* Tooltips - Onboarding */
+"tooltip.gotIt" = "Compris";
+"tip.wishlist.firstAdd" = "Appuie ici pour ajouter ta première envie";
+"tip.wishlist.swipe" = "Glisse à gauche pour supprimer, à droite pour marquer reçu";
+"tip.circles.create" = "Crée un cercle pour partager ta wishlist avec tes proches";
+"tip.circles.share" = "Invite des amis pour qu'ils voient et réservent tes envies";
+"tip.entraide.browse" = "Filtre les souhaits par catégorie pour trouver qui aider";
+"tip.entraide.offer" = "Propose ton aide. Tu pourras envoyer un message à la personne";
+"tip.profile.username" = "Choisis un username pour que tes amis te trouvent";
+"tip.profile.reminders" = "Active les rappels pour ne jamais oublier l'envie d'un ami";
+
+/* Profile - Données & Légal */
+"profile.dataAndLegal" = "Données & Légal";
+
+/* Circles - Invitation */
+"circles.invite.noFriendsSubtitle" = "Ajoutez d'abord des amis pour les inviter dans vos cercles";
+
+/* Circles - Détail */
+"circles.detail.noItemsSubtitle" = "Partagez des envies de votre liste dans ce cercle";
+"circles.detail.noActivitySubtitle" = "L'activité apparaîtra quand les membres interagiront";

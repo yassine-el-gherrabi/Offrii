@@ -28,9 +28,9 @@ struct ItemEditView: View {
 
     var body: some View {
         ScrollView {
-            VStack(spacing: OffriiTheme.spacingMD) {
+            VStack(spacing: OffriiTheme.spacingBase) {
                 OffriiCard {
-                    VStack(spacing: OffriiTheme.spacingMD) {
+                    VStack(spacing: OffriiTheme.spacingBase) {
                         OffriiTextField(
                             label: NSLocalizedString("item.name", comment: ""),
                             text: $name,
@@ -92,12 +92,12 @@ struct ItemEditView: View {
                                         .font(.system(size: 12))
                                         .foregroundColor(OffriiTheme.textMuted)
                                 }
-                                .padding(.horizontal, OffriiTheme.spacingMD)
+                                .padding(.horizontal, OffriiTheme.spacingBase)
                                 .padding(.vertical, 14)
-                                .background(OffriiTheme.card)
-                                .cornerRadius(OffriiTheme.cornerRadiusMD)
+                                .background(OffriiTheme.surface)
+                                .cornerRadius(OffriiTheme.cornerRadiusLG)
                                 .overlay(
-                                    RoundedRectangle(cornerRadius: OffriiTheme.cornerRadiusMD)
+                                    RoundedRectangle(cornerRadius: OffriiTheme.cornerRadiusLG)
                                         .strokeBorder(OffriiTheme.border, lineWidth: 1)
                                 )
                             }
@@ -115,9 +115,9 @@ struct ItemEditView: View {
                 }
                 .padding(.horizontal, OffriiTheme.spacingLG)
             }
-            .padding(.top, OffriiTheme.spacingMD)
+            .padding(.top, OffriiTheme.spacingBase)
         }
-        .background(OffriiTheme.cardSurface.ignoresSafeArea())
+        .background(OffriiTheme.background.ignoresSafeArea())
         .navigationTitle(NSLocalizedString("wishlist.edit", comment: ""))
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
