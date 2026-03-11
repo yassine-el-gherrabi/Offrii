@@ -9,6 +9,7 @@ struct LoginView: View {
     let onSwitchToRegister: () -> Void
 
     @State private var showForgotPassword = false
+    @State private var appeared = false
     @FocusState private var focusedField: LoginField?
 
     private enum LoginField: Hashable {
@@ -17,10 +18,8 @@ struct LoginView: View {
 
     var body: some View {
         ZStack {
-            // Warm white background
             OffriiTheme.background.ignoresSafeArea()
 
-            // Blob decorations
             BlobBackground(preset: .auth)
                 .ignoresSafeArea()
 
@@ -28,7 +27,7 @@ struct LoginView: View {
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: OffriiTheme.spacingLG) {
                         logoSection
-                            .padding(.top, 60)
+                            .padding(.top, 40)
 
                         Spacer(minLength: 0)
 
@@ -72,19 +71,30 @@ struct LoginView: View {
 
     private var cardSection: some View {
         VStack(alignment: .leading, spacing: OffriiTheme.spacingLG) {
-            // Title
-            Text(NSLocalizedString(isReturningUser ? "auth.welcomeBack" : "auth.login", comment: ""))
-                .font(OffriiTypography.titleLarge)
-                .foregroundColor(OffriiTheme.text)
+            // Title + subtitle
+            VStack(alignment: .leading, spacing: OffriiTheme.spacingXS) {
+                Text(NSLocalizedString(isReturningUser ? "auth.welcomeBack" : "auth.login", comment: ""))
+                    .font(OffriiTypography.titleLarge)
+                    .foregroundColor(OffriiTheme.text)
 
-            // SSO buttons
+                Text(NSLocalizedString("auth.loginSubtitle", comment: ""))
+                    .font(OffriiTypography.body)
+                    .foregroundColor(OffriiTheme.textSecondary)
+            }
+
+            // SSO buttons — 3 stacked full-width
             VStack(spacing: OffriiTheme.spacingSM) {
-                HStack(spacing: OffriiTheme.spacingSM) {
-                    SSOButton(provider: .google) {}
-                    SSOButton(provider: .facebook) {}
-                }
+                SSOButton(provider: .google) {}
+                SSOButton(provider: .facebook) {}
                 SSOButton(provider: .apple) {}
             }
+
+            // Privacy hint
+            Text(NSLocalizedString("auth.privacyHint", comment: ""))
+                .font(OffriiTypography.caption)
+                .foregroundColor(OffriiTheme.textMuted)
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: .infinity)
 
             // Divider
             HStack {
@@ -136,7 +146,7 @@ struct LoginView: View {
                         showForgotPassword = true
                     }
                     .font(OffriiTypography.subheadline)
-                    .foregroundColor(OffriiTheme.secondary)
+                    .foregroundColor(OffriiTheme.textSecondary)
                 }
             }
 
@@ -183,5 +193,12 @@ struct LoginView: View {
         .cornerRadius(OffriiTheme.cornerRadiusXXL)
         .shadow(color: .black.opacity(0.08), radius: 20, y: 8)
         .padding(.horizontal, OffriiTheme.spacingBase)
+        .opacity(appeared ? 1 : 0)
+        .offset(y: appeared ? 0 : 30)
+        .onAppear {
+            withAnimation(OffriiAnimation.modal.delay(0.15)) {
+                appeared = true
+            }
+        }
     }
 }

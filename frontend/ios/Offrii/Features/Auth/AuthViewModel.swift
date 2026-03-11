@@ -25,16 +25,12 @@ final class AuthViewModel {
 
     var email = ""
     var password = ""
-    var confirmPassword = ""
-    var displayName = ""
     var state: AuthState = .idle
 
     // MARK: - Field Errors
 
     var emailError: String?
     var passwordError: String?
-    var confirmPasswordError: String?
-    var displayNameError: String?
 
     // MARK: - Forgot Password
 
@@ -110,31 +106,20 @@ final class AuthViewModel {
         }
     }
 
-    func validateConfirmPassword() -> Bool {
-        if confirmPassword != password {
-            confirmPasswordError = NSLocalizedString("error.passwordMismatch", comment: "")
-            return false
-        }
-        confirmPasswordError = nil
-        return true
-    }
-
     // MARK: - Register
 
     func register(authManager: AuthManager) async -> Bool {
         clearErrors()
         let emailValid = validateEmail()
         let passwordValid = validatePassword()
-        let confirmValid = validateConfirmPassword()
-        guard emailValid && passwordValid && confirmValid else { return false }
+        guard emailValid && passwordValid else { return false }
 
         state = .loading
         do {
-            let name = displayName.trimmingCharacters(in: .whitespaces)
             try await authManager.register(
                 email: email.trimmingCharacters(in: .whitespaces),
                 password: password,
-                displayName: name.isEmpty ? nil : name
+                displayName: nil
             )
             state = .idle
             return true
@@ -206,8 +191,6 @@ final class AuthViewModel {
     private func clearErrors() {
         emailError = nil
         passwordError = nil
-        confirmPasswordError = nil
-        displayNameError = nil
         codeError = nil
         newPasswordError = nil
         if case .error = state { state = .idle }
@@ -219,8 +202,18 @@ final class AuthViewModel {
         }
         switch apiError {
         case .badRequest(let msg):
-            if msg.lowercased().contains("email") && msg.lowercased().contains("taken") {
+            let lower = msg.lowercased()
+            if lower.contains("email") && lower.contains("taken") {
                 return NSLocalizedString("error.emailTaken", comment: "")
+            }
+            if lower.contains("password_common") {
+                return NSLocalizedString("error.passwordCommon", comment: "")
+            }
+            if lower.contains("password_breached") {
+                return NSLocalizedString("error.passwordBreached", comment: "")
+            }
+            if lower.contains("password_length") {
+                return NSLocalizedString("error.passwordTooShort", comment: "")
             }
             return msg
         case .unauthorized(let msg):

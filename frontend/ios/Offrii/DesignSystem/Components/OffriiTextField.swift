@@ -66,7 +66,7 @@ struct OffriiTextField: View {
             .cornerRadius(OffriiTheme.cornerRadiusMD)
             .overlay(
                 RoundedRectangle(cornerRadius: OffriiTheme.cornerRadiusMD)
-                    .strokeBorder(borderColor, lineWidth: style == .bordered ? 1.5 : 0)
+                    .strokeBorder(borderColor, lineWidth: style == .bordered ? 1.5 : 1)
             )
             .overlay(focusGlow)
             .focused($isFocused)
@@ -103,7 +103,7 @@ struct OffriiTextField: View {
         if isFocused {
             return OffriiTheme.borderFocused
         }
-        return style == .bordered ? OffriiTheme.border : .clear
+        return style == .bordered ? OffriiTheme.border : OffriiTheme.border.opacity(0.5)
     }
 
     @ViewBuilder

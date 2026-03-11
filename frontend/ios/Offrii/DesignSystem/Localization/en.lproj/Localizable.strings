@@ -48,6 +48,8 @@
 "error.emailRequired" = "Email is required";
 "error.passwordRequired" = "Password is required";
 "error.passwordTooShort" = "Password must be at least 8 characters";
+"error.passwordCommon" = "This password is too common, choose a more unique one";
+"error.passwordBreached" = "This password appeared in a data breach, choose another one";
 "error.invalidEmail" = "Invalid email format";
 "error.rateLimited" = "Too many attempts, please try again later";
 "error.passwordMismatch" = "Passwords do not match";
@@ -85,6 +87,9 @@
 "postauth.notifications.subtitle" = "Get notified when someone offers to help you";
 "postauth.notifications.enable" = "Enable notifications";
 "postauth.notifications.skip" = "Later";
+"postauth.displayName.title" = "What should we call you?";
+"postauth.displayName.subtitle" = "Your first name or a nickname for your friends";
+"auth.privacyHint" = "We'll never post without your permission";
 
 /* Wishlist */
 "wishlist.title" = "My Wishes";

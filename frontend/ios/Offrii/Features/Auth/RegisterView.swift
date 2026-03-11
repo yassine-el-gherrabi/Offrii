@@ -8,9 +8,10 @@ struct RegisterView: View {
     let onSwitchToLogin: () -> Void
 
     @FocusState private var focusedField: RegisterField?
+    @State private var appeared = false
 
     private enum RegisterField: Hashable {
-        case displayName, email, password, confirmPassword
+        case email, password
     }
 
     var body: some View {
@@ -23,7 +24,7 @@ struct RegisterView: View {
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: OffriiTheme.spacingLG) {
                         logoSection
-                            .padding(.top, 60)
+                            .padding(.top, 40)
 
                         Spacer(minLength: 0)
 
@@ -63,18 +64,30 @@ struct RegisterView: View {
 
     private var cardSection: some View {
         VStack(alignment: .leading, spacing: OffriiTheme.spacingLG) {
-            Text(NSLocalizedString("auth.register", comment: ""))
-                .font(OffriiTypography.titleLarge)
-                .foregroundColor(OffriiTheme.text)
+            // Title + subtitle
+            VStack(alignment: .leading, spacing: OffriiTheme.spacingXS) {
+                Text(NSLocalizedString("auth.register", comment: ""))
+                    .font(OffriiTypography.titleLarge)
+                    .foregroundColor(OffriiTheme.text)
 
-            // SSO buttons
+                Text(NSLocalizedString("auth.registerSubtitle", comment: ""))
+                    .font(OffriiTypography.body)
+                    .foregroundColor(OffriiTheme.textSecondary)
+            }
+
+            // SSO buttons — 3 stacked full-width
             VStack(spacing: OffriiTheme.spacingSM) {
-                HStack(spacing: OffriiTheme.spacingSM) {
-                    SSOButton(provider: .google) {}
-                    SSOButton(provider: .facebook) {}
-                }
+                SSOButton(provider: .google) {}
+                SSOButton(provider: .facebook) {}
                 SSOButton(provider: .apple) {}
             }
+
+            // Privacy hint
+            Text(NSLocalizedString("auth.privacyHint", comment: ""))
+                .font(OffriiTypography.caption)
+                .foregroundColor(OffriiTheme.textMuted)
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: .infinity)
 
             // Divider
             HStack {
@@ -85,20 +98,8 @@ struct RegisterView: View {
                 Rectangle().fill(OffriiTheme.border).frame(height: 1)
             }
 
-            // Fields
+            // Fields — email + password only
             VStack(spacing: OffriiTheme.spacingMD) {
-                OffriiTextField(
-                    label: "",
-                    text: $viewModel.displayName,
-                    placeholder: NSLocalizedString("auth.displayName", comment: ""),
-                    style: .filled,
-                    textContentType: .name,
-                    autocapitalization: .words
-                )
-                .focused($focusedField, equals: .displayName)
-                .submitLabel(.next)
-                .onSubmit { focusedField = .email }
-
                 OffriiTextField(
                     label: "",
                     text: $viewModel.email,
@@ -116,26 +117,13 @@ struct RegisterView: View {
                 OffriiTextField(
                     label: "",
                     text: $viewModel.password,
-                    placeholder: NSLocalizedString("auth.password", comment: ""),
+                    placeholder: NSLocalizedString("auth.passwordPlaceholder", comment: ""),
                     errorMessage: viewModel.passwordError,
                     isSecure: true,
                     style: .filled,
                     textContentType: .newPassword
                 )
                 .focused($focusedField, equals: .password)
-                .submitLabel(.next)
-                .onSubmit { focusedField = .confirmPassword }
-
-                OffriiTextField(
-                    label: "",
-                    text: $viewModel.confirmPassword,
-                    placeholder: NSLocalizedString("auth.confirmPassword", comment: ""),
-                    errorMessage: viewModel.confirmPasswordError,
-                    isSecure: true,
-                    style: .filled,
-                    textContentType: .newPassword
-                )
-                .focused($focusedField, equals: .confirmPassword)
                 .submitLabel(.go)
                 .onSubmit {
                     Task {
@@ -189,5 +177,12 @@ struct RegisterView: View {
         .cornerRadius(OffriiTheme.cornerRadiusXXL)
         .shadow(color: .black.opacity(0.08), radius: 20, y: 8)
         .padding(.horizontal, OffriiTheme.spacingBase)
+        .opacity(appeared ? 1 : 0)
+        .offset(y: appeared ? 0 : 30)
+        .onAppear {
+            withAnimation(OffriiAnimation.modal.delay(0.15)) {
+                appeared = true
+            }
+        }
     }
 }
