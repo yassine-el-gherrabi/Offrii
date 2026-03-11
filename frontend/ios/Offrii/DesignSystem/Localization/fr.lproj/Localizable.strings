@@ -35,6 +35,7 @@
 "auth.continueWithFacebook" = "Facebook";
 "auth.continueWithApple" = "Continuer avec Apple";
 "auth.or" = "ou";
+"auth.welcomeBack" = "Bon retour !";
 
 /* Errors */
 "error.emailTaken" = "Cet email est déjà utilisé";
@@ -65,6 +66,25 @@
 "onboarding.continue" = "Continuer";
 "onboarding.start" = "Commencer";
 "onboarding.alreadyAccount" = "Déjà un compte ? Se connecter";
+"onboarding.summary.title" = "Tout Offrii, pour toi";
+"onboarding.summary.subtitle" = "Tes envies, tes proches, ta communauté. Tout au même endroit.";
+"onboarding.feature.wishes" = "Envies";
+"onboarding.feature.share" = "Partage";
+"onboarding.feature.help" = "Entraide";
+
+/* Splash */
+"splash.tagline" = "Offre, partage, fais plaisir";
+
+/* Post-Auth Setup */
+"postauth.username.title" = "Choisis un pseudo";
+"postauth.username.subtitle" = "Tes amis te trouveront avec @pseudo";
+"postauth.username.placeholder" = "@pseudo";
+"postauth.username.continue" = "Continuer";
+"postauth.username.skip" = "Plus tard";
+"postauth.notifications.title" = "Ne rate jamais l'envie d'un ami";
+"postauth.notifications.subtitle" = "Sois notifié quand quelqu'un propose son aide";
+"postauth.notifications.enable" = "Activer les notifications";
+"postauth.notifications.skip" = "Plus tard";
 
 /* Wishlist */
 "wishlist.title" = "Mes Envies";

@@ -35,7 +35,9 @@ final class AuthManager {
 
         let response: AuthResponse = try await client.request(.register(body))
         storeTokens(response.tokens)
-        currentUser = response.user.toUser()
+        let user = response.user.toUser()
+        currentUser = user
+        cacheUser(user)
         logger.info("User registered: \(response.user.id)")
     }
 
@@ -47,7 +49,9 @@ final class AuthManager {
 
         let response: AuthResponse = try await client.request(.login(body))
         storeTokens(response.tokens)
-        currentUser = response.user.toUser()
+        let user = response.user.toUser()
+        currentUser = user
+        cacheUser(user)
         logger.info("User logged in: \(response.user.id)")
     }
 
@@ -86,8 +90,34 @@ final class AuthManager {
     /// Fetches the current user profile from the server.
     func loadCurrentUser() async throws {
         let profile: UserProfileResponse = try await client.request(.getProfile)
-        currentUser = profile.toUser()
+        let user = profile.toUser()
+        currentUser = user
+        cacheUser(user)
         logger.info("Loaded current user: \(profile.id)")
+    }
+
+    // MARK: - Splash Launch
+
+    /// Attempts to refresh tokens and load user profile at launch.
+    /// Returns `true` if the user session is valid and loaded.
+    func refreshAndLoadUser() async -> Bool {
+        guard keychain.accessToken != nil else { return false }
+        do {
+            try await refreshTokens()
+            try await loadCurrentUser()
+            return true
+        } catch {
+            logger.warning("Launch refresh failed: \(error.localizedDescription)")
+            clearAuthState()
+            return false
+        }
+    }
+
+    /// Restores the cached user from UserDefaults for instant display.
+    func restoreCachedUser() {
+        guard let data = UserDefaults.standard.data(forKey: "cachedUser"),
+              let user = try? JSONDecoder().decode(User.self, from: data) else { return }
+        currentUser = user
     }
 
     // MARK: - Private Helpers
@@ -97,8 +127,15 @@ final class AuthManager {
         keychain.refreshToken = tokens.refreshToken
     }
 
+    private func cacheUser(_ user: User) {
+        if let data = try? JSONEncoder().encode(user) {
+            UserDefaults.standard.set(data, forKey: "cachedUser")
+        }
+    }
+
     private func clearAuthState() {
         keychain.clearAll()
         currentUser = nil
+        UserDefaults.standard.removeObject(forKey: "cachedUser")
     }
 }

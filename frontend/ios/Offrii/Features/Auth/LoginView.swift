@@ -4,6 +4,7 @@ struct LoginView: View {
     @Environment(AuthManager.self) private var authManager
     @State private var viewModel = AuthViewModel()
 
+    let isReturningUser: Bool
     let onAuthenticated: () -> Void
     let onSwitchToRegister: () -> Void
 
@@ -72,7 +73,7 @@ struct LoginView: View {
     private var cardSection: some View {
         VStack(alignment: .leading, spacing: OffriiTheme.spacingLG) {
             // Title
-            Text(NSLocalizedString("auth.login", comment: ""))
+            Text(NSLocalizedString(isReturningUser ? "auth.welcomeBack" : "auth.login", comment: ""))
                 .font(OffriiTypography.titleLarge)
                 .foregroundColor(OffriiTheme.text)
 

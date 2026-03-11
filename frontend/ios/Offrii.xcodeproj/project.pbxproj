@@ -7,6 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		B1SPLASH000000000000001 /* SplashView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1SPLASH000000000000001 /* SplashView.swift */; };
+		B1WELCOME00000000000001 /* WelcomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1WELCOME00000000000001 /* WelcomeView.swift */; };
+		B1POSTAUTH0000000000001 /* PostAuthSetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1POSTAUTH0000000000001 /* PostAuthSetupView.swift */; };
 		0817889119B494866721B449 /* CircleMembersSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = B62EA9A572E752338706A6D3 /* CircleMembersSheet.swift */; };
 		0C40392769386148C2161636 /* AddFriendSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00A795E6C64A02C75791ABC0 /* AddFriendSheet.swift */; };
 		103EEE9EB1A6E8CF566004BD /* CircleModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D046AFC11C42380646B6BC6 /* CircleModels.swift */; };
@@ -127,6 +130,9 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		A1SPLASH000000000000001 /* SplashView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplashView.swift; sourceTree = "<group>"; };
+		A1WELCOME00000000000001 /* WelcomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WelcomeView.swift; sourceTree = "<group>"; };
+		A1POSTAUTH0000000000001 /* PostAuthSetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PostAuthSetupView.swift; sourceTree = "<group>"; };
 		00A795E6C64A02C75791ABC0 /* AddFriendSheet.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AddFriendSheet.swift; sourceTree = "<group>"; };
 		00BCE22B8D5B86F102AA3B11 /* FriendsViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FriendsViewModel.swift; sourceTree = "<group>"; };
 		1DC960665D0FCEE00400F773 /* CircleService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CircleService.swift; sourceTree = "<group>"; };
@@ -413,12 +419,21 @@
 			path = Localization;
 			sourceTree = "<group>";
 		};
+		C1LAUNCH000000000000001 /* Launch */ = {
+			isa = PBXGroup;
+			children = (
+				A1SPLASH000000000000001 /* SplashView.swift */,
+			);
+			path = Launch;
+			sourceTree = "<group>";
+		};
 		C00000000000000000000013 /* Features */ = {
 			isa = PBXGroup;
 			children = (
 				CC8D884B5399478BE5DAFCAD /* Entraide */,
 				C00000000000000000000014 /* Auth */,
 				C00000000000000000000015 /* Categories */,
+				C1LAUNCH000000000000001 /* Launch */,
 				C00000000000000000000016 /* Legal */,
 				C00000000000000000000017 /* Onboarding */,
 				C00000000000000000000018 /* Placeholder */,
@@ -436,6 +451,7 @@
 				A10000000000000000000017 /* AuthViewModel.swift */,
 				A10000000000000000000018 /* ForgotPasswordView.swift */,
 				A10000000000000000000019 /* LoginView.swift */,
+				A1POSTAUTH0000000000001 /* PostAuthSetupView.swift */,
 				A10000000000000000000020 /* RegisterView.swift */,
 			);
 			path = Auth;
@@ -461,6 +477,7 @@
 			isa = PBXGroup;
 			children = (
 				AA0000000000000000000015 /* OnboardingTipManager.swift */,
+				A1WELCOME00000000000001 /* WelcomeView.swift */,
 			);
 			path = Onboarding;
 			sourceTree = "<group>";
@@ -704,6 +721,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				B1SPLASH000000000000001 /* SplashView.swift in Sources */,
+				B1WELCOME00000000000001 /* WelcomeView.swift in Sources */,
+				B1POSTAUTH0000000000001 /* PostAuthSetupView.swift in Sources */,
 				B10000000000000000000001 /* OffriiApp.swift in Sources */,
 				B10000000000000000000002 /* AuthManager.swift in Sources */,
 				B10000000000000000000003 /* KeychainService.swift in Sources */,

@@ -13,7 +13,15 @@ final class KeychainService: @unchecked Sendable {
     private let keychain = Keychain(service: "com.offrii.auth")
         .accessibility(.afterFirstUnlockThisDeviceOnly)
 
-    private init() {}
+    private init() {
+        // iOS preserves keychain data across app uninstall/reinstall.
+        // Stale tokens from a previous install would be invalid, so clear them.
+        let reinstallKey = "com.offrii.hasLaunchedBefore"
+        if !UserDefaults.standard.bool(forKey: reinstallKey) {
+            try? keychain.removeAll()
+            UserDefaults.standard.set(true, forKey: reinstallKey)
+        }
+    }
 
     // MARK: - Access Token
 

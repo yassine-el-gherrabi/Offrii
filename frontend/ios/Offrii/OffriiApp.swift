@@ -10,15 +10,28 @@ struct OffriiApp: App {
         WindowGroup {
             Group {
                 switch router.currentScreen {
+                case .splash:
+                    SplashView()
+
+                case .welcome:
+                    WelcomeView()
+
                 case .auth:
-                    AuthContainerView {
-                        router.currentScreen = .main
+                    AuthContainerView { isNewUser in
+                        if isNewUser {
+                            router.currentScreen = .postAuthSetup
+                        } else {
+                            router.currentScreen = .main
+                        }
                     }
-                    .environment(authManager)
+
+                case .postAuthSetup:
+                    PostAuthSetupView {
+                        router.completePostAuthSetup()
+                    }
 
                 case .main:
                     MainTabView()
-                        .environment(authManager)
                         .environment(tipManager)
                         .onChange(of: authManager.currentUser) { _, user in
                             if user == nil {
@@ -27,24 +40,29 @@ struct OffriiApp: App {
                         }
                 }
             }
-            .onAppear {
-                router.determineInitialScreen(
-                    isAuthenticated: authManager.isAuthenticated
-                )
-            }
+            .environment(authManager)
+            .environment(router)
         }
     }
 }
 
 struct AuthContainerView: View {
+    @Environment(AppRouter.self) private var router
     @State private var showLogin = true
-    let onAuthenticated: () -> Void
+    let onAuthenticated: (_ isNewUser: Bool) -> Void
 
     var body: some View {
         if showLogin {
-            LoginView(onAuthenticated: onAuthenticated, onSwitchToRegister: { showLogin = false })
+            LoginView(
+                isReturningUser: router.isReturningUser,
+                onAuthenticated: { onAuthenticated(false) },
+                onSwitchToRegister: { showLogin = false }
+            )
         } else {
-            RegisterView(onAuthenticated: onAuthenticated, onSwitchToLogin: { showLogin = true })
+            RegisterView(
+                onAuthenticated: { onAuthenticated(true) },
+                onSwitchToLogin: { showLogin = true }
+            )
         }
     }
 }
