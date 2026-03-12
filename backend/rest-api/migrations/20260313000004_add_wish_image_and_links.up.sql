@@ -1,2 +1,2 @@
-ALTER TABLE community_wishes ADD COLUMN image_url TEXT;
-ALTER TABLE community_wishes ADD COLUMN links TEXT[];
+ALTER TABLE community_wishes ADD COLUMN IF NOT EXISTS image_url TEXT;
+ALTER TABLE community_wishes ADD COLUMN IF NOT EXISTS links TEXT[];

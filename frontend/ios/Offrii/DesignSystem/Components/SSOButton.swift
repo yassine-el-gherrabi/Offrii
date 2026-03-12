@@ -4,15 +4,12 @@ import SwiftUI
 
 enum SSOProvider {
     case google
-    case facebook
     case apple
 
     var label: String {
         switch self {
         case .google:
             return NSLocalizedString("auth.continueWithGoogle", comment: "")
-        case .facebook:
-            return NSLocalizedString("auth.continueWithFacebook", comment: "")
         case .apple:
             return NSLocalizedString("auth.continueWithApple", comment: "")
         }
@@ -27,22 +24,43 @@ struct SSOButton: View {
 
     @State private var isPressed = false
 
+    private var backgroundColor: Color {
+        switch provider {
+        case .apple: return .black
+        case .google: return .white
+        }
+    }
+
+    private var foregroundColor: Color {
+        switch provider {
+        case .apple: return .white
+        case .google: return .black
+        }
+    }
+
     var body: some View {
         Button(action: action) {
-            HStack(spacing: OffriiTheme.spacingSM) {
-                providerIcon
+            ZStack {
+                // Centered label
                 Text(provider.label)
                     .font(OffriiTypography.subheadline)
                     .fontWeight(.medium)
+
+                // Left-aligned icon
+                HStack {
+                    providerIcon
+                    Spacer()
+                }
+                .padding(.leading, OffriiTheme.spacingBase)
             }
-            .foregroundColor(OffriiTheme.text)
+            .foregroundColor(foregroundColor)
             .frame(maxWidth: .infinity)
             .frame(height: 48)
-            .background(OffriiTheme.surface)
+            .background(backgroundColor)
             .cornerRadius(OffriiTheme.cornerRadiusMD)
             .overlay(
                 RoundedRectangle(cornerRadius: OffriiTheme.cornerRadiusMD)
-                    .strokeBorder(OffriiTheme.border, lineWidth: 1)
+                    .strokeBorder(provider == .google ? OffriiTheme.border : .clear, lineWidth: 1)
             )
         }
         .buttonStyle(.plain)
@@ -65,15 +83,10 @@ struct SSOButton: View {
                 .resizable()
                 .scaledToFit()
                 .frame(width: 20, height: 20)
-        case .facebook:
-            Image("facebook-logo")
-                .resizable()
-                .scaledToFit()
-                .frame(width: 20, height: 20)
         case .apple:
             Image(systemName: "apple.logo")
                 .font(.system(size: 18, weight: .medium))
-                .foregroundColor(OffriiTheme.text)
+                .foregroundColor(.white)
         }
     }
 }

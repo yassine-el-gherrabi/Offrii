@@ -7,52 +7,48 @@ struct ForgotPasswordView: View {
     let onDone: () -> Void
 
     @Environment(\.dismiss) private var dismiss
+    @State private var appeared = false
+    @State private var resendCooldown = 0
+    @State private var cooldownTimer: Timer?
+    @State private var codeExpiryMinutes = 30
+    @State private var expiryTimer: Timer?
+    @State private var showResendConfirmation = false
+    @State private var resendCount = 0
 
     var body: some View {
         NavigationStack {
             ZStack {
                 OffriiTheme.background.ignoresSafeArea()
 
-                ScrollView {
-                    VStack(spacing: 0) {
-                        SectionHeader(
-                            title: NSLocalizedString("auth.resetPassword", comment: ""),
-                            subtitle: stepSubtitle,
-                            variant: .detail
-                        )
+                BlobBackground(preset: .auth)
+                    .ignoresSafeArea()
+                    .opacity(0.3)
 
-                        OffriiCard {
-                            VStack(spacing: OffriiTheme.spacingMD) {
-                                Text(String(
-                                    format: NSLocalizedString("auth.step", comment: ""),
-                                    viewModel.forgotStep.rawValue,
-                                    ForgotPasswordStep.allCases.count
-                                ))
-                                .font(OffriiTypography.caption)
-                                .foregroundColor(OffriiTheme.textMuted)
-                                .frame(maxWidth: .infinity, alignment: .leading)
+                GeometryReader { geometry in
+                    ScrollView(showsIndicators: false) {
+                        VStack(spacing: OffriiTheme.spacingLG) {
+                            Spacer(minLength: OffriiTheme.spacingXXL)
 
-                                stepContent
+                            stepIcon
 
-                                if case .error(let message) = viewModel.state {
-                                    Text(message)
-                                        .font(OffriiTypography.caption)
-                                        .foregroundColor(OffriiTheme.danger)
-                                        .frame(maxWidth: .infinity, alignment: .leading)
-                                }
+                            stepHeader
 
-                                stepButton
-                            }
+                            cardSection
+
+                            Spacer(minLength: 0)
                         }
-                        .padding(.horizontal, OffriiTheme.spacingLG)
-                        .padding(.top, -OffriiTheme.spacingLG)
+                        .frame(minHeight: geometry.size.height)
+                        .padding(.horizontal, OffriiTheme.spacingBase)
                     }
+                    .scrollBounceBehavior(.basedOnSize)
+                    .scrollDismissesKeyboard(.interactively)
+                    .scrollIndicators(.hidden)
                 }
-                .scrollDismissesKeyboard(.interactively)
             }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(NSLocalizedString("common.cancel", comment: "")) {
+                        cleanup()
                         viewModel.resetForgotState()
                         dismiss()
                     }
@@ -60,19 +56,111 @@ struct ForgotPasswordView: View {
                 }
             }
         }
+        .onDisappear { cleanup() }
     }
 
-    // MARK: - Step Subtitle
+    // MARK: - Step Icon
+
+    private var stepIcon: some View {
+        Group {
+            switch viewModel.forgotStep {
+            case .email:
+                ShinyIcon(systemName: "envelope.circle", color: OffriiTheme.primary)
+            case .code:
+                ShinyIcon(systemName: "lock.shield", color: OffriiTheme.accent)
+            case .newPassword:
+                ShinyIcon(systemName: "key.fill", color: OffriiTheme.primary)
+            }
+        }
+        .opacity(appeared ? 1 : 0)
+        .offset(y: appeared ? 0 : 20)
+        .onAppear {
+            withAnimation(OffriiAnimation.modal.delay(0.1)) {
+                appeared = true
+            }
+        }
+    }
+
+    // MARK: - Step Header
+
+    private var stepHeader: some View {
+        VStack(spacing: OffriiTheme.spacingXS) {
+            Text(stepTitle)
+                .font(OffriiTypography.titleLarge)
+                .foregroundColor(OffriiTheme.text)
+                .multilineTextAlignment(.center)
+
+            Text(stepSubtitle)
+                .font(OffriiTypography.body)
+                .foregroundColor(OffriiTheme.textSecondary)
+                .multilineTextAlignment(.center)
+        }
+        .opacity(appeared ? 1 : 0)
+    }
+
+    private var stepTitle: String {
+        switch viewModel.forgotStep {
+        case .email:
+            return NSLocalizedString("auth.forgotPassword", comment: "")
+        case .code:
+            return NSLocalizedString("auth.enterCode", comment: "")
+        case .newPassword:
+            return NSLocalizedString("auth.newPassword", comment: "")
+        }
+    }
 
     private var stepSubtitle: String {
         switch viewModel.forgotStep {
         case .email:
             return NSLocalizedString("auth.forgotSubtitle", comment: "")
         case .code:
-            return NSLocalizedString("auth.codeSent", comment: "")
+            return NSLocalizedString("auth.codeSentTo", comment: "") + " " + viewModel.resetEmail
         case .newPassword:
             return NSLocalizedString("auth.newPasswordSubtitle", comment: "")
         }
+    }
+
+    // MARK: - Card
+
+    private var cardSection: some View {
+        VStack(spacing: OffriiTheme.spacingLG) {
+            // Step indicator
+            Text(String(
+                format: NSLocalizedString("auth.step", comment: ""),
+                viewModel.forgotStep.rawValue,
+                ForgotPasswordStep.allCases.count
+            ))
+            .font(OffriiTypography.caption)
+            .foregroundColor(OffriiTheme.textMuted)
+            .frame(maxWidth: .infinity, alignment: .leading)
+
+            // Step content
+            stepContent
+
+            // Error
+            if case .error(let message) = viewModel.state {
+                Text(message)
+                    .font(OffriiTypography.caption)
+                    .foregroundColor(OffriiTheme.danger)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .transition(.opacity.combined(with: .move(edge: .top)))
+            }
+
+            // Action button
+            stepButton
+
+            // Resend code (only on code step)
+            if viewModel.forgotStep == .code {
+                resendSection
+            }
+        }
+        .padding(.horizontal, OffriiTheme.spacingXL)
+        .padding(.vertical, OffriiTheme.spacingXXL)
+        .background(OffriiTheme.card)
+        .cornerRadius(OffriiTheme.cornerRadiusXXL)
+        .shadow(color: .black.opacity(0.08), radius: 20, y: 8)
+        .opacity(appeared ? 1 : 0)
+        .offset(y: appeared ? 0 : 30)
     }
 
     // MARK: - Step Content
@@ -82,10 +170,11 @@ struct ForgotPasswordView: View {
         switch viewModel.forgotStep {
         case .email:
             OffriiTextField(
-                label: NSLocalizedString("auth.email", comment: ""),
+                label: "",
                 text: $viewModel.resetEmail,
                 placeholder: NSLocalizedString("auth.enterEmail", comment: ""),
                 errorMessage: viewModel.emailError,
+                style: .filled,
                 keyboardType: .emailAddress,
                 textContentType: .emailAddress,
                 autocapitalization: .never
@@ -93,27 +182,30 @@ struct ForgotPasswordView: View {
 
         case .code:
             VStack(spacing: OffriiTheme.spacingSM) {
-                OffriiTextField(
-                    label: NSLocalizedString("auth.enterCode", comment: ""),
-                    text: $viewModel.resetCode,
-                    placeholder: "000000",
-                    errorMessage: viewModel.codeError,
-                    keyboardType: .numberPad
-                )
+                OTPField(code: $viewModel.resetCode, errorMessage: viewModel.codeError)
 
-                Text(NSLocalizedString("auth.codeSentTo", comment: "") + " " + viewModel.resetEmail)
-                    .font(OffriiTypography.caption)
-                    .foregroundColor(OffriiTheme.textMuted)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                // Expiry indicator
+                HStack(spacing: OffriiTheme.spacingXS) {
+                    Image(systemName: "clock")
+                        .font(.system(size: 12))
+                    Text(String(
+                        format: NSLocalizedString("auth.codeExpiry", comment: ""),
+                        codeExpiryMinutes
+                    ))
+                }
+                .font(OffriiTypography.caption)
+                .foregroundColor(codeExpiryMinutes <= 5 ? OffriiTheme.danger : OffriiTheme.textMuted)
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
 
         case .newPassword:
             OffriiTextField(
-                label: NSLocalizedString("auth.newPassword", comment: ""),
+                label: "",
                 text: $viewModel.newPassword,
                 placeholder: NSLocalizedString("auth.passwordPlaceholder", comment: ""),
                 errorMessage: viewModel.newPasswordError,
                 isSecure: true,
+                style: .filled,
                 textContentType: .newPassword
             )
         }
@@ -127,26 +219,35 @@ struct ForgotPasswordView: View {
         case .email:
             OffriiButton(
                 NSLocalizedString("common.continue", comment: ""),
+                variant: .primary,
                 isLoading: viewModel.isLoading
             ) {
                 Task {
-                    await viewModel.sendResetCode()
+                    if await viewModel.sendResetCode() {
+                        startExpiryTimer()
+                    }
                 }
             }
 
         case .code:
             OffriiButton(
                 NSLocalizedString("common.continue", comment: ""),
+                variant: .primary,
                 isLoading: viewModel.isLoading
             ) {
                 Task {
-                    viewModel.forgotStep = .newPassword
+                    if await viewModel.verifyResetCode() {
+                        withAnimation(OffriiAnimation.modal) {
+                            viewModel.forgotStep = .newPassword
+                        }
+                    }
                 }
             }
 
         case .newPassword:
             OffriiButton(
                 NSLocalizedString("auth.resetPassword", comment: ""),
+                variant: .primary,
                 isLoading: viewModel.isLoading
             ) {
                 Task {
@@ -156,5 +257,94 @@ struct ForgotPasswordView: View {
                 }
             }
         }
+    }
+
+    // MARK: - Resend Section
+
+    private var resendSection: some View {
+        VStack(spacing: OffriiTheme.spacingXS) {
+            if resendCount >= 3 {
+                Text(NSLocalizedString("auth.resendLimitReached", comment: ""))
+                    .font(OffriiTypography.subheadline)
+                    .foregroundColor(OffriiTheme.textMuted)
+            } else if showResendConfirmation {
+                HStack(spacing: OffriiTheme.spacingXS) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundColor(OffriiTheme.success)
+                    Text(NSLocalizedString("auth.codeSent", comment: ""))
+                        .foregroundColor(OffriiTheme.success)
+                }
+                .font(OffriiTypography.subheadline)
+                .transition(.opacity)
+            } else if resendCooldown > 0 {
+                Text(NSLocalizedString("auth.resendCode", comment: "") + " (\(resendCooldown)s)")
+                    .font(OffriiTypography.subheadline)
+                    .foregroundColor(OffriiTheme.textMuted)
+            } else {
+                Button {
+                    Task { await resendCode() }
+                } label: {
+                    Text(NSLocalizedString("auth.resendCode", comment: ""))
+                        .font(OffriiTypography.subheadline)
+                        .foregroundColor(OffriiTheme.primary)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity)
+    }
+
+    // MARK: - Actions
+
+    private func resendCode() async {
+        // Reset the spy/email state so a new code is sent
+        viewModel.resetCode = ""
+        viewModel.codeError = nil
+
+        // The backend enforces 60s rate limit, but we also show cooldown in UI
+        if await viewModel.sendResetCode() {
+            resendCount += 1
+            startResendCooldown()
+            showResendConfirmation = true
+            codeExpiryMinutes = 30
+            startExpiryTimer()
+
+            // Hide confirmation after 3 seconds
+            DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                withAnimation(OffriiAnimation.snappy) {
+                    showResendConfirmation = false
+                }
+            }
+        }
+    }
+
+    private func startResendCooldown() {
+        resendCooldown = 60
+        cooldownTimer?.invalidate()
+        cooldownTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { timer in
+            if resendCooldown > 0 {
+                resendCooldown -= 1
+            } else {
+                timer.invalidate()
+            }
+        }
+    }
+
+    private func startExpiryTimer() {
+        codeExpiryMinutes = 30
+        expiryTimer?.invalidate()
+        expiryTimer = Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { timer in
+            if codeExpiryMinutes > 0 {
+                codeExpiryMinutes -= 1
+            } else {
+                timer.invalidate()
+            }
+        }
+    }
+
+    private func cleanup() {
+        cooldownTimer?.invalidate()
+        cooldownTimer = nil
+        expiryTimer?.invalidate()
+        expiryTimer = nil
     }
 }

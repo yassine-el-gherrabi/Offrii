@@ -204,13 +204,15 @@ async fn migration_001_creates_users_table() {
     let mdb = MigrationDb::new().await;
 
     assert!(mdb.table_exists("users").await);
-    assert_eq!(mdb.column_count("users").await, 14);
+    assert_eq!(mdb.column_count("users").await, 16);
 
     // Column types & nullability
     mdb.assert_not_null("users", "id").await;
     mdb.assert_not_null("users", "email").await;
-    mdb.assert_not_null("users", "password_hash").await;
+    mdb.assert_nullable("users", "password_hash").await;
     mdb.assert_nullable("users", "display_name").await;
+    mdb.assert_nullable("users", "oauth_provider").await;
+    mdb.assert_nullable("users", "oauth_provider_id").await;
     mdb.assert_not_null("users", "username").await;
     mdb.assert_not_null("users", "reminder_freq").await;
     mdb.assert_not_null("users", "reminder_time").await;

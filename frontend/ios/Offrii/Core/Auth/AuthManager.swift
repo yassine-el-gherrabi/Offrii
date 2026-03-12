@@ -55,6 +55,32 @@ final class AuthManager {
         logger.info("User logged in: \(response.user.id)")
     }
 
+    // MARK: - Google Sign-In
+
+    /// Authenticates via Google ID token, stores the returned tokens.
+    func loginWithGoogle(idToken: String, displayName: String? = nil) async throws {
+        let body = GoogleAuthBody(idToken: idToken, displayName: displayName)
+        let response: AuthResponse = try await client.request(.googleAuth(body))
+        storeTokens(response.tokens)
+        let user = response.user.toUser()
+        currentUser = user
+        cacheUser(user)
+        logger.info("User signed in with Google: \(response.user.id)")
+    }
+
+    // MARK: - Apple Sign-In
+
+    /// Authenticates via Apple ID token, stores the returned tokens.
+    func loginWithApple(idToken: String, displayName: String? = nil) async throws {
+        let body = AppleAuthBody(idToken: idToken, displayName: displayName)
+        let response: AuthResponse = try await client.request(.appleAuth(body))
+        storeTokens(response.tokens)
+        let user = response.user.toUser()
+        currentUser = user
+        cacheUser(user)
+        logger.info("User signed in with Apple: \(response.user.id)")
+    }
+
     // MARK: - Logout
 
     /// Invalidates the current session on the server and clears local state.

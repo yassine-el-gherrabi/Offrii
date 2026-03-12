@@ -24,6 +24,7 @@ services:
       APNS_TEAM_ID: DEV_TEAM_ID
       APNS_BUNDLE_ID: com.offrii.app
       APNS_SANDBOX: "true"
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
     ports:
       - "3000:3000"
     depends_on:

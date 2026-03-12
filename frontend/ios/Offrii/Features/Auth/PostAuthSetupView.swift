@@ -50,9 +50,7 @@ struct PostAuthSetupView: View {
         VStack(spacing: OffriiTheme.spacingLG) {
             Spacer()
 
-            Image(systemName: "person.crop.circle")
-                .font(.system(size: 50))
-                .foregroundColor(OffriiTheme.primary)
+            ShinyIcon(systemName: "person.crop.circle", color: OffriiTheme.primary)
 
             Text(NSLocalizedString("postauth.displayName.title", comment: ""))
                 .font(OffriiTypography.titleLarge)
@@ -105,9 +103,7 @@ struct PostAuthSetupView: View {
         VStack(spacing: OffriiTheme.spacingLG) {
             Spacer()
 
-            Image(systemName: "at")
-                .font(.system(size: 50))
-                .foregroundColor(OffriiTheme.primary)
+            ShinyIcon(systemName: "at", color: OffriiTheme.primary)
 
             Text(NSLocalizedString("postauth.username.title", comment: ""))
                 .font(OffriiTypography.titleLarge)
@@ -159,9 +155,7 @@ struct PostAuthSetupView: View {
         VStack(spacing: OffriiTheme.spacingLG) {
             Spacer()
 
-            Image(systemName: "bell.badge")
-                .font(.system(size: 50))
-                .foregroundColor(OffriiTheme.accent)
+            ShinyIcon(systemName: "bell.badge", color: OffriiTheme.accent)
 
             Text(NSLocalizedString("postauth.notifications.title", comment: ""))
                 .font(OffriiTypography.titleLarge)

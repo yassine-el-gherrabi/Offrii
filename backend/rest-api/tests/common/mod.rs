@@ -55,6 +55,7 @@ use rest_api::services::friend_service::PgFriendService;
 use rest_api::services::health_check::PgHealthCheck;
 use rest_api::services::item_service::PgItemService;
 use rest_api::services::moderation_service::NoopModerationService;
+use rest_api::services::oauth_verifier::OAuthVerifier;
 use rest_api::services::push_token_service::PgPushTokenService;
 use rest_api::services::share_link_service::PgShareLinkService;
 use rest_api::services::user_service::PgUserService;
@@ -71,12 +72,22 @@ use rest_api::utils::jwt::JwtKeys;
 
 struct SpyEmailService {
     last_code: Arc<StdMutex<Option<String>>>,
+    welcome_sent: Arc<StdMutex<Vec<String>>>,
 }
 
 #[async_trait::async_trait]
 impl EmailService for SpyEmailService {
     async fn send_password_reset_code(&self, _to: &str, code: &str) -> Result<(), AppError> {
         *self.last_code.lock().unwrap() = Some(code.to_string());
+        Ok(())
+    }
+
+    async fn send_welcome_email(
+        &self,
+        to: &str,
+        _display_name: Option<&str>,
+    ) -> Result<(), AppError> {
+        self.welcome_sent.lock().unwrap().push(to.to_string());
         Ok(())
     }
 }
@@ -121,6 +132,7 @@ pub struct TestApp {
     pub db: PgPool,
     pub redis: redis::Client,
     pub last_reset_code: Arc<StdMutex<Option<String>>>,
+    pub welcome_emails_sent: Arc<StdMutex<Vec<String>>>,
 }
 
 #[allow(dead_code)]
@@ -153,9 +165,16 @@ impl TestApp {
             Arc::new(PgRefreshTokenRepo::new(db.clone()));
 
         let last_reset_code = Arc::new(StdMutex::new(None));
+        let welcome_sent = Arc::new(StdMutex::new(Vec::new()));
         let email_service: Arc<dyn EmailService> = Arc::new(SpyEmailService {
             last_code: last_reset_code.clone(),
+            welcome_sent: welcome_sent.clone(),
         });
+
+        let oauth_verifier = Arc::new(OAuthVerifier::new(
+            Some("test-google-client-id".to_string()),
+            "com.offrii.test".to_string(),
+        ));
 
         let auth: Arc<dyn AuthService> = Arc::new(PgAuthService::new(
             db.clone(),
@@ -164,6 +183,7 @@ impl TestApp {
             jwt.clone(),
             redis.clone(),
             email_service,
+            oauth_verifier,
         ));
         let item_repo: Arc<dyn ItemRepo> = Arc::new(PgItemRepo::new(db.clone()));
         let items: Arc<dyn ItemService> = Arc::new(PgItemService::new(
@@ -305,6 +325,7 @@ impl TestApp {
             db,
             redis,
             last_reset_code,
+            welcome_emails_sent: welcome_sent,
         }
     }
 

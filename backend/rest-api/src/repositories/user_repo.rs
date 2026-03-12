@@ -9,6 +9,7 @@ use crate::traits;
 
 /// Shared column list for all user queries (avoids duplication).
 const USER_COLS: &str = "id, email, username, password_hash, display_name, \
+                         oauth_provider, oauth_provider_id, \
                          reminder_freq, reminder_time, timezone, \
                          utc_reminder_hour, locale, token_version, \
                          created_at, updated_at";
@@ -104,6 +105,33 @@ impl traits::UserRepo for PgUserRepo {
 
     async fn get_user_created_at(&self, user_id: Uuid) -> Result<Option<DateTime<Utc>>> {
         get_user_created_at(&self.pool, user_id).await
+    }
+
+    async fn create_oauth_user(
+        &self,
+        email: &str,
+        username: &str,
+        display_name: Option<&str>,
+        oauth_provider: &str,
+        oauth_provider_id: &str,
+    ) -> Result<User> {
+        create_oauth_user(
+            &self.pool,
+            email,
+            username,
+            display_name,
+            oauth_provider,
+            oauth_provider_id,
+        )
+        .await
+    }
+
+    async fn find_by_oauth(&self, provider: &str, provider_id: &str) -> Result<Option<User>> {
+        find_by_oauth(&self.pool, provider, provider_id).await
+    }
+
+    async fn link_oauth(&self, user_id: Uuid, provider: &str, provider_id: &str) -> Result<bool> {
+        link_oauth(&self.pool, user_id, provider, provider_id).await
     }
 }
 
@@ -330,4 +358,65 @@ pub(crate) async fn get_user_created_at(
             .fetch_optional(exec)
             .await?;
     Ok(row.map(|r| r.0))
+}
+
+pub(crate) async fn create_oauth_user(
+    exec: impl PgExecutor<'_>,
+    email: &str,
+    username: &str,
+    display_name: Option<&str>,
+    oauth_provider: &str,
+    oauth_provider_id: &str,
+) -> Result<User> {
+    let sql = format!(
+        "INSERT INTO users (email, username, display_name, oauth_provider, oauth_provider_id) \
+         VALUES ($1, $2, $3, $4, $5) \
+         RETURNING {USER_COLS}"
+    );
+    let user = sqlx::query_as::<_, User>(&sql)
+        .bind(email)
+        .bind(username)
+        .bind(display_name)
+        .bind(oauth_provider)
+        .bind(oauth_provider_id)
+        .fetch_one(exec)
+        .await?;
+
+    Ok(user)
+}
+
+pub(crate) async fn find_by_oauth(
+    exec: impl PgExecutor<'_>,
+    provider: &str,
+    provider_id: &str,
+) -> Result<Option<User>> {
+    let sql = format!(
+        "SELECT {USER_COLS} FROM users WHERE oauth_provider = $1 AND oauth_provider_id = $2"
+    );
+    let user = sqlx::query_as::<_, User>(&sql)
+        .bind(provider)
+        .bind(provider_id)
+        .fetch_optional(exec)
+        .await?;
+
+    Ok(user)
+}
+
+pub(crate) async fn link_oauth(
+    exec: impl PgExecutor<'_>,
+    user_id: Uuid,
+    provider: &str,
+    provider_id: &str,
+) -> Result<bool> {
+    let result = sqlx::query(
+        "UPDATE users SET oauth_provider = $1, oauth_provider_id = $2, updated_at = NOW() \
+         WHERE id = $3",
+    )
+    .bind(provider)
+    .bind(provider_id)
+    .bind(user_id)
+    .execute(exec)
+    .await?;
+
+    Ok(result.rows_affected() > 0)
 }

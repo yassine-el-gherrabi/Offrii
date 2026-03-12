@@ -8,6 +8,7 @@ pub mod friend_service;
 pub mod health_check;
 pub mod item_service;
 pub mod moderation_service;
+pub mod oauth_verifier;
 pub mod push_token_service;
 pub mod reminder_service;
 pub mod share_link_service;

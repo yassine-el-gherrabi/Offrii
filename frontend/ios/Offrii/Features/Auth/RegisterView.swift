@@ -7,6 +7,7 @@ struct RegisterView: View {
     let onAuthenticated: () -> Void
     let onSwitchToLogin: () -> Void
 
+    @State private var ssoService = SSOService()
     @FocusState private var focusedField: RegisterField?
     @State private var appeared = false
 
@@ -45,14 +46,7 @@ struct RegisterView: View {
 
     private var logoSection: some View {
         VStack(spacing: OffriiTheme.spacingMD) {
-            RoundedRectangle(cornerRadius: OffriiTheme.cornerRadiusLG)
-                .fill(OffriiTheme.primary)
-                .frame(width: 72, height: 72)
-                .overlay(
-                    Image(systemName: "gift.fill")
-                        .font(.system(size: 32))
-                        .foregroundColor(.white)
-                )
+            ShinyIcon(systemName: "gift.fill", color: OffriiTheme.primary)
 
             Text("Offrii")
                 .font(OffriiTypography.titleLarge)
@@ -73,29 +67,6 @@ struct RegisterView: View {
                 Text(NSLocalizedString("auth.registerSubtitle", comment: ""))
                     .font(OffriiTypography.body)
                     .foregroundColor(OffriiTheme.textSecondary)
-            }
-
-            // SSO buttons — 3 stacked full-width
-            VStack(spacing: OffriiTheme.spacingSM) {
-                SSOButton(provider: .google) {}
-                SSOButton(provider: .facebook) {}
-                SSOButton(provider: .apple) {}
-            }
-
-            // Privacy hint
-            Text(NSLocalizedString("auth.privacyHint", comment: ""))
-                .font(OffriiTypography.caption)
-                .foregroundColor(OffriiTheme.textMuted)
-                .multilineTextAlignment(.center)
-                .frame(maxWidth: .infinity)
-
-            // Divider
-            HStack {
-                Rectangle().fill(OffriiTheme.border).frame(height: 1)
-                Text(NSLocalizedString("auth.or", comment: ""))
-                    .font(OffriiTypography.caption)
-                    .foregroundColor(OffriiTheme.textMuted)
-                Rectangle().fill(OffriiTheme.border).frame(height: 1)
             }
 
             // Fields — email + password only
@@ -150,6 +121,33 @@ struct RegisterView: View {
                 ) {
                     Task {
                         if await viewModel.register(authManager: authManager) {
+                            onAuthenticated()
+                        }
+                    }
+                }
+            }
+
+            // Divider
+            HStack {
+                Rectangle().fill(OffriiTheme.border).frame(height: 1)
+                Text(NSLocalizedString("auth.or", comment: ""))
+                    .font(OffriiTypography.caption)
+                    .foregroundColor(OffriiTheme.textMuted)
+                Rectangle().fill(OffriiTheme.border).frame(height: 1)
+            }
+
+            // SSO buttons
+            VStack(spacing: OffriiTheme.spacingSM) {
+                SSOButton(provider: .google) {
+                    Task {
+                        if await viewModel.signInWithGoogle(authManager: authManager, ssoService: ssoService) {
+                            onAuthenticated()
+                        }
+                    }
+                }
+                SSOButton(provider: .apple) {
+                    Task {
+                        if await viewModel.signInWithApple(authManager: authManager, ssoService: ssoService) {
                             onAuthenticated()
                         }
                     }

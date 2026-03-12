@@ -11,6 +11,7 @@ use crate::dto::auth::{AuthResponse, RefreshResponse, TokenPair, UserResponse};
 use crate::errors::AppError;
 use crate::models::User;
 use crate::repositories::{category_repo, refresh_token_repo, user_repo};
+use crate::services::oauth_verifier::OAuthVerifier;
 use crate::traits;
 use crate::utils::hash;
 use crate::utils::jwt::{ACCESS_TOKEN_TTL_SECS, JwtKeys, REFRESH_TOKEN_TTL_SECS};
@@ -54,6 +55,7 @@ pub struct PgAuthService {
     jwt: Arc<JwtKeys>,
     redis: redis::Client,
     email_service: Arc<dyn traits::EmailService>,
+    oauth_verifier: Arc<OAuthVerifier>,
 }
 
 /// Check if a sqlx database error is a unique-constraint violation (PG code 23505).
@@ -74,6 +76,7 @@ impl PgAuthService {
         jwt: Arc<JwtKeys>,
         redis: redis::Client,
         email_service: Arc<dyn traits::EmailService>,
+        oauth_verifier: Arc<OAuthVerifier>,
     ) -> Self {
         Self {
             pool,
@@ -82,6 +85,7 @@ impl PgAuthService {
             jwt,
             redis,
             email_service,
+            oauth_verifier,
         }
     }
 }
@@ -185,9 +189,20 @@ impl traits::AuthService for PgAuthService {
             .await
             .map_err(|e| AppError::Internal(e.into()))?;
 
+        // Send welcome email asynchronously (non-blocking, fire-and-forget)
+        let email_svc = self.email_service.clone();
+        let to = email.clone();
+        let name = display_name.map(|s| s.to_string());
+        tokio::spawn(async move {
+            if let Err(e) = email_svc.send_welcome_email(&to, name.as_deref()).await {
+                tracing::error!("failed to send welcome email: {e}");
+            }
+        });
+
         Ok(AuthResponse {
             tokens,
             user: UserResponse::from(&user),
+            is_new_user: true,
         })
     }
 
@@ -205,7 +220,10 @@ impl traits::AuthService for PgAuthService {
         // Always run Argon2 verify — even when user doesn't exist — to prevent
         // timing side-channel attacks that reveal whether an email is registered.
         let password_hash_to_check = match &user {
-            Some(u) => u.password_hash.clone(),
+            Some(u) => u
+                .password_hash
+                .clone()
+                .unwrap_or_else(|| DUMMY_HASH.clone()),
             None => DUMMY_HASH.clone(),
         };
 
@@ -240,6 +258,7 @@ impl traits::AuthService for PgAuthService {
         Ok(AuthResponse {
             tokens,
             user: UserResponse::from(&user),
+            is_new_user: false,
         })
     }
 
@@ -352,8 +371,17 @@ impl traits::AuthService for PgAuthService {
             .map_err(AppError::Internal)?
             .ok_or_else(|| AppError::NotFound("user not found".into()))?;
 
-        // 2. Verify current password on blocking thread
-        let hash = user.password_hash.clone();
+        // 2. Reject if OAuth-only user (no password set)
+        let hash = match user.password_hash.clone() {
+            Some(h) => h,
+            None => {
+                return Err(AppError::BadRequest(
+                    "no password set for this account".into(),
+                ));
+            }
+        };
+
+        // 3. Verify current password on blocking thread
         let current_owned = current_password.to_string();
         let valid =
             tokio::task::spawn_blocking(move || hash::verify_password(&current_owned, &hash))
@@ -422,6 +450,42 @@ impl traits::AuthService for PgAuthService {
             if set.is_err() || !set.unwrap_or(false) {
                 return Ok(());
             }
+
+            // Resend rate limit: max 3 per 5 minutes
+            let resend_5m_key = format!("pwreset:resend_5m:{email}");
+            let resend_5m: i64 = redis::cmd("INCR")
+                .arg(&resend_5m_key)
+                .query_async(&mut conn)
+                .await
+                .unwrap_or(1);
+            if resend_5m == 1 {
+                let _: Result<(), _> = redis::cmd("EXPIRE")
+                    .arg(&resend_5m_key)
+                    .arg(300)
+                    .query_async(&mut conn)
+                    .await;
+            }
+            if resend_5m > 3 {
+                return Ok(());
+            }
+
+            // Resend rate limit: max 10 per day
+            let resend_daily_key = format!("pwreset:resend_daily:{email}");
+            let resend_daily: i64 = redis::cmd("INCR")
+                .arg(&resend_daily_key)
+                .query_async(&mut conn)
+                .await
+                .unwrap_or(1);
+            if resend_daily == 1 {
+                let _: Result<(), _> = redis::cmd("EXPIRE")
+                    .arg(&resend_daily_key)
+                    .arg(86400)
+                    .query_async(&mut conn)
+                    .await;
+            }
+            if resend_daily > 10 {
+                return Ok(());
+            }
         }
 
         // Look up user — if not found, return Ok silently (no email enumeration)
@@ -467,6 +531,64 @@ impl traits::AuthService for PgAuthService {
             });
         } else {
             tracing::error!("failed to store password reset code in redis, skipping email");
+        }
+
+        Ok(())
+    }
+
+    #[tracing::instrument(skip(self, code))]
+    async fn verify_reset_code(&self, email: &str, code: &str) -> Result<(), AppError> {
+        let email = email.trim().to_lowercase();
+
+        let mut conn = self
+            .redis
+            .get_multiplexed_async_connection()
+            .await
+            .map_err(|e| {
+                tracing::error!(error = %e, "redis unavailable for verify reset code");
+                AppError::Internal(anyhow::anyhow!("service unavailable"))
+            })?;
+
+        // Brute-force protection: same attempt counter as reset_password
+        let attempt_key = format!("pwreset:attempts:{email}");
+        let attempts: i64 = redis::cmd("INCR")
+            .arg(&attempt_key)
+            .query_async(&mut conn)
+            .await
+            .unwrap_or(1);
+        if attempts == 1 {
+            let _: Result<(), _> = redis::cmd("EXPIRE")
+                .arg(&attempt_key)
+                .arg(1800)
+                .query_async(&mut conn)
+                .await;
+        }
+        if attempts > 5 {
+            let _: Result<(), _> = redis::cmd("DEL")
+                .arg(format!("pwreset:{email}"))
+                .arg(&attempt_key)
+                .arg(format!("pwreset:rate:{email}"))
+                .query_async(&mut conn)
+                .await;
+            return Err(AppError::BadRequest("too_many_attempts".into()));
+        }
+
+        let stored_hash: Option<String> = {
+            let key = format!("pwreset:{email}");
+            redis::cmd("GET")
+                .arg(&key)
+                .query_async(&mut conn)
+                .await
+                .ok()
+        };
+
+        let stored_hash =
+            stored_hash.ok_or_else(|| AppError::BadRequest("invalid_or_expired_code".into()))?;
+
+        // Verify code hash — do NOT delete the code (it will be consumed by reset_password)
+        let code_hash = sha256_hex(code);
+        if code_hash != stored_hash {
+            return Err(AppError::BadRequest("invalid_or_expired_code".into()));
         }
 
         Ok(())
@@ -585,6 +707,124 @@ impl traits::AuthService for PgAuthService {
         self.invalidate_all_tokens(user.id).await?;
 
         Ok(())
+    }
+
+    #[tracing::instrument(skip(self, id_token))]
+    async fn oauth_login(
+        &self,
+        provider: &str,
+        id_token: &str,
+        display_name: Option<&str>,
+    ) -> Result<AuthResponse, AppError> {
+        // 1. Verify the token according to provider
+        let claims = match provider {
+            "google" => self.oauth_verifier.verify_google(id_token).await?,
+            "apple" => self.oauth_verifier.verify_apple(id_token).await?,
+            _ => {
+                return Err(AppError::BadRequest(format!(
+                    "unsupported OAuth provider: {provider}"
+                )));
+            }
+        };
+
+        // 2. Check if user exists by OAuth provider ID
+        let existing = self
+            .user_repo
+            .find_by_oauth(provider, &claims.sub)
+            .await
+            .map_err(AppError::Internal)?;
+
+        let (user, is_new_user) = if let Some(user) = existing {
+            // Existing OAuth user → login
+            (user, false)
+        } else {
+            // 3. Check if email already exists → link OAuth
+            let email_user = self
+                .user_repo
+                .find_by_email(&claims.email)
+                .await
+                .map_err(AppError::Internal)?;
+
+            if let Some(user) = email_user {
+                self.user_repo
+                    .link_oauth(user.id, provider, &claims.sub)
+                    .await
+                    .map_err(AppError::Internal)?;
+                (user, false)
+            } else {
+                // 4. New user → create OAuth user
+                let name = display_name.map(|s| s.to_string()).or(claims.name.clone());
+
+                let username_base = name
+                    .as_deref()
+                    .unwrap_or(claims.email.split('@').next().unwrap_or("user"));
+                let username = generate_unique_username(username_base, &self.pool).await?;
+
+                let mut tx = self
+                    .pool
+                    .begin()
+                    .await
+                    .map_err(|e| AppError::Internal(e.into()))?;
+
+                let user = user_repo::create_oauth_user(
+                    &mut *tx,
+                    &claims.email,
+                    &username,
+                    name.as_deref(),
+                    provider,
+                    &claims.sub,
+                )
+                .await
+                .map_err(|e| {
+                    if is_unique_violation(&e) {
+                        AppError::Conflict("email already registered".into())
+                    } else {
+                        AppError::Internal(e)
+                    }
+                })?;
+
+                category_repo::copy_defaults_for_user(&mut *tx, user.id)
+                    .await
+                    .map_err(AppError::Internal)?;
+
+                tx.commit()
+                    .await
+                    .map_err(|e| AppError::Internal(e.into()))?;
+
+                // Send welcome email (fire-and-forget)
+                let email_svc = self.email_service.clone();
+                let to = claims.email.clone();
+                let dn = name.clone();
+                tokio::spawn(async move {
+                    if let Err(e) = email_svc.send_welcome_email(&to, dn.as_deref()).await {
+                        tracing::error!("failed to send welcome email: {e}");
+                    }
+                });
+
+                (user, true)
+            }
+        };
+
+        // 5. Generate token pair + store refresh token
+        let tokens = generate_token_pair(&self.jwt, user.id, user.token_version)
+            .map_err(AppError::Internal)?;
+        let refresh_hash = sha256_hex(&tokens.refresh_token);
+
+        self.refresh_token_repo
+            .insert(user.id, &refresh_hash, refresh_expires_at())
+            .await
+            .map_err(AppError::Internal)?;
+
+        self.refresh_token_repo
+            .revoke_excess_for_user(user.id, MAX_REFRESH_TOKENS_PER_USER)
+            .await
+            .map_err(AppError::Internal)?;
+
+        Ok(AuthResponse {
+            tokens,
+            user: UserResponse::from(&user),
+            is_new_user,
+        })
     }
 
     #[tracing::instrument(skip(self))]

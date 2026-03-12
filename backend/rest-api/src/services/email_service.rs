@@ -38,4 +38,26 @@ impl traits::EmailService for ResendEmailService {
 
         Ok(())
     }
+
+    async fn send_welcome_email(
+        &self,
+        to: &str,
+        display_name: Option<&str>,
+    ) -> Result<(), AppError> {
+        let name = display_name.unwrap_or("there");
+        let email = CreateEmailBaseOptions::new(&self.from, [to], "Welcome to Offrii!")
+            .with_html(&format!(
+                "<h2>Welcome to Offrii, {name}!</h2>\
+                 <p>Your account is ready. Start creating your wishlist and sharing it with your loved ones.</p>\
+                 <p>See you soon on Offrii!</p>"
+            ));
+
+        self.client
+            .emails
+            .send(email)
+            .await
+            .map_err(|e| AppError::Internal(anyhow::anyhow!("email send failed: {e}")))?;
+
+        Ok(())
+    }
 }

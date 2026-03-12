@@ -3,6 +3,12 @@ import Foundation
 struct AuthResponse: Codable {
     let user: UserProfileResponse
     let tokens: AuthTokens
+    let isNewUser: Bool
+
+    enum CodingKeys: String, CodingKey {
+        case user, tokens
+        case isNewUser = "is_new_user"
+    }
 }
 
 struct RefreshResponse: Codable {

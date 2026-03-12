@@ -75,6 +75,19 @@ pub trait UserRepo: Send + Sync {
     async fn increment_token_version(&self, id: Uuid) -> Result<i32>;
 
     async fn get_user_created_at(&self, user_id: Uuid) -> Result<Option<DateTime<Utc>>>;
+
+    async fn create_oauth_user(
+        &self,
+        email: &str,
+        username: &str,
+        display_name: Option<&str>,
+        oauth_provider: &str,
+        oauth_provider_id: &str,
+    ) -> Result<User>;
+
+    async fn find_by_oauth(&self, provider: &str, provider_id: &str) -> Result<Option<User>>;
+
+    async fn link_oauth(&self, user_id: Uuid, provider: &str, provider_id: &str) -> Result<bool>;
 }
 
 #[async_trait]
@@ -195,6 +208,11 @@ pub trait PushTokenRepo: Send + Sync {
 #[async_trait]
 pub trait EmailService: Send + Sync {
     async fn send_password_reset_code(&self, to: &str, code: &str) -> Result<(), AppError>;
+    async fn send_welcome_email(
+        &self,
+        to: &str,
+        display_name: Option<&str>,
+    ) -> Result<(), AppError>;
 }
 
 #[async_trait]
@@ -224,12 +242,21 @@ pub trait AuthService: Send + Sync {
 
     async fn forgot_password(&self, email: &str) -> Result<(), AppError>;
 
+    async fn verify_reset_code(&self, email: &str, code: &str) -> Result<(), AppError>;
+
     async fn reset_password(
         &self,
         email: &str,
         code: &str,
         new_password: &str,
     ) -> Result<(), AppError>;
+
+    async fn oauth_login(
+        &self,
+        provider: &str,
+        id_token: &str,
+        display_name: Option<&str>,
+    ) -> Result<AuthResponse, AppError>;
 }
 
 #[allow(clippy::too_many_arguments)]

@@ -7,6 +7,7 @@ private struct FeatureDescriptor {
     let color: Color
     let titleKey: String
     let subtitleKey: String
+    let highlightKey: String?
 }
 
 struct WelcomeView: View {
@@ -17,9 +18,21 @@ struct WelcomeView: View {
     fileprivate static let amberColor = Color(red: 0.96, green: 0.68, blue: 0.22)
 
     private static let features: [FeatureDescriptor] = [
-        FeatureDescriptor(icon: "heart.text.clipboard", color: OffriiTheme.primary, titleKey: "onboarding.step1.title", subtitleKey: "onboarding.step1.subtitle"),
-        FeatureDescriptor(icon: "person.2.circle", color: OffriiTheme.accent, titleKey: "onboarding.step2.title", subtitleKey: "onboarding.step2.subtitle"),
-        FeatureDescriptor(icon: "hands.sparkles", color: amberColor, titleKey: "onboarding.step3.title", subtitleKey: "onboarding.step3.subtitle")
+        FeatureDescriptor(
+            icon: "heart.text.clipboard", color: OffriiTheme.primary,
+            titleKey: "onboarding.step1.title", subtitleKey: "onboarding.step1.subtitle",
+            highlightKey: "onboarding.step1.highlight"
+        ),
+        FeatureDescriptor(
+            icon: "person.2.circle", color: OffriiTheme.accent,
+            titleKey: "onboarding.step2.title", subtitleKey: "onboarding.step2.subtitle",
+            highlightKey: "onboarding.step2.highlight"
+        ),
+        FeatureDescriptor(
+            icon: "hands.sparkles", color: amberColor,
+            titleKey: "onboarding.step3.title", subtitleKey: "onboarding.step3.subtitle",
+            highlightKey: "onboarding.step3.highlight"
+        )
     ]
 
     private static let pageCount = features.count + 1 // 3 features + 1 summary
@@ -93,10 +106,13 @@ struct WelcomeView: View {
             ShinyIcon(systemName: feature.icon, color: feature.color)
                 .padding(.bottom, OffriiTheme.spacingSM)
 
-            Text(NSLocalizedString(feature.titleKey, comment: ""))
-                .font(OffriiTypography.titleLarge)
-                .foregroundColor(OffriiTheme.text)
-                .multilineTextAlignment(.center)
+            highlightedTitle(
+                fullText: NSLocalizedString(feature.titleKey, comment: ""),
+                highlight: feature.highlightKey.map { NSLocalizedString($0, comment: "") },
+                color: feature.color
+            )
+            .font(OffriiTypography.titleLarge)
+            .multilineTextAlignment(.center)
 
             Text(NSLocalizedString(feature.subtitleKey, comment: ""))
                 .font(OffriiTypography.body)
@@ -108,6 +124,18 @@ struct WelcomeView: View {
             Spacer()
         }
         .padding(.horizontal, OffriiTheme.spacingBase)
+    }
+
+    private func highlightedTitle(fullText: String, highlight: String?, color: Color) -> Text {
+        guard let highlight, let range = fullText.range(of: highlight, options: .caseInsensitive) else {
+            return Text(fullText).foregroundColor(OffriiTheme.text)
+        }
+        let before = String(fullText[fullText.startIndex..<range.lowerBound])
+        let keyword = String(fullText[range])
+        let after = String(fullText[range.upperBound..<fullText.endIndex])
+        return Text(before).foregroundColor(OffriiTheme.text)
+            + Text(keyword).foregroundColor(color).bold()
+            + Text(after).foregroundColor(OffriiTheme.text)
     }
 
     // MARK: - Bottom Buttons (last page only)
@@ -124,10 +152,14 @@ struct WelcomeView: View {
             Button {
                 router.completeOnboardingToLogin()
             } label: {
-                Text(NSLocalizedString("onboarding.alreadyAccount", comment: ""))
-                    .font(OffriiTypography.subheadline)
-                    .foregroundColor(OffriiTheme.primary)
-                    .underline()
+                HStack(spacing: OffriiTheme.spacingXS) {
+                    Text(NSLocalizedString("onboarding.alreadyAccount.label", comment: ""))
+                        .foregroundColor(OffriiTheme.textSecondary)
+                    Text(NSLocalizedString("onboarding.alreadyAccount.action", comment: ""))
+                        .foregroundColor(OffriiTheme.primary)
+                        .fontWeight(.semibold)
+                }
+                .font(OffriiTypography.subheadline)
             }
         }
     }
@@ -186,9 +218,8 @@ private struct SummaryPage: View {
             }
             .frame(height: 170)
 
-            Text(NSLocalizedString("onboarding.summary.title", comment: ""))
+            highlightedSummaryTitle()
                 .font(OffriiTypography.titleLarge)
-                .foregroundColor(OffriiTheme.text)
                 .multilineTextAlignment(.center)
                 .opacity(appeared ? 1 : 0)
 
@@ -209,6 +240,19 @@ private struct SummaryPage: View {
             }
         }
         .onDisappear { appeared = false }
+    }
+
+    private func highlightedSummaryTitle() -> Text {
+        let fullText = NSLocalizedString("onboarding.summary.title", comment: "")
+        let keyword = "Offrii"
+        guard let range = fullText.range(of: keyword) else {
+            return Text(fullText).foregroundColor(OffriiTheme.text)
+        }
+        let before = String(fullText[fullText.startIndex..<range.lowerBound])
+        let after = String(fullText[range.upperBound..<fullText.endIndex])
+        return Text(before).foregroundColor(OffriiTheme.text)
+            + Text(keyword).foregroundColor(OffriiTheme.primary).bold()
+            + Text(after).foregroundColor(OffriiTheme.text)
     }
 }
 
@@ -233,45 +277,6 @@ private struct FeatureMiniCard: View {
         .background(OffriiTheme.card)
         .clipShape(RoundedRectangle(cornerRadius: OffriiTheme.cornerRadiusLG, style: .continuous))
         .shadow(color: .black.opacity(0.08), radius: 12, y: 4)
-    }
-}
-
-// MARK: - Shiny Icon
-
-private struct ShinyIcon: View {
-    let systemName: String
-    let color: Color
-
-    @State private var shimmer = false
-
-    var body: some View {
-        let icon = Image(systemName: systemName)
-            .font(.system(size: 60))
-
-        icon
-            .foregroundColor(color)
-            .overlay {
-                Rectangle()
-                    .fill(
-                        .linearGradient(
-                            colors: [.clear, .white.opacity(0.45), .clear],
-                            startPoint: .leading,
-                            endPoint: .trailing
-                        )
-                    )
-                    .frame(width: 28)
-                    .rotationEffect(.degrees(25))
-                    .offset(x: shimmer ? 80 : -80)
-                    .mask { icon }
-            }
-            .onAppear {
-                withAnimation(
-                    .easeInOut(duration: 2.5)
-                    .repeatForever(autoreverses: false)
-                ) {
-                    shimmer = true
-                }
-            }
     }
 }
 

@@ -44,6 +44,7 @@ use rest_api::services::friend_service::PgFriendService;
 use rest_api::services::health_check::PgHealthCheck;
 use rest_api::services::item_service::PgItemService;
 use rest_api::services::moderation_service::{NoopModerationService, OpenAIModerationService};
+use rest_api::services::oauth_verifier::OAuthVerifier;
 use rest_api::services::push_token_service::PgPushTokenService;
 use rest_api::services::reminder_service::PgReminderService;
 use rest_api::services::share_link_service::PgShareLinkService;
@@ -94,6 +95,11 @@ async fn main() -> anyhow::Result<()> {
         config.email_from.clone(),
     ));
 
+    let oauth_verifier = Arc::new(OAuthVerifier::new(
+        config.google_client_id.clone(),
+        config.apns_bundle_id.clone(),
+    ));
+
     let auth: Arc<dyn AuthService> = Arc::new(PgAuthService::new(
         db.clone(),
         user_repo.clone(),
@@ -101,6 +107,7 @@ async fn main() -> anyhow::Result<()> {
         jwt.clone(),
         redis.clone(),
         email_service,
+        oauth_verifier,
     ));
     let item_repo: Arc<dyn ItemRepo> = Arc::new(PgItemRepo::new(db.clone()));
     let items: Arc<dyn ItemService> = Arc::new(PgItemService::new(

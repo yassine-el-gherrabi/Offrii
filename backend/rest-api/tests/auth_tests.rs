@@ -1338,3 +1338,275 @@ async fn reset_password_wrong_email_400() {
     assert_eq!(status, StatusCode::BAD_REQUEST);
     assert_error(&resp, "BAD_REQUEST");
 }
+
+// ── Welcome email tests ───────────────────────────────────────────────
+
+#[tokio::test]
+async fn register_sends_welcome_email() {
+    let app = TestApp::new().await;
+
+    let body = serde_json::json!({
+        "email": TEST_EMAIL,
+        "password": TEST_PASSWORD,
+    });
+    let (status, _) = app.post_json("/auth/register", &body).await;
+    assert_eq!(status, StatusCode::CREATED);
+
+    // Give the background task time to fire
+    tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+
+    let sent = app.welcome_emails_sent.lock().unwrap().clone();
+    assert_eq!(sent.len(), 1, "expected one welcome email");
+    assert_eq!(sent[0], TEST_EMAIL);
+}
+
+#[tokio::test]
+async fn register_sends_welcome_email_with_display_name() {
+    let app = TestApp::new().await;
+
+    let body = serde_json::json!({
+        "email": TEST_EMAIL,
+        "password": TEST_PASSWORD,
+        "display_name": "Marie",
+    });
+    let (status, _) = app.post_json("/auth/register", &body).await;
+    assert_eq!(status, StatusCode::CREATED);
+
+    tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+
+    let sent = app.welcome_emails_sent.lock().unwrap().clone();
+    assert_eq!(sent.len(), 1);
+    assert_eq!(sent[0], TEST_EMAIL);
+}
+
+// ── Verify reset code tests ────────────────────────────────────────
+
+#[tokio::test]
+async fn verify_reset_code_valid_code_200() {
+    let app = TestApp::new().await;
+    app.setup_user(TEST_EMAIL, TEST_PASSWORD).await;
+
+    // Request reset code
+    app.post_json(
+        "/auth/forgot-password",
+        &serde_json::json!({ "email": TEST_EMAIL }),
+    )
+    .await;
+
+    let code = app
+        .get_last_reset_code()
+        .await
+        .expect("code should be sent");
+
+    // Verify the code
+    let (status, _) = app
+        .post_json(
+            "/auth/verify-reset-code",
+            &serde_json::json!({ "email": TEST_EMAIL, "code": code }),
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK);
+}
+
+#[tokio::test]
+async fn verify_reset_code_invalid_code_400() {
+    let app = TestApp::new().await;
+    app.setup_user(TEST_EMAIL, TEST_PASSWORD).await;
+
+    app.post_json(
+        "/auth/forgot-password",
+        &serde_json::json!({ "email": TEST_EMAIL }),
+    )
+    .await;
+
+    let _code = app
+        .get_last_reset_code()
+        .await
+        .expect("code should be sent");
+
+    let (status, body) = app
+        .post_json(
+            "/auth/verify-reset-code",
+            &serde_json::json!({ "email": TEST_EMAIL, "code": "000000" }),
+        )
+        .await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    assert!(body.to_string().contains("invalid_or_expired_code"));
+}
+
+#[tokio::test]
+async fn verify_reset_code_expired_code_400() {
+    let app = TestApp::new().await;
+    app.setup_user(TEST_EMAIL, TEST_PASSWORD).await;
+
+    // No forgot-password request → no code in Redis
+    let (status, body) = app
+        .post_json(
+            "/auth/verify-reset-code",
+            &serde_json::json!({ "email": TEST_EMAIL, "code": "123456" }),
+        )
+        .await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    assert!(body.to_string().contains("invalid_or_expired_code"));
+}
+
+#[tokio::test]
+async fn verify_reset_code_too_many_attempts_400() {
+    let app = TestApp::new().await;
+    app.setup_user(TEST_EMAIL, TEST_PASSWORD).await;
+
+    app.post_json(
+        "/auth/forgot-password",
+        &serde_json::json!({ "email": TEST_EMAIL }),
+    )
+    .await;
+
+    let _code = app
+        .get_last_reset_code()
+        .await
+        .expect("code should be sent");
+
+    // Burn through 5 wrong attempts
+    for _ in 0..5 {
+        app.post_json(
+            "/auth/verify-reset-code",
+            &serde_json::json!({ "email": TEST_EMAIL, "code": "000000" }),
+        )
+        .await;
+    }
+
+    // 6th attempt should be too_many_attempts
+    let (status, body) = app
+        .post_json(
+            "/auth/verify-reset-code",
+            &serde_json::json!({ "email": TEST_EMAIL, "code": "000000" }),
+        )
+        .await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    assert!(body.to_string().contains("too_many_attempts"));
+}
+
+#[tokio::test]
+async fn verify_reset_code_does_not_consume_code() {
+    let app = TestApp::new().await;
+    app.setup_user(TEST_EMAIL, TEST_PASSWORD).await;
+
+    app.post_json(
+        "/auth/forgot-password",
+        &serde_json::json!({ "email": TEST_EMAIL }),
+    )
+    .await;
+
+    let code = app
+        .get_last_reset_code()
+        .await
+        .expect("code should be sent");
+
+    // Verify succeeds
+    let (status, _) = app
+        .post_json(
+            "/auth/verify-reset-code",
+            &serde_json::json!({ "email": TEST_EMAIL, "code": code }),
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK);
+
+    // Code should still work for actual reset
+    let (status, _) = app
+        .post_json(
+            "/auth/reset-password",
+            &serde_json::json!({
+                "email": TEST_EMAIL,
+                "code": code,
+                "new_password": NEW_PASSWORD,
+            }),
+        )
+        .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+}
+
+// ---------------------------------------------------------------------------
+// OAuth / SSO
+// ---------------------------------------------------------------------------
+
+#[tokio::test]
+async fn google_auth_missing_token_400() {
+    let app = TestApp::new().await;
+
+    let (status, body) = app
+        .post_json("/auth/google", &serde_json::json!({"id_token": ""}))
+        .await;
+
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    assert!(body.to_string().contains("id_token"));
+}
+
+#[tokio::test]
+async fn apple_auth_missing_token_400() {
+    let app = TestApp::new().await;
+
+    let (status, body) = app
+        .post_json("/auth/apple", &serde_json::json!({"id_token": ""}))
+        .await;
+
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    assert!(body.to_string().contains("id_token"));
+}
+
+#[tokio::test]
+async fn google_auth_invalid_token_401() {
+    let app = TestApp::new().await;
+
+    let (status, _body) = app
+        .post_json(
+            "/auth/google",
+            &serde_json::json!({"id_token": "invalid.jwt.token"}),
+        )
+        .await;
+
+    assert_eq!(status, StatusCode::UNAUTHORIZED);
+}
+
+#[tokio::test]
+async fn apple_auth_invalid_token_401() {
+    let app = TestApp::new().await;
+
+    let (status, _body) = app
+        .post_json(
+            "/auth/apple",
+            &serde_json::json!({"id_token": "invalid.jwt.token"}),
+        )
+        .await;
+
+    assert_eq!(status, StatusCode::UNAUTHORIZED);
+}
+
+#[tokio::test]
+async fn register_response_contains_is_new_user() {
+    let app = TestApp::new().await;
+
+    let (status, body) = app.register_user(TEST_EMAIL, TEST_PASSWORD).await;
+
+    assert_eq!(status, StatusCode::CREATED);
+    assert_eq!(body["is_new_user"], true);
+}
+
+#[tokio::test]
+async fn login_response_contains_is_new_user_false() {
+    let app = TestApp::new().await;
+
+    app.setup_user(TEST_EMAIL, TEST_PASSWORD).await;
+
+    let (status, body) = app
+        .post_json(
+            "/auth/login",
+            &serde_json::json!({
+                "email": TEST_EMAIL,
+                "password": TEST_PASSWORD,
+            }),
+        )
+        .await;
+
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(body["is_new_user"], false);
+}

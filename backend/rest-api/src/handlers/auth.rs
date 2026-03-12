@@ -6,8 +6,9 @@ use validator::Validate;
 
 use crate::AppState;
 use crate::dto::auth::{
-    AuthResponse, ChangePasswordRequest, ForgotPasswordRequest, LoginRequest, RefreshRequest,
-    RefreshResponse, RegisterRequest, ResetPasswordRequest,
+    AppleAuthRequest, AuthResponse, ChangePasswordRequest, ForgotPasswordRequest,
+    GoogleAuthRequest, LoginRequest, RefreshRequest, RefreshResponse, RegisterRequest,
+    ResetPasswordRequest, VerifyResetCodeRequest,
 };
 use crate::errors::AppError;
 use crate::middleware::AuthUser;
@@ -25,7 +26,10 @@ pub fn router() -> Router<AppState> {
         .route("/logout", post(logout))
         .route("/change-password", post(change_password))
         .route("/forgot-password", post(forgot_password))
+        .route("/verify-reset-code", post(verify_reset_code))
         .route("/reset-password", post(reset_password))
+        .route("/google", post(google_auth))
+        .route("/apple", post(apple_auth))
 }
 
 #[tracing::instrument(skip(state, req))]
@@ -114,6 +118,18 @@ async fn forgot_password(
 }
 
 #[tracing::instrument(skip(state, req))]
+async fn verify_reset_code(
+    State(state): State<AppState>,
+    Json(req): Json<VerifyResetCodeRequest>,
+) -> Result<StatusCode, AppError> {
+    validate_request(&req)?;
+
+    state.auth.verify_reset_code(&req.email, &req.code).await?;
+
+    Ok(StatusCode::OK)
+}
+
+#[tracing::instrument(skip(state, req))]
 async fn reset_password(
     State(state): State<AppState>,
     Json(req): Json<ResetPasswordRequest>,
@@ -126,6 +142,46 @@ async fn reset_password(
         .await?;
 
     Ok(StatusCode::NO_CONTENT)
+}
+
+#[tracing::instrument(skip(state, req))]
+async fn google_auth(
+    State(state): State<AppState>,
+    Json(req): Json<GoogleAuthRequest>,
+) -> Result<(StatusCode, Json<AuthResponse>), AppError> {
+    validate_request(&req)?;
+
+    let response = state
+        .auth
+        .oauth_login("google", &req.id_token, req.display_name.as_deref())
+        .await?;
+
+    let status = if response.is_new_user {
+        StatusCode::CREATED
+    } else {
+        StatusCode::OK
+    };
+    Ok((status, Json(response)))
+}
+
+#[tracing::instrument(skip(state, req))]
+async fn apple_auth(
+    State(state): State<AppState>,
+    Json(req): Json<AppleAuthRequest>,
+) -> Result<(StatusCode, Json<AuthResponse>), AppError> {
+    validate_request(&req)?;
+
+    let response = state
+        .auth
+        .oauth_login("apple", &req.id_token, req.display_name.as_deref())
+        .await?;
+
+    let status = if response.is_new_user {
+        StatusCode::CREATED
+    } else {
+        StatusCode::OK
+    };
+    Ok((status, Json(response)))
 }
 
 #[cfg(test)]
@@ -319,6 +375,35 @@ mod tests {
             email: "user@example.com".into(),
             code: "123456".into(),
             new_password: "newpassword123".into(),
+        };
+        assert!(req.validate().is_ok());
+    }
+
+    // ── VerifyResetCodeRequest ────────────────────────────────────────
+
+    #[test]
+    fn verify_reset_code_rejects_invalid_email() {
+        let req = VerifyResetCodeRequest {
+            email: "bad".into(),
+            code: "123456".into(),
+        };
+        assert!(req.validate().is_err());
+    }
+
+    #[test]
+    fn verify_reset_code_rejects_short_code() {
+        let req = VerifyResetCodeRequest {
+            email: "user@example.com".into(),
+            code: "123".into(),
+        };
+        assert!(req.validate().is_err());
+    }
+
+    #[test]
+    fn verify_reset_code_accepts_valid_input() {
+        let req = VerifyResetCodeRequest {
+            email: "user@example.com".into(),
+            code: "123456".into(),
         };
         assert!(req.validate().is_ok());
     }

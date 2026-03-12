@@ -73,6 +73,28 @@ pub struct ResetPasswordRequest {
     pub new_password: String,
 }
 
+#[derive(Debug, Deserialize, Validate)]
+pub struct VerifyResetCodeRequest {
+    #[validate(email(message = "invalid email address"))]
+    pub email: String,
+    #[validate(length(equal = 6, message = "code must be exactly 6 characters"))]
+    pub code: String,
+}
+
+#[derive(Debug, Deserialize, Validate)]
+pub struct GoogleAuthRequest {
+    #[validate(length(min = 1, message = "id_token is required"))]
+    pub id_token: String,
+    pub display_name: Option<String>,
+}
+
+#[derive(Debug, Deserialize, Validate)]
+pub struct AppleAuthRequest {
+    #[validate(length(min = 1, message = "id_token is required"))]
+    pub id_token: String,
+    pub display_name: Option<String>,
+}
+
 // ── Response DTOs ────────────────────────────────────────────────────
 
 #[derive(Debug, Clone, Serialize)]
@@ -87,6 +109,7 @@ pub struct TokenPair {
 pub struct AuthResponse {
     pub tokens: TokenPair,
     pub user: UserResponse,
+    pub is_new_user: bool,
 }
 
 #[derive(Debug, Clone, Serialize)]

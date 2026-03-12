@@ -35,6 +35,7 @@ struct OffriiApp: App {
                         .environment(tipManager)
                         .onChange(of: authManager.currentUser) { _, user in
                             if user == nil {
+                                router.preferRegister = false
                                 router.currentScreen = .auth
                             }
                         }

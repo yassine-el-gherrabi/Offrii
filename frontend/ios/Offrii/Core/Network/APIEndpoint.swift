@@ -32,7 +32,10 @@ enum APIEndpoint {
     case logout
     case changePassword(ChangePasswordBody)
     case forgotPassword(ForgotPasswordBody)
+    case verifyResetCode(VerifyResetCodeBody)
     case resetPassword(ResetPasswordBody)
+    case googleAuth(GoogleAuthBody)
+    case appleAuth(AppleAuthBody)
 
     // MARK: Items
 
@@ -135,7 +138,10 @@ extension APIEndpoint {
         case .logout:                           return "/auth/logout"
         case .changePassword:                   return "/auth/change-password"
         case .forgotPassword:                   return "/auth/forgot-password"
+        case .verifyResetCode:                  return "/auth/verify-reset-code"
         case .resetPassword:                    return "/auth/reset-password"
+        case .googleAuth:                       return "/auth/google"
+        case .appleAuth:                        return "/auth/apple"
 
         // Items
         case .listItems:                        return "/items"
@@ -225,7 +231,10 @@ extension APIEndpoint {
         case .logout:           return .POST
         case .changePassword:   return .POST
         case .forgotPassword:   return .POST
+        case .verifyResetCode:  return .POST
         case .resetPassword:    return .POST
+        case .googleAuth:       return .POST
+        case .appleAuth:        return .POST
 
         // Items
         case .listItems:        return .GET
@@ -308,7 +317,8 @@ extension APIEndpoint {
     /// Whether this endpoint requires an `Authorization: Bearer` header.
     var requiresAuth: Bool {
         switch self {
-        case .register, .login, .refresh, .forgotPassword, .resetPassword:
+        case .register, .login, .refresh, .forgotPassword, .verifyResetCode, .resetPassword,
+             .googleAuth, .appleAuth:
             return false
         case .getSharedView:
             return false
@@ -374,7 +384,10 @@ extension APIEndpoint {
         case .refresh(let body):            return body
         case .changePassword(let body):     return body
         case .forgotPassword(let body):     return body
+        case .verifyResetCode(let body):    return body
         case .resetPassword(let body):      return body
+        case .googleAuth(let body):         return body
+        case .appleAuth(let body):          return body
         case .createItem(let body):         return body
         case .updateItem(_, let body):      return body
         case .createCategory(let body):     return body

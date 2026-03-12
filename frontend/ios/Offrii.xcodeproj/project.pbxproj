@@ -29,6 +29,7 @@
 		B10000000000000000000006 /* APIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000006 /* APIClient.swift */; };
 		B10000000000000000000007 /* APIEndpoint.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000007 /* APIEndpoint.swift */; };
 		B10000000000000000000050 /* APIRequestBodies.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000050 /* APIRequestBodies.swift */; };
+		B10000000000000000000051 /* SSOService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000051 /* SSOService.swift */; };
 		B10000000000000000000008 /* APIError.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000008 /* APIError.swift */; };
 		B10000000000000000000010 /* OffriiButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000010 /* OffriiButton.swift */; };
 		B10000000000000000000011 /* OffriiCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000011 /* OffriiCard.swift */; };
@@ -65,6 +66,8 @@
 		B10000000000000000000044 /* PushTokenService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000044 /* PushTokenService.swift */; };
 		B10000000000000000000045 /* UserService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000045 /* UserService.swift */; };
 		B10000000000000000000046 /* SSOButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000046 /* SSOButton.swift */; };
+		FF0000000000000000000001 /* ShinyIcon.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF0000000000000000000002 /* ShinyIcon.swift */; };
+		FF0000000000000000000003 /* OTPField.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF0000000000000000000004 /* OTPField.swift */; };
 		B10000000000000000000049 /* UsernameEditView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000049 /* UsernameEditView.swift */; };
 		B20000000000000000000001 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000001 /* Assets.xcassets */; };
 		B20000000000000000000002 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000002 /* Localizable.strings */; };
@@ -146,6 +149,7 @@
 		A10000000000000000000001 /* OffriiApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OffriiApp.swift; sourceTree = "<group>"; };
 		A10000000000000000000002 /* AuthManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthManager.swift; sourceTree = "<group>"; };
 		A10000000000000000000003 /* KeychainService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainService.swift; sourceTree = "<group>"; };
+		A10000000000000000000051 /* SSOService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SSOService.swift; sourceTree = "<group>"; };
 		A10000000000000000000004 /* Color+Hex.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Color+Hex.swift"; sourceTree = "<group>"; };
 		A10000000000000000000005 /* AppRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppRouter.swift; sourceTree = "<group>"; };
 		A10000000000000000000006 /* APIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIClient.swift; sourceTree = "<group>"; };
@@ -187,6 +191,8 @@
 		A10000000000000000000044 /* PushTokenService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PushTokenService.swift; sourceTree = "<group>"; };
 		A10000000000000000000045 /* UserService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserService.swift; sourceTree = "<group>"; };
 		A10000000000000000000046 /* SSOButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SSOButton.swift; sourceTree = "<group>"; };
+		FF0000000000000000000002 /* ShinyIcon.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShinyIcon.swift; sourceTree = "<group>"; };
+		FF0000000000000000000004 /* OTPField.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OTPField.swift; sourceTree = "<group>"; };
 		A10000000000000000000049 /* UsernameEditView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsernameEditView.swift; sourceTree = "<group>"; };
 		A20000000000000000000001 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A20000000000000000000002 /* Localizable.strings */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; path = Localizable.strings; sourceTree = "<group>"; };
@@ -350,6 +356,7 @@
 			children = (
 				A10000000000000000000002 /* AuthManager.swift */,
 				A10000000000000000000003 /* KeychainService.swift */,
+				A10000000000000000000051 /* SSOService.swift */,
 			);
 			path = Auth;
 			sourceTree = "<group>";
@@ -395,6 +402,8 @@
 				A10000000000000000000011 /* OffriiCard.swift */,
 				A10000000000000000000012 /* OffriiChip.swift */,
 				A10000000000000000000013 /* OffriiTextField.swift */,
+				FF0000000000000000000002 /* ShinyIcon.swift */,
+				FF0000000000000000000004 /* OTPField.swift */,
 				A10000000000000000000046 /* SSOButton.swift */,
 				A10000000000000000000014 /* TabBarView.swift */,
 				2CC946E23E60A612A2F1640C /* AvatarView.swift */,
@@ -631,6 +640,7 @@
 			name = Offrii;
 			packageProductDependencies = (
 				P10000000000000000000001 /* KeychainAccess */,
+				P10000000000000000000002 /* GoogleSignIn */,
 			);
 			productName = Offrii;
 			productReference = A40000000000000000000001 /* Offrii.app */;
@@ -685,6 +695,7 @@
 			mainGroup = C00000000000000000000001;
 			packageReferences = (
 				R10000000000000000000001 /* XCRemoteSwiftPackageReference "KeychainAccess" */,
+				R10000000000000000000002 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */,
 			);
 			productRefGroup = C00000000000000000000004 /* Products */;
 			projectDirPath = "";
@@ -727,6 +738,7 @@
 				B10000000000000000000001 /* OffriiApp.swift in Sources */,
 				B10000000000000000000002 /* AuthManager.swift in Sources */,
 				B10000000000000000000003 /* KeychainService.swift in Sources */,
+				B10000000000000000000051 /* SSOService.swift in Sources */,
 				B10000000000000000000004 /* Color+Hex.swift in Sources */,
 				B10000000000000000000005 /* AppRouter.swift in Sources */,
 				B10000000000000000000006 /* APIClient.swift in Sources */,
@@ -769,6 +781,8 @@
 				B10000000000000000000044 /* PushTokenService.swift in Sources */,
 				B10000000000000000000045 /* UserService.swift in Sources */,
 				B10000000000000000000046 /* SSOButton.swift in Sources */,
+				FF0000000000000000000001 /* ShinyIcon.swift in Sources */,
+				FF0000000000000000000003 /* OTPField.swift in Sources */,
 				FE208C7C4F62D4FA39CE6566 /* Circle.swift in Sources */,
 				103EEE9EB1A6E8CF566004BD /* CircleModels.swift in Sources */,
 				D650FB03CE091B982E86B409 /* Friend.swift in Sources */,
@@ -903,11 +917,13 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Offrii/Offrii.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 6SMPW6NUXP;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Offrii/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Offrii;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -929,11 +945,13 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Offrii/Offrii.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 6SMPW6NUXP;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Offrii/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Offrii;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -1027,6 +1045,14 @@
 				minimumVersion = 4.2.2;
 			};
 		};
+		R10000000000000000000002 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/google/GoogleSignIn-iOS.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 8.0.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -1034,6 +1060,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = R10000000000000000000001 /* XCRemoteSwiftPackageReference "KeychainAccess" */;
 			productName = KeychainAccess;
+		};
+		P10000000000000000000002 /* GoogleSignIn */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = R10000000000000000000002 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */;
+			productName = GoogleSignIn;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

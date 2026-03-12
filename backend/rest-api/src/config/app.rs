@@ -14,6 +14,7 @@ pub struct Config {
     pub app_base_url: String,
     pub moderation_enabled: bool,
     pub openai_api_key: Option<String>,
+    pub google_client_id: Option<String>,
 }
 
 impl std::fmt::Debug for Config {
@@ -83,6 +84,7 @@ impl Config {
             .map_err(|_| anyhow::anyhow!("MODERATION_ENABLED must be true or false"))?;
 
         let openai_api_key = var("OPENAI_API_KEY").ok();
+        let google_client_id = var("GOOGLE_CLIENT_ID").ok();
 
         Ok(Self {
             database_url,
@@ -98,6 +100,7 @@ impl Config {
             app_base_url,
             moderation_enabled,
             openai_api_key,
+            google_client_id,
         })
     }
 }

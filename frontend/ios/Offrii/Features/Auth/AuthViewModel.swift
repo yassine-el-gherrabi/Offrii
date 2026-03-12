@@ -106,6 +106,48 @@ final class AuthViewModel {
         }
     }
 
+    // MARK: - Google Sign-In
+
+    func signInWithGoogle(authManager: AuthManager, ssoService: SSOService) async -> Bool {
+        state = .loading
+        do {
+            let idToken = try await ssoService.signInWithGoogle()
+            try await authManager.loginWithGoogle(idToken: idToken)
+            state = .idle
+            return true
+        } catch let error as SSOError where error == .cancelled {
+            state = .idle
+            return false
+        } catch {
+            state = .error(mapError(error))
+            return false
+        }
+    }
+
+    // MARK: - Apple Sign-In
+
+    func signInWithApple(authManager: AuthManager, ssoService: SSOService) async -> Bool {
+        state = .loading
+        do {
+            let (idToken, fullName) = try await ssoService.signInWithApple()
+            let displayName = [fullName?.givenName, fullName?.familyName]
+                .compactMap { $0 }
+                .joined(separator: " ")
+            try await authManager.loginWithApple(
+                idToken: idToken,
+                displayName: displayName.isEmpty ? nil : displayName
+            )
+            state = .idle
+            return true
+        } catch let error as SSOError where error == .cancelled {
+            state = .idle
+            return false
+        } catch {
+            state = .error(mapError(error))
+            return false
+        }
+    }
+
     // MARK: - Register
 
     func register(authManager: AuthManager) async -> Bool {
@@ -142,6 +184,30 @@ final class AuthViewModel {
             )
             state = .idle
             forgotStep = .code
+            return true
+        } catch {
+            state = .error(mapError(error))
+            return false
+        }
+    }
+
+    func verifyResetCode() async -> Bool {
+        clearErrors()
+        let code = resetCode.trimmingCharacters(in: .whitespaces)
+        if code.count != 6 {
+            codeError = NSLocalizedString("error.invalidCode", comment: "")
+            return false
+        }
+
+        state = .loading
+        do {
+            try await APIClient.shared.requestVoid(
+                .verifyResetCode(VerifyResetCodeBody(
+                    email: resetEmail.trimmingCharacters(in: .whitespaces),
+                    code: code
+                ))
+            )
+            state = .idle
             return true
         } catch {
             state = .error(mapError(error))
@@ -214,6 +280,12 @@ final class AuthViewModel {
             }
             if lower.contains("password_length") {
                 return NSLocalizedString("error.passwordTooShort", comment: "")
+            }
+            if lower.contains("invalid_or_expired_code") {
+                return NSLocalizedString("error.invalidOrExpiredCode", comment: "")
+            }
+            if lower.contains("too_many_attempts") {
+                return NSLocalizedString("error.tooManyAttempts", comment: "")
             }
             return msg
         case .unauthorized(let msg):

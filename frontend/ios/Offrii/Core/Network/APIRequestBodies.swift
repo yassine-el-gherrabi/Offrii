@@ -53,6 +53,31 @@ struct ResetPasswordBody: Encodable {
     }
 }
 
+struct VerifyResetCodeBody: Encodable {
+    let email: String
+    let code: String
+}
+
+struct GoogleAuthBody: Encodable {
+    let idToken: String
+    let displayName: String?
+
+    enum CodingKeys: String, CodingKey {
+        case idToken = "id_token"
+        case displayName = "display_name"
+    }
+}
+
+struct AppleAuthBody: Encodable {
+    let idToken: String
+    let displayName: String?
+
+    enum CodingKeys: String, CodingKey {
+        case idToken = "id_token"
+        case displayName = "display_name"
+    }
+}
+
 // MARK: - Item Body Types
 
 struct CreateItemBody: Encodable {
