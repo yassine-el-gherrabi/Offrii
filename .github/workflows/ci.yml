@@ -90,7 +90,7 @@ jobs:
         working-directory: .
         run: xcrun simctl list devices available iOS
       - name: Cache DerivedData
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/Library/Developer/Xcode/DerivedData
           key: xcode-deriveddata-${{ hashFiles('frontend/ios/Offrii.xcodeproj/project.pbxproj') }}
