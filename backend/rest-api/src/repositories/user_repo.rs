@@ -9,7 +9,7 @@ use crate::traits;
 
 /// Shared column list for all user queries (avoids duplication).
 const USER_COLS: &str = "id, email, username, password_hash, display_name, \
-                         oauth_provider, oauth_provider_id, \
+                         oauth_provider, oauth_provider_id, email_verified, \
                          reminder_freq, reminder_time, timezone, \
                          utc_reminder_hour, locale, token_version, \
                          created_at, updated_at";
@@ -369,8 +369,8 @@ pub(crate) async fn create_oauth_user(
     oauth_provider_id: &str,
 ) -> Result<User> {
     let sql = format!(
-        "INSERT INTO users (email, username, display_name, oauth_provider, oauth_provider_id) \
-         VALUES ($1, $2, $3, $4, $5) \
+        "INSERT INTO users (email, username, display_name, oauth_provider, oauth_provider_id, email_verified) \
+         VALUES ($1, $2, $3, $4, $5, true) \
          RETURNING {USER_COLS}"
     );
     let user = sqlx::query_as::<_, User>(&sql)

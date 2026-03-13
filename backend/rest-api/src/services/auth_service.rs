@@ -148,6 +148,19 @@ impl traits::AuthService for PgAuthService {
             generate_unique_username(base, &self.pool).await?
         };
 
+        // Check if email exists and provide a helpful error for OAuth accounts
+        if let Some(existing) = self
+            .user_repo
+            .find_by_email(&email)
+            .await
+            .map_err(AppError::Internal)?
+        {
+            if let Some(ref provider) = existing.oauth_provider {
+                return Err(AppError::Conflict(format!("email_uses_oauth:{provider}")));
+            }
+            return Err(AppError::Conflict("email already registered".into()));
+        }
+
         // Transaction: create user + copy categories + insert refresh token
         let mut tx = self
             .pool
@@ -745,7 +758,8 @@ impl traits::AuthService for PgAuthService {
                 .await
                 .map_err(AppError::Internal)?;
 
-            if let Some(user) = email_user {
+            if let Some(user) = email_user.filter(|u| u.email_verified) {
+                // Email is verified → safe to link OAuth provider
                 self.user_repo
                     .link_oauth(user.id, provider, &claims.sub)
                     .await

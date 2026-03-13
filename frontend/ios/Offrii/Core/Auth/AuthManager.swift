@@ -58,7 +58,8 @@ final class AuthManager {
     // MARK: - Google Sign-In
 
     /// Authenticates via Google ID token, stores the returned tokens.
-    func loginWithGoogle(idToken: String, displayName: String? = nil) async throws {
+    @discardableResult
+    func loginWithGoogle(idToken: String, displayName: String? = nil) async throws -> Bool {
         let body = GoogleAuthBody(idToken: idToken, displayName: displayName)
         let response: AuthResponse = try await client.request(.googleAuth(body))
         storeTokens(response.tokens)
@@ -66,12 +67,14 @@ final class AuthManager {
         currentUser = user
         cacheUser(user)
         logger.info("User signed in with Google: \(response.user.id)")
+        return response.isNewUser
     }
 
     // MARK: - Apple Sign-In
 
     /// Authenticates via Apple ID token, stores the returned tokens.
-    func loginWithApple(idToken: String, displayName: String? = nil) async throws {
+    @discardableResult
+    func loginWithApple(idToken: String, displayName: String? = nil) async throws -> Bool {
         let body = AppleAuthBody(idToken: idToken, displayName: displayName)
         let response: AuthResponse = try await client.request(.appleAuth(body))
         storeTokens(response.tokens)
@@ -79,6 +82,7 @@ final class AuthManager {
         currentUser = user
         cacheUser(user)
         logger.info("User signed in with Apple: \(response.user.id)")
+        return response.isNewUser
     }
 
     // MARK: - Logout

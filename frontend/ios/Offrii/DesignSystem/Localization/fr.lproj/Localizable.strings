@@ -62,6 +62,8 @@
 "error.usernameTaken" = "Ce nom d'utilisateur est déjà pris";
 "error.usernameInvalid" = "3-30 caractères, lettres minuscules, chiffres et _";
 "error.loadProfileFailed" = "Impossible de charger le profil";
+"error.emailUsesGoogle" = "Cet email est lié à un compte Google. Connecte-toi avec Google.";
+"error.emailUsesApple" = "Cet email est lié à un compte Apple. Connecte-toi avec Apple.";
 
 /* Onboarding */
 "onboarding.step1.title" = "Tes envies, au même endroit";

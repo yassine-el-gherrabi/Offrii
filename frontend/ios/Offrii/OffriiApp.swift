@@ -59,12 +59,12 @@ struct AuthContainerView: View {
         if isLogin {
             LoginView(
                 isReturningUser: router.isReturningUser,
-                onAuthenticated: { onAuthenticated(false) },
+                onAuthenticated: { isNewUser in onAuthenticated(isNewUser) },
                 onSwitchToRegister: { showLogin = false }
             )
         } else {
             RegisterView(
-                onAuthenticated: { onAuthenticated(true) },
+                onAuthenticated: { isNewUser in onAuthenticated(isNewUser) },
                 onSwitchToLogin: { showLogin = true }
             )
         }

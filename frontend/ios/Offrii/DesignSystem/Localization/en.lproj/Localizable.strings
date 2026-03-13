@@ -62,6 +62,8 @@
 "error.usernameTaken" = "This username is already taken";
 "error.usernameInvalid" = "3-30 characters, lowercase letters, digits and _";
 "error.loadProfileFailed" = "Failed to load profile";
+"error.emailUsesGoogle" = "This email is linked to a Google account. Please sign in with Google.";
+"error.emailUsesApple" = "This email is linked to an Apple account. Please sign in with Apple.";
 
 /* Onboarding */
 "onboarding.step1.title" = "Your wishes, all in one place";

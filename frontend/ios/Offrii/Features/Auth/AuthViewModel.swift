@@ -5,6 +5,7 @@ import Foundation
 enum AuthState: Equatable {
     case idle
     case loading
+    case loadingSSO(SSOProvider)
     case error(String)
 }
 
@@ -42,6 +43,18 @@ final class AuthViewModel {
     var newPasswordError: String?
 
     var isLoading: Bool { state == .loading }
+
+    func isSSOLoading(_ provider: SSOProvider) -> Bool {
+        if case .loadingSSO(let p) = state { return p == provider }
+        return false
+    }
+
+    var isAnyLoading: Bool {
+        switch state {
+        case .loading, .loadingSSO: return true
+        default: return false
+        }
+    }
 
     // MARK: - Validation
 
@@ -108,43 +121,45 @@ final class AuthViewModel {
 
     // MARK: - Google Sign-In
 
-    func signInWithGoogle(authManager: AuthManager, ssoService: SSOService) async -> Bool {
-        state = .loading
+    /// Returns `nil` if cancelled/failed, otherwise `true` = new user, `false` = existing user.
+    func signInWithGoogle(authManager: AuthManager, ssoService: SSOService) async -> Bool? {
+        state = .loadingSSO(.google)
         do {
             let idToken = try await ssoService.signInWithGoogle()
-            try await authManager.loginWithGoogle(idToken: idToken)
+            let isNew = try await authManager.loginWithGoogle(idToken: idToken)
             state = .idle
-            return true
+            return isNew
         } catch let error as SSOError where error == .cancelled {
             state = .idle
-            return false
+            return nil
         } catch {
             state = .error(mapError(error))
-            return false
+            return nil
         }
     }
 
     // MARK: - Apple Sign-In
 
-    func signInWithApple(authManager: AuthManager, ssoService: SSOService) async -> Bool {
-        state = .loading
+    /// Returns `nil` if cancelled/failed, otherwise `true` = new user, `false` = existing user.
+    func signInWithApple(authManager: AuthManager, ssoService: SSOService) async -> Bool? {
+        state = .loadingSSO(.apple)
         do {
             let (idToken, fullName) = try await ssoService.signInWithApple()
             let displayName = [fullName?.givenName, fullName?.familyName]
                 .compactMap { $0 }
                 .joined(separator: " ")
-            try await authManager.loginWithApple(
+            let isNew = try await authManager.loginWithApple(
                 idToken: idToken,
                 displayName: displayName.isEmpty ? nil : displayName
             )
             state = .idle
-            return true
+            return isNew
         } catch let error as SSOError where error == .cancelled {
             state = .idle
-            return false
+            return nil
         } catch {
             state = .error(mapError(error))
-            return false
+            return nil
         }
     }
 
@@ -286,6 +301,18 @@ final class AuthViewModel {
             }
             if lower.contains("too_many_attempts") {
                 return NSLocalizedString("error.tooManyAttempts", comment: "")
+            }
+            return msg
+        case .conflict(let msg):
+            let lower = msg.lowercased()
+            if lower.contains("email_uses_oauth:google") {
+                return NSLocalizedString("error.emailUsesGoogle", comment: "")
+            }
+            if lower.contains("email_uses_oauth:apple") {
+                return NSLocalizedString("error.emailUsesApple", comment: "")
+            }
+            if lower.contains("email") {
+                return NSLocalizedString("error.emailTaken", comment: "")
             }
             return msg
         case .unauthorized(let msg):

@@ -5,7 +5,7 @@ struct LoginView: View {
     @State private var viewModel = AuthViewModel()
 
     let isReturningUser: Bool
-    let onAuthenticated: () -> Void
+    let onAuthenticated: (_ isNewUser: Bool) -> Void
     let onSwitchToRegister: () -> Void
 
     @State private var ssoService = SSOService()
@@ -106,7 +106,7 @@ struct LoginView: View {
                 .onSubmit {
                     Task {
                         if await viewModel.login(authManager: authManager) {
-                            onAuthenticated()
+                            onAuthenticated(false)
                         }
                     }
                 }
@@ -137,7 +137,7 @@ struct LoginView: View {
                 ) {
                     Task {
                         if await viewModel.login(authManager: authManager) {
-                            onAuthenticated()
+                            onAuthenticated(false)
                         }
                     }
                 }
@@ -154,20 +154,22 @@ struct LoginView: View {
 
             // SSO buttons
             VStack(spacing: OffriiTheme.spacingSM) {
-                SSOButton(provider: .google) {
+                SSOButton(provider: .google, isLoading: viewModel.isSSOLoading(.google)) {
                     Task {
-                        if await viewModel.signInWithGoogle(authManager: authManager, ssoService: ssoService) {
-                            onAuthenticated()
+                        if let isNew = await viewModel.signInWithGoogle(authManager: authManager, ssoService: ssoService) {
+                            onAuthenticated(isNew)
                         }
                     }
                 }
-                SSOButton(provider: .apple) {
+                .disabled(viewModel.isAnyLoading)
+                SSOButton(provider: .apple, isLoading: viewModel.isSSOLoading(.apple)) {
                     Task {
-                        if await viewModel.signInWithApple(authManager: authManager, ssoService: ssoService) {
-                            onAuthenticated()
+                        if let isNew = await viewModel.signInWithApple(authManager: authManager, ssoService: ssoService) {
+                            onAuthenticated(isNew)
                         }
                     }
                 }
+                .disabled(viewModel.isAnyLoading)
             }
 
             // Switch link

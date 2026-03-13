@@ -49,14 +49,24 @@ struct UserProfileResponse: Codable {
 }
 
 struct ItemsListResponse: Codable {
-    let items: [Item]
+    let data: [Item]
+    let pagination: PaginationResponse
+
+    var items: [Item] { data }
+    var total: Int { pagination.total }
+}
+
+struct PaginationResponse: Codable {
     let total: Int
     let page: Int
-    let perPage: Int
+    let limit: Int
+    let totalPages: Int
+    let hasMore: Bool
 
     enum CodingKeys: String, CodingKey {
-        case items, total, page
-        case perPage = "per_page"
+        case total, page, limit
+        case totalPages = "total_pages"
+        case hasMore = "has_more"
     }
 }
 

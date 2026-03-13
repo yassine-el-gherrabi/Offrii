@@ -7,20 +7,31 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		B1SPLASH000000000000001 /* SplashView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1SPLASH000000000000001 /* SplashView.swift */; };
-		B1WELCOME00000000000001 /* WelcomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1WELCOME00000000000001 /* WelcomeView.swift */; };
-		B1POSTAUTH0000000000001 /* PostAuthSetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1POSTAUTH0000000000001 /* PostAuthSetupView.swift */; };
 		0817889119B494866721B449 /* CircleMembersSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = B62EA9A572E752338706A6D3 /* CircleMembersSheet.swift */; };
 		0C40392769386148C2161636 /* AddFriendSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00A795E6C64A02C75791ABC0 /* AddFriendSheet.swift */; };
+		0EB44304D486DC547B3D90E6 /* WishCategoryChip.swift in Sources */ = {isa = PBXBuildFile; fileRef = 692F105AB59AB2CCA6E9CE33 /* WishCategoryChip.swift */; };
 		103EEE9EB1A6E8CF566004BD /* CircleModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D046AFC11C42380646B6BC6 /* CircleModels.swift */; };
+		1FDC83C57F2C7F0F487A12BE /* CategoryGridPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8262AB8C23B2EE20424C1B5D /* CategoryGridPicker.swift */; };
+		23FA9072F7BDBF70352D1FA0 /* ReportWishSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD62B53D9E28CE73279B751F /* ReportWishSheet.swift */; };
 		249F82836FB8810148FEA28A /* AvatarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2CC946E23E60A612A2F1640C /* AvatarView.swift */; };
 		3C0C772343E04A68E451260E /* FriendsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00BCE22B8D5B86F102AA3B11 /* FriendsViewModel.swift */; };
 		41FB56C5232340B03F9A8E6D /* InviteFriendsSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2226B543C70CC51CA48162BB /* InviteFriendsSheet.swift */; };
+		60217F3B49638BD3E3B48E2E /* MyWishesViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1744A9EA0555F8F68B27DF73 /* MyWishesViewModel.swift */; };
+		66432B2DFF0B733B07FB3F8E /* WishCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53203562F473A3E6BD0ECC06 /* WishCard.swift */; };
 		69F0C2B5DDE535B06575C6CD /* CirclesListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE2967E84D0AD47134A0925A /* CirclesListView.swift */; };
 		7883478350B7C046ABEFF52E /* CircleService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DC960665D0FCEE00400F773 /* CircleService.swift */; };
 		798ABA96D107D82F3F8E6B20 /* CreateCircleSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9CB58C031CA34EDF11A6C318 /* CreateCircleSheet.swift */; };
+		865FF7C7050F41FFF9BF3092 /* MyWishesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E2F99D6217D6E8B5CDF3D60 /* MyWishesView.swift */; };
+		8E9D80D59CDEA2E765571C00 /* WishDetailViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12CD4CA251235E5ADD02FE90 /* WishDetailViewModel.swift */; };
+		90DB1C562F63676B00EB59C4 /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = P10000000000000000000002 /* GoogleSignIn */; };
 		9819CC8EE7964F14CDE7D48F /* StackedAvatarsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F19D296A0047D817CD0475CC /* StackedAvatarsView.swift */; };
 		99AD360522789939E56AB458 /* CircleDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9EEDF827539742DBA3A5617E /* CircleDetailView.swift */; };
+		9D14A9A3E27EC6245F34EEA6 /* MessageBubble.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58F0F5B130F191CB76DB83CC /* MessageBubble.swift */; };
+		9E5A06B3602ED34AAE5C175B /* CommunityWish.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E8B0D51A42018F6E1949DC4 /* CommunityWish.swift */; };
+		9F3A8DBDE5DC9AF4FFF6267D /* WishMessagesViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98821C8E238CA8C40CBC974D /* WishMessagesViewModel.swift */; };
+		A210E5B3EB318DFA6079996D /* WishMessagesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8421299145572BD80922201E /* WishMessagesView.swift */; };
+		A913ED170790FA4CCDE27BCF /* CreateWishSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5729A67B6A84DC629D5E0E70 /* CreateWishSheet.swift */; };
+		AE91A25ABF5AC3210209D492 /* WishStatusBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB746F8E4C0CA62230678B26 /* WishStatusBadge.swift */; };
 		B10000000000000000000001 /* OffriiApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000001 /* OffriiApp.swift */; };
 		B10000000000000000000002 /* AuthManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000002 /* AuthManager.swift */; };
 		B10000000000000000000003 /* KeychainService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000003 /* KeychainService.swift */; };
@@ -28,8 +39,6 @@
 		B10000000000000000000005 /* AppRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000005 /* AppRouter.swift */; };
 		B10000000000000000000006 /* APIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000006 /* APIClient.swift */; };
 		B10000000000000000000007 /* APIEndpoint.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000007 /* APIEndpoint.swift */; };
-		B10000000000000000000050 /* APIRequestBodies.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000050 /* APIRequestBodies.swift */; };
-		B10000000000000000000051 /* SSOService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000051 /* SSOService.swift */; };
 		B10000000000000000000008 /* APIError.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000008 /* APIError.swift */; };
 		B10000000000000000000010 /* OffriiButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000010 /* OffriiButton.swift */; };
 		B10000000000000000000011 /* OffriiCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000011 /* OffriiCard.swift */; };
@@ -66,9 +75,12 @@
 		B10000000000000000000044 /* PushTokenService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000044 /* PushTokenService.swift */; };
 		B10000000000000000000045 /* UserService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000045 /* UserService.swift */; };
 		B10000000000000000000046 /* SSOButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000046 /* SSOButton.swift */; };
-		FF0000000000000000000001 /* ShinyIcon.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF0000000000000000000002 /* ShinyIcon.swift */; };
-		FF0000000000000000000003 /* OTPField.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF0000000000000000000004 /* OTPField.swift */; };
 		B10000000000000000000049 /* UsernameEditView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000049 /* UsernameEditView.swift */; };
+		B10000000000000000000050 /* APIRequestBodies.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000050 /* APIRequestBodies.swift */; };
+		B10000000000000000000051 /* SSOService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000051 /* SSOService.swift */; };
+		B1POSTAUTH0000000000001 /* PostAuthSetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1POSTAUTH0000000000001 /* PostAuthSetupView.swift */; };
+		B1SPLASH000000000000001 /* SplashView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1SPLASH000000000000001 /* SplashView.swift */; };
+		B1WELCOME00000000000001 /* WelcomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1WELCOME00000000000001 /* WelcomeView.swift */; };
 		B20000000000000000000001 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000001 /* Assets.xcassets */; };
 		B20000000000000000000002 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000002 /* Localizable.strings */; };
 		B20000000000000000000003 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000003 /* Localizable.strings */; };
@@ -80,31 +92,6 @@
 		B30000000000000000000006 /* WishlistViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000006 /* WishlistViewModelTests.swift */; };
 		B40000000000000000000001 /* KeychainAccess in Frameworks */ = {isa = PBXBuildFile; productRef = P10000000000000000000001 /* KeychainAccess */; };
 		B4996C252354EF923F99C08E /* PendingRequestsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A657449D2170CAA14D047289 /* PendingRequestsView.swift */; };
-		CF0E285AAF14E9E693D4F508 /* CircleDetailViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6ACFAD24E9E205201275BF6E /* CircleDetailViewModel.swift */; };
-		D650FB03CE091B982E86B409 /* Friend.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1B347536FB260D73A7FBFDF /* Friend.swift */; };
-		E4649986E80031FD18F2016D /* FriendsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1A0908792D02CBC0E9E8344 /* FriendsView.swift */; };
-		EF76599AE8AB37282DDF6439 /* FriendService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C600B057F0DED66541E7F7BB /* FriendService.swift */; };
-		FBC28A2C90CDB099F344CCA7 /* CirclesViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A29A587E01A7D534AFC630E4 /* CirclesViewModel.swift */; };
-		FE208C7C4F62D4FA39CE6566 /* Circle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E7C15540F6DD23DE2E5AE6C /* Circle.swift */; };
-		9E5A06B3602ED34AAE5C175B /* CommunityWish.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E8B0D51A42018F6E1949DC4 /* CommunityWish.swift */; };
-		F85194CFE70A765319036B44 /* CommunityWishService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 90512D0B2BB0D0B2F6631406 /* CommunityWishService.swift */; };
-		C9FDAB37002F7F13541560D8 /* WishMessageService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91C64971504DD02B8707432F /* WishMessageService.swift */; };
-		9D14A9A3E27EC6245F34EEA6 /* MessageBubble.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58F0F5B130F191CB76DB83CC /* MessageBubble.swift */; };
-		C7E6192D9D3421D777B77CCA /* EntraideView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55B3E30B5B5D30A718724250 /* EntraideView.swift */; };
-		C9FD30768637251C31774210 /* EntraideViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64A31455759F0D2673A3A174 /* EntraideViewModel.swift */; };
-		66432B2DFF0B733B07FB3F8E /* WishCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53203562F473A3E6BD0ECC06 /* WishCard.swift */; };
-		F925A6E0B4D2A37FC3C73971 /* WishDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E05EB879C87356D69F9489A6 /* WishDetailView.swift */; };
-		8E9D80D59CDEA2E765571C00 /* WishDetailViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12CD4CA251235E5ADD02FE90 /* WishDetailViewModel.swift */; };
-		A913ED170790FA4CCDE27BCF /* CreateWishSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5729A67B6A84DC629D5E0E70 /* CreateWishSheet.swift */; };
-		D1DD2941D8F328C95D2F6D98 /* CreateWishViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01DC52B5F972089F4E983F51 /* CreateWishViewModel.swift */; };
-		A210E5B3EB318DFA6079996D /* WishMessagesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8421299145572BD80922201E /* WishMessagesView.swift */; };
-		9F3A8DBDE5DC9AF4FFF6267D /* WishMessagesViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98821C8E238CA8C40CBC974D /* WishMessagesViewModel.swift */; };
-		865FF7C7050F41FFF9BF3092 /* MyWishesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E2F99D6217D6E8B5CDF3D60 /* MyWishesView.swift */; };
-		60217F3B49638BD3E3B48E2E /* MyWishesViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1744A9EA0555F8F68B27DF73 /* MyWishesViewModel.swift */; };
-		23FA9072F7BDBF70352D1FA0 /* ReportWishSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD62B53D9E28CE73279B751F /* ReportWishSheet.swift */; };
-		AE91A25ABF5AC3210209D492 /* WishStatusBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB746F8E4C0CA62230678B26 /* WishStatusBadge.swift */; };
-		0EB44304D486DC547B3D90E6 /* WishCategoryChip.swift in Sources */ = {isa = PBXBuildFile; fileRef = 692F105AB59AB2CCA6E9CE33 /* WishCategoryChip.swift */; };
-		1FDC83C57F2C7F0F487A12BE /* CategoryGridPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8262AB8C23B2EE20424C1B5D /* CategoryGridPicker.swift */; };
 		BB0000000000000000000001 /* Spacing.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000001 /* Spacing.swift */; };
 		BB0000000000000000000002 /* Radius.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000002 /* Radius.swift */; };
 		BB0000000000000000000003 /* Shadows.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000003 /* Shadows.swift */; };
@@ -120,6 +107,20 @@
 		BB0000000000000000000013 /* OffriiTooltip.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000013 /* OffriiTooltip.swift */; };
 		BB0000000000000000000014 /* OffriiSpinner.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000014 /* OffriiSpinner.swift */; };
 		BB0000000000000000000015 /* OnboardingTipManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000015 /* OnboardingTipManager.swift */; };
+		C7E6192D9D3421D777B77CCA /* EntraideView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55B3E30B5B5D30A718724250 /* EntraideView.swift */; };
+		C9FD30768637251C31774210 /* EntraideViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64A31455759F0D2673A3A174 /* EntraideViewModel.swift */; };
+		C9FDAB37002F7F13541560D8 /* WishMessageService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91C64971504DD02B8707432F /* WishMessageService.swift */; };
+		CF0E285AAF14E9E693D4F508 /* CircleDetailViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6ACFAD24E9E205201275BF6E /* CircleDetailViewModel.swift */; };
+		D1DD2941D8F328C95D2F6D98 /* CreateWishViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01DC52B5F972089F4E983F51 /* CreateWishViewModel.swift */; };
+		D650FB03CE091B982E86B409 /* Friend.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1B347536FB260D73A7FBFDF /* Friend.swift */; };
+		E4649986E80031FD18F2016D /* FriendsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1A0908792D02CBC0E9E8344 /* FriendsView.swift */; };
+		EF76599AE8AB37282DDF6439 /* FriendService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C600B057F0DED66541E7F7BB /* FriendService.swift */; };
+		F85194CFE70A765319036B44 /* CommunityWishService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 90512D0B2BB0D0B2F6631406 /* CommunityWishService.swift */; };
+		F925A6E0B4D2A37FC3C73971 /* WishDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E05EB879C87356D69F9489A6 /* WishDetailView.swift */; };
+		FBC28A2C90CDB099F344CCA7 /* CirclesViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A29A587E01A7D534AFC630E4 /* CirclesViewModel.swift */; };
+		FE208C7C4F62D4FA39CE6566 /* Circle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E7C15540F6DD23DE2E5AE6C /* Circle.swift */; };
+		FF0000000000000000000001 /* ShinyIcon.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF0000000000000000000002 /* ShinyIcon.swift */; };
+		FF0000000000000000000003 /* OTPField.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF0000000000000000000004 /* OTPField.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -133,28 +134,39 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		A1SPLASH000000000000001 /* SplashView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplashView.swift; sourceTree = "<group>"; };
-		A1WELCOME00000000000001 /* WelcomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WelcomeView.swift; sourceTree = "<group>"; };
-		A1POSTAUTH0000000000001 /* PostAuthSetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PostAuthSetupView.swift; sourceTree = "<group>"; };
 		00A795E6C64A02C75791ABC0 /* AddFriendSheet.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AddFriendSheet.swift; sourceTree = "<group>"; };
 		00BCE22B8D5B86F102AA3B11 /* FriendsViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FriendsViewModel.swift; sourceTree = "<group>"; };
+		01DC52B5F972089F4E983F51 /* CreateWishViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateWishViewModel.swift; sourceTree = "<group>"; };
+		12CD4CA251235E5ADD02FE90 /* WishDetailViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WishDetailViewModel.swift; sourceTree = "<group>"; };
+		1744A9EA0555F8F68B27DF73 /* MyWishesViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MyWishesViewModel.swift; sourceTree = "<group>"; };
 		1DC960665D0FCEE00400F773 /* CircleService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CircleService.swift; sourceTree = "<group>"; };
 		1E7C15540F6DD23DE2E5AE6C /* Circle.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Circle.swift; sourceTree = "<group>"; };
 		2226B543C70CC51CA48162BB /* InviteFriendsSheet.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = InviteFriendsSheet.swift; sourceTree = "<group>"; };
 		2CC946E23E60A612A2F1640C /* AvatarView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AvatarView.swift; sourceTree = "<group>"; };
 		2D046AFC11C42380646B6BC6 /* CircleModels.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CircleModels.swift; sourceTree = "<group>"; };
+		2E2F99D6217D6E8B5CDF3D60 /* MyWishesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MyWishesView.swift; sourceTree = "<group>"; };
+		53203562F473A3E6BD0ECC06 /* WishCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WishCard.swift; sourceTree = "<group>"; };
+		55B3E30B5B5D30A718724250 /* EntraideView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EntraideView.swift; sourceTree = "<group>"; };
+		5729A67B6A84DC629D5E0E70 /* CreateWishSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateWishSheet.swift; sourceTree = "<group>"; };
+		58F0F5B130F191CB76DB83CC /* MessageBubble.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageBubble.swift; sourceTree = "<group>"; };
+		64A31455759F0D2673A3A174 /* EntraideViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EntraideViewModel.swift; sourceTree = "<group>"; };
+		692F105AB59AB2CCA6E9CE33 /* WishCategoryChip.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WishCategoryChip.swift; sourceTree = "<group>"; };
 		6ACFAD24E9E205201275BF6E /* CircleDetailViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CircleDetailViewModel.swift; sourceTree = "<group>"; };
+		8262AB8C23B2EE20424C1B5D /* CategoryGridPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategoryGridPicker.swift; sourceTree = "<group>"; };
+		8421299145572BD80922201E /* WishMessagesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WishMessagesView.swift; sourceTree = "<group>"; };
+		8E8B0D51A42018F6E1949DC4 /* CommunityWish.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommunityWish.swift; sourceTree = "<group>"; };
+		90512D0B2BB0D0B2F6631406 /* CommunityWishService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommunityWishService.swift; sourceTree = "<group>"; };
+		91C64971504DD02B8707432F /* WishMessageService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WishMessageService.swift; sourceTree = "<group>"; };
+		98821C8E238CA8C40CBC974D /* WishMessagesViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WishMessagesViewModel.swift; sourceTree = "<group>"; };
 		9CB58C031CA34EDF11A6C318 /* CreateCircleSheet.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CreateCircleSheet.swift; sourceTree = "<group>"; };
 		9EEDF827539742DBA3A5617E /* CircleDetailView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CircleDetailView.swift; sourceTree = "<group>"; };
 		A10000000000000000000001 /* OffriiApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OffriiApp.swift; sourceTree = "<group>"; };
 		A10000000000000000000002 /* AuthManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthManager.swift; sourceTree = "<group>"; };
 		A10000000000000000000003 /* KeychainService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainService.swift; sourceTree = "<group>"; };
-		A10000000000000000000051 /* SSOService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SSOService.swift; sourceTree = "<group>"; };
 		A10000000000000000000004 /* Color+Hex.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Color+Hex.swift"; sourceTree = "<group>"; };
 		A10000000000000000000005 /* AppRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppRouter.swift; sourceTree = "<group>"; };
 		A10000000000000000000006 /* APIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIClient.swift; sourceTree = "<group>"; };
 		A10000000000000000000007 /* APIEndpoint.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIEndpoint.swift; sourceTree = "<group>"; };
-		A10000000000000000000050 /* APIRequestBodies.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIRequestBodies.swift; sourceTree = "<group>"; };
 		A10000000000000000000008 /* APIError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIError.swift; sourceTree = "<group>"; };
 		A10000000000000000000010 /* OffriiButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OffriiButton.swift; sourceTree = "<group>"; };
 		A10000000000000000000011 /* OffriiCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OffriiCard.swift; sourceTree = "<group>"; };
@@ -191,9 +203,12 @@
 		A10000000000000000000044 /* PushTokenService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PushTokenService.swift; sourceTree = "<group>"; };
 		A10000000000000000000045 /* UserService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserService.swift; sourceTree = "<group>"; };
 		A10000000000000000000046 /* SSOButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SSOButton.swift; sourceTree = "<group>"; };
-		FF0000000000000000000002 /* ShinyIcon.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShinyIcon.swift; sourceTree = "<group>"; };
-		FF0000000000000000000004 /* OTPField.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OTPField.swift; sourceTree = "<group>"; };
 		A10000000000000000000049 /* UsernameEditView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsernameEditView.swift; sourceTree = "<group>"; };
+		A10000000000000000000050 /* APIRequestBodies.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIRequestBodies.swift; sourceTree = "<group>"; };
+		A10000000000000000000051 /* SSOService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SSOService.swift; sourceTree = "<group>"; };
+		A1POSTAUTH0000000000001 /* PostAuthSetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PostAuthSetupView.swift; sourceTree = "<group>"; };
+		A1SPLASH000000000000001 /* SplashView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplashView.swift; sourceTree = "<group>"; };
+		A1WELCOME00000000000001 /* WelcomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WelcomeView.swift; sourceTree = "<group>"; };
 		A20000000000000000000001 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A20000000000000000000002 /* Localizable.strings */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; path = Localizable.strings; sourceTree = "<group>"; };
 		A20000000000000000000003 /* Localizable.strings */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; path = Localizable.strings; sourceTree = "<group>"; };
@@ -207,31 +222,6 @@
 		A40000000000000000000001 /* Offrii.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Offrii.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A40000000000000000000002 /* OffriiTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = OffriiTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		A657449D2170CAA14D047289 /* PendingRequestsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PendingRequestsView.swift; sourceTree = "<group>"; };
-		B62EA9A572E752338706A6D3 /* CircleMembersSheet.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CircleMembersSheet.swift; sourceTree = "<group>"; };
-		C1A0908792D02CBC0E9E8344 /* FriendsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FriendsView.swift; sourceTree = "<group>"; };
-		C600B057F0DED66541E7F7BB /* FriendService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FriendService.swift; sourceTree = "<group>"; };
-		DE2967E84D0AD47134A0925A /* CirclesListView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CirclesListView.swift; sourceTree = "<group>"; };
-		F19D296A0047D817CD0475CC /* StackedAvatarsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = StackedAvatarsView.swift; sourceTree = "<group>"; };
-		F1B347536FB260D73A7FBFDF /* Friend.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Friend.swift; sourceTree = "<group>"; };
-		8E8B0D51A42018F6E1949DC4 /* CommunityWish.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommunityWish.swift; sourceTree = "<group>"; };
-		90512D0B2BB0D0B2F6631406 /* CommunityWishService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommunityWishService.swift; sourceTree = "<group>"; };
-		91C64971504DD02B8707432F /* WishMessageService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WishMessageService.swift; sourceTree = "<group>"; };
-		58F0F5B130F191CB76DB83CC /* MessageBubble.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageBubble.swift; sourceTree = "<group>"; };
-		55B3E30B5B5D30A718724250 /* EntraideView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EntraideView.swift; sourceTree = "<group>"; };
-		64A31455759F0D2673A3A174 /* EntraideViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EntraideViewModel.swift; sourceTree = "<group>"; };
-		53203562F473A3E6BD0ECC06 /* WishCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WishCard.swift; sourceTree = "<group>"; };
-		E05EB879C87356D69F9489A6 /* WishDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WishDetailView.swift; sourceTree = "<group>"; };
-		12CD4CA251235E5ADD02FE90 /* WishDetailViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WishDetailViewModel.swift; sourceTree = "<group>"; };
-		5729A67B6A84DC629D5E0E70 /* CreateWishSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateWishSheet.swift; sourceTree = "<group>"; };
-		01DC52B5F972089F4E983F51 /* CreateWishViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateWishViewModel.swift; sourceTree = "<group>"; };
-		8421299145572BD80922201E /* WishMessagesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WishMessagesView.swift; sourceTree = "<group>"; };
-		98821C8E238CA8C40CBC974D /* WishMessagesViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WishMessagesViewModel.swift; sourceTree = "<group>"; };
-		2E2F99D6217D6E8B5CDF3D60 /* MyWishesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MyWishesView.swift; sourceTree = "<group>"; };
-		1744A9EA0555F8F68B27DF73 /* MyWishesViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MyWishesViewModel.swift; sourceTree = "<group>"; };
-		DD62B53D9E28CE73279B751F /* ReportWishSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReportWishSheet.swift; sourceTree = "<group>"; };
-		AB746F8E4C0CA62230678B26 /* WishStatusBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WishStatusBadge.swift; sourceTree = "<group>"; };
-		692F105AB59AB2CCA6E9CE33 /* WishCategoryChip.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WishCategoryChip.swift; sourceTree = "<group>"; };
-		8262AB8C23B2EE20424C1B5D /* CategoryGridPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategoryGridPicker.swift; sourceTree = "<group>"; };
 		AA0000000000000000000001 /* Spacing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Spacing.swift; sourceTree = "<group>"; };
 		AA0000000000000000000002 /* Radius.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Radius.swift; sourceTree = "<group>"; };
 		AA0000000000000000000003 /* Shadows.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Shadows.swift; sourceTree = "<group>"; };
@@ -247,6 +237,17 @@
 		AA0000000000000000000013 /* OffriiTooltip.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OffriiTooltip.swift; sourceTree = "<group>"; };
 		AA0000000000000000000014 /* OffriiSpinner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OffriiSpinner.swift; sourceTree = "<group>"; };
 		AA0000000000000000000015 /* OnboardingTipManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingTipManager.swift; sourceTree = "<group>"; };
+		AB746F8E4C0CA62230678B26 /* WishStatusBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WishStatusBadge.swift; sourceTree = "<group>"; };
+		B62EA9A572E752338706A6D3 /* CircleMembersSheet.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CircleMembersSheet.swift; sourceTree = "<group>"; };
+		C1A0908792D02CBC0E9E8344 /* FriendsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FriendsView.swift; sourceTree = "<group>"; };
+		C600B057F0DED66541E7F7BB /* FriendService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FriendService.swift; sourceTree = "<group>"; };
+		DD62B53D9E28CE73279B751F /* ReportWishSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReportWishSheet.swift; sourceTree = "<group>"; };
+		DE2967E84D0AD47134A0925A /* CirclesListView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CirclesListView.swift; sourceTree = "<group>"; };
+		E05EB879C87356D69F9489A6 /* WishDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WishDetailView.swift; sourceTree = "<group>"; };
+		F19D296A0047D817CD0475CC /* StackedAvatarsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = StackedAvatarsView.swift; sourceTree = "<group>"; };
+		F1B347536FB260D73A7FBFDF /* Friend.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Friend.swift; sourceTree = "<group>"; };
+		FF0000000000000000000002 /* ShinyIcon.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShinyIcon.swift; sourceTree = "<group>"; };
+		FF0000000000000000000004 /* OTPField.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OTPField.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -254,6 +255,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				90DB1C562F63676B00EB59C4 /* GoogleSignIn in Frameworks */,
 				B40000000000000000000001 /* KeychainAccess in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -279,7 +281,6 @@
 				2226B543C70CC51CA48162BB /* InviteFriendsSheet.swift */,
 				B62EA9A572E752338706A6D3 /* CircleMembersSheet.swift */,
 			);
-			name = Circles;
 			path = Circles;
 			sourceTree = "<group>";
 		};
@@ -291,7 +292,6 @@
 				00A795E6C64A02C75791ABC0 /* AddFriendSheet.swift */,
 				A657449D2170CAA14D047289 /* PendingRequestsView.swift */,
 			);
-			name = Friends;
 			path = Friends;
 			sourceTree = "<group>";
 		};
@@ -398,7 +398,7 @@
 			isa = PBXGroup;
 			children = (
 				58F0F5B130F191CB76DB83CC /* MessageBubble.swift */,
-										A10000000000000000000010 /* OffriiButton.swift */,
+				A10000000000000000000010 /* OffriiButton.swift */,
 				A10000000000000000000011 /* OffriiCard.swift */,
 				A10000000000000000000012 /* OffriiChip.swift */,
 				A10000000000000000000013 /* OffriiTextField.swift */,
@@ -426,14 +426,6 @@
 				C00000000000000000000026 /* en.lproj */,
 			);
 			path = Localization;
-			sourceTree = "<group>";
-		};
-		C1LAUNCH000000000000001 /* Launch */ = {
-			isa = PBXGroup;
-			children = (
-				A1SPLASH000000000000001 /* SplashView.swift */,
-			);
-			path = Launch;
 			sourceTree = "<group>";
 		};
 		C00000000000000000000013 /* Features */ = {
@@ -591,6 +583,23 @@
 			path = en.lproj;
 			sourceTree = "<group>";
 		};
+		C1LAUNCH000000000000001 /* Launch */ = {
+			isa = PBXGroup;
+			children = (
+				A1SPLASH000000000000001 /* SplashView.swift */,
+			);
+			path = Launch;
+			sourceTree = "<group>";
+		};
+		CC0000000000000000000001 /* Shapes */ = {
+			isa = PBXGroup;
+			children = (
+				AA0000000000000000000006 /* BlobShape.swift */,
+				AA0000000000000000000007 /* AnimatableVector.swift */,
+			);
+			path = Shapes;
+			sourceTree = "<group>";
+		};
 		CC8D884B5399478BE5DAFCAD /* Entraide */ = {
 			isa = PBXGroup;
 			children = (
@@ -611,15 +620,6 @@
 				8262AB8C23B2EE20424C1B5D /* CategoryGridPicker.swift */,
 			);
 			path = Entraide;
-			sourceTree = "<group>";
-		};
-		CC0000000000000000000001 /* Shapes */ = {
-			isa = PBXGroup;
-			children = (
-				AA0000000000000000000006 /* BlobShape.swift */,
-				AA0000000000000000000007 /* AnimatableVector.swift */,
-			);
-			path = Shapes;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */

@@ -20,6 +20,7 @@ enum SSOProvider {
 
 struct SSOButton: View {
     let provider: SSOProvider
+    var isLoading: Bool = false
     let action: () -> Void
 
     @State private var isPressed = false
@@ -41,17 +42,22 @@ struct SSOButton: View {
     var body: some View {
         Button(action: action) {
             ZStack {
-                // Centered label
-                Text(provider.label)
-                    .font(OffriiTypography.subheadline)
-                    .fontWeight(.medium)
+                if isLoading {
+                    ProgressView()
+                        .tint(foregroundColor)
+                } else {
+                    // Centered label
+                    Text(provider.label)
+                        .font(OffriiTypography.subheadline)
+                        .fontWeight(.medium)
 
-                // Left-aligned icon
-                HStack {
-                    providerIcon
-                    Spacer()
+                    // Left-aligned icon
+                    HStack {
+                        providerIcon
+                        Spacer()
+                    }
+                    .padding(.leading, OffriiTheme.spacingBase)
                 }
-                .padding(.leading, OffriiTheme.spacingBase)
             }
             .foregroundColor(foregroundColor)
             .frame(maxWidth: .infinity)

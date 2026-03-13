@@ -11,6 +11,7 @@ pub struct User {
     pub display_name: Option<String>,
     pub oauth_provider: Option<String>,
     pub oauth_provider_id: Option<String>,
+    pub email_verified: bool,
     pub reminder_freq: String,
     pub reminder_time: NaiveTime,
     pub timezone: String,
