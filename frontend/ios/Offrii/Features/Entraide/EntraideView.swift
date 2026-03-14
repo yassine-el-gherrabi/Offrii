@@ -3,6 +3,7 @@ import SwiftUI
 // MARK: - EntraideView
 
 struct EntraideView: View {
+    @Environment(AuthManager.self) private var authManager
     @Environment(OnboardingTipManager.self) private var tipManager
     @State private var viewModel = EntraideViewModel()
     @State private var showCreateSheet = false
@@ -29,15 +30,23 @@ struct EntraideView: View {
                     subtitle: NSLocalizedString("entraide.subtitle", comment: ""),
                     variant: .entraide
                 ) {
-                    NavigationLink {
-                        MyWishesView()
-                    } label: {
-                        Image(systemName: "list.bullet")
-                            .font(.system(size: 18, weight: .semibold))
-                            .foregroundColor(.white)
-                            .frame(width: 36, height: 36)
-                            .background(Color.white.opacity(0.2))
-                            .cornerRadius(OffriiTheme.cornerRadiusSM)
+                    HStack(spacing: 12) {
+                        NavigationLink {
+                            MyWishesView()
+                        } label: {
+                            Image(systemName: "list.bullet")
+                                .font(.system(size: 18, weight: .semibold))
+                                .foregroundColor(.white)
+                                .frame(width: 36, height: 36)
+                                .background(Color.white.opacity(0.2))
+                                .cornerRadius(OffriiTheme.cornerRadiusSM)
+                        }
+
+                        NavigationLink(destination: ProfileView()) {
+                            ProfileAvatarButton(
+                                initials: ProfileAvatarButton.initials(from: authManager.currentUser?.displayName)
+                            )
+                        }
                     }
                 }
 

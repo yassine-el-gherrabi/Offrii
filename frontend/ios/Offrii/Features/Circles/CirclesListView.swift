@@ -16,24 +16,32 @@ struct CirclesListView: View {
                     title: NSLocalizedString("circles.title", comment: ""),
                     variant: .cercles
                 ) {
-                    NavigationLink {
-                        PendingRequestsView()
-                            .environment(authManager)
-                    } label: {
-                        ZStack(alignment: .topTrailing) {
-                            Image(systemName: "bell.fill")
-                                .font(.system(size: 20))
-                                .foregroundColor(.white)
-
-                            if viewModel.pendingRequestsCount > 0 {
-                                Text("\(viewModel.pendingRequestsCount)")
-                                    .font(.system(size: 10, weight: .bold))
+                    HStack(spacing: 12) {
+                        NavigationLink {
+                            PendingRequestsView()
+                                .environment(authManager)
+                        } label: {
+                            ZStack(alignment: .topTrailing) {
+                                Image(systemName: "bell.fill")
+                                    .font(.system(size: 20))
                                     .foregroundColor(.white)
-                                    .padding(4)
-                                    .background(OffriiTheme.danger)
-                                    .clipShape(Circle())
-                                    .offset(x: 8, y: -8)
+
+                                if viewModel.pendingRequestsCount > 0 {
+                                    Text("\(viewModel.pendingRequestsCount)")
+                                        .font(.system(size: 10, weight: .bold))
+                                        .foregroundColor(.white)
+                                        .padding(4)
+                                        .background(OffriiTheme.danger)
+                                        .clipShape(Circle())
+                                        .offset(x: 8, y: -8)
+                                }
                             }
+                        }
+
+                        NavigationLink(destination: ProfileView()) {
+                            ProfileAvatarButton(
+                                initials: ProfileAvatarButton.initials(from: authManager.currentUser?.displayName)
+                            )
                         }
                     }
                 }

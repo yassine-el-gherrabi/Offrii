@@ -103,6 +103,7 @@ struct BlobConfig {
 
 enum BlobPreset {
     case auth
+    case home
     case envies
     case cercles
     case entraide
@@ -115,6 +116,11 @@ enum BlobPreset {
                 BlobConfig(color: OffriiTheme.primary, size: 280, opacity: 0.08, offsetX: 120, offsetY: -80),
                 BlobConfig(color: OffriiTheme.accent, size: 220, opacity: 0.06, offsetX: -100, offsetY: 200),
                 BlobConfig(color: Color(red: 0.96, green: 0.68, blue: 0.22), size: 200, opacity: 0.07, offsetX: -110, offsetY: -200),
+            ]
+        case .home:
+            return [
+                BlobConfig(color: OffriiTheme.primary, size: 200, opacity: 0.08, offsetX: 120, offsetY: -30),
+                BlobConfig(color: OffriiTheme.primaryLight, size: 160, opacity: 0.06, offsetX: -80, offsetY: 20),
             ]
         case .envies:
             return [

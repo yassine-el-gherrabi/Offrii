@@ -4,6 +4,7 @@ struct ProfileView: View {
     @Environment(AuthManager.self) private var authManager
     @Environment(OnboardingTipManager.self) private var tipManager
     @State private var viewModel = ProfileViewModel()
+    @State private var profileProgress = ProfileProgress()
     var body: some View {
         ZStack {
             OffriiTheme.background.ignoresSafeArea()
@@ -33,6 +34,12 @@ struct ProfileView: View {
                     .padding(.bottom, OffriiTheme.spacingXXL)
 
                     VStack(spacing: OffriiTheme.spacingBase) {
+                        // Profile progress
+                        if profileProgress.percentage < 100 {
+                            ProfileProgressCard(progress: profileProgress)
+                                .padding(.horizontal, OffriiTheme.spacingLG)
+                        }
+
                         if let error = viewModel.loadError {
                             HStack {
                                 Image(systemName: "exclamationmark.triangle.fill")
@@ -211,11 +218,31 @@ struct ProfileView: View {
         .navigationBarHidden(true)
         .task {
             await viewModel.loadProfile()
+            await computeProfileProgress()
             if viewModel.username.isEmpty {
                 tipManager.showIfNeeded(.profileUsername)
             } else if viewModel.reminderFreqLabel == NSLocalizedString("reminder.never", comment: "") {
                 tipManager.showIfNeeded(.profileReminders)
             }
+        }
+    }
+
+    // MARK: - Profile Progress
+
+    private func computeProfileProgress() async {
+        guard let user = authManager.currentUser else { return }
+        profileProgress.hasUsername = !user.username.isEmpty && user.username != user.email
+        profileProgress.hasDisplayName = user.displayName != nil && !(user.displayName ?? "").isEmpty
+        profileProgress.hasReminders = user.reminderFreq != "never"
+
+        if let items = try? await ItemService.shared.listItems(page: 1, perPage: 1) {
+            profileProgress.hasFirstItem = items.total > 0
+        }
+        if let circles = try? await CircleService.shared.listCircles() {
+            profileProgress.hasFirstCircle = !circles.isEmpty
+        }
+        if let friends = try? await FriendService.shared.listFriends() {
+            profileProgress.hasFirstFriend = !friends.isEmpty
         }
     }
 

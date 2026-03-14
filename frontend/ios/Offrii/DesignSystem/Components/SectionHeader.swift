@@ -3,6 +3,7 @@ import SwiftUI
 // MARK: - Header Variant
 
 enum HeaderVariant {
+    case home
     case envies
     case cercles
     case entraide
@@ -11,6 +12,7 @@ enum HeaderVariant {
 
     var gradient: [Color] {
         switch self {
+        case .home:     return [OffriiTheme.primary, OffriiTheme.primaryLight]
         case .envies:   return [OffriiTheme.primary, OffriiTheme.primary.opacity(0.85)]
         case .cercles:  return [OffriiTheme.secondary, OffriiTheme.secondary.opacity(0.85)]
         case .entraide: return [OffriiTheme.accent, OffriiTheme.primary.opacity(0.8)]
@@ -21,6 +23,7 @@ enum HeaderVariant {
 
     var blobPreset: BlobPreset {
         switch self {
+        case .home:     return .home
         case .envies:   return .envies
         case .cercles:  return .cercles
         case .entraide: return .entraide
@@ -31,6 +34,7 @@ enum HeaderVariant {
 
     var height: CGFloat {
         switch self {
+        case .home:   return 120
         case .detail: return 100
         default:      return 160
         }

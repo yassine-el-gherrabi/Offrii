@@ -1,8 +1,10 @@
 /* Tabs */
+"tab.home" = "Home";
 "tab.envies" = "Wishes";
+"tab.create" = "Create";
 "tab.cercles" = "Circles";
-"tab.entraide" = "Help";
 "tab.profil" = "Profile";
+"tab.entraide" = "Help";
 
 /* Auth */
 "auth.login" = "Sign in";
@@ -338,3 +340,36 @@
 /* Circles - Detail */
 "circles.detail.noItemsSubtitle" = "Share items from your wishlist to this circle";
 "circles.detail.noActivitySubtitle" = "Activity will appear when members interact";
+
+/* Home */
+"home.greeting" = "Hello %@!";
+"home.greetingDefault" = "Hello!";
+
+/* Quick Start */
+"home.quickStart.title" = "Your first steps";
+"home.quickStart.addWish" = "Add your first wish";
+"home.quickStart.createCircle" = "Create a circle";
+"home.quickStart.inviteFriend" = "Invite a friend";
+"home.quickStart.shareList" = "Share your list";
+"home.quickStart.completed" = "Done!";
+
+/* Wishlist Preview */
+"home.wishlistPreview.title" = "My wishes";
+"home.wishlistPreview.seeAll" = "See all";
+
+/* Community Spotlight */
+"home.community.title" = "Community help";
+"home.community.seeAll" = "See all";
+
+/* Quick Create */
+"create.title" = "Create";
+"create.addWish" = "Add a wish";
+"create.addWishSubtitle" = "To your personal list";
+"create.createCircle" = "Create a circle";
+"create.createCircleSubtitle" = "Share with loved ones";
+"create.publishNeed" = "Publish a need";
+"create.publishNeedSubtitle" = "Ask the community";
+
+/* Profile Progress */
+"progress.title" = "Profile %d%% complete";
+"progress.nextStep" = "Next: %@";

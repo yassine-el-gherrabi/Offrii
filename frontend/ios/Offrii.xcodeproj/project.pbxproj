@@ -121,6 +121,16 @@
 		FE208C7C4F62D4FA39CE6566 /* Circle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E7C15540F6DD23DE2E5AE6C /* Circle.swift */; };
 		FF0000000000000000000001 /* ShinyIcon.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF0000000000000000000002 /* ShinyIcon.swift */; };
 		FF0000000000000000000003 /* OTPField.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF0000000000000000000004 /* OTPField.swift */; };
+		BB0000000000000000000016 /* ProfileAvatarButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000016 /* ProfileAvatarButton.swift */; };
+		4B1A9B7C129CB3C414C47584 /* QuickCreateSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6DE51F114489FF7F830B2B0 /* QuickCreateSheet.swift */; };
+		FFD97E5231302E4645E690FB /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E8DF5B53CB64703972DCEE8 /* HomeView.swift */; };
+		A78D6DF4E941FAAC152F11D6 /* HomeViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1421F430C8534068A90062B7 /* HomeViewModel.swift */; };
+		F6CD535260ACFC5BF37C9137 /* CommunitySpotlightSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1772A7431B394CB8D2A8C4C7 /* CommunitySpotlightSection.swift */; };
+		16ADBEF5AC5D0893411CD376 /* HomeSummaryCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7199E774F0E4246F8EBCCBF4 /* HomeSummaryCard.swift */; };
+		821D5BB6CF94B930F802F6E1 /* ProfileProgress.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76631281854337CE0C72D6BD /* ProfileProgress.swift */; };
+		9BE2E54145DD2F357A4186FC /* ProfileProgressCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7CD43FCFA25254BFA5826718 /* ProfileProgressCard.swift */; };
+		BB23760E3BC7BFB013565463 /* QuickStartSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 56DABF9DABE57B94481D649C /* QuickStartSection.swift */; };
+		321B1A5FCD094D16E6F36A9C /* WishlistPreviewSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 647F61CB6950B77626E4ACDB /* WishlistPreviewSection.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -237,6 +247,7 @@
 		AA0000000000000000000013 /* OffriiTooltip.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OffriiTooltip.swift; sourceTree = "<group>"; };
 		AA0000000000000000000014 /* OffriiSpinner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OffriiSpinner.swift; sourceTree = "<group>"; };
 		AA0000000000000000000015 /* OnboardingTipManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingTipManager.swift; sourceTree = "<group>"; };
+		AA0000000000000000000016 /* ProfileAvatarButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileAvatarButton.swift; sourceTree = "<group>"; };
 		AB746F8E4C0CA62230678B26 /* WishStatusBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WishStatusBadge.swift; sourceTree = "<group>"; };
 		B62EA9A572E752338706A6D3 /* CircleMembersSheet.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CircleMembersSheet.swift; sourceTree = "<group>"; };
 		C1A0908792D02CBC0E9E8344 /* FriendsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FriendsView.swift; sourceTree = "<group>"; };
@@ -248,6 +259,15 @@
 		F1B347536FB260D73A7FBFDF /* Friend.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Friend.swift; sourceTree = "<group>"; };
 		FF0000000000000000000002 /* ShinyIcon.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShinyIcon.swift; sourceTree = "<group>"; };
 		FF0000000000000000000004 /* OTPField.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OTPField.swift; sourceTree = "<group>"; };
+		B6DE51F114489FF7F830B2B0 /* QuickCreateSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickCreateSheet.swift; sourceTree = "<group>"; };
+		4E8DF5B53CB64703972DCEE8 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
+		1421F430C8534068A90062B7 /* HomeViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeViewModel.swift; sourceTree = "<group>"; };
+		1772A7431B394CB8D2A8C4C7 /* CommunitySpotlightSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommunitySpotlightSection.swift; sourceTree = "<group>"; };
+		7199E774F0E4246F8EBCCBF4 /* HomeSummaryCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeSummaryCard.swift; sourceTree = "<group>"; };
+		76631281854337CE0C72D6BD /* ProfileProgress.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileProgress.swift; sourceTree = "<group>"; };
+		7CD43FCFA25254BFA5826718 /* ProfileProgressCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileProgressCard.swift; sourceTree = "<group>"; };
+		56DABF9DABE57B94481D649C /* QuickStartSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickStartSection.swift; sourceTree = "<group>"; };
+		647F61CB6950B77626E4ACDB /* WishlistPreviewSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WishlistPreviewSection.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -415,6 +435,8 @@
 				AA0000000000000000000012 /* OffriiToast.swift */,
 				AA0000000000000000000013 /* OffriiTooltip.swift */,
 				AA0000000000000000000014 /* OffriiSpinner.swift */,
+				AA0000000000000000000016 /* ProfileAvatarButton.swift */,
+				B6DE51F114489FF7F830B2B0 /* QuickCreateSheet.swift */,
 			);
 			path = Components;
 			sourceTree = "<group>";
@@ -442,6 +464,7 @@
 				C00000000000000000000020 /* Wishlist */,
 				2D9A45C1267D0295E8D3E9D7 /* Circles */,
 				4C50F0D971CD9FDC3A0D259D /* Friends */,
+				75248489B823996A95273006 /* Home */,
 			);
 			path = Features;
 			sourceTree = "<group>";
@@ -622,6 +645,29 @@
 			path = Entraide;
 			sourceTree = "<group>";
 		};
+		773CFB0948796522E1C97C46 /* Components */ = {
+			isa = PBXGroup;
+			children = (
+				1772A7431B394CB8D2A8C4C7 /* CommunitySpotlightSection.swift */,
+				7199E774F0E4246F8EBCCBF4 /* HomeSummaryCard.swift */,
+				76631281854337CE0C72D6BD /* ProfileProgress.swift */,
+				7CD43FCFA25254BFA5826718 /* ProfileProgressCard.swift */,
+				56DABF9DABE57B94481D649C /* QuickStartSection.swift */,
+				647F61CB6950B77626E4ACDB /* WishlistPreviewSection.swift */,
+			);
+			path = Components;
+			sourceTree = "<group>";
+		};
+		75248489B823996A95273006 /* Home */ = {
+			isa = PBXGroup;
+			children = (
+				4E8DF5B53CB64703972DCEE8 /* HomeView.swift */,
+				1421F430C8534068A90062B7 /* HomeViewModel.swift */,
+				773CFB0948796522E1C97C46 /* Components */,
+			);
+			path = Home;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -783,6 +829,7 @@
 				B10000000000000000000046 /* SSOButton.swift in Sources */,
 				FF0000000000000000000001 /* ShinyIcon.swift in Sources */,
 				FF0000000000000000000003 /* OTPField.swift in Sources */,
+				BB0000000000000000000016 /* ProfileAvatarButton.swift in Sources */,
 				FE208C7C4F62D4FA39CE6566 /* Circle.swift in Sources */,
 				103EEE9EB1A6E8CF566004BD /* CircleModels.swift in Sources */,
 				D650FB03CE091B982E86B409 /* Friend.swift in Sources */,
@@ -835,6 +882,15 @@
 				BB0000000000000000000013 /* OffriiTooltip.swift in Sources */,
 				BB0000000000000000000014 /* OffriiSpinner.swift in Sources */,
 				BB0000000000000000000015 /* OnboardingTipManager.swift in Sources */,
+				4B1A9B7C129CB3C414C47584 /* QuickCreateSheet.swift in Sources */,
+				FFD97E5231302E4645E690FB /* HomeView.swift in Sources */,
+				A78D6DF4E941FAAC152F11D6 /* HomeViewModel.swift in Sources */,
+				F6CD535260ACFC5BF37C9137 /* CommunitySpotlightSection.swift in Sources */,
+				16ADBEF5AC5D0893411CD376 /* HomeSummaryCard.swift in Sources */,
+				821D5BB6CF94B930F802F6E1 /* ProfileProgress.swift in Sources */,
+				9BE2E54145DD2F357A4186FC /* ProfileProgressCard.swift in Sources */,
+				BB23760E3BC7BFB013565463 /* QuickStartSection.swift in Sources */,
+				321B1A5FCD094D16E6F36A9C /* WishlistPreviewSection.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

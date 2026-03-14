@@ -72,16 +72,23 @@ struct AuthContainerView: View {
 }
 
 struct MainTabView: View {
-    @State private var selectedTab: TabItem = .envies
+    @State private var selectedTab: TabItem = .home
+    @State private var showCreateSheet = false
 
     var body: some View {
         VStack(spacing: 0) {
             Group {
                 switch selectedTab {
+                case .home:
+                    NavigationStack {
+                        HomeView()
+                    }
                 case .envies:
                     NavigationStack {
                         WishlistView()
                     }
+                case .create:
+                    EmptyView()
                 case .cercles:
                     NavigationStack {
                         CirclesListView()
@@ -90,17 +97,19 @@ struct MainTabView: View {
                     NavigationStack {
                         EntraideView()
                     }
-                case .profil:
-                    NavigationStack {
-                        ProfileView()
-                    }
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-            TabBarView(selectedTab: $selectedTab)
+            TabBarView(selectedTab: $selectedTab, onCreateTap: {
+                showCreateSheet = true
+            })
         }
         .ignoresSafeArea(.keyboard)
+        .sheet(isPresented: $showCreateSheet) {
+            QuickCreateSheet()
+                .presentationDetents([.medium])
+        }
     }
 }
 

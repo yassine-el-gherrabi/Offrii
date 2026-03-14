@@ -16,7 +16,13 @@ struct WishlistView: View {
                 SectionHeader(
                     title: NSLocalizedString("wishlist.title", comment: ""),
                     variant: .envies
-                )
+                ) {
+                    NavigationLink(destination: ProfileView()) {
+                        ProfileAvatarButton(
+                            initials: ProfileAvatarButton.initials(from: authManager.currentUser?.displayName)
+                        )
+                    }
+                }
 
                 // Category chips
                 ScrollView(.horizontal, showsIndicators: false) {
