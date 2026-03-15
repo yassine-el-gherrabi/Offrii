@@ -62,7 +62,9 @@ struct CircleDetailView: View {
                 .presentationDetents([.medium])
             }
         }
-        .sheet(item: $selectedItemId) { itemId in
+        .sheet(item: $selectedItemId, onDismiss: {
+            Task { await reload() }
+        }) { itemId in
             ItemDetailSheet(itemId: itemId, circleId: circleId)
                 .environment(authManager)
                 .presentationDetents([.medium, .large])
@@ -322,6 +324,7 @@ struct CircleDetailView: View {
                                             Task {
                                                 await viewModel.unclaimItem(itemId: item.id)
                                                 await viewModel.loadItems(circleId: circleId)
+                                                await viewModel.loadFeed(circleId: circleId)
                                             }
                                         } label: {
                                             Label(
@@ -335,6 +338,7 @@ struct CircleDetailView: View {
                                         Task {
                                             await viewModel.claimItem(itemId: item.id)
                                             await viewModel.loadItems(circleId: circleId)
+                                                await viewModel.loadFeed(circleId: circleId)
                                         }
                                     } label: {
                                         Label(
@@ -617,6 +621,7 @@ struct CircleDetailView: View {
                     Task {
                         await viewModel.unclaimItem(itemId: item.id)
                         await viewModel.loadItems(circleId: circleId)
+                                                await viewModel.loadFeed(circleId: circleId)
                     }
                 } label: {
                     Label(
@@ -636,6 +641,7 @@ struct CircleDetailView: View {
                 Task {
                     await viewModel.claimItem(itemId: item.id)
                     await viewModel.loadItems(circleId: circleId)
+                                                await viewModel.loadFeed(circleId: circleId)
                 }
             } label: {
                 Text(NSLocalizedString("circles.detail.handleIt", comment: ""))

@@ -107,7 +107,9 @@ struct WishlistView: View {
                 await viewModel.quickAdd(name: name, price: price, categoryId: categoryId, priority: priority, imageUrl: imageUrl, links: links)
             }
         }
-        .sheet(item: $selectedItemId) { itemId in
+        .sheet(item: $selectedItemId, onDismiss: {
+            Task { await viewModel.loadItems() }
+        }) { itemId in
             ItemDetailSheet(itemId: itemId)
                 .environment(authManager)
                 .presentationDetents([.medium, .large])

@@ -181,6 +181,9 @@ struct CirclesListView: View {
             await viewModel.loadAll()
             tipManager.showIfNeeded(.circlesCreate)
         }
+        .onAppear {
+            Task { await viewModel.loadCircles() }
+        }
         .refreshable {
             await viewModel.loadAll()
         }
