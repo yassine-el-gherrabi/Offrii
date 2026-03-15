@@ -45,7 +45,7 @@ final class AuthViewModel {
     var isLoading: Bool { state == .loading }
 
     func isSSOLoading(_ provider: SSOProvider) -> Bool {
-        if case .loadingSSO(let p) = state { return p == provider }
+        if case .loadingSSO(let current) = state { return current == provider }
         return false
     }
 
@@ -283,40 +283,12 @@ final class AuthViewModel {
         }
         switch apiError {
         case .badRequest(let msg):
-            let lower = msg.lowercased()
-            if lower.contains("email") && lower.contains("taken") {
-                return NSLocalizedString("error.emailTaken", comment: "")
-            }
-            if lower.contains("password_common") {
-                return NSLocalizedString("error.passwordCommon", comment: "")
-            }
-            if lower.contains("password_breached") {
-                return NSLocalizedString("error.passwordBreached", comment: "")
-            }
-            if lower.contains("password_length") {
-                return NSLocalizedString("error.passwordTooShort", comment: "")
-            }
-            if lower.contains("invalid_or_expired_code") {
-                return NSLocalizedString("error.invalidOrExpiredCode", comment: "")
-            }
-            if lower.contains("too_many_attempts") {
-                return NSLocalizedString("error.tooManyAttempts", comment: "")
-            }
-            return msg
+            return mapBadRequest(msg)
         case .conflict(let msg):
-            let lower = msg.lowercased()
-            if lower.contains("email_uses_oauth:google") {
-                return NSLocalizedString("error.emailUsesGoogle", comment: "")
-            }
-            if lower.contains("email_uses_oauth:apple") {
-                return NSLocalizedString("error.emailUsesApple", comment: "")
-            }
-            if lower.contains("email") {
-                return NSLocalizedString("error.emailTaken", comment: "")
-            }
-            return msg
+            return mapConflict(msg)
         case .unauthorized(let msg):
-            if msg.lowercased().contains("credentials") || msg.lowercased().contains("invalid") {
+            let lower = msg.lowercased()
+            if lower.contains("credentials") || lower.contains("invalid") {
                 return NSLocalizedString("error.invalidCredentials", comment: "")
             }
             return msg
@@ -329,5 +301,37 @@ final class AuthViewModel {
         default:
             return apiError.localizedDescription
         }
+    }
+
+    private func mapBadRequest(_ msg: String) -> String {
+        let lower = msg.lowercased()
+        let mapping: [(String, String)] = [
+            ("password_common", "error.passwordCommon"),
+            ("password_breached", "error.passwordBreached"),
+            ("password_length", "error.passwordTooShort"),
+            ("invalid_or_expired_code", "error.invalidOrExpiredCode"),
+            ("too_many_attempts", "error.tooManyAttempts"),
+        ]
+        if lower.contains("email") && lower.contains("taken") {
+            return NSLocalizedString("error.emailTaken", comment: "")
+        }
+        for (keyword, key) in mapping where lower.contains(keyword) {
+            return NSLocalizedString(key, comment: "")
+        }
+        return msg
+    }
+
+    private func mapConflict(_ msg: String) -> String {
+        let lower = msg.lowercased()
+        if lower.contains("email_uses_oauth:google") {
+            return NSLocalizedString("error.emailUsesGoogle", comment: "")
+        }
+        if lower.contains("email_uses_oauth:apple") {
+            return NSLocalizedString("error.emailUsesApple", comment: "")
+        }
+        if lower.contains("email") {
+            return NSLocalizedString("error.emailTaken", comment: "")
+        }
+        return msg
     }
 }

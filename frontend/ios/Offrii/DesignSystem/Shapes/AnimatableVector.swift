@@ -12,10 +12,10 @@ struct AnimatableVector: VectorArithmetic {
     static func + (lhs: AnimatableVector, rhs: AnimatableVector) -> AnimatableVector {
         let count = max(lhs.values.count, rhs.values.count)
         var result = [CGFloat](repeating: 0, count: count)
-        for i in 0..<count {
-            let l = i < lhs.values.count ? lhs.values[i] : 0
-            let r = i < rhs.values.count ? rhs.values[i] : 0
-            result[i] = l + r
+        for idx in 0..<count {
+            let lVal = idx < lhs.values.count ? lhs.values[idx] : 0
+            let rVal = idx < rhs.values.count ? rhs.values[idx] : 0
+            result[idx] = lVal + rVal
         }
         return AnimatableVector(values: result)
     }
@@ -23,10 +23,10 @@ struct AnimatableVector: VectorArithmetic {
     static func - (lhs: AnimatableVector, rhs: AnimatableVector) -> AnimatableVector {
         let count = max(lhs.values.count, rhs.values.count)
         var result = [CGFloat](repeating: 0, count: count)
-        for i in 0..<count {
-            let l = i < lhs.values.count ? lhs.values[i] : 0
-            let r = i < rhs.values.count ? rhs.values[i] : 0
-            result[i] = l - r
+        for idx in 0..<count {
+            let lVal = idx < lhs.values.count ? lhs.values[idx] : 0
+            let rVal = idx < rhs.values.count ? rhs.values[idx] : 0
+            result[idx] = lVal - rVal
         }
         return AnimatableVector(values: result)
     }

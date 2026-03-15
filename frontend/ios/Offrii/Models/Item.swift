@@ -74,8 +74,8 @@ struct Item: Codable, Identifiable, Equatable {
 
     /// Display image priority: uploaded > OG > nil
     var displayImageUrl: URL? {
-        if let u = imageUrl, let url = URL(string: u) { return url }
-        if let u = ogImageUrl, let url = URL(string: u) { return url }
+        if let imageUrl, let url = URL(string: imageUrl) { return url }
+        if let ogImageUrl, let url = URL(string: ogImageUrl) { return url }
         return nil
     }
 

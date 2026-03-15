@@ -154,9 +154,9 @@ final class SharedCircleInfoTests: XCTestCase {
     private let decoder = JSONDecoder()
 
     func testDecodeGroupCircle() throws {
-        let json = """
+        let json = Data("""
         {"id": "550e8400-e29b-41d4-a716-446655440000", "name": "Famille", "is_direct": false}
-        """.data(using: .utf8)!
+        """.utf8)
 
         let info = try decoder.decode(SharedCircleInfo.self, from: json)
 
@@ -165,9 +165,9 @@ final class SharedCircleInfoTests: XCTestCase {
     }
 
     func testDecodeDirectCircle() throws {
-        let json = """
+        let json = Data("""
         {"id": "550e8400-e29b-41d4-a716-446655440000", "name": "Nicolas", "is_direct": true}
-        """.data(using: .utf8)!
+        """.utf8)
 
         let info = try decoder.decode(SharedCircleInfo.self, from: json)
 
@@ -177,9 +177,9 @@ final class SharedCircleInfoTests: XCTestCase {
 
     func testDecodeWithoutIsDirect() throws {
         // is_direct is optional — should default to nil
-        let json = """
+        let json = Data("""
         {"id": "550e8400-e29b-41d4-a716-446655440000", "name": "Test"}
-        """.data(using: .utf8)!
+        """.utf8)
 
         let info = try decoder.decode(SharedCircleInfo.self, from: json)
 
@@ -187,9 +187,9 @@ final class SharedCircleInfoTests: XCTestCase {
     }
 
     func testInitialUppercased() throws {
-        let json = """
+        let json = Data("""
         {"id": "550e8400-e29b-41d4-a716-446655440000", "name": "famille", "is_direct": false}
-        """.data(using: .utf8)!
+        """.utf8)
 
         let info = try decoder.decode(SharedCircleInfo.self, from: json)
 
@@ -197,9 +197,9 @@ final class SharedCircleInfoTests: XCTestCase {
     }
 
     func testInitialEmptyName() throws {
-        let json = """
+        let json = Data("""
         {"id": "550e8400-e29b-41d4-a716-446655440000", "name": "", "is_direct": false}
-        """.data(using: .utf8)!
+        """.utf8)
 
         let info = try decoder.decode(SharedCircleInfo.self, from: json)
 

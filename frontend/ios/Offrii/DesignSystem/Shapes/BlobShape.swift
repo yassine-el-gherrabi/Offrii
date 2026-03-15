@@ -11,8 +11,8 @@ struct BlobShape: Shape {
     }
 
     func path(in rect: CGRect) -> Path {
-        let w = rect.width
-        let h = rect.height
+        let width = rect.width
+        let height = rect.height
 
         // Use 8 control point offsets (4 pairs of x,y deltas)
         let cp = controlPoints.values
@@ -28,30 +28,30 @@ struct BlobShape: Shape {
         var path = Path()
 
         // Organic blob using cubic bezier curves
-        path.move(to: CGPoint(x: w * 0.5, y: h * 0.0))
+        path.move(to: CGPoint(x: width * 0.5, y: height * 0.0))
 
         path.addCurve(
-            to: CGPoint(x: w * 1.0, y: h * 0.4),
-            control1: CGPoint(x: w * 0.75 + d0x, y: h * 0.0 + d0y),
-            control2: CGPoint(x: w * 1.0 + d1x, y: h * 0.15 + d1y)
+            to: CGPoint(x: width * 1.0, y: height * 0.4),
+            control1: CGPoint(x: width * 0.75 + d0x, y: height * 0.0 + d0y),
+            control2: CGPoint(x: width * 1.0 + d1x, y: height * 0.15 + d1y)
         )
 
         path.addCurve(
-            to: CGPoint(x: w * 0.6, y: h * 1.0),
-            control1: CGPoint(x: w * 1.0 + d2x, y: h * 0.7 + d2y),
-            control2: CGPoint(x: w * 0.85 + d3x, y: h * 1.0 + d3y)
+            to: CGPoint(x: width * 0.6, y: height * 1.0),
+            control1: CGPoint(x: width * 1.0 + d2x, y: height * 0.7 + d2y),
+            control2: CGPoint(x: width * 0.85 + d3x, y: height * 1.0 + d3y)
         )
 
         path.addCurve(
-            to: CGPoint(x: w * 0.0, y: h * 0.6),
-            control1: CGPoint(x: w * 0.3 - d3x, y: h * 1.0 - d3y),
-            control2: CGPoint(x: w * 0.0 - d2x, y: h * 0.85 - d2y)
+            to: CGPoint(x: width * 0.0, y: height * 0.6),
+            control1: CGPoint(x: width * 0.3 - d3x, y: height * 1.0 - d3y),
+            control2: CGPoint(x: width * 0.0 - d2x, y: height * 0.85 - d2y)
         )
 
         path.addCurve(
-            to: CGPoint(x: w * 0.5, y: h * 0.0),
-            control1: CGPoint(x: w * 0.0 - d1x, y: h * 0.3 - d1y),
-            control2: CGPoint(x: w * 0.25 - d0x, y: h * 0.0 - d0y)
+            to: CGPoint(x: width * 0.5, y: height * 0.0),
+            control1: CGPoint(x: width * 0.0 - d1x, y: height * 0.3 - d1y),
+            control2: CGPoint(x: width * 0.25 - d0x, y: height * 0.0 - d0y)
         )
 
         path.closeSubpath()

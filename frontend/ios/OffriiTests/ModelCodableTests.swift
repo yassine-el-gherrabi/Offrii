@@ -12,7 +12,7 @@ final class ModelCodableTests: XCTestCase {
     // MARK: - Item
 
     func testItemDecoding_snakeCase() throws {
-        let json = """
+        let json = Data("""
         {
             "id": "550e8400-e29b-41d4-a716-446655440000",
             "name": "iPhone 16",
@@ -29,7 +29,7 @@ final class ModelCodableTests: XCTestCase {
             "is_private": false,
             "shared_circles": []
         }
-        """.data(using: .utf8)!
+        """.utf8)
 
         let item = try decoder.decode(Item.self, from: json)
 
@@ -73,7 +73,7 @@ final class ModelCodableTests: XCTestCase {
     // MARK: - User
 
     func testUserDecoding_snakeCase() throws {
-        let json = """
+        let json = Data("""
         {
             "id": "550e8400-e29b-41d4-a716-446655440000",
             "email": "test@example.com",
@@ -86,7 +86,7 @@ final class ModelCodableTests: XCTestCase {
             "created_at": "2026-01-15T10:30:00Z",
             "updated_at": "2026-01-15T10:30:00Z"
         }
-        """.data(using: .utf8)!
+        """.utf8)
 
         let user = try decoder.decode(User.self, from: json)
 
@@ -98,7 +98,7 @@ final class ModelCodableTests: XCTestCase {
     }
 
     func testUserDecoding_nullDisplayName() throws {
-        let json = """
+        let json = Data("""
         {
             "id": "550e8400-e29b-41d4-a716-446655440000",
             "email": "test@example.com",
@@ -111,7 +111,7 @@ final class ModelCodableTests: XCTestCase {
             "created_at": "2026-01-15T10:30:00Z",
             "updated_at": "2026-01-15T10:30:00Z"
         }
-        """.data(using: .utf8)!
+        """.utf8)
 
         let user = try decoder.decode(User.self, from: json)
         XCTAssertNil(user.displayName)
@@ -121,12 +121,12 @@ final class ModelCodableTests: XCTestCase {
     // MARK: - AuthTokens
 
     func testAuthTokensDecoding() throws {
-        let json = """
+        let json = Data("""
         {
             "access_token": "eyJhbGciOiJIUzI1NiJ9.token",
             "refresh_token": "eyJhbGciOiJIUzI1NiJ9.refresh"
         }
-        """.data(using: .utf8)!
+        """.utf8)
 
         let tokens = try decoder.decode(AuthTokens.self, from: json)
 
@@ -137,7 +137,7 @@ final class ModelCodableTests: XCTestCase {
     // MARK: - Category
 
     func testCategoryDecoding() throws {
-        let json = """
+        let json = Data("""
         {
             "id": "550e8400-e29b-41d4-a716-446655440000",
             "name": "Tech",
@@ -146,7 +146,7 @@ final class ModelCodableTests: XCTestCase {
             "position": 1,
             "created_at": "2026-01-15T10:30:00Z"
         }
-        """.data(using: .utf8)!
+        """.utf8)
 
         let category = try decoder.decode(Category.self, from: json)
 
@@ -159,14 +159,14 @@ final class ModelCodableTests: XCTestCase {
     // MARK: - ItemsListResponse
 
     func testItemsListResponseDecoding() throws {
-        let json = """
+        let json = Data("""
         {
             "items": [],
             "total": 42,
             "page": 2,
             "per_page": 20
         }
-        """.data(using: .utf8)!
+        """.utf8)
 
         let response = try decoder.decode(ItemsListResponse.self, from: json)
 
@@ -179,7 +179,7 @@ final class ModelCodableTests: XCTestCase {
     // MARK: - Helpers
 
     private func makeItem(priority: Int = 2, status: String = "active") -> Item {
-        let json = """
+        let json = Data("""
         {
             "id": "550e8400-e29b-41d4-a716-446655440000",
             "name": "Test Item",
@@ -189,7 +189,7 @@ final class ModelCodableTests: XCTestCase {
             "updated_at": "2026-01-15T10:30:00Z",
             "is_claimed": false
         }
-        """.data(using: .utf8)!
+        """.utf8)
         // swiftlint:disable:next force_try
         return try! decoder.decode(Item.self, from: json) // Safe in tests
     }

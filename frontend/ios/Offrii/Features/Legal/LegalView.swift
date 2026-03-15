@@ -32,7 +32,8 @@ struct LegalView: View {
             sectionBody("""
             Offrii est une application mobile \u{00E9}dit\u{00E9}e \u{00E0} titre personnel.
 
-            H\u{00E9}bergement : Les donn\u{00E9}es sont h\u{00E9}berg\u{00E9}es sur des serveurs s\u{00E9}curis\u{00E9}s situ\u{00E9}s en Union Europ\u{00E9}enne.
+            H\u{00E9}bergement : Les donn\u{00E9}es sont h\u{00E9}berg\u{00E9}es sur des serveurs \
+            s\u{00E9}curis\u{00E9}s situ\u{00E9}s en Union Europ\u{00E9}enne.
 
             Contact : Pour toute question, vous pouvez nous contacter via l'application.
 

@@ -296,7 +296,7 @@ struct ItemEditView: View {
         let trimmedLinks = links.map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
 
         // Upload image if selected
-        var imageUrl: String? = nil
+        var imageUrl: String?
         if let image = selectedImage {
             if let data = image.compressForUpload() {
                 do {

@@ -1,3 +1,4 @@
+// swiftlint:disable file_length
 import SwiftUI
 
 // MARK: - Share Scope
@@ -38,6 +39,7 @@ private enum LinkTTL: String, CaseIterable {
 
 // MARK: - WishlistShareSheet
 
+// swiftlint:disable:next type_body_length
 struct WishlistShareSheet: View {
     var items: [Item] = []
     var selectedItemIds: Set<UUID> = []
@@ -122,9 +124,9 @@ struct WishlistShareSheet: View {
                     .presentationDetents([.medium, .large])
             }
             .task {
-                async let c: () = loadCircles()
-                async let l: () = loadShareLinks()
-                _ = await (c, l)
+                async let circles: () = loadCircles()
+                async let links: () = loadShareLinks()
+                _ = await (circles, links)
             }
         }
     }
@@ -745,6 +747,7 @@ struct WishlistShareSheet: View {
         OffriiHaptics.success()
     }
 
+    // swiftlint:disable:next function_body_length
     private func createLink(openShareSheet: Bool) async {
         isCreatingLink = true
 

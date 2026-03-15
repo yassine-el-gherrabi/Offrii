@@ -30,8 +30,12 @@ struct ItemPickerSheet: View {
                                     .foregroundColor(OffriiTheme.text)
 
                                 if let price = item.estimatedPrice {
-                                    let formatter = NumberFormatter()
-                                    let _ = { formatter.numberStyle = .currency; formatter.currencyCode = "EUR" }()
+                                    let formatter: NumberFormatter = {
+                                        let fmt = NumberFormatter()
+                                        fmt.numberStyle = .currency
+                                        fmt.currencyCode = "EUR"
+                                        return fmt
+                                    }()
                                     Text(formatter.string(from: price as NSDecimalNumber) ?? "")
                                         .font(OffriiTypography.caption)
                                         .foregroundColor(OffriiTheme.textMuted)

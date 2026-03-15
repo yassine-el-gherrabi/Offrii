@@ -91,7 +91,7 @@ struct QuickAddSheet: View {
                             isAdding = true
 
                             // Upload image if selected
-                            var imageUrl: String? = nil
+                            var imageUrl: String?
                             if let image = selectedImage,
                                let data = image.compressForUpload() {
                                 imageUrl = try? await ItemService.shared.uploadImage(data)

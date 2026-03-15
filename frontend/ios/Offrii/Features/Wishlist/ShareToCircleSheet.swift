@@ -84,7 +84,11 @@ struct ShareToCircleSheet: View {
                                         }
                                     }
                                     .padding(OffriiTheme.spacingBase)
-                                    .background(isPendingUnshare ? OffriiTheme.surface : (isSelected ? OffriiTheme.primary.opacity(0.05) : OffriiTheme.card))
+                                    .background(
+                                        isPendingUnshare
+                                            ? OffriiTheme.surface
+                                            : (isSelected ? OffriiTheme.primary.opacity(0.05) : OffriiTheme.card)
+                                    )
                                     .cornerRadius(OffriiTheme.cornerRadiusMD)
                                 }
                                 .buttonStyle(.plain)

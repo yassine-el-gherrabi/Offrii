@@ -1,7 +1,9 @@
+// swiftlint:disable file_length
 import SwiftUI
 
 // MARK: - ItemDetailSheet
 
+// swiftlint:disable:next type_body_length
 struct ItemDetailSheet: View {
     let itemId: UUID
     @Environment(AuthManager.self) private var authManager
@@ -327,6 +329,7 @@ struct ItemDetailSheet: View {
     // MARK: - Shared With Section
 
     @ViewBuilder
+    // swiftlint:disable:next function_body_length
     private func sharedWithSection(_ item: Item) -> some View {
         VStack(alignment: .leading, spacing: OffriiTheme.spacingSM) {
             Text(NSLocalizedString("item.sharedWith", comment: ""))

@@ -42,7 +42,11 @@ final class APIEndpointTests: XCTestCase {
     }
 
     func testPath_createItem() {
-        let endpoint = APIEndpoint.createItem(CreateItemBody(name: "Test", description: nil, url: nil, estimatedPrice: nil, priority: nil, categoryId: nil))
+        let body = CreateItemBody(
+            name: "Test", description: nil, url: nil,
+            estimatedPrice: nil, priority: nil, categoryId: nil
+        )
+        let endpoint = APIEndpoint.createItem(body)
         XCTAssertEqual(endpoint.path, "/items")
     }
 

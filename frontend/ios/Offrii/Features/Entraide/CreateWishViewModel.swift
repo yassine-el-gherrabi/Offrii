@@ -45,7 +45,7 @@ final class CreateWishViewModel {
         error = nil
 
         // Upload image if selected
-        var imageUrl: String? = nil
+        var imageUrl: String?
         if let image = selectedImage,
            let data = image.compressForUpload() {
             do {

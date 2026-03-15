@@ -71,4 +71,6 @@ nesting:
   type_level: 3
   function_level: 3
 
+strict: true
+
 reporter: xcode

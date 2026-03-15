@@ -119,7 +119,10 @@ final class WishlistViewModel {
 
     // MARK: - CRUD
 
-    func quickAdd(name: String, price: Decimal? = nil, categoryId: UUID? = nil, priority: Int? = nil, imageUrl: String? = nil, links: [String]? = nil) async -> Bool {
+    func quickAdd(
+        name: String, price: Decimal? = nil, categoryId: UUID? = nil,
+        priority: Int? = nil, imageUrl: String? = nil, links: [String]? = nil
+    ) async -> Bool {
         do {
             let item = try await ItemService.shared.createItem(
                 name: name,

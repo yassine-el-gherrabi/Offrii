@@ -44,9 +44,9 @@ struct CircleActivityFeed: View {
         }
 
         let order: [TimeGroup] = [.today, .yesterday, .thisWeek, .older]
-        return order.compactMap { g in
-            guard let evts = groups[g], !evts.isEmpty else { return nil }
-            return (group: g, events: evts)
+        return order.compactMap { group in
+            guard let evts = groups[group], !evts.isEmpty else { return nil }
+            return (group: group, events: evts)
         }
     }
 
