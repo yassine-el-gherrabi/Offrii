@@ -504,6 +504,7 @@ struct CircleDetailView: View {
     // MARK: - Item Card (matches WishlistGridCard design)
 
     @ViewBuilder
+    // swiftlint:disable:next function_body_length
     private func circleItemCard(
         _ item: CircleItemResponse,
         showClaimButtons: Bool
@@ -512,21 +513,28 @@ struct CircleDetailView: View {
         let style = CategoryStyle(icon: categoryIcon(for: item.categoryId))
 
         VStack(alignment: .leading, spacing: 0) {
-            // Image zone with category gradient
+            // Image zone — OG image or category gradient fallback
             ZStack {
-                LinearGradient(
-                    colors: style.gradient,
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-                .frame(height: 130)
-                .overlay(
-                    Image(systemName: style.sfSymbol)
-                        .font(.system(size: 32, weight: .light))
-                        .foregroundColor(.white.opacity(0.7))
-                )
+                if let imageUrl = item.imageUrl ?? item.ogImageUrl,
+                   let url = URL(string: imageUrl) {
+                    AsyncImage(url: url) { phase in
+                        switch phase {
+                        case .success(let image):
+                            image
+                                .resizable()
+                                .aspectRatio(contentMode: .fill)
+                                .frame(minWidth: 0, maxWidth: .infinity)
+                                .frame(height: 130)
+                                .clipped()
+                        default:
+                            gradientPlaceholder(style: style)
+                        }
+                    }
+                } else {
+                    gradientPlaceholder(style: style)
+                }
 
-                // Reserved overlay (same as WishlistGridCard)
+                // Reserved overlay
                 if item.isClaimed {
                     Color.black.opacity(0.35)
                     Text(NSLocalizedString("wishlist.reserved", comment: ""))
@@ -537,6 +545,7 @@ struct CircleDetailView: View {
                 }
             }
             .frame(height: 130)
+            .clipped()
 
             // Text zone
             HStack(alignment: .top, spacing: 4) {
@@ -582,6 +591,20 @@ struct CircleDetailView: View {
         guard let categoryId,
               let categories = viewModel.categories else { return nil }
         return categories.first { $0.id == categoryId }?.icon
+    }
+
+    private func gradientPlaceholder(style: CategoryStyle) -> some View {
+        LinearGradient(
+            colors: style.gradient,
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
+        .frame(height: 130)
+        .overlay(
+            Image(systemName: style.sfSymbol)
+                .font(.system(size: 32, weight: .light))
+                .foregroundColor(.white.opacity(0.7))
+        )
     }
 
     // MARK: - Claim Button
