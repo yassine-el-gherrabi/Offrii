@@ -20,6 +20,7 @@ enum OffriiAnimation {
 
 // MARK: - Haptic Feedback
 
+@MainActor
 enum OffriiHaptics {
     static func tap() {
         UIImpactFeedbackGenerator(style: .light).impactOccurred()

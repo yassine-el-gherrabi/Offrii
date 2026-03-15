@@ -9,9 +9,9 @@ struct ForgotPasswordView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var appeared = false
     @State private var resendCooldown = 0
-    @State private var cooldownTimer: Timer?
+    @State private var cooldownTask: Task<Void, Never>?
     @State private var codeExpiryMinutes = 30
-    @State private var expiryTimer: Timer?
+    @State private var expiryTask: Task<Void, Never>?
     @State private var showResendConfirmation = false
     @State private var resendCount = 0
 
@@ -319,32 +319,32 @@ struct ForgotPasswordView: View {
 
     private func startResendCooldown() {
         resendCooldown = 60
-        cooldownTimer?.invalidate()
-        cooldownTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { timer in
-            if resendCooldown > 0 {
+        cooldownTask?.cancel()
+        cooldownTask = Task {
+            while resendCooldown > 0 {
+                try? await Task.sleep(for: .seconds(1))
+                guard !Task.isCancelled else { return }
                 resendCooldown -= 1
-            } else {
-                timer.invalidate()
             }
         }
     }
 
     private func startExpiryTimer() {
         codeExpiryMinutes = 30
-        expiryTimer?.invalidate()
-        expiryTimer = Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { timer in
-            if codeExpiryMinutes > 0 {
+        expiryTask?.cancel()
+        expiryTask = Task {
+            while codeExpiryMinutes > 0 {
+                try? await Task.sleep(for: .seconds(60))
+                guard !Task.isCancelled else { return }
                 codeExpiryMinutes -= 1
-            } else {
-                timer.invalidate()
             }
         }
     }
 
     private func cleanup() {
-        cooldownTimer?.invalidate()
-        cooldownTimer = nil
-        expiryTimer?.invalidate()
-        expiryTimer = nil
+        cooldownTask?.cancel()
+        cooldownTask = nil
+        expiryTask?.cancel()
+        expiryTask = nil
     }
 }

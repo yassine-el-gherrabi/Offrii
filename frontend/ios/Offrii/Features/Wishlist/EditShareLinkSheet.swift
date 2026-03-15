@@ -102,7 +102,6 @@ struct EditShareLinkSheet: View {
         do {
             let _: ShareLinkResponse = try await APIClient.shared.request(.updateShareLink(id: link.id, body: body))
             // Build updated response locally since PATCH might not return full object
-            var updated = link
             // We can't mutate let properties, so create a new conceptual "updated" by reloading
             onUpdated(ShareLinkResponse(
                 id: link.id,

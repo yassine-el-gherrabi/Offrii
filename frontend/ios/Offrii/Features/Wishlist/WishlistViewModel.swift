@@ -69,10 +69,6 @@ final class WishlistViewModel {
         currentPage = 1
 
         do {
-            let categoryIdsParam: String? = selectedCategoryIds.isEmpty
-                ? nil
-                : selectedCategoryIds.map { $0.uuidString }.joined(separator: ",")
-
             let response = try await ItemService.shared.listItems(
                 status: selectedStatus,
                 sort: sortField,

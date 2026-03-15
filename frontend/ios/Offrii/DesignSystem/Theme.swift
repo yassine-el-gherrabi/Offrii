@@ -6,12 +6,12 @@ enum OffriiTheme {
 
     // MARK: - Primary Colors
 
-    static let primary = Color("primary", bundle: nil)
+    static let primary = Color("offriiPrimary", bundle: nil)
     static let primaryLight = Color("primaryLight", bundle: nil)
     static let primaryDark = Color("primaryDark", bundle: nil)
-    static let secondary = Color("secondary", bundle: nil)
+    static let secondary = Color("offriiSecondary", bundle: nil)
     static let secondaryLight = Color("secondaryLight", bundle: nil)
-    static let accent = Color("accent", bundle: nil)
+    static let accent = Color("offriiAccent", bundle: nil)
     static let accentLight = Color("accentLight", bundle: nil)
 
     // MARK: - Semantic Colors

@@ -157,7 +157,7 @@ struct ShareToCircleSheet: View {
         for circleId in selectedCircleIds {
             do {
                 try await CircleService.shared.shareItem(circleId: circleId, itemId: itemId)
-                withAnimation {
+                _ = withAnimation {
                     sharedCircleIds.insert(circleId)
                 }
             } catch {}

@@ -739,7 +739,7 @@ struct WishlistShareSheet: View {
     private func shareToCircle(_ circle: OffriiCircle) async {
         // For now, this is a placeholder — sharing all items to a circle
         // would require iterating items. Just mark as shared for UX feedback.
-        withAnimation {
+        _ = withAnimation {
             sharedCircleIds.insert(circle.id)
         }
         OffriiHaptics.success()
