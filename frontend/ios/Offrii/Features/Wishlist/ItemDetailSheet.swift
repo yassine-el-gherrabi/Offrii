@@ -286,8 +286,11 @@ struct ItemDetailSheet: View {
                                 .aspectRatio(contentMode: .fill)
                                 .frame(height: 200)
                                 .clipped()
+                        case .failure:
+                            categoryGradientView
                         default:
                             categoryGradientView
+                                .shimmer()
                         }
                     }
                 } else {
@@ -310,16 +313,14 @@ struct ItemDetailSheet: View {
     }
 
     private var categoryGradientView: some View {
-        // Use a neutral gradient since we don't have the category here
-        // (would need to pass it or load it)
         LinearGradient(
-            colors: [OffriiTheme.primary.opacity(0.3), OffriiTheme.accent.opacity(0.2)],
+            colors: viewModel.style.gradient,
             startPoint: .topLeading,
             endPoint: .bottomTrailing
         )
         .frame(height: 200)
         .overlay(
-            Image(systemName: "gift.fill")
+            Image(systemName: viewModel.style.sfSymbol)
                 .font(.system(size: 48, weight: .light))
                 .foregroundColor(.white.opacity(0.6))
         )

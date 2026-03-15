@@ -8,6 +8,11 @@ final class ItemDetailViewModel {
     var isUpdating = false
     var error: String?
     var categoryName: String?
+    var categoryIcon: String?
+
+    var style: CategoryStyle {
+        CategoryStyle(icon: categoryIcon)
+    }
 
     func loadItem(id: UUID) async {
         isLoading = true
@@ -15,7 +20,9 @@ final class ItemDetailViewModel {
             item = try await ItemService.shared.getItem(id: id)
             if let categoryId = item?.categoryId {
                 let categories = try await CategoryService.shared.listCategories()
-                categoryName = categories.first { $0.id == categoryId }?.name
+                let cat = categories.first { $0.id == categoryId }
+                categoryName = cat?.name
+                categoryIcon = cat?.icon
             }
         } catch {
             self.error = error.localizedDescription
