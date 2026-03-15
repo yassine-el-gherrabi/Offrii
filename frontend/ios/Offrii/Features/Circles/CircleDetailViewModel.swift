@@ -6,6 +6,7 @@ final class CircleDetailViewModel {
     var detail: CircleDetailResponse?
     var items: [CircleItemResponse] = []
     var feed: [CircleEventResponse] = []
+    var categories: [CategoryResponse]?
     var selectedTab: DetailTab = .items
     var selectedMemberFilter: UUID?
     var isLoading = false
@@ -51,6 +52,12 @@ final class CircleDetailViewModel {
     }
 
     // MARK: - Data Loading
+
+    func loadCategories() async {
+        do {
+            categories = try await CategoryService.shared.listCategories()
+        } catch {}
+    }
 
     func loadDetail(circleId: UUID) async {
         isLoading = true

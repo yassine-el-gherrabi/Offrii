@@ -97,7 +97,10 @@ struct CircleDetailView: View {
     // MARK: - Navigation Title
 
     private var navigationTitle: String {
-        viewModel.detail?.name
+        if isDirect, let friend = viewModel.friendMember {
+            return friend.displayName ?? friend.username
+        }
+        return viewModel.detail?.name
             ?? NSLocalizedString("circles.unnamed", comment: "")
     }
 
@@ -437,7 +440,7 @@ struct CircleDetailView: View {
         }
     }
 
-    // MARK: - Item Card
+    // MARK: - Item Card (matches WishlistGridCard design)
 
     @ViewBuilder
     private func circleItemCard(
@@ -445,61 +448,80 @@ struct CircleDetailView: View {
         showClaimButtons: Bool
     ) -> some View {
         let itemIsOwner = item.sharedBy == currentUserId
+        let style = CategoryStyle(icon: categoryIcon(for: item.categoryId))
 
         VStack(alignment: .leading, spacing: 0) {
-            LinearGradient(
-                colors: [
-                    OffriiTheme.primary.opacity(0.25),
-                    OffriiTheme.accent.opacity(0.15),
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            .frame(height: 100)
-            .overlay(
-                Image(systemName: "gift.fill")
-                    .font(.system(size: 28, weight: .light))
-                    .foregroundColor(.white.opacity(0.6))
-            )
-            .overlay(alignment: .topTrailing) {
-                if item.isClaimed && itemIsOwner {
-                    HStack(spacing: 3) {
-                        Image(systemName: "lock.fill")
-                            .font(.system(size: 8))
-                        Text(NSLocalizedString("wishlist.reserved", comment: ""))
-                            .font(.system(size: 9, weight: .semibold))
-                    }
-                    .foregroundColor(OffriiTheme.accent)
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 3)
-                    .background(.ultraThinMaterial)
-                    .cornerRadius(OffriiTheme.cornerRadiusXS)
-                    .padding(OffriiTheme.spacingSM)
+            // Image zone with category gradient
+            ZStack {
+                LinearGradient(
+                    colors: style.gradient,
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+                .frame(height: 130)
+                .overlay(
+                    Image(systemName: style.sfSymbol)
+                        .font(.system(size: 32, weight: .light))
+                        .foregroundColor(.white.opacity(0.7))
+                )
+
+                // Reserved overlay (same as WishlistGridCard)
+                if item.isClaimed {
+                    Color.black.opacity(0.35)
+                    Text(NSLocalizedString("wishlist.reserved", comment: ""))
+                        .font(.system(size: 13, weight: .bold))
+                        .tracking(2)
+                        .textCase(.uppercase)
+                        .foregroundColor(.white)
                 }
             }
+            .frame(height: 130)
 
-            VStack(alignment: .leading, spacing: OffriiTheme.spacingXXS) {
-                Text(item.name)
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(OffriiTheme.text)
-                    .lineLimit(2)
-
-                if let price = item.estimatedPrice {
-                    Text(price.formatted(.currency(code: "EUR")))
-                        .font(.system(size: 12))
-                        .foregroundColor(OffriiTheme.textMuted)
+            // Text zone
+            HStack(alignment: .top, spacing: 4) {
+                // Priority dots
+                if item.priority > 1 {
+                    HStack(spacing: 2) {
+                        ForEach(0..<Int(item.priority), id: \.self) { _ in
+                            Circle()
+                                .fill(OffriiTheme.danger)
+                                .frame(width: 5, height: 5)
+                        }
+                    }
+                    .padding(.top, 6)
                 }
 
-                if showClaimButtons && !itemIsOwner {
-                    claimButton(item)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(item.name)
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(OffriiTheme.text)
+                        .lineLimit(2)
+                        .multilineTextAlignment(.leading)
+
+                    if let price = item.estimatedPrice {
+                        Text(price.formatted(.currency(code: "EUR")))
+                            .font(.system(size: 12))
+                            .foregroundColor(OffriiTheme.textMuted)
+                    }
+
+                    if showClaimButtons && !itemIsOwner {
+                        claimButton(item)
+                    }
                 }
             }
             .padding(.horizontal, OffriiTheme.spacingSM)
             .padding(.vertical, OffriiTheme.spacingSM)
+            .frame(height: 56, alignment: .top)
         }
         .background(OffriiTheme.card)
         .cornerRadius(OffriiTheme.cornerRadiusLG)
         .shadow(color: OffriiTheme.cardShadowColor, radius: 6, x: 0, y: 2)
+    }
+
+    private func categoryIcon(for categoryId: UUID?) -> String? {
+        guard let categoryId,
+              let categories = viewModel.categories else { return nil }
+        return categories.first { $0.id == categoryId }?.icon
     }
 
     // MARK: - Claim Button
@@ -550,6 +572,7 @@ struct CircleDetailView: View {
         await viewModel.loadDetail(circleId: circleId)
         await viewModel.loadItems(circleId: circleId)
         await viewModel.loadFeed(circleId: circleId)
+        await viewModel.loadCategories()
     }
 
     private func formattedDate(_ date: Date) -> String {
