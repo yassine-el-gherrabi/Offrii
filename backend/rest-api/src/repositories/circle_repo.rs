@@ -160,7 +160,10 @@ pub(crate) async fn list_by_member(
                     FROM circle_members cm4
                     JOIN users u ON u.id = cm4.user_id
                     WHERE cm4.circle_id = c.id
-                    ORDER BY cm4.joined_at ASC
+                    ORDER BY (
+                        SELECT MAX(ce2.created_at) FROM circle_events ce2
+                        WHERE ce2.circle_id = c.id AND ce2.actor_id = cm4.user_id
+                    ) DESC NULLS LAST, cm4.joined_at ASC
                     LIMIT 3
                 ), ARRAY[]::TEXT[]) AS member_names
          FROM circles c
