@@ -32,9 +32,9 @@ final class ItemDetailViewModel {
                 circleId: circleId,
                 itemId: itemId
             )
-            // Map CircleItemResponse to Item for display
             item = Item.fromCircleItem(circleItem)
-            await loadCategoryInfo()
+            // Use category_icon from the backend directly (avoids per-user category mismatch)
+            categoryIcon = circleItem.categoryIcon
         } catch {
             self.error = error.localizedDescription
         }
