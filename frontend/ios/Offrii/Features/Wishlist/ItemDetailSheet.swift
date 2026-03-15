@@ -8,6 +8,8 @@ struct ItemDetailSheet: View {
     let itemId: UUID
     var circleId: UUID?
     @Environment(AuthManager.self) private var authManager
+
+    private var isOwnItem: Bool { circleId == nil }
     @Environment(\.dismiss) private var dismiss
     @State private var viewModel = ItemDetailViewModel()
     @State private var showEdit = false
@@ -145,75 +147,79 @@ struct ItemDetailSheet: View {
                             // Links section
                             linksSection(item)
 
-                            // Shared with section
-                            sharedWithSection(item)
+                            // Owner-only sections
+                            if isOwnItem {
+                                // Shared with section
+                                sharedWithSection(item)
 
-                            // Date
-                            HStack(spacing: OffriiTheme.spacingXS) {
-                                Image(systemName: "calendar")
-                                    .font(.system(size: 12))
-                                    .foregroundColor(OffriiTheme.textMuted)
-                                Text(item.createdAt, style: .date)
-                                    .font(OffriiTypography.caption)
-                                    .foregroundColor(OffriiTheme.textMuted)
-                            }
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.horizontal, OffriiTheme.spacingLG)
-                            .padding(.top, OffriiTheme.spacingBase)
+                                // Date
+                                HStack(spacing: OffriiTheme.spacingXS) {
+                                    Image(systemName: "calendar")
+                                        .font(.system(size: 12))
+                                        .foregroundColor(OffriiTheme.textMuted)
+                                    Text(item.createdAt, style: .date)
+                                        .font(OffriiTypography.caption)
+                                        .foregroundColor(OffriiTheme.textMuted)
+                                }
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(.horizontal, OffriiTheme.spacingLG)
+                                .padding(.top, OffriiTheme.spacingBase)
 
-                            // Actions
-                            VStack(spacing: OffriiTheme.spacingSM) {
-                                if item.isActive {
-                                    OffriiButton(
-                                        NSLocalizedString("wishlist.markReceived", comment: ""),
-                                        variant: .primary,
-                                        isLoading: viewModel.isUpdating
-                                    ) {
-                                        Task {
-                                            if await viewModel.markPurchased() {
-                                                dismiss()
+                                // Actions
+                                VStack(spacing: OffriiTheme.spacingSM) {
+                                    if item.isActive {
+                                        OffriiButton(
+                                            NSLocalizedString("wishlist.markReceived", comment: ""),
+                                            variant: .primary,
+                                            isLoading: viewModel.isUpdating
+                                        ) {
+                                            Task {
+                                                if await viewModel.markPurchased() {
+                                                    dismiss()
+                                                }
                                             }
                                         }
                                     }
-                                }
 
-                                HStack(spacing: OffriiTheme.spacingSM) {
-                                    Button {
-                                        showEdit = true
-                                    } label: {
-                                        HStack(spacing: OffriiTheme.spacingXS) {
-                                            Image(systemName: "pencil")
-                                            Text(NSLocalizedString("wishlist.edit", comment: ""))
+                                    HStack(spacing: OffriiTheme.spacingSM) {
+                                        Button {
+                                            showEdit = true
+                                        } label: {
+                                            HStack(spacing: OffriiTheme.spacingXS) {
+                                                Image(systemName: "pencil")
+                                                Text(NSLocalizedString("wishlist.edit", comment: ""))
+                                            }
+                                            .font(OffriiTypography.subheadline)
+                                            .fontWeight(.medium)
+                                            .foregroundColor(OffriiTheme.primary)
+                                            .frame(maxWidth: .infinity)
+                                            .padding(.vertical, OffriiTheme.spacingSM)
+                                            .background(OffriiTheme.primary.opacity(0.1))
+                                            .cornerRadius(OffriiTheme.cornerRadiusSM)
                                         }
-                                        .font(OffriiTypography.subheadline)
-                                        .fontWeight(.medium)
-                                        .foregroundColor(OffriiTheme.primary)
-                                        .frame(maxWidth: .infinity)
-                                        .padding(.vertical, OffriiTheme.spacingSM)
-                                        .background(OffriiTheme.primary.opacity(0.1))
-                                        .cornerRadius(OffriiTheme.cornerRadiusSM)
-                                    }
 
-                                    Button {
-                                        showDeleteAlert = true
-                                    } label: {
-                                        HStack(spacing: OffriiTheme.spacingXS) {
-                                            Image(systemName: "trash")
-                                            Text(NSLocalizedString("common.delete", comment: ""))
+                                        Button {
+                                            showDeleteAlert = true
+                                        } label: {
+                                            HStack(spacing: OffriiTheme.spacingXS) {
+                                                Image(systemName: "trash")
+                                                Text(NSLocalizedString("common.delete", comment: ""))
+                                            }
+                                            .font(OffriiTypography.subheadline)
+                                            .fontWeight(.medium)
+                                            .foregroundColor(OffriiTheme.danger)
+                                            .frame(maxWidth: .infinity)
+                                            .padding(.vertical, OffriiTheme.spacingSM)
+                                            .background(OffriiTheme.danger.opacity(0.1))
+                                            .cornerRadius(OffriiTheme.cornerRadiusSM)
                                         }
-                                        .font(OffriiTypography.subheadline)
-                                        .fontWeight(.medium)
-                                        .foregroundColor(OffriiTheme.danger)
-                                        .frame(maxWidth: .infinity)
-                                        .padding(.vertical, OffriiTheme.spacingSM)
-                                        .background(OffriiTheme.danger.opacity(0.1))
-                                        .cornerRadius(OffriiTheme.cornerRadiusSM)
                                     }
                                 }
+                                .padding(.horizontal, OffriiTheme.spacingLG)
+                                .padding(.top, OffriiTheme.spacingLG)
                             }
-                            .padding(.horizontal, OffriiTheme.spacingLG)
-                            .padding(.top, OffriiTheme.spacingLG)
-                            .padding(.bottom, OffriiTheme.spacingXL)
+
+                            Spacer().frame(height: OffriiTheme.spacingXL)
                         }
                     }
                 }
