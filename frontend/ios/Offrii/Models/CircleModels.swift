@@ -116,15 +116,10 @@ struct CircleEventResponse: Codable, Identifiable {
 }
 
 struct FeedResponse: Codable {
-    let events: [CircleEventResponse]
-    let total: Int
-    let page: Int
-    let perPage: Int
+    let data: [CircleEventResponse]
+    let pagination: PaginationMeta
 
-    enum CodingKeys: String, CodingKey {
-        case events
-        case total
-        case page
-        case perPage = "per_page"
-    }
+    var events: [CircleEventResponse] { data }
+    var total: Int { pagination.total }
+    var page: Int { pagination.page }
 }

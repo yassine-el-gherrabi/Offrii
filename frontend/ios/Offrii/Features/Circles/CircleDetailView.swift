@@ -216,6 +216,12 @@ struct CircleDetailView: View {
                 .font(OffriiTypography.titleSmall)
                 .foregroundColor(OffriiTheme.text)
 
+            if let username = friend?.username {
+                Text("@\(username)")
+                    .font(OffriiTypography.subheadline)
+                    .foregroundColor(OffriiTheme.textSecondary)
+            }
+
             Text(String(
                 format: NSLocalizedString("circles.detail.friendSince", comment: ""),
                 formattedDate(detail.createdAt)
