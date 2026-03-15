@@ -223,10 +223,9 @@ struct ItemDetailSheet: View {
                     Button {
                         dismiss()
                     } label: {
-                        Image(systemName: "xmark.circle.fill")
-                            .font(.system(size: 24))
-                            .symbolRenderingMode(.hierarchical)
-                            .foregroundColor(OffriiTheme.textMuted)
+                        Image(systemName: "xmark")
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundColor(OffriiTheme.textSecondary)
                     }
                 }
             }
