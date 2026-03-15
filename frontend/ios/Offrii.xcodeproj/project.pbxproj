@@ -8,8 +8,6 @@
 
 /* Begin PBXBuildFile section */
 		0638910913C06604578BE696 /* CircleActivityFeed.swift in Sources */ = {isa = PBXBuildFile; fileRef = FCAB52FA02BBFD4399C16A7E /* CircleActivityFeed.swift */; };
-		CC00000000000000000000A1 /* CircleListContent.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000A1 /* CircleListContent.swift */; };
-		CC00000000000000000000A2 /* FriendsListContent.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000A2 /* FriendsListContent.swift */; };
 		CC00000000000000000000A3 /* ContactPickerRepresentable.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000A3 /* ContactPickerRepresentable.swift */; };
 		CC00000000000000000000A4 /* InviteContactsSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000A4 /* InviteContactsSheet.swift */; };
 		CC00000000000000000000A5 /* EditCircleSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000A5 /* EditCircleSheet.swift */; };
@@ -300,8 +298,7 @@
 		AA0000000000000000000015 /* OnboardingTipManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingTipManager.swift; sourceTree = "<group>"; };
 		AA0000000000000000000016 /* ProfileAvatarButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileAvatarButton.swift; sourceTree = "<group>"; };
 		AB746F8E4C0CA62230678B26 /* WishStatusBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WishStatusBadge.swift; sourceTree = "<group>"; };
-		DD00000000000000000000A1 /* CircleListContent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CircleListContent.swift; sourceTree = "<group>"; };
-		DD00000000000000000000A2 /* FriendsListContent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FriendsListContent.swift; sourceTree = "<group>"; };
+
 		DD00000000000000000000A3 /* ContactPickerRepresentable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContactPickerRepresentable.swift; sourceTree = "<group>"; };
 		DD00000000000000000000A4 /* InviteContactsSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InviteContactsSheet.swift; sourceTree = "<group>"; };
 		DD00000000000000000000A5 /* EditCircleSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditCircleSheet.swift; sourceTree = "<group>"; };
@@ -351,8 +348,7 @@
 				6ACFAD24E9E205201275BF6E /* CircleDetailViewModel.swift */,
 				9CB58C031CA34EDF11A6C318 /* CreateCircleSheet.swift */,
 				2226B543C70CC51CA48162BB /* InviteFriendsSheet.swift */,
-				DD00000000000000000000A1 /* CircleListContent.swift */,
-				DD00000000000000000000A2 /* FriendsListContent.swift */,
+
 				DD00000000000000000000A3 /* ContactPickerRepresentable.swift */,
 				DD00000000000000000000A4 /* InviteContactsSheet.swift */,
 				DD00000000000000000000A5 /* EditCircleSheet.swift */,
@@ -919,8 +915,7 @@
 				CF0E285AAF14E9E693D4F508 /* CircleDetailViewModel.swift in Sources */,
 				798ABA96D107D82F3F8E6B20 /* CreateCircleSheet.swift in Sources */,
 				41FB56C5232340B03F9A8E6D /* InviteFriendsSheet.swift in Sources */,
-				CC00000000000000000000A1 /* CircleListContent.swift in Sources */,
-				CC00000000000000000000A2 /* FriendsListContent.swift in Sources */,
+
 				CC00000000000000000000A3 /* ContactPickerRepresentable.swift in Sources */,
 				CC00000000000000000000A4 /* InviteContactsSheet.swift in Sources */,
 				CC00000000000000000000A5 /* EditCircleSheet.swift in Sources */,

@@ -14,14 +14,43 @@ final class CircleDetailViewModel {
 
     enum DetailTab: String, CaseIterable {
         case items
+        case myItems
         case members
         case activity
     }
+
+    // MARK: - Computed Properties
 
     var filteredItems: [CircleItemResponse] {
         guard let memberId = selectedMemberFilter else { return items }
         return items.filter { $0.sharedBy == memberId }
     }
+
+    var myItems: [CircleItemResponse] {
+        guard let userId = currentUserId else { return [] }
+        return items.filter { $0.sharedBy == userId }
+    }
+
+    var theirItems: [CircleItemResponse] {
+        guard let userId = currentUserId else { return items }
+        return items.filter { $0.sharedBy != userId }
+    }
+
+    /// Available tabs depend on whether the circle is direct (1:1) or a group.
+    var availableTabs: [DetailTab] {
+        if detail?.isDirect == true {
+            return [.items, .myItems, .activity]
+        }
+        return [.items, .myItems, .members, .activity]
+    }
+
+    /// The friend member in a 1:1 circle (not the current user).
+    var friendMember: CircleMember? {
+        guard detail?.isDirect == true, let userId = currentUserId else { return nil }
+        return detail?.members.first { $0.userId != userId }
+    }
+
+    // MARK: - Data Loading
 
     func loadDetail(circleId: UUID) async {
         isLoading = true
@@ -50,6 +79,8 @@ final class CircleDetailViewModel {
             self.error = error.localizedDescription
         }
     }
+
+    // MARK: - Actions
 
     func claimItem(itemId: UUID) async {
         do {

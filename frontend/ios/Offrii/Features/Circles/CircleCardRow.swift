@@ -5,31 +5,9 @@ import SwiftUI
 struct CircleCardRow: View {
     let circle: OffriiCircle
 
-    private var circleIcon: String {
-        circle.isDirect ? "bubble.left.fill" : "person.2.fill"
-    }
-
-    private var memberCountText: String {
-        if circle.isDirect {
-            return NSLocalizedString("circles.oneToOne", comment: "")
-        }
-        return String(
-            format: NSLocalizedString("circles.memberCount", comment: ""),
-            circle.memberCount
-        )
-    }
-
-    private var unreservedText: String? {
-        guard circle.unreservedItemCount > 0 else { return nil }
-        return String(
-            format: NSLocalizedString("circles.unreservedCount", comment: ""),
-            circle.unreservedItemCount
-        )
-    }
-
     var body: some View {
         HStack(spacing: OffriiTheme.spacingMD) {
-            avatarStack
+            avatarSection
 
             VStack(alignment: .leading, spacing: OffriiTheme.spacingXXS) {
                 Text(circle.name ?? NSLocalizedString("circles.unnamed", comment: ""))
@@ -37,23 +15,14 @@ struct CircleCardRow: View {
                     .foregroundColor(OffriiTheme.text)
                     .lineLimit(1)
 
-                HStack(spacing: OffriiTheme.spacingSM) {
-                    Text(memberCountText)
-                        .font(OffriiTypography.caption)
-                        .foregroundColor(OffriiTheme.textMuted)
-
-                    if let unreserved = unreservedText {
-                        Text("·")
-                            .foregroundColor(OffriiTheme.textMuted)
-                        Text(unreserved)
-                            .font(OffriiTypography.caption)
-                            .fontWeight(.medium)
-                            .foregroundColor(OffriiTheme.primary)
-                    }
+                if circle.isDirect {
+                    directSubtitle
+                } else {
+                    groupSubtitle
                 }
 
                 if let activity = circle.lastActivity {
-                    Text(activity)
+                    Text(activityText(activity))
                         .font(OffriiTypography.caption)
                         .foregroundColor(OffriiTheme.textSecondary)
                         .lineLimit(1)
@@ -77,11 +46,17 @@ struct CircleCardRow: View {
         )
     }
 
-    // MARK: - Avatar Stack
+    // MARK: - Avatar Section
 
     @ViewBuilder
-    private var avatarStack: some View {
-        if circle.memberNames.isEmpty {
+    private var avatarSection: some View {
+        if circle.isDirect {
+            // Single avatar for 1:1
+            AvatarView(
+                circle.memberNames.first ?? circle.name,
+                size: .medium
+            )
+        } else if circle.memberNames.isEmpty {
             AvatarView(circle.name, size: .medium)
         } else if circle.memberNames.count == 1 {
             AvatarView(circle.memberNames[0], size: .medium)
@@ -100,5 +75,60 @@ struct CircleCardRow: View {
             }
             .frame(width: 52, height: 44)
         }
+    }
+
+    // MARK: - Direct (1:1) Subtitle
+
+    @ViewBuilder
+    private var directSubtitle: some View {
+        if circle.unreservedItemCount > 0 {
+            Text(String(
+                format: NSLocalizedString("circles.detail.wishCount", comment: ""),
+                circle.unreservedItemCount
+            ))
+            .font(OffriiTypography.caption)
+            .fontWeight(.medium)
+            .foregroundColor(OffriiTheme.primary)
+        } else {
+            Text(NSLocalizedString("circles.noUnreserved", comment: ""))
+                .font(OffriiTypography.caption)
+                .foregroundColor(OffriiTheme.textMuted)
+        }
+    }
+
+    // MARK: - Group Subtitle
+
+    @ViewBuilder
+    private var groupSubtitle: some View {
+        HStack(spacing: OffriiTheme.spacingSM) {
+            Text(String(
+                format: NSLocalizedString("circles.memberCount", comment: ""),
+                circle.memberCount
+            ))
+            .font(OffriiTypography.caption)
+            .foregroundColor(OffriiTheme.textMuted)
+
+            if circle.unreservedItemCount > 0 {
+                Text("·")
+                    .foregroundColor(OffriiTheme.textMuted)
+                Text(String(
+                    format: NSLocalizedString("circles.unreservedCount", comment: ""),
+                    circle.unreservedItemCount
+                ))
+                .font(OffriiTypography.caption)
+                .fontWeight(.medium)
+                .foregroundColor(OffriiTheme.primary)
+            }
+        }
+    }
+
+    // MARK: - Activity Text
+
+    private func activityText(_ activity: String) -> String {
+        if circle.isDirect {
+            return activity
+        }
+        // For groups, the activity string may already contain the sender prefix
+        return activity
     }
 }

@@ -1,5 +1,7 @@
 import SwiftUI
 
+// swiftlint:disable file_length type_body_length
+
 struct CircleDetailView: View {
     let circleId: UUID
     @Environment(AuthManager.self) private var authManager
@@ -12,6 +14,7 @@ struct CircleDetailView: View {
 
     private var currentUserId: UUID? { authManager.currentUser?.id }
     private var isOwner: Bool { viewModel.detail?.ownerId == currentUserId }
+    private var isDirect: Bool { viewModel.detail?.isDirect == true }
 
     private let gridColumns = [
         GridItem(.flexible(), spacing: OffriiTheme.spacingSM),
@@ -26,91 +29,18 @@ struct CircleDetailView: View {
                 SkeletonList(count: 4)
                     .padding(.top, OffriiTheme.spacingBase)
             } else if let detail = viewModel.detail {
-                VStack(spacing: 0) {
-                    // Member carousel filter
-                    MemberCarousel(
-                        members: detail.members,
-                        selectedMemberId: $viewModel.selectedMemberFilter,
-                        currentUserId: currentUserId
-                    )
-
-                    // 3-tab segmented control
-                    Picker("", selection: $viewModel.selectedTab) {
-                        Text(NSLocalizedString("circles.detail.items", comment: ""))
-                            .tag(CircleDetailViewModel.DetailTab.items)
-                        Text(NSLocalizedString("circles.detail.members", comment: ""))
-                            .tag(CircleDetailViewModel.DetailTab.members)
-                        Text(NSLocalizedString("circles.detail.activity", comment: ""))
-                            .tag(CircleDetailViewModel.DetailTab.activity)
-                    }
-                    .pickerStyle(.segmented)
-                    .padding(.horizontal, OffriiTheme.spacingLG)
-                    .padding(.vertical, OffriiTheme.spacingSM)
-
-                    switch viewModel.selectedTab {
-                    case .items:
-                        itemsTabContent(detail)
-                    case .members:
-                        membersTabContent(detail)
-                    case .activity:
-                        CircleActivityFeed(
-                            events: viewModel.feed,
-                            currentUserId: currentUserId
-                        )
-                    }
+                if isDirect {
+                    directCircleContent(detail)
+                } else {
+                    groupCircleContent(detail)
                 }
             } else if let error = viewModel.error {
-                VStack(spacing: OffriiTheme.spacingBase) {
-                    Text(error)
-                        .font(OffriiTypography.body)
-                        .foregroundColor(OffriiTheme.textSecondary)
-                    Button(NSLocalizedString("common.retry", comment: "")) {
-                        Task { await reload() }
-                    }
-                    .foregroundColor(OffriiTheme.primary)
-                }
+                errorView(error)
             }
         }
-        .navigationTitle(
-            viewModel.detail?.name
-                ?? NSLocalizedString("circles.unnamed", comment: "")
-        )
+        .navigationTitle(navigationTitle)
         .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .primaryAction) {
-                HStack(spacing: OffriiTheme.spacingSM) {
-                    if isOwner {
-                        Button {
-                            showEdit = true
-                        } label: {
-                            Image(systemName: "pencil")
-                                .font(.system(size: 16))
-                        }
-                    }
-
-                    Button {
-                        showInvite = true
-                    } label: {
-                        Image(systemName: "person.badge.plus")
-                            .font(.system(size: 16))
-                    }
-                    .overlay(alignment: .bottom) {
-                        if tipManager.activeTip == .circlesShare {
-                            OffriiTooltip(
-                                message: OnboardingTipManager.message(
-                                    for: .circlesShare
-                                ),
-                                arrow: .top
-                            ) {
-                                tipManager.dismiss(.circlesShare)
-                            }
-                            .frame(width: 220)
-                            .offset(y: 50)
-                        }
-                    }
-                }
-            }
-        }
+        .toolbar { toolbarContent }
         .sheet(isPresented: $showInvite) {
             if let detail = viewModel.detail {
                 InviteFriendsSheet(
@@ -158,17 +88,193 @@ struct CircleDetailView: View {
         .task {
             viewModel.currentUserId = currentUserId
             await reload()
-            tipManager.showIfNeeded(.circlesShare)
+            if !isDirect {
+                tipManager.showIfNeeded(.circlesShare)
+            }
         }
     }
 
-    // MARK: - Items Tab
+    // MARK: - Navigation Title
+
+    private var navigationTitle: String {
+        viewModel.detail?.name
+            ?? NSLocalizedString("circles.unnamed", comment: "")
+    }
+
+    // MARK: - Toolbar
+
+    @ToolbarContentBuilder
+    private var toolbarContent: some ToolbarContent {
+        ToolbarItem(placement: .primaryAction) {
+            if isDirect {
+                EmptyView()
+            } else {
+                HStack(spacing: OffriiTheme.spacingSM) {
+                    if isOwner {
+                        Button {
+                            showEdit = true
+                        } label: {
+                            Image(systemName: "pencil")
+                                .font(.system(size: 16))
+                        }
+                    }
+
+                    Button {
+                        showInvite = true
+                    } label: {
+                        Image(systemName: "person.badge.plus")
+                            .font(.system(size: 16))
+                    }
+                    .overlay(alignment: .bottom) {
+                        if tipManager.activeTip == .circlesShare {
+                            OffriiTooltip(
+                                message: OnboardingTipManager.message(
+                                    for: .circlesShare
+                                ),
+                                arrow: .top
+                            ) {
+                                tipManager.dismiss(.circlesShare)
+                            }
+                            .frame(width: 220)
+                            .offset(y: 50)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // MARK: - Error View
 
     @ViewBuilder
-    private func itemsTabContent(_ detail: CircleDetailResponse) -> some View {
-        let displayed = viewModel.filteredItems
+    private func errorView(_ error: String) -> some View {
+        VStack(spacing: OffriiTheme.spacingBase) {
+            Text(error)
+                .font(OffriiTypography.body)
+                .foregroundColor(OffriiTheme.textSecondary)
+            Button(NSLocalizedString("common.retry", comment: "")) {
+                Task { await reload() }
+            }
+            .foregroundColor(OffriiTheme.primary)
+        }
+    }
 
-        if displayed.isEmpty {
+    // MARK: - Direct (1:1) Content
+
+    @ViewBuilder
+    private func directCircleContent(_ detail: CircleDetailResponse) -> some View {
+        VStack(spacing: 0) {
+            // Friend header
+            directHeader(detail)
+
+            // 3-tab picker: Their wishes / My wishes / Activity
+            Picker("", selection: $viewModel.selectedTab) {
+                Text(NSLocalizedString("circles.detail.theirWishes", comment: ""))
+                    .tag(CircleDetailViewModel.DetailTab.items)
+                Text(NSLocalizedString("circles.detail.myWishes", comment: ""))
+                    .tag(CircleDetailViewModel.DetailTab.myItems)
+                Text(NSLocalizedString("circles.detail.activity", comment: ""))
+                    .tag(CircleDetailViewModel.DetailTab.activity)
+            }
+            .pickerStyle(.segmented)
+            .padding(.horizontal, OffriiTheme.spacingLG)
+            .padding(.vertical, OffriiTheme.spacingSM)
+
+            switch viewModel.selectedTab {
+            case .items:
+                itemGridContent(items: viewModel.theirItems, showClaimButtons: true)
+            case .myItems:
+                itemGridContent(items: viewModel.myItems, showClaimButtons: false)
+            case .activity:
+                CircleActivityFeed(
+                    events: viewModel.feed,
+                    currentUserId: currentUserId
+                )
+            case .members:
+                // Not shown for direct circles, but handle gracefully
+                EmptyView()
+            }
+        }
+    }
+
+    // MARK: - Direct Header
+
+    @ViewBuilder
+    private func directHeader(_ detail: CircleDetailResponse) -> some View {
+        let friend = viewModel.friendMember
+
+        VStack(spacing: OffriiTheme.spacingSM) {
+            AvatarView(
+                friend?.displayName ?? friend?.username ?? detail.name,
+                size: .large
+            )
+
+            Text(friend?.displayName ?? friend?.username ?? (detail.name ?? ""))
+                .font(OffriiTypography.titleSmall)
+                .foregroundColor(OffriiTheme.text)
+
+            Text(String(
+                format: NSLocalizedString("circles.detail.friendSince", comment: ""),
+                formattedDate(detail.createdAt)
+            ))
+            .font(OffriiTypography.caption)
+            .foregroundColor(OffriiTheme.textMuted)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, OffriiTheme.spacingLG)
+    }
+
+    // MARK: - Group Content
+
+    @ViewBuilder
+    private func groupCircleContent(_ detail: CircleDetailResponse) -> some View {
+        VStack(spacing: 0) {
+            // Member carousel filter
+            MemberCarousel(
+                members: detail.members,
+                selectedMemberId: $viewModel.selectedMemberFilter,
+                currentUserId: currentUserId
+            )
+
+            // 4-tab segmented control
+            Picker("", selection: $viewModel.selectedTab) {
+                Text(NSLocalizedString("circles.detail.items", comment: ""))
+                    .tag(CircleDetailViewModel.DetailTab.items)
+                Text(NSLocalizedString("circles.detail.myWishes", comment: ""))
+                    .tag(CircleDetailViewModel.DetailTab.myItems)
+                Text(NSLocalizedString("circles.detail.members", comment: ""))
+                    .tag(CircleDetailViewModel.DetailTab.members)
+                Text(NSLocalizedString("circles.detail.activity", comment: ""))
+                    .tag(CircleDetailViewModel.DetailTab.activity)
+            }
+            .pickerStyle(.segmented)
+            .padding(.horizontal, OffriiTheme.spacingLG)
+            .padding(.vertical, OffriiTheme.spacingSM)
+
+            switch viewModel.selectedTab {
+            case .items:
+                itemGridContent(items: viewModel.filteredItems, showClaimButtons: true)
+            case .myItems:
+                itemGridContent(items: viewModel.myItems, showClaimButtons: false)
+            case .members:
+                membersTabContent(detail)
+            case .activity:
+                CircleActivityFeed(
+                    events: viewModel.feed,
+                    currentUserId: currentUserId
+                )
+            }
+        }
+    }
+
+    // MARK: - Shared Item Grid
+
+    @ViewBuilder
+    private func itemGridContent(
+        items: [CircleItemResponse],
+        showClaimButtons: Bool
+    ) -> some View {
+        if items.isEmpty {
             Spacer()
             OffriiEmptyState(
                 icon: "tray",
@@ -182,8 +288,8 @@ struct CircleDetailView: View {
         } else {
             ScrollView {
                 LazyVGrid(columns: gridColumns, spacing: OffriiTheme.spacingSM) {
-                    ForEach(displayed) { item in
-                        circleItemCard(item)
+                    ForEach(items) { item in
+                        circleItemCard(item, showClaimButtons: showClaimButtons)
                     }
                 }
                 .padding(.horizontal, OffriiTheme.spacingBase)
@@ -334,7 +440,10 @@ struct CircleDetailView: View {
     // MARK: - Item Card
 
     @ViewBuilder
-    private func circleItemCard(_ item: CircleItemResponse) -> some View {
+    private func circleItemCard(
+        _ item: CircleItemResponse,
+        showClaimButtons: Bool
+    ) -> some View {
         let itemIsOwner = item.sharedBy == currentUserId
 
         VStack(alignment: .leading, spacing: 0) {
@@ -381,7 +490,7 @@ struct CircleDetailView: View {
                         .foregroundColor(OffriiTheme.textMuted)
                 }
 
-                if !itemIsOwner {
+                if showClaimButtons && !itemIsOwner {
                     claimButton(item)
                 }
             }
@@ -442,4 +551,12 @@ struct CircleDetailView: View {
         await viewModel.loadItems(circleId: circleId)
         await viewModel.loadFeed(circleId: circleId)
     }
+
+    private func formattedDate(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMM yyyy"
+        return formatter.string(from: date)
+    }
 }
+
+// swiftlint:enable file_length type_body_length
