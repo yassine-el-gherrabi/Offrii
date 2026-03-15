@@ -51,19 +51,11 @@ struct AvatarView: View {
     }
 
     var body: some View {
-        Circle()
-            .fill(
-                LinearGradient(
-                    colors: [OffriiTheme.primary.opacity(0.2), OffriiTheme.accent.opacity(0.15)],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-            )
+        Text(initials)
+            .font(.system(size: size.fontSize, weight: .semibold))
+            .foregroundColor(.white)
             .frame(width: size.dimension, height: size.dimension)
-            .overlay(
-                Text(initials)
-                    .font(.system(size: size.fontSize, weight: .semibold))
-                    .foregroundColor(OffriiTheme.primary)
-            )
+            .background(OffriiTheme.primary)
+            .clipShape(Circle())
     }
 }

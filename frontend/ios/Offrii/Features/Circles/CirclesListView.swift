@@ -12,32 +12,38 @@ struct CirclesListView: View {
     @State private var showInviteContacts = false
 
     var body: some View {
-        VStack(spacing: 0) {
-            // Segmented picker
-            Picker("", selection: $selectedSegment) {
-                Text(NSLocalizedString("circles.tab.myCircles", comment: ""))
-                    .tag(0)
-                Text(NSLocalizedString("circles.tab.myFriends", comment: ""))
-                    .tag(1)
-            }
-            .pickerStyle(.segmented)
-            .padding(.horizontal, OffriiTheme.spacingLG)
-            .padding(.vertical, OffriiTheme.spacingSM)
+        ZStack(alignment: .bottomTrailing) {
+            VStack(spacing: 0) {
+                // Segmented picker
+                Picker("", selection: $selectedSegment) {
+                    Text(NSLocalizedString("circles.tab.myCircles", comment: ""))
+                        .tag(0)
+                    Text(NSLocalizedString("circles.tab.myFriends", comment: ""))
+                        .tag(1)
+                }
+                .pickerStyle(.segmented)
+                .padding(.horizontal, OffriiTheme.spacingLG)
+                .padding(.vertical, OffriiTheme.spacingSM)
 
-            // Content
-            switch selectedSegment {
-            case 0:
-                CircleListContent(
-                    viewModel: viewModel,
-                    showCreateCircle: $showCreateCircle
-                )
-            default:
-                FriendsListContent(
-                    viewModel: viewModel,
-                    showAddFriend: $showAddFriend,
-                    showInviteContacts: $showInviteContacts
-                )
+                // Content
+                switch selectedSegment {
+                case 0:
+                    CircleListContent(viewModel: viewModel)
+                default:
+                    FriendsListContent(
+                        viewModel: viewModel,
+                        showAddFriend: $showAddFriend,
+                        showInviteContacts: $showInviteContacts
+                    )
+                }
             }
+
+            // FAB — same as Envies tab
+            OffriiFloatingActionButton(icon: "plus") {
+                showCreateCircle = true
+            }
+            .padding(.trailing, OffriiTheme.spacingLG)
+            .padding(.bottom, OffriiTheme.spacingLG)
         }
         .background(OffriiTheme.background.ignoresSafeArea())
         .navigationTitle(NSLocalizedString("circles.title", comment: ""))

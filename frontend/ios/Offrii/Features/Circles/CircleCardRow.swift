@@ -82,46 +82,23 @@ struct CircleCardRow: View {
     @ViewBuilder
     private var avatarStack: some View {
         if circle.memberNames.isEmpty {
-            ZStack {
-                Circle()
-                    .fill(
-                        LinearGradient(
-                            colors: [
-                                OffriiTheme.primary.opacity(0.25),
-                                OffriiTheme.accent.opacity(0.15),
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .frame(width: 48, height: 48)
-
-                Image(systemName: circleIcon)
-                    .font(.system(size: 18))
-                    .foregroundColor(OffriiTheme.primary)
-            }
+            AvatarView(circle.name, size: .medium)
+        } else if circle.memberNames.count == 1 {
+            AvatarView(circle.memberNames[0], size: .medium)
         } else {
             ZStack {
-                ForEach(Array(circle.memberNames.prefix(3).enumerated()), id: \.offset) { idx, name in
-                    let initial = name.prefix(1).uppercased()
-                    Text(initial)
-                        .font(.system(size: 12, weight: .bold))
-                        .foregroundColor(.white)
-                        .frame(width: 28, height: 28)
-                        .background(avatarColor(for: idx))
-                        .clipShape(Circle())
+                ForEach(
+                    Array(circle.memberNames.prefix(3).enumerated()),
+                    id: \.offset
+                ) { idx, name in
+                    AvatarView(name, size: .small)
                         .overlay(
                             Circle().strokeBorder(.white, lineWidth: 1.5)
                         )
-                        .offset(x: CGFloat(idx) * 10 - 10)
+                        .offset(x: CGFloat(idx) * 12 - 12)
                 }
             }
-            .frame(width: 48, height: 48)
+            .frame(width: 52, height: 44)
         }
-    }
-
-    private func avatarColor(for index: Int) -> Color {
-        let colors = [OffriiTheme.primary, OffriiTheme.accent, OffriiTheme.secondary]
-        return colors[index % colors.count]
     }
 }

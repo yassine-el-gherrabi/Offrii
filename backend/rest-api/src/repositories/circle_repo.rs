@@ -123,7 +123,7 @@ pub(crate) async fn list_by_member(
         "SELECT c.id, c.name, c.owner_id, c.is_direct, c.created_at,
                 COUNT(DISTINCT cm2.user_id) AS member_count,
                 (
-                    SELECT u.username FROM circle_members cm3
+                    SELECT COALESCE(u.display_name, u.username) FROM circle_members cm3
                     JOIN users u ON u.id = cm3.user_id
                     WHERE cm3.circle_id = c.id AND cm3.user_id != $1
                     LIMIT 1

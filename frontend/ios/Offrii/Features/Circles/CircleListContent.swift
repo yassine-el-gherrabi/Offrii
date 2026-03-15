@@ -4,8 +4,6 @@ import SwiftUI
 
 struct CircleListContent: View {
     var viewModel: CirclesViewModel
-    @Binding var showCreateCircle: Bool
-    @Environment(OnboardingTipManager.self) private var tipManager
 
     var body: some View {
         if viewModel.isLoadingCircles && viewModel.circles.isEmpty {
@@ -23,9 +21,7 @@ struct CircleListContent: View {
             OffriiEmptyState(
                 icon: "person.2.fill",
                 title: NSLocalizedString("circles.empty", comment: ""),
-                subtitle: NSLocalizedString("circles.emptySubtitle", comment: ""),
-                ctaTitle: NSLocalizedString("circles.create", comment: ""),
-                ctaAction: { showCreateCircle = true }
+                subtitle: NSLocalizedString("circles.emptySubtitle", comment: "")
             )
             Spacer()
         } else {
@@ -35,25 +31,12 @@ struct CircleListContent: View {
                     searchBar
                         .padding(.horizontal, OffriiTheme.spacingXS)
 
-                    createCircleButton
-
                     ForEach(viewModel.filteredCircles) { circle in
                         NavigationLink(value: circle.id) {
                             CircleCardRow(circle: circle)
                         }
                         .buttonStyle(.plain)
                         .contextMenu {
-                            Button {
-                                // Edit handled by detail view
-                            } label: {
-                                Label(
-                                    NSLocalizedString("circles.context.edit", comment: ""),
-                                    systemImage: "pencil"
-                                )
-                            }
-
-                            Divider()
-
                             Button(role: .destructive) {
                                 Task { await viewModel.deleteCircle(circle) }
                             } label: {
@@ -67,39 +50,6 @@ struct CircleListContent: View {
                 }
                 .padding(.horizontal, OffriiTheme.spacingBase)
                 .padding(.vertical, OffriiTheme.spacingSM)
-            }
-        }
-    }
-
-    // MARK: - Create Button
-
-    @ViewBuilder
-    private var createCircleButton: some View {
-        Button {
-            showCreateCircle = true
-        } label: {
-            Label(
-                NSLocalizedString("circles.create", comment: ""),
-                systemImage: "plus.circle.fill"
-            )
-            .font(OffriiTypography.footnote)
-            .fontWeight(.semibold)
-            .foregroundColor(OffriiTheme.primary)
-            .padding(.horizontal, OffriiTheme.spacingBase)
-            .padding(.vertical, OffriiTheme.spacingSM)
-            .background(OffriiTheme.primary.opacity(0.1))
-            .cornerRadius(OffriiTheme.cornerRadiusXL)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .overlay(alignment: .bottom) {
-            if tipManager.activeTip == .circlesCreate {
-                OffriiTooltip(
-                    message: OnboardingTipManager.message(for: .circlesCreate),
-                    arrow: .top
-                ) {
-                    tipManager.dismiss(.circlesCreate)
-                }
-                .offset(y: 60)
             }
         }
     }
