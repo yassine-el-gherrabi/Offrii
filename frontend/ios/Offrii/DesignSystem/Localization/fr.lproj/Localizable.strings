@@ -359,6 +359,7 @@
 "common.ok" = "OK";
 "common.continue" = "Continuer";
 "common.error" = "Erreur";
+"common.copy" = "Copier";
 
 /* Tooltips - Onboarding */
 "tooltip.gotIt" = "Compris";

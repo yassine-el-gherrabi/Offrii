@@ -11,6 +11,7 @@ struct CircleDetailView: View {
     @State private var showInvite = false
     @State private var showEdit = false
     @State private var showLeaveAlert = false
+    @State private var selectedItemId: UUID?
 
     private var currentUserId: UUID? { authManager.currentUser?.id }
     private var isOwner: Bool { viewModel.detail?.ownerId == currentUserId }
@@ -60,6 +61,11 @@ struct CircleDetailView: View {
                 }
                 .presentationDetents([.medium])
             }
+        }
+        .sheet(item: $selectedItemId) { itemId in
+            ItemDetailSheet(itemId: itemId)
+                .environment(authManager)
+                .presentationDetents([.medium, .large])
         }
         .alert(
             NSLocalizedString("circles.members.leaveConfirm.title", comment: ""),
@@ -279,6 +285,7 @@ struct CircleDetailView: View {
     // MARK: - Shared Item Grid
 
     @ViewBuilder
+    // swiftlint:disable:next function_body_length
     private func itemGridContent(
         items: [CircleItemResponse],
         showClaimButtons: Bool
@@ -298,7 +305,55 @@ struct CircleDetailView: View {
             ScrollView {
                 LazyVGrid(columns: gridColumns, spacing: OffriiTheme.spacingSM) {
                     ForEach(items) { item in
-                        circleItemCard(item, showClaimButtons: showClaimButtons)
+                        let isMyItem = item.sharedBy == currentUserId
+
+                        Button {
+                            OffriiHaptics.tap()
+                            selectedItemId = item.id
+                        } label: {
+                            circleItemCard(item, showClaimButtons: showClaimButtons)
+                        }
+                        .buttonStyle(.plain)
+                        .contextMenu {
+                            if !isMyItem {
+                                if item.isClaimed {
+                                    if item.claimedBy?.userId == currentUserId {
+                                        Button {
+                                            Task {
+                                                await viewModel.unclaimItem(itemId: item.id)
+                                                await viewModel.loadItems(circleId: circleId)
+                                            }
+                                        } label: {
+                                            Label(
+                                                NSLocalizedString("circles.detail.claimed", comment: ""),
+                                                systemImage: "xmark.circle"
+                                            )
+                                        }
+                                    }
+                                } else {
+                                    Button {
+                                        Task {
+                                            await viewModel.claimItem(itemId: item.id)
+                                            await viewModel.loadItems(circleId: circleId)
+                                        }
+                                    } label: {
+                                        Label(
+                                            NSLocalizedString("circles.detail.handleIt", comment: ""),
+                                            systemImage: "gift"
+                                        )
+                                    }
+                                }
+                            }
+
+                            Button {
+                                UIPasteboard.general.string = item.name
+                            } label: {
+                                Label(
+                                    NSLocalizedString("common.copy", comment: ""),
+                                    systemImage: "doc.on.doc"
+                                )
+                            }
+                        }
                     }
                 }
                 .padding(.horizontal, OffriiTheme.spacingBase)
@@ -517,7 +572,6 @@ struct CircleDetailView: View {
             }
             .padding(.horizontal, OffriiTheme.spacingSM)
             .padding(.vertical, OffriiTheme.spacingSM)
-            .frame(height: 56, alignment: .top)
         }
         .background(OffriiTheme.card)
         .cornerRadius(OffriiTheme.cornerRadiusLG)
@@ -575,10 +629,11 @@ struct CircleDetailView: View {
     // MARK: - Helpers
 
     private func reload() async {
-        await viewModel.loadDetail(circleId: circleId)
+        async let detail: () = viewModel.loadDetail(circleId: circleId)
+        async let categories: () = viewModel.loadCategories()
+        _ = await (detail, categories)
         await viewModel.loadItems(circleId: circleId)
         await viewModel.loadFeed(circleId: circleId)
-        await viewModel.loadCategories()
     }
 
     private func formattedDate(_ date: Date) -> String {
