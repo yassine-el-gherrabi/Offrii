@@ -81,12 +81,8 @@ struct WishlistGridCard: View {
                 }
 
                 // Text zone
-                HStack(alignment: .top, spacing: 4) {
-                    // Priority dots
-                    priorityDots
-
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(item.name)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(item.name)
                             .font(.system(size: 14, weight: .semibold))
                             .foregroundColor(OffriiTheme.text)
                             .lineLimit(2)
@@ -96,7 +92,6 @@ struct WishlistGridCard: View {
                             .font(.system(size: 12, weight: .regular))
                             .foregroundColor(OffriiTheme.textMuted)
                             .lineLimit(1)
-                    }
                 }
                 .padding(.horizontal, OffriiTheme.spacingSM)
                 .padding(.vertical, OffriiTheme.spacingSM)
@@ -152,26 +147,22 @@ struct WishlistGridCard: View {
         )
     }
 
-    // MARK: - Priority Dots
-
-    @ViewBuilder
-    private var priorityDots: some View {
-        if item.priority >= 2 {
-            HStack(spacing: 2) {
-                ForEach(0..<item.priority, id: \.self) { _ in
-                    Circle()
-                        .fill(item.priority == 3 ? OffriiTheme.danger : OffriiTheme.accent)
-                        .frame(width: 5, height: 5)
-                }
-            }
-            .padding(.top, 4)
-        }
-    }
-
     // MARK: - Badge Overlay (non-claimed badges)
 
     @ViewBuilder
     private var otherBadges: some View {
+            // Priority flames
+            if item.priority >= 2 {
+                glassBadge {
+                    HStack(spacing: 2) {
+                        ForEach(0..<(item.priority - 1), id: \.self) { _ in
+                            Image(systemName: "flame.fill")
+                                .font(.system(size: 10))
+                        }
+                    }
+                    .foregroundColor(item.priority == 3 ? OffriiTheme.danger : OffriiTheme.primary)
+                }
+            }
             // Purchased checkmark
             if isPurchasedTab {
                 glassBadge {

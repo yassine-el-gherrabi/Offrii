@@ -547,25 +547,34 @@ struct CircleDetailView: View {
                         .textCase(.uppercase)
                         .foregroundColor(.white)
                 }
+
+                // Priority flames (top-right)
+                if item.priority >= 2 {
+                    HStack(spacing: 2) {
+                        ForEach(0..<(Int(item.priority) - 1), id: \.self) { _ in
+                            Image(systemName: "flame.fill")
+                                .font(.system(size: 10))
+                        }
+                    }
+                    .foregroundColor(
+                        item.priority == 3 ? OffriiTheme.danger : OffriiTheme.primary
+                    )
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 3)
+                    .background(.ultraThinMaterial)
+                    .cornerRadius(OffriiTheme.cornerRadiusXS)
+                    .frame(
+                        maxWidth: .infinity, maxHeight: .infinity,
+                        alignment: .topTrailing
+                    )
+                    .padding(OffriiTheme.spacingSM)
+                }
             }
             .frame(height: 130)
             .clipped()
 
             // Text zone
-            HStack(alignment: .top, spacing: 4) {
-                // Priority dots
-                if item.priority > 1 {
-                    HStack(spacing: 2) {
-                        ForEach(0..<Int(item.priority), id: \.self) { _ in
-                            Circle()
-                                .fill(OffriiTheme.danger)
-                                .frame(width: 5, height: 5)
-                        }
-                    }
-                    .padding(.top, 6)
-                }
-
-                VStack(alignment: .leading, spacing: OffriiTheme.spacingXS) {
+            VStack(alignment: .leading, spacing: OffriiTheme.spacingXS) {
                     Text(item.name)
                         .font(.system(size: 14, weight: .semibold))
                         .foregroundColor(OffriiTheme.text)
@@ -583,7 +592,6 @@ struct CircleDetailView: View {
                             .padding(.top, 2)
                     }
                 }
-            }
             .padding(.horizontal, OffriiTheme.spacingSM)
             .padding(.vertical, OffriiTheme.spacingSM)
         }

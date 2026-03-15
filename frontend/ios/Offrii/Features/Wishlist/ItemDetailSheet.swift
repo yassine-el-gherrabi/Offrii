@@ -487,20 +487,22 @@ struct ItemDetailSheet: View {
 
     @ViewBuilder
     private func priorityChip(_ priority: Int) -> some View {
-        HStack(spacing: 3) {
-            ForEach(0..<priority, id: \.self) { _ in
-                Circle()
-                    .fill(priority == 3 ? OffriiTheme.danger : (priority == 2 ? OffriiTheme.accent : OffriiTheme.textMuted))
-                    .frame(width: 6, height: 6)
+        let color = priority == 3 ? OffriiTheme.danger : (priority == 2 ? OffriiTheme.primary : OffriiTheme.textMuted)
+        HStack(spacing: 4) {
+            if priority >= 2 {
+                ForEach(0..<(priority - 1), id: \.self) { _ in
+                    Image(systemName: "flame.fill")
+                        .font(.system(size: 10))
+                }
             }
             Text(Item.priorityLabelStatic(priority))
                 .font(OffriiTypography.caption)
                 .fontWeight(.medium)
-                .foregroundColor(priority == 3 ? OffriiTheme.danger : (priority == 2 ? OffriiTheme.accent : OffriiTheme.textMuted))
         }
+        .foregroundColor(color)
         .padding(.horizontal, 10)
         .padding(.vertical, 4)
-        .background((priority == 3 ? OffriiTheme.danger : (priority == 2 ? OffriiTheme.accent : OffriiTheme.textMuted)).opacity(0.1))
+        .background(color.opacity(0.1))
         .cornerRadius(OffriiTheme.cornerRadiusSM)
     }
 

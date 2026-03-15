@@ -484,8 +484,8 @@ fn render_shared_view_html(
         };
 
         let dots = match item.priority {
-            3 => "<span class=\"dt dh\">\u{25CF}\u{25CF}\u{25CF}</span> ",
-            2 => "<span class=\"dt dm\">\u{25CF}\u{25CF}</span> ",
+            3 => "<span class=\"dt dh\">\u{1F525}\u{1F525}</span> ",
+            2 => "<span class=\"dt dm\">\u{1F525}</span> ",
             _ => "",
         };
 
