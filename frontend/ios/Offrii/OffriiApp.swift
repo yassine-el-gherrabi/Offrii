@@ -1,7 +1,9 @@
 import SwiftUI
+import UserNotifications
 
 @main
 struct OffriiApp: App {
+    @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @State private var authManager = AuthManager()
     @State private var router = AppRouter()
     @State private var tipManager = OnboardingTipManager()
@@ -106,6 +108,15 @@ struct MainTabView: View {
             })
         }
         .ignoresSafeArea(.keyboard)
+        .task {
+            let center = UNUserNotificationCenter.current()
+            let settings = await center.notificationSettings()
+            if settings.authorizationStatus == .authorized {
+                await MainActor.run {
+                    UIApplication.shared.registerForRemoteNotifications()
+                }
+            }
+        }
         .sheet(isPresented: $showCreateSheet) {
             QuickCreateSheet()
                 .presentationDetents([.medium])

@@ -159,6 +159,34 @@ impl PgCircleService {
         });
     }
 
+    fn notify_user(&self, user_id: Uuid, title: String, body: String) {
+        let push_token_repo = self.push_token_repo.clone();
+        let notification_svc = self.notification_svc.clone();
+
+        tokio::spawn(async move {
+            let tokens = match push_token_repo.find_by_user(user_id).await {
+                Ok(t) => t,
+                Err(e) => {
+                    tracing::warn!(%user_id, error = %e, "failed to fetch push tokens");
+                    return;
+                }
+            };
+
+            let requests: Vec<NotificationRequest> = tokens
+                .into_iter()
+                .map(|pt| NotificationRequest {
+                    device_token: pt.token,
+                    title: title.clone(),
+                    body: body.clone(),
+                })
+                .collect();
+
+            if !requests.is_empty() {
+                notification_svc.send_batch(&requests).await;
+            }
+        });
+    }
+
     /// Build a user_id → (username, display_name) lookup from member list.
     async fn user_lookup(
         &self,
@@ -879,10 +907,18 @@ impl traits::CircleService for PgCircleService {
             .await
             .map_err(|e| AppError::Internal(e.into()))?;
 
-        // Fire-and-forget notification to the added user
+        // N6: Notify the added user specifically
+        let circle_name = circle.name.as_deref().unwrap_or("un cercle");
+        self.notify_user(
+            user_id,
+            "Nouveau cercle".to_string(),
+            format!("Vous avez été ajouté au cercle {}", circle_name),
+        );
+
+        // Notify other members that someone joined
         self.notify_members(
             circle_id,
-            requester_id,
+            user_id, // exclude the added user (they got their own notif)
             "Nouveau membre !".to_string(),
             format!("{} a rejoint le cercle", target.username),
         );
@@ -900,16 +936,75 @@ impl traits::CircleService for PgCircleService {
             .await
             .map_err(AppError::Internal)?;
 
-        for circle_id in circle_ids {
+        for circle_id in &circle_ids {
             if let Err(e) = self
                 .circle_event_repo
-                .insert(circle_id, claimer_id, "item_claimed", Some(item_id), None)
+                .insert(*circle_id, claimer_id, "item_claimed", Some(item_id), None)
                 .await
             {
                 tracing::warn!(%circle_id, error = %e, "failed to insert item_claimed event");
                 continue;
             }
-            self.bump_circle_version(circle_id);
+            self.bump_circle_version(*circle_id);
+        }
+
+        // N1+N2: Send push notifications
+        let item = self
+            .item_repo
+            .find_by_id_any_user(item_id)
+            .await
+            .ok()
+            .flatten();
+        if let Some(ref item) = item {
+            let item_name = &item.name;
+            let owner_id = item.user_id;
+
+            // N1: Notify owner (don't reveal who claimed)
+            self.notify_user(
+                owner_id,
+                "Envie réservée".to_string(),
+                format!("Ton envie '{}' a été réservée", item_name),
+            );
+
+            // N2: Notify circle members (reveal claimer, exclude owner + claimer)
+            let claimer = self.user_repo.find_by_id(claimer_id).await.ok().flatten();
+            let claimer_name = claimer
+                .as_ref()
+                .and_then(|u| u.display_name.clone())
+                .unwrap_or_else(|| {
+                    claimer
+                        .as_ref()
+                        .map(|u| u.username.clone())
+                        .unwrap_or_default()
+                });
+
+            for circle_id in &circle_ids {
+                let circle = self.circle_repo.find_by_id(*circle_id).await.ok().flatten();
+                let circle_name = circle
+                    .as_ref()
+                    .and_then(|c| c.name.clone())
+                    .unwrap_or_default();
+
+                // Notify all members except owner and claimer
+                let members = self
+                    .circle_member_repo
+                    .list_members(*circle_id)
+                    .await
+                    .unwrap_or_default();
+                for member in &members {
+                    if member.user_id == owner_id || member.user_id == claimer_id {
+                        continue;
+                    }
+                    self.notify_user(
+                        member.user_id,
+                        "Envie réservée".to_string(),
+                        format!(
+                            "'{}' a été réservé par {} dans {}",
+                            item_name, claimer_name, circle_name
+                        ),
+                    );
+                }
+            }
         }
 
         Ok(())
@@ -923,16 +1018,66 @@ impl traits::CircleService for PgCircleService {
             .await
             .map_err(AppError::Internal)?;
 
-        for circle_id in circle_ids {
+        for circle_id in &circle_ids {
             if let Err(e) = self
                 .circle_event_repo
-                .insert(circle_id, claimer_id, "item_unclaimed", Some(item_id), None)
+                .insert(
+                    *circle_id,
+                    claimer_id,
+                    "item_unclaimed",
+                    Some(item_id),
+                    None,
+                )
                 .await
             {
                 tracing::warn!(%circle_id, error = %e, "failed to insert item_unclaimed event");
                 continue;
             }
-            self.bump_circle_version(circle_id);
+            self.bump_circle_version(*circle_id);
+        }
+
+        // N3: Send push notifications
+        let item = self
+            .item_repo
+            .find_by_id_any_user(item_id)
+            .await
+            .ok()
+            .flatten();
+        if let Some(ref item) = item {
+            let item_name = &item.name;
+            let owner_id = item.user_id;
+
+            // Notify owner
+            self.notify_user(
+                owner_id,
+                "Envie libérée".to_string(),
+                format!("Ton envie '{}' n'est plus réservée", item_name),
+            );
+
+            // Notify circle members (except owner and unclaimer)
+            for circle_id in &circle_ids {
+                let circle = self.circle_repo.find_by_id(*circle_id).await.ok().flatten();
+                let circle_name = circle
+                    .as_ref()
+                    .and_then(|c| c.name.clone())
+                    .unwrap_or_default();
+
+                let members = self
+                    .circle_member_repo
+                    .list_members(*circle_id)
+                    .await
+                    .unwrap_or_default();
+                for member in &members {
+                    if member.user_id == owner_id || member.user_id == claimer_id {
+                        continue;
+                    }
+                    self.notify_user(
+                        member.user_id,
+                        "Envie libérée".to_string(),
+                        format!("'{}' n'est plus réservé dans {}", item_name, circle_name),
+                    );
+                }
+            }
         }
 
         Ok(())

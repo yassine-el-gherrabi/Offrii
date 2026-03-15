@@ -198,7 +198,7 @@ impl traits::FriendService for PgFriendService {
         self.notify_user(
             target.id,
             "Demande d'ami".to_string(),
-            format!("{} veut être votre ami", sender.username),
+            format!("{} veut vous ajouter en ami", sender.username),
         );
 
         Ok(FriendRequestResponse {
@@ -329,7 +329,7 @@ impl traits::FriendService for PgFriendService {
             self.notify_user(
                 req.from_user_id,
                 "Demande acceptée !".to_string(),
-                format!("{} a accepté votre demande d'ami", acceptor.username),
+                format!("{} a accepté votre demande", acceptor.username),
             );
         }
 

@@ -120,13 +120,11 @@ impl traits::WishMessageService for PgWishMessageService {
             Some(wish.owner_id)
         };
         if let Some(recipient_id) = other_id {
-            let preview = if body.chars().count() > 50 {
-                let truncated: String = body.chars().take(50).collect();
-                format!("{truncated}...")
-            } else {
-                body.to_string()
-            };
-            self.notify_user(recipient_id, sender_name.to_string(), preview);
+            self.notify_user(
+                recipient_id,
+                "Nouveau message".to_string(),
+                "Nouveau message sur votre demande d'entraide".to_string(),
+            );
         }
 
         Ok(MessageResponse {
