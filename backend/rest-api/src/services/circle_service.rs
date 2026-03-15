@@ -798,6 +798,26 @@ impl traits::CircleService for PgCircleService {
         let claimer_ids: Vec<Uuid> = items_map.values().filter_map(|i| i.claimed_by).collect();
         let claimer_map = self.user_lookup(&claimer_ids).await?;
 
+        // Build category icon map
+        let cat_ids: Vec<Uuid> = items_map.values().filter_map(|i| i.category_id).collect();
+        let cat_icon_map: HashMap<Uuid, String> = if !cat_ids.is_empty() {
+            sqlx::query("SELECT id, icon FROM categories WHERE id = ANY($1)")
+                .bind(&cat_ids)
+                .fetch_all(&self.pool)
+                .await
+                .map_err(|e| AppError::Internal(e.into()))?
+                .into_iter()
+                .map(|row| {
+                    use sqlx::Row;
+                    let id: Uuid = row.get("id");
+                    let icon: String = row.get("icon");
+                    (id, icon)
+                })
+                .collect()
+        } else {
+            HashMap::new()
+        };
+
         let responses = circle_items
             .into_iter()
             .filter_map(|ci| {
@@ -824,6 +844,9 @@ impl traits::CircleService for PgCircleService {
                     estimated_price: item.estimated_price,
                     priority: item.priority,
                     category_id: item.category_id,
+                    category_icon: item
+                        .category_id
+                        .and_then(|cid| cat_icon_map.get(&cid).cloned()),
                     status: item.status.clone(),
                     is_claimed,
                     claimed_by,
@@ -879,6 +902,18 @@ impl traits::CircleService for PgCircleService {
             None
         };
 
+        // Fetch category icon
+        let category_icon = if let Some(cid) = item.category_id {
+            sqlx::query_scalar::<_, String>("SELECT icon FROM categories WHERE id = $1")
+                .bind(cid)
+                .fetch_optional(&self.pool)
+                .await
+                .ok()
+                .flatten()
+        } else {
+            None
+        };
+
         Ok(CircleItemResponse {
             id: item.id,
             name: item.name,
@@ -887,6 +922,7 @@ impl traits::CircleService for PgCircleService {
             estimated_price: item.estimated_price,
             priority: item.priority,
             category_id: item.category_id,
+            category_icon,
             status: item.status,
             is_claimed,
             claimed_by,

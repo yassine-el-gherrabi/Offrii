@@ -94,6 +94,7 @@ pub struct CircleItemResponse {
     pub estimated_price: Option<rust_decimal::Decimal>,
     pub priority: i16,
     pub category_id: Option<Uuid>,
+    pub category_icon: Option<String>,
     pub status: String,
     pub is_claimed: bool,
     pub claimed_by: Option<ClaimedByInfo>,

@@ -43,6 +43,7 @@ struct CircleItemResponse: Codable, Identifiable {
     let estimatedPrice: Decimal?
     let priority: Int16
     let categoryId: UUID?
+    let categoryIcon: String?
     let status: String
     let isClaimed: Bool
     let claimedBy: ClaimedByInfo?
@@ -58,6 +59,7 @@ struct CircleItemResponse: Codable, Identifiable {
         case id, name, description, url, priority, status, links
         case estimatedPrice = "estimated_price"
         case categoryId = "category_id"
+        case categoryIcon = "category_icon"
         case isClaimed = "is_claimed"
         case claimedBy = "claimed_by"
         case imageUrl = "image_url"
@@ -76,6 +78,7 @@ struct CircleItemResponse: Codable, Identifiable {
         url = try container.decodeIfPresent(String.self, forKey: .url)
         priority = try container.decode(Int16.self, forKey: .priority)
         categoryId = try container.decodeIfPresent(UUID.self, forKey: .categoryId)
+        categoryIcon = try container.decodeIfPresent(String.self, forKey: .categoryIcon)
         status = try container.decode(String.self, forKey: .status)
         isClaimed = try container.decode(Bool.self, forKey: .isClaimed)
         claimedBy = try container.decodeIfPresent(ClaimedByInfo.self, forKey: .claimedBy)

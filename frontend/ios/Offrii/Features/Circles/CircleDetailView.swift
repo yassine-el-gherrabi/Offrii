@@ -510,7 +510,7 @@ struct CircleDetailView: View {
         showClaimButtons: Bool
     ) -> some View {
         let itemIsOwner = item.sharedBy == currentUserId
-        let style = CategoryStyle(icon: categoryIcon(for: item.categoryId))
+        let style = CategoryStyle(icon: item.categoryIcon)
 
         VStack(alignment: .leading, spacing: 0) {
             // Image zone — OG image or category gradient fallback
