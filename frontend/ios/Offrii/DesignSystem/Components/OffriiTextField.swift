@@ -70,6 +70,12 @@ struct OffriiTextField: View {
             )
             .overlay(focusGlow)
             .focused($isFocused)
+            .onChange(of: text) {
+                if keyboardType == .decimalPad {
+                    let filtered = text.filter { $0.isNumber || $0 == "," || $0 == "." }
+                    if filtered != text { text = filtered }
+                }
+            }
             .animation(OffriiAnimation.defaultSpring, value: isFocused)
             .animation(OffriiAnimation.defaultSpring, value: errorMessage)
 
