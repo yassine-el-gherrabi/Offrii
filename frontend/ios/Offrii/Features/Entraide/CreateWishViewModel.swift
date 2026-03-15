@@ -1,4 +1,5 @@
 import Foundation
+import UIKit
 
 @Observable
 @MainActor
@@ -7,7 +8,7 @@ final class CreateWishViewModel {
     var description = ""
     var selectedCategory: WishCategory?
     var isAnonymous = false
-    var imageUrl = ""
+    var selectedImage: UIImage?
     var links: [String] = [""]
     var isSubmitting = false
     var error: String?
@@ -43,6 +44,19 @@ final class CreateWishViewModel {
         isSubmitting = true
         error = nil
 
+        // Upload image if selected
+        var imageUrl: String? = nil
+        if let image = selectedImage,
+           let data = image.compressForUpload() {
+            do {
+                imageUrl = try await ItemService.shared.uploadImage(data)
+            } catch {
+                self.error = error.localizedDescription
+                isSubmitting = false
+                return false
+            }
+        }
+
         let trimmedLinks = links
             .map { $0.trimmingCharacters(in: .whitespaces) }
             .filter { !$0.isEmpty }
@@ -53,7 +67,7 @@ final class CreateWishViewModel {
                 description: description.isEmpty ? nil : description,
                 category: selectedCategory!,
                 isAnonymous: isAnonymous,
-                imageUrl: imageUrl.isEmpty ? nil : imageUrl.trimmingCharacters(in: .whitespaces),
+                imageUrl: imageUrl,
                 links: trimmedLinks.isEmpty ? nil : trimmedLinks
             )
             isSubmitting = false

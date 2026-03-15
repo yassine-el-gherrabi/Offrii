@@ -7,8 +7,14 @@ struct CircleDetailView: View {
     @State private var viewModel = CircleDetailViewModel()
     @State private var showInvite = false
     @State private var showMembers = false
+    @State private var selectedMemberId: UUID?
 
     private var currentUserId: UUID? { authManager.currentUser?.id }
+
+    private let gridColumns = [
+        GridItem(.flexible(), spacing: OffriiTheme.spacingSM),
+        GridItem(.flexible(), spacing: OffriiTheme.spacingSM)
+    ]
 
     var body: some View {
         ZStack {
@@ -19,6 +25,13 @@ struct CircleDetailView: View {
                     .padding(.top, OffriiTheme.spacingBase)
             } else if let detail = viewModel.detail {
                 VStack(spacing: 0) {
+                    // Member carousel
+                    MemberCarousel(
+                        members: detail.members,
+                        selectedMemberId: $selectedMemberId,
+                        currentUserId: currentUserId
+                    )
+
                     // Segmented control
                     Picker("", selection: $viewModel.selectedTab) {
                         Text(NSLocalizedString("circles.detail.items", comment: ""))
@@ -32,9 +45,12 @@ struct CircleDetailView: View {
 
                     switch viewModel.selectedTab {
                     case .items:
-                        itemsContent(detail)
+                        itemsGridContent(detail)
                     case .activity:
-                        activityContent()
+                        CircleActivityFeed(
+                            events: viewModel.feed,
+                            currentUserId: currentUserId
+                        )
                     }
                 }
             } else if let error = viewModel.error {
@@ -112,11 +128,13 @@ struct CircleDetailView: View {
         }
     }
 
-    // MARK: - Items Tab
+    // MARK: - Items Grid
 
     @ViewBuilder
-    private func itemsContent(_ detail: CircleDetailResponse) -> some View {
-        if viewModel.items.isEmpty {
+    private func itemsGridContent(_ detail: CircleDetailResponse) -> some View {
+        let filteredItems = filteredItemsForMember()
+
+        if filteredItems.isEmpty {
             Spacer()
             OffriiEmptyState(
                 icon: "tray",
@@ -126,181 +144,120 @@ struct CircleDetailView: View {
             Spacer()
         } else {
             ScrollView {
-                LazyVStack(alignment: .leading, spacing: OffriiTheme.spacingLG) {
-                    ForEach(viewModel.itemsByMember, id: \.member.userId) { section in
-                        memberSection(section.member, items: section.items)
+                LazyVGrid(columns: gridColumns, spacing: OffriiTheme.spacingSM) {
+                    ForEach(filteredItems) { item in
+                        circleItemCard(item)
                     }
                 }
-                .padding(OffriiTheme.spacingBase)
+                .padding(.horizontal, OffriiTheme.spacingBase)
+                .padding(.vertical, OffriiTheme.spacingSM)
             }
         }
     }
 
-    @ViewBuilder
-    private func memberSection(_ member: CircleMember, items: [CircleItemResponse]) -> some View {
-        let isCurrentUser = member.userId == viewModel.currentUserId
-
-        VStack(alignment: .leading, spacing: OffriiTheme.spacingSM) {
-            HStack(spacing: OffriiTheme.spacingSM) {
-                AvatarView(member.displayName ?? member.username, size: .small)
-                Text(isCurrentUser
-                     ? NSLocalizedString("circles.detail.myWishes", comment: "")
-                     : (member.displayName ?? member.username))
-                    .font(OffriiTypography.headline)
-                    .foregroundColor(OffriiTheme.text)
-                Text("(\(items.count))")
-                    .font(OffriiTypography.caption)
-                    .foregroundColor(OffriiTheme.textMuted)
-            }
-
-            ForEach(items) { item in
-                itemRow(item, isOwner: isCurrentUser)
-            }
+    private func filteredItemsForMember() -> [CircleItemResponse] {
+        guard let memberId = selectedMemberId else {
+            return viewModel.items
         }
+        return viewModel.items.filter { $0.sharedBy == memberId }
     }
 
     @ViewBuilder
-    private func itemRow(_ item: CircleItemResponse, isOwner: Bool) -> some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 2) {
+    private func circleItemCard(_ item: CircleItemResponse) -> some View {
+        let isOwner = item.sharedBy == currentUserId
+
+        VStack(alignment: .leading, spacing: 0) {
+            // Image placeholder
+            LinearGradient(
+                colors: [OffriiTheme.primary.opacity(0.25), OffriiTheme.accent.opacity(0.15)],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            .frame(height: 100)
+            .overlay(
+                Image(systemName: "gift.fill")
+                    .font(.system(size: 28, weight: .light))
+                    .foregroundColor(.white.opacity(0.6))
+            )
+            .overlay(alignment: .topTrailing) {
+                if item.isClaimed {
+                    if isOwner {
+                        // Owner sees "reserved" but not by whom
+                        HStack(spacing: 3) {
+                            Image(systemName: "lock.fill")
+                                .font(.system(size: 8))
+                            Text(NSLocalizedString("wishlist.reserved", comment: ""))
+                                .font(.system(size: 9, weight: .semibold))
+                        }
+                        .foregroundColor(OffriiTheme.accent)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 3)
+                        .background(.ultraThinMaterial)
+                        .cornerRadius(OffriiTheme.cornerRadiusXS)
+                        .padding(OffriiTheme.spacingSM)
+                    }
+                }
+            }
+
+            // Text + claim action
+            VStack(alignment: .leading, spacing: OffriiTheme.spacingXXS) {
                 Text(item.name)
-                    .font(OffriiTypography.body)
+                    .font(.system(size: 14, weight: .semibold))
                     .foregroundColor(OffriiTheme.text)
+                    .lineLimit(2)
 
                 if let price = item.estimatedPrice {
                     Text(price.formatted(.currency(code: "EUR")))
-                        .font(OffriiTypography.caption)
+                        .font(.system(size: 12))
                         .foregroundColor(OffriiTheme.textMuted)
                 }
-            }
 
-            Spacer()
-
-            if isOwner {
-                // Anti-spoiler: owner sees "Reserved" but not who
-                if item.isClaimed {
-                    Label(NSLocalizedString("wishlist.reserved", comment: ""), systemImage: "gift.fill")
-                        .font(OffriiTypography.caption)
-                        .foregroundColor(OffriiTheme.accent)
-                }
-            } else {
-                if item.isClaimed {
-                    if item.claimedBy?.userId == viewModel.currentUserId {
-                        Button {
-                            Task {
-                                await viewModel.unclaimItem(itemId: item.id)
-                                await viewModel.loadItems(circleId: circleId)
-                            }
-                        } label: {
-                            Label(NSLocalizedString("circles.detail.claimed", comment: ""), systemImage: "checkmark.circle.fill")
-                                .font(OffriiTypography.caption)
-                                .foregroundColor(OffriiTheme.success)
-                        }
-                    } else {
-                        Text(NSLocalizedString("wishlist.reserved", comment: ""))
-                            .font(OffriiTypography.caption)
-                            .foregroundColor(OffriiTheme.textMuted)
-                    }
-                } else {
-                    Button {
-                        Task {
-                            await viewModel.claimItem(itemId: item.id)
-                            await viewModel.loadItems(circleId: circleId)
-                        }
-                    } label: {
-                        Text(NSLocalizedString("circles.detail.handleIt", comment: ""))
-                            .font(OffriiTypography.caption)
-                            .fontWeight(.semibold)
-                            .foregroundColor(.white)
-                            .padding(.horizontal, OffriiTheme.spacingSM)
-                            .padding(.vertical, OffriiTheme.spacingXS)
-                            .background(OffriiTheme.primary)
-                            .cornerRadius(OffriiTheme.cornerRadiusXL)
-                    }
+                if !isOwner {
+                    claimButton(item)
                 }
             }
+            .padding(.horizontal, OffriiTheme.spacingSM)
+            .padding(.vertical, OffriiTheme.spacingSM)
         }
-        .padding(OffriiTheme.spacingMD)
         .background(OffriiTheme.card)
         .cornerRadius(OffriiTheme.cornerRadiusLG)
+        .shadow(color: OffriiTheme.cardShadowColor, radius: 6, x: 0, y: 2)
     }
 
-    // MARK: - Activity Tab
-
     @ViewBuilder
-    private func activityContent() -> some View {
-        if viewModel.feed.isEmpty {
-            Spacer()
-            OffriiEmptyState(
-                icon: "bell.slash",
-                title: NSLocalizedString("circles.detail.noActivity", comment: ""),
-                subtitle: NSLocalizedString("circles.detail.noActivitySubtitle", comment: "")
-            )
-            Spacer()
-        } else {
-            List {
-                ForEach(viewModel.feed) { event in
-                    eventRow(event)
+    private func claimButton(_ item: CircleItemResponse) -> some View {
+        if item.isClaimed {
+            if item.claimedBy?.userId == currentUserId {
+                Button {
+                    Task {
+                        await viewModel.unclaimItem(itemId: item.id)
+                        await viewModel.loadItems(circleId: circleId)
+                    }
+                } label: {
+                    Label(NSLocalizedString("circles.detail.claimed", comment: ""), systemImage: "checkmark.circle.fill")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundColor(OffriiTheme.success)
                 }
-            }
-            .listStyle(.plain)
-        }
-    }
-
-    @ViewBuilder
-    private func eventRow(_ event: CircleEventResponse) -> some View {
-        HStack(spacing: OffriiTheme.spacingSM) {
-            Image(systemName: iconForEvent(event.eventType))
-                .foregroundColor(OffriiTheme.primary)
-                .frame(width: 24)
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text(descriptionForEvent(event))
-                    .font(OffriiTypography.body)
-                    .foregroundColor(OffriiTheme.text)
-
-                Text(event.createdAt, style: .relative)
-                    .font(OffriiTypography.caption)
+            } else {
+                Text(NSLocalizedString("wishlist.reserved", comment: ""))
+                    .font(.system(size: 11))
                     .foregroundColor(OffriiTheme.textMuted)
             }
-        }
-        .padding(.vertical, OffriiTheme.spacingXS)
-    }
-
-    private func iconForEvent(_ type: String) -> String {
-        switch type {
-        case "item_shared": return "square.and.arrow.up"
-        case "item_claimed": return "gift.fill"
-        case "item_unclaimed": return "gift"
-        case "member_joined": return "person.badge.plus"
-        case "member_left": return "person.badge.minus"
-        default: return "bell.fill"
-        }
-    }
-
-    private func descriptionForEvent(_ event: CircleEventResponse) -> String {
-        let actor = event.actorUsername ?? NSLocalizedString("circles.detail.someone", comment: "")
-        let itemName = event.targetItemName ?? ""
-        let isOwner = event.targetUserId == viewModel.currentUserId
-
-        switch event.eventType {
-        case "item_shared":
-            return String(format: NSLocalizedString("circles.event.itemShared", comment: ""), actor, itemName)
-        case "item_claimed":
-            if isOwner {
-                return String(format: NSLocalizedString("circles.event.itemClaimedAnti", comment: ""), itemName)
+        } else {
+            Button {
+                Task {
+                    await viewModel.claimItem(itemId: item.id)
+                    await viewModel.loadItems(circleId: circleId)
+                }
+            } label: {
+                Text(NSLocalizedString("circles.detail.handleIt", comment: ""))
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundColor(.white)
+                    .padding(.horizontal, OffriiTheme.spacingSM)
+                    .padding(.vertical, OffriiTheme.spacingXXS)
+                    .background(OffriiTheme.primary)
+                    .cornerRadius(OffriiTheme.cornerRadiusXL)
             }
-            return String(format: NSLocalizedString("circles.event.itemClaimed", comment: ""), actor, itemName)
-        case "item_unclaimed":
-            return String(format: NSLocalizedString("circles.event.itemUnclaimed", comment: ""), actor, itemName)
-        case "member_joined":
-            let target = event.targetUsername ?? actor
-            return String(format: NSLocalizedString("circles.event.memberJoined", comment: ""), target)
-        case "member_left":
-            let target = event.targetUsername ?? actor
-            return String(format: NSLocalizedString("circles.event.memberLeft", comment: ""), target)
-        default:
-            return event.eventType
         }
     }
 

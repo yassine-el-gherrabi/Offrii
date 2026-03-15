@@ -17,7 +17,7 @@ use rest_api::config::database::{create_pg_pool, create_redis_client};
 use rest_api::handlers::health::{health_check, health_live};
 use rest_api::handlers::{
     admin, auth, categories, circles, community_wishes, friends, items, push_tokens, share_links,
-    shared, users, wish_messages,
+    shared, upload, users, wish_messages,
 };
 use rest_api::repositories::category_repo::PgCategoryRepo;
 use rest_api::repositories::circle_event_repo::PgCircleEventRepo;
@@ -48,6 +48,7 @@ use rest_api::services::oauth_verifier::OAuthVerifier;
 use rest_api::services::push_token_service::PgPushTokenService;
 use rest_api::services::reminder_service::PgReminderService;
 use rest_api::services::share_link_service::PgShareLinkService;
+use rest_api::services::upload_service::{NoopUploadService, R2UploadService};
 use rest_api::services::user_service::PgUserService;
 use rest_api::services::wish_message_service::PgWishMessageService;
 use rest_api::traits::{
@@ -55,8 +56,8 @@ use rest_api::traits::{
     CircleMemberRepo, CircleRepo, CircleService, CommunityWishRepo, CommunityWishService,
     EmailService, FriendRepo, FriendService, HealthCheck, ItemRepo, ItemService, ModerationService,
     NotificationService, PushTokenRepo, PushTokenService, RefreshTokenRepo, ReminderService,
-    ShareLinkRepo, ShareLinkService, UserRepo, UserService, WishMessageRepo, WishMessageService,
-    WishReportRepo,
+    ShareLinkRepo, ShareLinkService, UploadService, UserRepo, UserService, WishMessageRepo,
+    WishMessageService, WishReportRepo,
 };
 use rest_api::utils::jwt::JwtKeys;
 
@@ -110,9 +111,11 @@ async fn main() -> anyhow::Result<()> {
         oauth_verifier,
     ));
     let item_repo: Arc<dyn ItemRepo> = Arc::new(PgItemRepo::new(db.clone()));
+    let circle_item_repo: Arc<dyn CircleItemRepo> = Arc::new(PgCircleItemRepo::new(db.clone()));
     let items: Arc<dyn ItemService> = Arc::new(PgItemService::new(
         db.clone(),
         item_repo.clone(),
+        circle_item_repo.clone(),
         redis.clone(),
     ));
     let category_repo: Arc<dyn CategoryRepo> = Arc::new(PgCategoryRepo::new(db.clone()));
@@ -163,7 +166,6 @@ async fn main() -> anyhow::Result<()> {
         Arc::new(PgCircleMemberRepo::new(db.clone()));
     let circle_invite_repo: Arc<dyn CircleInviteRepo> =
         Arc::new(PgCircleInviteRepo::new(db.clone()));
-    let circle_item_repo: Arc<dyn CircleItemRepo> = Arc::new(PgCircleItemRepo::new(db.clone()));
     let circle_event_repo: Arc<dyn CircleEventRepo> = Arc::new(PgCircleEventRepo::new(db.clone()));
     let circle_svc: Arc<dyn CircleService> = Arc::new(PgCircleService::new(
         db.clone(),
@@ -231,6 +233,34 @@ async fn main() -> anyhow::Result<()> {
         notification_svc,
     ));
 
+    // Upload service — use R2 if credentials are configured, otherwise noop
+    let upload_svc: Arc<dyn UploadService> = {
+        let r2_account_id = std::env::var("R2_ACCOUNT_ID").ok();
+        let r2_access_key = std::env::var("R2_ACCESS_KEY_ID").ok();
+        let r2_secret_key = std::env::var("R2_SECRET_ACCESS_KEY").ok();
+        let r2_bucket = std::env::var("R2_BUCKET_NAME").unwrap_or_else(|_| "offrii-media".into());
+        let r2_public_url = std::env::var("R2_PUBLIC_URL").unwrap_or_default();
+
+        if let (Some(account_id), Some(access_key), Some(secret_key)) =
+            (r2_account_id, r2_access_key, r2_secret_key)
+        {
+            tracing::info!("R2 upload service configured (bucket: {r2_bucket})");
+            Arc::new(
+                R2UploadService::new(
+                    &account_id,
+                    &access_key,
+                    &secret_key,
+                    r2_bucket,
+                    r2_public_url,
+                )
+                .await,
+            )
+        } else {
+            tracing::warn!("R2 not configured — upload endpoint will return test URLs");
+            Arc::new(NoopUploadService)
+        }
+    };
+
     let state = AppState {
         auth,
         jwt,
@@ -246,6 +276,7 @@ async fn main() -> anyhow::Result<()> {
         friends: friend_svc,
         community_wishes: community_wish_svc,
         wish_messages: wish_message_svc,
+        uploads: upload_svc,
     };
 
     let app = Router::new()
@@ -264,6 +295,7 @@ async fn main() -> anyhow::Result<()> {
         .nest("/users", friends::search_router())
         .nest("/community/wishes", community_wishes::router())
         .merge(wish_messages::router())
+        .nest("/upload", upload::router())
         .nest("/admin", admin::router())
         .layer(TraceLayer::new_for_http())
         .layer(

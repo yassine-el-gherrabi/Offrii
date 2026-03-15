@@ -47,4 +47,28 @@ final class ItemDetailViewModel {
             return false
         }
     }
+
+    func unshareFromCircle(circleId: UUID) async {
+        guard let item else { return }
+        do {
+            try await CircleService.shared.unshareItem(circleId: circleId, itemId: item.id)
+            self.item = try await ItemService.shared.getItem(id: item.id)
+        } catch {
+            self.error = error.localizedDescription
+        }
+    }
+
+    /// Owner removes a web claim from their item.
+    func ownerUnclaimWeb() async {
+        guard let item else { return }
+        isUpdating = true
+        do {
+            try await ItemService.shared.ownerUnclaimWeb(id: item.id)
+            // Reload the item to reflect the change
+            self.item = try await ItemService.shared.getItem(id: item.id)
+        } catch {
+            self.error = error.localizedDescription
+        }
+        isUpdating = false
+    }
 }

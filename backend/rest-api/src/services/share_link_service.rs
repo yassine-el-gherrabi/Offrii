@@ -240,11 +240,12 @@ async fn fetch_scoped_items(
                 AppError::Internal(anyhow::anyhow!("scope_data missing for category scope"))
             })?;
             let cat_id = extract_category_id(data)?;
+            let cat_ids = [cat_id];
             item_repo
                 .list(
                     link.user_id,
                     Some("active"),
-                    Some(cat_id),
+                    Some(&cat_ids),
                     "created_at",
                     "desc",
                     MAX_SHARED_VIEW_ITEMS,
@@ -391,7 +392,11 @@ impl traits::ShareLinkService for PgShareLinkService {
             .await
             .map_err(AppError::Internal)?;
 
-        Ok(links.into_iter().map(ShareLinkListItem::from).collect())
+        let base_url = &self.app_base_url;
+        Ok(links
+            .into_iter()
+            .map(|l| ShareLinkListItem::from_model(l, base_url))
+            .collect())
     }
 
     #[tracing::instrument(skip(self))]
@@ -428,15 +433,22 @@ impl traits::ShareLinkService for PgShareLinkService {
             .await
             .map_err(AppError::Internal)?;
 
-        let username = user.map(|u| u.username).unwrap_or_default();
+        let (username, display_name) = user
+            .map(|u| (u.username, u.display_name))
+            .unwrap_or_default();
 
-        // Get items filtered by scope
+        // Get items filtered by scope, exclude private items
         let items = fetch_scoped_items(self.item_repo.as_ref(), &link).await?;
 
-        let items: Vec<ItemResponse> = items.into_iter().map(ItemResponse::from).collect();
+        let items: Vec<ItemResponse> = items
+            .into_iter()
+            .filter(|i| !i.is_private)
+            .map(ItemResponse::from)
+            .collect();
 
         Ok(SharedViewResponse {
             user_username: username,
+            user_display_name: display_name,
             permissions: link.permissions,
             items,
         })
@@ -551,7 +563,7 @@ impl traits::ShareLinkService for PgShareLinkService {
 
             match item {
                 None => return Err(AppError::NotFound("item not found".into())),
-                Some(i) if i.claimed_by.is_some() => {
+                Some(i) if i.claimed_by.is_some() || i.claimed_via.is_some() => {
                     return Err(AppError::Conflict("item already claimed".into()));
                 }
                 Some(_) => return Err(AppError::BadRequest("item is not active".into())),
@@ -620,6 +632,104 @@ impl traits::ShareLinkService for PgShareLinkService {
                 }
                 Some(_) => return Err(AppError::NotFound("item not found".into())),
             }
+        }
+
+        Ok(())
+    }
+
+    #[tracing::instrument(skip(self))]
+    async fn web_claim_via_share(
+        &self,
+        token: &str,
+        item_id: Uuid,
+        name: &str,
+    ) -> Result<Uuid, AppError> {
+        let link = self
+            .share_link_repo
+            .find_by_token(token)
+            .await
+            .map_err(AppError::Internal)?
+            .ok_or_else(|| AppError::NotFound("share link not found".into()))?;
+
+        check_link_active(&link)?;
+        check_link_expiry(&link)?;
+
+        if link.permissions != "view_and_claim" {
+            return Err(AppError::Forbidden(
+                "this share link does not allow claiming items".into(),
+            ));
+        }
+
+        // Verify item belongs to the share link owner
+        let item = self
+            .item_repo
+            .find_by_id(item_id, link.user_id)
+            .await
+            .map_err(AppError::Internal)?
+            .ok_or_else(|| AppError::NotFound("item not found".into()))?;
+
+        item_in_scope(&link, &item)?;
+
+        let result = self
+            .item_repo
+            .web_claim_item(item_id, name, link.id)
+            .await
+            .map_err(AppError::Internal)?;
+
+        match result {
+            Some((_owner_id, web_claim_token)) => Ok(web_claim_token),
+            None => {
+                // Disambiguate
+                let item = self
+                    .item_repo
+                    .find_by_id_any_user(item_id)
+                    .await
+                    .map_err(AppError::Internal)?;
+
+                match item {
+                    None => Err(AppError::NotFound("item not found".into())),
+                    Some(i) if i.claimed_by.is_some() || i.claimed_via.is_some() => {
+                        Err(AppError::Conflict("item already claimed".into()))
+                    }
+                    Some(_) => Err(AppError::BadRequest("item is not active".into())),
+                }
+            }
+        }
+    }
+
+    #[tracing::instrument(skip(self))]
+    async fn web_unclaim_via_share(
+        &self,
+        token: &str,
+        item_id: Uuid,
+        web_claim_token: Uuid,
+    ) -> Result<(), AppError> {
+        let link = self
+            .share_link_repo
+            .find_by_token(token)
+            .await
+            .map_err(AppError::Internal)?
+            .ok_or_else(|| AppError::NotFound("share link not found".into()))?;
+
+        check_link_active(&link)?;
+        check_link_expiry(&link)?;
+
+        if link.permissions != "view_and_claim" {
+            return Err(AppError::Forbidden(
+                "this share link does not allow claiming items".into(),
+            ));
+        }
+
+        let owner_id = self
+            .item_repo
+            .web_unclaim_item(item_id, web_claim_token)
+            .await
+            .map_err(AppError::Internal)?;
+
+        if owner_id.is_none() {
+            return Err(AppError::NotFound(
+                "item not found or invalid claim token".into(),
+            ));
         }
 
         Ok(())

@@ -1,6 +1,6 @@
 use anyhow::Result;
 use async_trait::async_trait;
-use sqlx::{PgExecutor, PgPool};
+use sqlx::{PgExecutor, PgPool, Row};
 use uuid::Uuid;
 
 use crate::models::CircleItem;
@@ -45,6 +45,13 @@ impl traits::CircleItemRepo for PgCircleItemRepo {
 
     async fn list_circles_for_item(&self, item_id: Uuid) -> Result<Vec<Uuid>> {
         list_circles_for_item(&self.pool, item_id).await
+    }
+
+    async fn list_circle_names_for_items(
+        &self,
+        item_ids: &[Uuid],
+    ) -> Result<std::collections::HashMap<Uuid, Vec<(Uuid, String, bool)>>> {
+        list_circle_names_for_items(&self.pool, item_ids).await
     }
 }
 
@@ -132,4 +139,42 @@ pub(crate) async fn list_circles_for_item(
     .await?;
 
     Ok(ids)
+}
+
+/// Batch fetch circle names for multiple items in a single query.
+/// Returns a map: item_id → Vec<(circle_id, circle_name)>
+pub(crate) async fn list_circle_names_for_items(
+    exec: impl PgExecutor<'_>,
+    item_ids: &[Uuid],
+) -> Result<std::collections::HashMap<Uuid, Vec<(Uuid, String, bool)>>> {
+    // For direct circles (name IS NULL), use the other member's display_name or username
+    let rows = sqlx::query(
+        "SELECT ci.item_id, c.id, c.is_direct, \
+           CASE WHEN c.name IS NOT NULL THEN c.name \
+                ELSE COALESCE(u.display_name, u.username, '') \
+           END AS name \
+         FROM circle_items ci \
+         JOIN circles c ON c.id = ci.circle_id \
+         LEFT JOIN circle_members cm ON cm.circle_id = c.id AND cm.user_id != ci.shared_by AND c.is_direct = true \
+         LEFT JOIN users u ON u.id = cm.user_id \
+         WHERE ci.item_id = ANY($1) \
+         ORDER BY ci.shared_at ASC",
+    )
+    .bind(item_ids)
+    .fetch_all(exec)
+    .await?;
+
+    let mut map: std::collections::HashMap<Uuid, Vec<(Uuid, String, bool)>> =
+        std::collections::HashMap::new();
+    for row in rows {
+        let item_id: Uuid = row.get("item_id");
+        let circle_id: Uuid = row.get("id");
+        let name: String = row.get("name");
+        let is_direct: bool = row.get("is_direct");
+        map.entry(item_id)
+            .or_default()
+            .push((circle_id, name, is_direct));
+    }
+
+    Ok(map)
 }

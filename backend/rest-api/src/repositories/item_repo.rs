@@ -11,7 +11,8 @@ use crate::traits;
 /// Shared column list for all item queries (avoids duplication).
 const ITEM_COLS: &str = "id, user_id, name, description, url, estimated_price, \
                          priority, category_id, status, purchased_at, created_at, updated_at, \
-                         claimed_by, claimed_at";
+                         claimed_by, claimed_at, image_url, links, og_image_url, og_title, og_site_name, \
+                         is_private, claimed_via, claimed_name, claimed_via_link_id, web_claim_token";
 
 // ── Concrete implementation ──────────────────────────────────────────
 
@@ -36,6 +37,9 @@ impl traits::ItemRepo for PgItemRepo {
         estimated_price: Option<Decimal>,
         priority: i16,
         category_id: Option<Uuid>,
+        image_url: Option<&str>,
+        links: Option<&[String]>,
+        is_private: bool,
     ) -> Result<Item> {
         create(
             &self.pool,
@@ -46,6 +50,9 @@ impl traits::ItemRepo for PgItemRepo {
             estimated_price,
             priority,
             category_id,
+            image_url,
+            links,
+            is_private,
         )
         .await
     }
@@ -58,7 +65,7 @@ impl traits::ItemRepo for PgItemRepo {
         &self,
         user_id: Uuid,
         status: Option<&str>,
-        category_id: Option<Uuid>,
+        category_ids: Option<&[Uuid]>,
         sort: &str,
         order: &str,
         limit: i64,
@@ -68,7 +75,7 @@ impl traits::ItemRepo for PgItemRepo {
             &self.pool,
             user_id,
             status,
-            category_id,
+            category_ids,
             sort,
             order,
             limit,
@@ -81,9 +88,9 @@ impl traits::ItemRepo for PgItemRepo {
         &self,
         user_id: Uuid,
         status: Option<&str>,
-        category_id: Option<Uuid>,
+        category_ids: Option<&[Uuid]>,
     ) -> Result<i64> {
-        count(&self.pool, user_id, status, category_id).await
+        count(&self.pool, user_id, status, category_ids).await
     }
 
     async fn update(
@@ -97,6 +104,9 @@ impl traits::ItemRepo for PgItemRepo {
         priority: Option<i16>,
         category_id: Option<Option<Uuid>>,
         status: Option<&str>,
+        image_url: Option<&str>,
+        links: Option<&[String]>,
+        is_private: Option<bool>,
     ) -> Result<Option<Item>> {
         update(
             &self.pool,
@@ -109,8 +119,21 @@ impl traits::ItemRepo for PgItemRepo {
             priority,
             category_id,
             status,
+            image_url,
+            links,
+            is_private,
         )
         .await
+    }
+
+    async fn update_og_metadata(
+        &self,
+        id: Uuid,
+        og_image_url: Option<&str>,
+        og_title: Option<&str>,
+        og_site_name: Option<&str>,
+    ) -> Result<bool> {
+        update_og_metadata(&self.pool, id, og_image_url, og_title, og_site_name).await
     }
 
     async fn soft_delete(&self, id: Uuid, user_id: Uuid) -> Result<bool> {
@@ -144,6 +167,23 @@ impl traits::ItemRepo for PgItemRepo {
     async fn find_by_ids_any_user(&self, ids: &[Uuid]) -> Result<Vec<Item>> {
         find_by_ids_any_user(&self.pool, ids).await
     }
+
+    async fn web_claim_item(
+        &self,
+        id: Uuid,
+        name: &str,
+        link_id: Uuid,
+    ) -> Result<Option<(Uuid, Uuid)>> {
+        web_claim_item(&self.pool, id, name, link_id).await
+    }
+
+    async fn web_unclaim_item(&self, id: Uuid, token: Uuid) -> Result<Option<Uuid>> {
+        web_unclaim_item(&self.pool, id, token).await
+    }
+
+    async fn owner_unclaim_web_item(&self, id: Uuid, owner_id: Uuid) -> Result<Option<Uuid>> {
+        owner_unclaim_web_item(&self.pool, id, owner_id).await
+    }
 }
 
 // ── Free functions (kept pub(crate) for transactional use) ───────────
@@ -158,10 +198,13 @@ pub(crate) async fn create(
     estimated_price: Option<Decimal>,
     priority: i16,
     category_id: Option<Uuid>,
+    image_url: Option<&str>,
+    links: Option<&[String]>,
+    is_private: bool,
 ) -> Result<Item> {
     let sql = format!(
-        "INSERT INTO items (user_id, name, description, url, estimated_price, priority, category_id) \
-         VALUES ($1, $2, $3, $4, $5, $6, $7) \
+        "INSERT INTO items (user_id, name, description, url, estimated_price, priority, category_id, image_url, links, is_private) \
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) \
          RETURNING {ITEM_COLS}"
     );
     let item = sqlx::query_as::<_, Item>(&sql)
@@ -172,6 +215,9 @@ pub(crate) async fn create(
         .bind(estimated_price)
         .bind(priority)
         .bind(category_id)
+        .bind(image_url)
+        .bind(links)
+        .bind(is_private)
         .fetch_one(exec)
         .await?;
 
@@ -200,7 +246,7 @@ fn push_list_where<'args>(
     qb: &mut QueryBuilder<'args, sqlx::Postgres>,
     user_id: Uuid,
     status: Option<&'args str>,
-    category_id: Option<Uuid>,
+    category_ids: Option<&'args [Uuid]>,
 ) {
     qb.push(" WHERE user_id = ");
     qb.push_bind(user_id);
@@ -211,9 +257,12 @@ fn push_list_where<'args>(
         qb.push_bind(s);
     }
 
-    if let Some(cid) = category_id {
-        qb.push(" AND category_id = ");
-        qb.push_bind(cid);
+    if let Some(ids) = category_ids
+        && !ids.is_empty()
+    {
+        qb.push(" AND category_id = ANY(");
+        qb.push_bind(ids);
+        qb.push(")");
     }
 }
 
@@ -222,7 +271,7 @@ pub(crate) async fn list(
     exec: impl PgExecutor<'_>,
     user_id: Uuid,
     status: Option<&str>,
-    category_id: Option<Uuid>,
+    category_ids: Option<&[Uuid]>,
     sort: &str,
     order: &str,
     limit: i64,
@@ -231,7 +280,7 @@ pub(crate) async fn list(
     let select = format!("SELECT {ITEM_COLS} FROM items");
     let mut qb: QueryBuilder<'_, sqlx::Postgres> = QueryBuilder::new(select);
 
-    push_list_where(&mut qb, user_id, status, category_id);
+    push_list_where(&mut qb, user_id, status, category_ids);
 
     // Defense-in-depth: validate sort/order even though service layer whitelists them.
     const REPO_ALLOWED_SORTS: &[&str] = &["created_at", "priority", "name"];
@@ -262,11 +311,11 @@ pub(crate) async fn count(
     exec: impl PgExecutor<'_>,
     user_id: Uuid,
     status: Option<&str>,
-    category_id: Option<Uuid>,
+    category_ids: Option<&[Uuid]>,
 ) -> Result<i64> {
     let mut qb: QueryBuilder<'_, sqlx::Postgres> = QueryBuilder::new("SELECT COUNT(*) FROM items");
 
-    push_list_where(&mut qb, user_id, status, category_id);
+    push_list_where(&mut qb, user_id, status, category_ids);
 
     let row = qb.build().fetch_one(exec).await?;
     let total: i64 = row.get(0);
@@ -286,6 +335,9 @@ pub(crate) async fn update(
     priority: Option<i16>,
     category_id: Option<Option<Uuid>>,
     status: Option<&str>,
+    image_url: Option<&str>,
+    links: Option<&[String]>,
+    is_private: Option<bool>,
 ) -> Result<Option<Item>> {
     let mut qb: QueryBuilder<'_, sqlx::Postgres> = QueryBuilder::new("UPDATE items SET ");
     let mut separated = qb.separated(", ");
@@ -319,6 +371,18 @@ pub(crate) async fn update(
         separated.push("status = ");
         separated.push_bind_unseparated(s);
     }
+    if let Some(img) = image_url {
+        separated.push("image_url = ");
+        separated.push_bind_unseparated(img);
+    }
+    if let Some(l) = links {
+        separated.push("links = ");
+        separated.push_bind_unseparated(l);
+    }
+    if let Some(p) = is_private {
+        separated.push("is_private = ");
+        separated.push_bind_unseparated(p);
+    }
 
     qb.push(" WHERE id = ");
     qb.push_bind(id);
@@ -327,8 +391,6 @@ pub(crate) async fn update(
     qb.push(" AND status != 'deleted'");
 
     // Atomic guard: reject update if item already has the target status.
-    // The UPDATE matches 0 rows when status == new status, helping the
-    // service layer disambiguate 404 vs 409 while reducing TOCTOU risk.
     if let Some(s) = status {
         qb.push(" AND status != ");
         qb.push_bind(s);
@@ -339,6 +401,27 @@ pub(crate) async fn update(
     let item = qb.build_query_as::<Item>().fetch_optional(exec).await?;
 
     Ok(item)
+}
+
+pub(crate) async fn update_og_metadata(
+    exec: impl PgExecutor<'_>,
+    id: Uuid,
+    og_image_url: Option<&str>,
+    og_title: Option<&str>,
+    og_site_name: Option<&str>,
+) -> Result<bool> {
+    let result = sqlx::query(
+        "UPDATE items SET og_image_url = $2, og_title = $3, og_site_name = $4 \
+         WHERE id = $1 AND status != 'deleted'",
+    )
+    .bind(id)
+    .bind(og_image_url)
+    .bind(og_title)
+    .bind(og_site_name)
+    .execute(exec)
+    .await?;
+
+    Ok(result.rows_affected() > 0)
 }
 
 pub(crate) async fn soft_delete(
@@ -395,10 +478,11 @@ pub(crate) async fn claim_item(
 ) -> Result<Option<Uuid>> {
     let row = sqlx::query(
         "UPDATE items \
-         SET claimed_by = $2, claimed_at = NOW(), updated_at = NOW() \
+         SET claimed_by = $2, claimed_at = NOW(), claimed_via = 'app', updated_at = NOW() \
          WHERE id = $1 \
            AND user_id != $2 \
            AND claimed_by IS NULL \
+           AND claimed_via IS NULL \
            AND status = 'active' \
          RETURNING user_id",
     )
@@ -417,7 +501,9 @@ pub(crate) async fn unclaim_item(
 ) -> Result<Option<Uuid>> {
     let row = sqlx::query(
         "UPDATE items \
-         SET claimed_by = NULL, claimed_at = NULL, updated_at = NOW() \
+         SET claimed_by = NULL, claimed_at = NULL, claimed_via = NULL, \
+             claimed_name = NULL, claimed_via_link_id = NULL, web_claim_token = NULL, \
+             updated_at = NOW() \
          WHERE id = $1 \
            AND claimed_by = $2 \
            AND status != 'deleted' \
@@ -463,4 +549,81 @@ pub(crate) async fn find_by_ids_any_user(
         .await?;
 
     Ok(items)
+}
+
+/// Web claim: anonymous user claims an item via a share link.
+/// Returns (user_id, web_claim_token) on success.
+pub(crate) async fn web_claim_item(
+    exec: impl PgExecutor<'_>,
+    id: Uuid,
+    name: &str,
+    link_id: Uuid,
+) -> Result<Option<(Uuid, Uuid)>> {
+    let token = Uuid::new_v4();
+    let row = sqlx::query(
+        "UPDATE items \
+         SET claimed_via = 'web', claimed_name = $2, claimed_via_link_id = $3, \
+             claimed_at = NOW(), web_claim_token = $4, updated_at = NOW() \
+         WHERE id = $1 \
+           AND claimed_by IS NULL \
+           AND claimed_via IS NULL \
+           AND status = 'active' \
+         RETURNING user_id",
+    )
+    .bind(id)
+    .bind(name)
+    .bind(link_id)
+    .bind(token)
+    .fetch_optional(exec)
+    .await?;
+
+    Ok(row.map(|r| (r.get::<Uuid, _>("user_id"), token)))
+}
+
+/// Web unclaim: anonymous user cancels their claim using the web_claim_token.
+pub(crate) async fn web_unclaim_item(
+    exec: impl PgExecutor<'_>,
+    id: Uuid,
+    token: Uuid,
+) -> Result<Option<Uuid>> {
+    let row = sqlx::query(
+        "UPDATE items \
+         SET claimed_via = NULL, claimed_name = NULL, claimed_via_link_id = NULL, \
+             claimed_at = NULL, web_claim_token = NULL, updated_at = NOW() \
+         WHERE id = $1 \
+           AND web_claim_token = $2 \
+           AND claimed_via = 'web' \
+           AND status != 'deleted' \
+         RETURNING user_id",
+    )
+    .bind(id)
+    .bind(token)
+    .fetch_optional(exec)
+    .await?;
+
+    Ok(row.map(|r| r.get("user_id")))
+}
+
+/// Owner unclaim for web claims: item owner can remove a web claim.
+pub(crate) async fn owner_unclaim_web_item(
+    exec: impl PgExecutor<'_>,
+    id: Uuid,
+    owner_id: Uuid,
+) -> Result<Option<Uuid>> {
+    let row = sqlx::query(
+        "UPDATE items \
+         SET claimed_via = NULL, claimed_name = NULL, claimed_via_link_id = NULL, \
+             claimed_at = NULL, web_claim_token = NULL, updated_at = NOW() \
+         WHERE id = $1 \
+           AND user_id = $2 \
+           AND claimed_via = 'web' \
+           AND status != 'deleted' \
+         RETURNING user_id",
+    )
+    .bind(id)
+    .bind(owner_id)
+    .fetch_optional(exec)
+    .await?;
+
+    Ok(row.map(|r| r.get("user_id")))
 }

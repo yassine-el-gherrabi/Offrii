@@ -7,28 +7,39 @@ struct ItemEditView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var name: String
     @State private var description: String
-    @State private var url: String
+    @State private var links: [String]
     @State private var estimatedPrice: String
     @State private var priority: Int
     @State private var categoryId: UUID?
     @State private var isSaving = false
     @State private var categories: [CategoryResponse] = []
     @State private var showCategoryPicker = false
+    @State private var selectedImage: UIImage?
+    @State private var isUploadingImage = false
+    @State private var isPrivate: Bool
 
     init(item: Item, onSave: @escaping (Item) -> Void) {
         self.item = item
         self.onSave = onSave
         _name = State(initialValue: item.name)
         _description = State(initialValue: item.description ?? "")
-        _url = State(initialValue: item.url ?? "")
+        _links = State(initialValue: item.links ?? (item.url.map { [$0] } ?? [""]))
         _estimatedPrice = State(initialValue: item.estimatedPrice.map { "\($0)" } ?? "")
         _priority = State(initialValue: item.priority)
         _categoryId = State(initialValue: item.categoryId)
+        _isPrivate = State(initialValue: item.isPrivate)
     }
 
     var body: some View {
         ScrollView {
             VStack(spacing: OffriiTheme.spacingBase) {
+                // Image picker
+                OffriiImagePicker(
+                    selectedImage: $selectedImage,
+                    existingImageUrl: item.displayImageUrl
+                )
+                .padding(.horizontal, OffriiTheme.spacingLG)
+
                 OffriiCard {
                     VStack(spacing: OffriiTheme.spacingBase) {
                         OffriiTextField(
@@ -43,14 +54,6 @@ struct ItemEditView: View {
                             text: $description,
                             placeholder: NSLocalizedString("item.description", comment: ""),
                             autocapitalization: .sentences
-                        )
-
-                        OffriiTextField(
-                            label: NSLocalizedString("item.url", comment: ""),
-                            text: $url,
-                            placeholder: "https://",
-                            keyboardType: .URL,
-                            autocapitalization: .never
                         )
 
                         OffriiTextField(
@@ -102,9 +105,70 @@ struct ItemEditView: View {
                                 )
                             }
                         }
+
+                        // Multi-links
+                        linksSection
+
+                        // Privacy toggle
+                        Toggle(isOn: $isPrivate) {
+                            VStack(alignment: .leading, spacing: 2) {
+                                HStack(spacing: 4) {
+                                    Image(systemName: "lock.fill")
+                                        .font(.system(size: 12))
+                                    Text(NSLocalizedString("wishlist.private", comment: ""))
+                                        .font(OffriiTypography.body)
+                                }
+                                .foregroundColor(OffriiTheme.text)
+                                Text(NSLocalizedString("wishlist.privateHint", comment: ""))
+                                    .font(OffriiTypography.caption)
+                                    .foregroundColor(OffriiTheme.textMuted)
+                            }
+                        }
+                        .tint(OffriiTheme.primary)
                     }
                 }
                 .padding(.horizontal, OffriiTheme.spacingLG)
+
+                // Shared with section
+                if !item.sharedCircles.isEmpty {
+                    VStack(alignment: .leading, spacing: OffriiTheme.spacingSM) {
+                        Text(NSLocalizedString("item.sharedWith", comment: ""))
+                            .font(OffriiTypography.subheadline)
+                            .foregroundColor(OffriiTheme.textMuted)
+
+                        ForEach(item.sharedCircles) { circle in
+                            HStack(spacing: OffriiTheme.spacingSM) {
+                                Text(circle.initial)
+                                    .font(.system(size: 11, weight: .bold))
+                                    .foregroundColor(.white)
+                                    .frame(width: 24, height: 24)
+                                    .background(OffriiTheme.primary)
+                                    .clipShape(Circle())
+
+                                Text(circle.name)
+                                    .font(.system(size: 13, weight: .medium))
+                                    .foregroundColor(OffriiTheme.text)
+
+                                Spacer()
+
+                                Button {
+                                    Task {
+                                        try? await CircleService.shared.unshareItem(circleId: circle.id, itemId: item.id)
+                                    }
+                                } label: {
+                                    Image(systemName: "xmark")
+                                        .font(.system(size: 10, weight: .semibold))
+                                        .foregroundColor(OffriiTheme.textMuted)
+                                }
+                            }
+                            .padding(OffriiTheme.spacingSM)
+                            .background(OffriiTheme.surface)
+                            .cornerRadius(OffriiTheme.cornerRadiusSM)
+                        }
+                    }
+                    .padding(.horizontal, OffriiTheme.spacingLG)
+                    .padding(.top, OffriiTheme.spacingSM)
+                }
 
                 OffriiButton(
                     NSLocalizedString("item.save", comment: ""),
@@ -141,6 +205,52 @@ struct ItemEditView: View {
         }
     }
 
+    // MARK: - Links Section
+
+    private var linksSection: some View {
+        VStack(alignment: .leading, spacing: OffriiTheme.spacingSM) {
+            Text(NSLocalizedString("item.url", comment: ""))
+                .font(OffriiTypography.subheadline)
+                .foregroundColor(OffriiTheme.textSecondary)
+
+            ForEach(links.indices, id: \.self) { index in
+                HStack {
+                    OffriiTextField(
+                        label: "",
+                        text: $links[index],
+                        placeholder: "https://...",
+                        keyboardType: .URL,
+                        autocapitalization: .never
+                    )
+
+                    if links.count > 1 {
+                        Button {
+                            links.remove(at: index)
+                        } label: {
+                            Image(systemName: "xmark.circle.fill")
+                                .foregroundColor(OffriiTheme.textMuted)
+                        }
+                    }
+                }
+            }
+
+            if links.count < 10 {
+                Button {
+                    links.append("")
+                } label: {
+                    HStack(spacing: OffriiTheme.spacingXS) {
+                        Image(systemName: "plus.circle")
+                        Text(NSLocalizedString("entraide.create.addLink", comment: ""))
+                    }
+                    .font(OffriiTypography.footnote)
+                    .foregroundColor(OffriiTheme.primary)
+                }
+            }
+        }
+    }
+
+    // MARK: - Helpers
+
     private var categoryLabel: String {
         if let id = categoryId, let cat = categories.first(where: { $0.id == id }) {
             return cat.name
@@ -150,20 +260,36 @@ struct ItemEditView: View {
 
     private func save() async {
         isSaving = true
+
         let trimmedName = name.trimmingCharacters(in: .whitespaces)
         let trimmedDesc = description.trimmingCharacters(in: .whitespaces)
-        let trimmedUrl = url.trimmingCharacters(in: .whitespaces)
-        let price = Decimal(string: estimatedPrice)
+        let price = Decimal(string: estimatedPrice.replacingOccurrences(of: ",", with: "."))
+        let trimmedLinks = links.map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
+
+        // Upload image if selected
+        var imageUrl: String? = nil
+        if let image = selectedImage {
+            if let data = image.compressForUpload() {
+                do {
+                    imageUrl = try await ItemService.shared.uploadImage(data)
+                } catch {
+                    isSaving = false
+                    return
+                }
+            }
+        }
 
         do {
             let updated = try await ItemService.shared.updateItem(
                 id: item.id,
                 name: trimmedName,
                 description: trimmedDesc.isEmpty ? nil : trimmedDesc,
-                url: trimmedUrl.isEmpty ? nil : trimmedUrl,
                 estimatedPrice: price,
                 priority: priority,
-                categoryId: categoryId
+                categoryId: categoryId,
+                imageUrl: imageUrl,
+                links: trimmedLinks.isEmpty ? nil : trimmedLinks,
+                isPrivate: isPrivate
             )
             onSave(updated)
             dismiss()

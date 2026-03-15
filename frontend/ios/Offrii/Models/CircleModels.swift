@@ -50,18 +50,34 @@ struct CircleItemResponse: Codable, Identifiable {
     let sharedBy: UUID
 
     enum CodingKeys: String, CodingKey {
-        case id
-        case name
-        case description
-        case url
+        case id, name, description, url, priority, status
         case estimatedPrice = "estimated_price"
-        case priority
         case categoryId = "category_id"
-        case status
         case isClaimed = "is_claimed"
         case claimedBy = "claimed_by"
         case sharedAt = "shared_at"
         case sharedBy = "shared_by"
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        name = try container.decode(String.self, forKey: .name)
+        description = try container.decodeIfPresent(String.self, forKey: .description)
+        url = try container.decodeIfPresent(String.self, forKey: .url)
+        priority = try container.decode(Int16.self, forKey: .priority)
+        categoryId = try container.decodeIfPresent(UUID.self, forKey: .categoryId)
+        status = try container.decode(String.self, forKey: .status)
+        isClaimed = try container.decode(Bool.self, forKey: .isClaimed)
+        claimedBy = try container.decodeIfPresent(ClaimedByInfo.self, forKey: .claimedBy)
+        sharedAt = try container.decode(Date.self, forKey: .sharedAt)
+        sharedBy = try container.decode(UUID.self, forKey: .sharedBy)
+
+        if let stringValue = try? container.decodeIfPresent(String.self, forKey: .estimatedPrice) {
+            estimatedPrice = Decimal(string: stringValue)
+        } else {
+            estimatedPrice = try? container.decodeIfPresent(Decimal.self, forKey: .estimatedPrice)
+        }
     }
 }
 

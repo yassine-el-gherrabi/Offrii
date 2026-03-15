@@ -30,7 +30,7 @@ use rest_api::errors::AppError;
 use rest_api::handlers::health::health_check;
 use rest_api::handlers::{
     admin, auth, categories, circles, community_wishes, friends, items, push_tokens, share_links,
-    shared, users, wish_messages,
+    shared, upload, users, wish_messages,
 };
 use rest_api::repositories::category_repo::PgCategoryRepo;
 use rest_api::repositories::circle_event_repo::PgCircleEventRepo;
@@ -58,6 +58,7 @@ use rest_api::services::moderation_service::NoopModerationService;
 use rest_api::services::oauth_verifier::OAuthVerifier;
 use rest_api::services::push_token_service::PgPushTokenService;
 use rest_api::services::share_link_service::PgShareLinkService;
+use rest_api::services::upload_service::NoopUploadService;
 use rest_api::services::user_service::PgUserService;
 use rest_api::services::wish_message_service::PgWishMessageService;
 use rest_api::traits::{
@@ -65,8 +66,8 @@ use rest_api::traits::{
     CircleMemberRepo, CircleRepo, CircleService, CommunityWishRepo, CommunityWishService,
     EmailService, FriendRepo, FriendService, HealthCheck, ItemRepo, ItemService, ModerationService,
     NotificationOutcome, NotificationRequest, NotificationService, PushTokenRepo, PushTokenService,
-    RefreshTokenRepo, ShareLinkRepo, ShareLinkService, UserRepo, UserService, WishMessageRepo,
-    WishMessageService, WishReportRepo,
+    RefreshTokenRepo, ShareLinkRepo, ShareLinkService, UploadService, UserRepo, UserService,
+    WishMessageRepo, WishMessageService, WishReportRepo,
 };
 use rest_api::utils::jwt::JwtKeys;
 
@@ -186,9 +187,12 @@ impl TestApp {
             oauth_verifier,
         ));
         let item_repo: Arc<dyn ItemRepo> = Arc::new(PgItemRepo::new(db.clone()));
+        let circle_item_repo_for_items: Arc<dyn CircleItemRepo> =
+            Arc::new(PgCircleItemRepo::new(db.clone()));
         let items: Arc<dyn ItemService> = Arc::new(PgItemService::new(
             db.clone(),
             item_repo.clone(),
+            circle_item_repo_for_items,
             redis.clone(),
         ));
         let category_repo: Arc<dyn CategoryRepo> = Arc::new(PgCategoryRepo::new(db.clone()));
@@ -283,6 +287,8 @@ impl TestApp {
         ));
 
         let redis_for_app = redis.clone();
+        let uploads: Arc<dyn UploadService> = Arc::new(NoopUploadService);
+
         let state = AppState {
             auth,
             jwt,
@@ -298,6 +304,7 @@ impl TestApp {
             friends: friend_svc,
             community_wishes: community_wish_svc,
             wish_messages: wish_message_svc,
+            uploads,
         };
 
         let router = Router::new()
@@ -314,6 +321,7 @@ impl TestApp {
             .nest("/users", friends::search_router())
             .nest("/community/wishes", community_wishes::router())
             .merge(wish_messages::router())
+            .nest("/upload", upload::router())
             .nest("/admin", admin::router())
             .layer(TraceLayer::new_for_http())
             .with_state(state);

@@ -11,7 +11,7 @@ use crate::traits;
 const USER_COLS: &str = "id, email, username, password_hash, display_name, \
                          oauth_provider, oauth_provider_id, email_verified, \
                          reminder_freq, reminder_time, timezone, \
-                         utc_reminder_hour, locale, token_version, \
+                         utc_reminder_hour, locale, token_version, avatar_url, \
                          created_at, updated_at";
 
 // ── Concrete implementation ──────────────────────────────────────────
@@ -72,6 +72,7 @@ impl traits::UserRepo for PgUserRepo {
         timezone: Option<&str>,
         utc_reminder_hour: Option<i16>,
         locale: Option<&str>,
+        avatar_url: Option<&str>,
     ) -> Result<Option<User>> {
         update_profile(
             &self.pool,
@@ -83,6 +84,7 @@ impl traits::UserRepo for PgUserRepo {
             timezone,
             utc_reminder_hour,
             locale,
+            avatar_url,
         )
         .await
     }
@@ -240,6 +242,7 @@ pub(crate) async fn update_profile(
     timezone: Option<&str>,
     utc_reminder_hour: Option<i16>,
     locale: Option<&str>,
+    avatar_url: Option<&str>,
 ) -> Result<Option<User>> {
     // If nothing to update, short-circuit with a SELECT instead of invalid SQL
     if display_name.is_none()
@@ -249,6 +252,7 @@ pub(crate) async fn update_profile(
         && timezone.is_none()
         && utc_reminder_hour.is_none()
         && locale.is_none()
+        && avatar_url.is_none()
     {
         return find_by_id(exec, id).await;
     }
@@ -282,6 +286,10 @@ pub(crate) async fn update_profile(
     }
     if let Some(v) = locale {
         separated.push("locale = ");
+        separated.push_bind_unseparated(v);
+    }
+    if let Some(v) = avatar_url {
+        separated.push("avatar_url = ");
         separated.push_bind_unseparated(v);
     }
 

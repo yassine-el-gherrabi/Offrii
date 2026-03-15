@@ -9,5 +9,6 @@ pub mod items;
 pub mod push_tokens;
 pub mod share_links;
 pub mod shared;
+pub mod upload;
 pub mod users;
 pub mod wish_messages;

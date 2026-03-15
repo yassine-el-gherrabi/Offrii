@@ -1,6 +1,9 @@
 mod common;
 
-use axum::http::StatusCode;
+use axum::body::Body;
+use axum::http::{StatusCode, header};
+use http_body_util::BodyExt;
+use tower::ServiceExt;
 
 use common::{TEST_PASSWORD, TestApp};
 
@@ -868,4 +871,313 @@ async fn list_share_links_returns_new_fields() {
     assert_eq!(links[0]["permissions"], "view_and_claim");
     assert_eq!(links[0]["scope"], "all");
     assert_eq!(links[0]["is_active"], true);
+}
+
+// ── HTML shared page tests ──────────────────────────────────────────
+
+#[tokio::test]
+async fn shared_view_html_contains_items() {
+    let app = TestApp::new().await;
+    let token = app.setup_user_token("alice@test.com", TEST_PASSWORD).await;
+
+    app.create_item(&token, &serde_json::json!({ "name": "Nintendo Switch" }))
+        .await;
+    app.create_item(&token, &serde_json::json!({ "name": "AirPods Pro" }))
+        .await;
+
+    let (_, link_body) = app.post_with_auth("/share-links", &token).await;
+    let share_token = link_body["token"].as_str().unwrap();
+
+    let (status, bytes) = app
+        .get_with_accept(&format!("/shared/{share_token}"), "text/html")
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    let html = String::from_utf8(bytes).unwrap();
+    assert!(
+        html.contains("Nintendo Switch"),
+        "HTML should contain item name 'Nintendo Switch'"
+    );
+    assert!(
+        html.contains("AirPods Pro"),
+        "HTML should contain item name 'AirPods Pro'"
+    );
+}
+
+#[tokio::test]
+async fn shared_view_html_claim_buttons() {
+    let app = TestApp::new().await;
+    let token = app.setup_user_token("alice@test.com", TEST_PASSWORD).await;
+
+    app.create_item(&token, &serde_json::json!({ "name": "PS5" }))
+        .await;
+
+    let body = serde_json::json!({ "permissions": "view_and_claim" });
+    let (_, link_body) = app.post_json_with_auth("/share-links", &body, &token).await;
+    let share_token = link_body["token"].as_str().unwrap();
+
+    let (status, bytes) = app
+        .get_with_accept(&format!("/shared/{share_token}"), "text/html")
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    let html = String::from_utf8(bytes).unwrap();
+    assert!(
+        html.contains("Je m\u{2019}en occupe") || html.contains("Je m'en occupe"),
+        "HTML should contain claim button text for view_and_claim links"
+    );
+}
+
+#[tokio::test]
+async fn shared_view_html_no_claim_for_view_only() {
+    let app = TestApp::new().await;
+    let token = app.setup_user_token("alice@test.com", TEST_PASSWORD).await;
+
+    app.create_item(&token, &serde_json::json!({ "name": "PS5" }))
+        .await;
+
+    let body = serde_json::json!({ "permissions": "view_only" });
+    let (_, link_body) = app.post_json_with_auth("/share-links", &body, &token).await;
+    let share_token = link_body["token"].as_str().unwrap();
+
+    let (status, bytes) = app
+        .get_with_accept(&format!("/shared/{share_token}"), "text/html")
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    let html = String::from_utf8(bytes).unwrap();
+    assert!(
+        !html.contains("Je m\u{2019}en occupe") && !html.contains("Je m'en occupe"),
+        "HTML should NOT contain claim button text for view_only links"
+    );
+}
+
+#[tokio::test]
+async fn shared_view_html_reserved_overlay() {
+    let app = TestApp::new().await;
+    let alice_token = app.setup_user_token("alice@test.com", TEST_PASSWORD).await;
+    let bob_token = app.setup_user_token("bob@test.com", TEST_PASSWORD).await;
+
+    let item = app
+        .create_item(&alice_token, &serde_json::json!({ "name": "PS5" }))
+        .await;
+    let item_id = item["id"].as_str().unwrap();
+
+    let (_, link_body) = app.post_with_auth("/share-links", &alice_token).await;
+    let share_token = link_body["token"].as_str().unwrap();
+
+    // Bob claims the item
+    let (status, _) = app
+        .post_with_auth(
+            &format!("/shared/{share_token}/items/{item_id}/claim"),
+            &bob_token,
+        )
+        .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+
+    // Get HTML and check for reserved overlay
+    let (status, bytes) = app
+        .get_with_accept(&format!("/shared/{share_token}"), "text/html")
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    let html = String::from_utf8(bytes).unwrap();
+    assert!(
+        html.contains("claimed-overlay"),
+        "HTML should contain claimed overlay for claimed items"
+    );
+}
+
+#[tokio::test]
+async fn shared_view_html_hides_private_items() {
+    let app = TestApp::new().await;
+    let token = app.setup_user_token("alice@test.com", TEST_PASSWORD).await;
+
+    app.create_item(&token, &serde_json::json!({ "name": "Public Item" }))
+        .await;
+    app.create_item(
+        &token,
+        &serde_json::json!({ "name": "Secret Item", "is_private": true }),
+    )
+    .await;
+
+    let (_, link_body) = app.post_with_auth("/share-links", &token).await;
+    let share_token = link_body["token"].as_str().unwrap();
+
+    let (status, bytes) = app
+        .get_with_accept(&format!("/shared/{share_token}"), "text/html")
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    let html = String::from_utf8(bytes).unwrap();
+    assert!(
+        html.contains("Public Item"),
+        "HTML should contain the public item"
+    );
+    assert!(
+        !html.contains("Secret Item"),
+        "HTML should NOT contain the private item"
+    );
+}
+
+#[tokio::test]
+async fn shared_view_html_og_meta_tags() {
+    let app = TestApp::new().await;
+    let token = app.setup_user_token("alice@test.com", TEST_PASSWORD).await;
+
+    let (_, link_body) = app.post_with_auth("/share-links", &token).await;
+    let share_token = link_body["token"].as_str().unwrap();
+
+    let (status, bytes) = app
+        .get_with_accept(&format!("/shared/{share_token}"), "text/html")
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    let html = String::from_utf8(bytes).unwrap();
+    assert!(
+        html.contains("og:title"),
+        "HTML should contain og:title meta tag"
+    );
+    assert!(
+        html.contains("og:description"),
+        "HTML should contain og:description meta tag"
+    );
+    assert!(
+        html.contains("og:type"),
+        "HTML should contain og:type meta tag"
+    );
+}
+
+// ── i18n tests ──────────────────────────────────────────────────────
+
+#[tokio::test]
+async fn shared_view_html_default_french() {
+    let app = TestApp::new().await;
+    let token = app.setup_user_token("alice@test.com", TEST_PASSWORD).await;
+
+    let (_, link_body) = app.post_with_auth("/share-links", &token).await;
+    let share_token = link_body["token"].as_str().unwrap();
+
+    // No Accept-Language header — should default to French
+    let (status, bytes) = app
+        .get_with_accept(&format!("/shared/{share_token}"), "text/html")
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    let html = String::from_utf8(bytes).unwrap();
+    assert!(
+        html.contains("Les envies de"),
+        "HTML should default to French and contain 'Les envies de'"
+    );
+}
+
+#[tokio::test]
+async fn shared_view_html_english() {
+    let app = TestApp::new().await;
+    let token = app.setup_user_token("alice@test.com", TEST_PASSWORD).await;
+
+    let (_, link_body) = app.post_with_auth("/share-links", &token).await;
+    let share_token = link_body["token"].as_str().unwrap();
+
+    let req = axum::http::Request::builder()
+        .method("GET")
+        .uri(format!("/shared/{share_token}"))
+        .header(header::ACCEPT, "text/html")
+        .header(header::ACCEPT_LANGUAGE, "en")
+        .body(Body::empty())
+        .unwrap();
+    let resp = app.router.clone().oneshot(req).await.unwrap();
+    assert_eq!(resp.status(), StatusCode::OK);
+    let bytes = resp.into_body().collect().await.unwrap().to_bytes();
+    let html = String::from_utf8(bytes.to_vec()).unwrap();
+    assert!(
+        html.contains("Wishes of"),
+        "HTML should contain English text 'Wishes of' when Accept-Language is 'en'"
+    );
+}
+
+// ── HTML error page tests ───────────────────────────────────────────
+
+#[tokio::test]
+async fn shared_view_expired_html_error() {
+    let app = TestApp::new().await;
+    let token = app.setup_user_token("alice@test.com", TEST_PASSWORD).await;
+
+    let (_, link_body) = app.post_with_auth("/share-links", &token).await;
+    let share_token = link_body["token"].as_str().unwrap();
+
+    // Expire the link
+    sqlx::query("UPDATE share_links SET expires_at = NOW() - INTERVAL '1 hour' WHERE token = $1")
+        .bind(share_token)
+        .execute(&app.db)
+        .await
+        .unwrap();
+
+    let (status, bytes) = app
+        .get_with_accept(&format!("/shared/{share_token}"), "text/html")
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    let html = String::from_utf8(bytes).unwrap();
+    assert!(
+        html.contains("expir"),
+        "Expired link HTML error page should contain 'expir' substring, got: {html}"
+    );
+}
+
+#[tokio::test]
+async fn shared_view_disabled_html_error() {
+    let app = TestApp::new().await;
+    let token = app.setup_user_token("alice@test.com", TEST_PASSWORD).await;
+
+    let (_, link_body) = app.post_with_auth("/share-links", &token).await;
+    let link_id = link_body["id"].as_str().unwrap();
+    let share_token = link_body["token"].as_str().unwrap();
+
+    // Deactivate
+    let patch_body = serde_json::json!({ "is_active": false });
+    let (status, _) = app
+        .patch_json_with_auth(&format!("/share-links/{link_id}"), &patch_body, &token)
+        .await;
+    assert_eq!(status, StatusCode::OK);
+
+    let (status, bytes) = app
+        .get_with_accept(&format!("/shared/{share_token}"), "text/html")
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    let html = String::from_utf8(bytes).unwrap();
+    assert!(
+        html.contains("actif"),
+        "Disabled link HTML error page should contain 'actif' substring, got: {html}"
+    );
+}
+
+#[tokio::test]
+async fn shared_view_not_found_html_error() {
+    let app = TestApp::new().await;
+
+    let (status, bytes) = app
+        .get_with_accept("/shared/nonexistent_token_xyz", "text/html")
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    let html = String::from_utf8(bytes).unwrap();
+    assert!(
+        html.contains("introuvable"),
+        "Not-found link HTML error page should contain 'introuvable' substring, got: {html}"
+    );
+}
+
+#[tokio::test]
+async fn shared_view_expired_json_still_410() {
+    let app = TestApp::new().await;
+    let token = app.setup_user_token("alice@test.com", TEST_PASSWORD).await;
+
+    let (_, link_body) = app.post_with_auth("/share-links", &token).await;
+    let share_token = link_body["token"].as_str().unwrap();
+
+    // Expire the link
+    sqlx::query("UPDATE share_links SET expires_at = NOW() - INTERVAL '1 hour' WHERE token = $1")
+        .bind(share_token)
+        .execute(&app.db)
+        .await
+        .unwrap();
+
+    let (status, bytes) = app
+        .get_with_accept(&format!("/shared/{share_token}"), "application/json")
+        .await;
+    assert_eq!(status, StatusCode::GONE);
+    let body: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+    common::assert_error(&body, "GONE");
 }

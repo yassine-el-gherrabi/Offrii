@@ -87,14 +87,16 @@ struct CreateItemBody: Encodable {
     let estimatedPrice: Decimal?
     let priority: Int16?
     let categoryId: UUID?
+    let imageUrl: String?
+    let links: [String]?
+    let isPrivate: Bool?
 
     enum CodingKeys: String, CodingKey {
-        case name
-        case description
-        case url
+        case name, description, url, priority, links
         case estimatedPrice = "estimated_price"
-        case priority
         case categoryId = "category_id"
+        case imageUrl = "image_url"
+        case isPrivate = "is_private"
     }
 }
 
@@ -106,15 +108,16 @@ struct UpdateItemBody: Encodable {
     let priority: Int16?
     let categoryId: UUID?
     let status: String?
+    let imageUrl: String?
+    let links: [String]?
+    let isPrivate: Bool?
 
     enum CodingKeys: String, CodingKey {
-        case name
-        case description
-        case url
+        case name, description, url, priority, status, links
         case estimatedPrice = "estimated_price"
-        case priority
         case categoryId = "category_id"
-        case status
+        case imageUrl = "image_url"
+        case isPrivate = "is_private"
     }
 }
 
@@ -181,10 +184,61 @@ struct RegisterPushTokenBody: Encodable {
 
 struct CreateShareLinkBody: Encodable {
     let expiresAt: String?
+    let label: String?
+    let permissions: String?   // "view_only" or "view_and_claim"
+    let scope: String?         // "all", "category", "selection"
+    let scopeData: ScopeData?
 
     enum CodingKeys: String, CodingKey {
         case expiresAt = "expires_at"
+        case label, permissions, scope
+        case scopeData = "scope_data"
     }
+
+    /// Convenience init for sharing the whole list
+    static func shareAll() -> CreateShareLinkBody {
+        CreateShareLinkBody(expiresAt: nil, label: nil, permissions: "view_and_claim", scope: "all", scopeData: nil)
+    }
+
+    /// Convenience init for sharing a single item
+    static func shareItem(id: UUID) -> CreateShareLinkBody {
+        CreateShareLinkBody(
+            expiresAt: nil,
+            label: nil,
+            permissions: "view_and_claim",
+            scope: "selection",
+            scopeData: ScopeData(categoryId: nil, itemIds: [id.uuidString])
+        )
+    }
+}
+
+struct ScopeData: Encodable {
+    let categoryId: String?
+    let itemIds: [String]?
+
+    enum CodingKeys: String, CodingKey {
+        case categoryId = "category_id"
+        case itemIds = "item_ids"
+    }
+}
+
+struct UpdateShareLinkBody: Encodable {
+    let label: String?
+    let permissions: String?
+    let isActive: Bool?
+    let expiresAt: String?
+
+    enum CodingKeys: String, CodingKey {
+        case label, permissions
+        case isActive = "is_active"
+        case expiresAt = "expires_at"
+    }
+}
+
+// MARK: - Batch Delete
+
+struct BatchDeleteItemsBody: Encodable {
+    let ids: [UUID]
 }
 
 // MARK: - Circle Body Types

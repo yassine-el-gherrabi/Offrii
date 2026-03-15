@@ -25,7 +25,9 @@ final class ModelCodableTests: XCTestCase {
             "purchased_at": null,
             "created_at": "2026-01-15T10:30:00Z",
             "updated_at": "2026-01-15T10:30:00Z",
-            "is_claimed": false
+            "is_claimed": false,
+            "is_private": false,
+            "shared_circles": []
         }
         """.data(using: .utf8)!
 
@@ -177,19 +179,18 @@ final class ModelCodableTests: XCTestCase {
     // MARK: - Helpers
 
     private func makeItem(priority: Int = 2, status: String = "active") -> Item {
-        Item(
-            id: UUID(),
-            name: "Test Item",
-            description: nil,
-            url: nil,
-            estimatedPrice: nil,
-            priority: priority,
-            categoryId: nil,
-            status: status,
-            purchasedAt: nil,
-            createdAt: Date(),
-            updatedAt: Date(),
-            isClaimed: false
-        )
+        let json = """
+        {
+            "id": "550e8400-e29b-41d4-a716-446655440000",
+            "name": "Test Item",
+            "priority": \(priority),
+            "status": "\(status)",
+            "created_at": "2026-01-15T10:30:00Z",
+            "updated_at": "2026-01-15T10:30:00Z",
+            "is_claimed": false
+        }
+        """.data(using: .utf8)!
+        // swiftlint:disable:next force_try
+        return try! decoder.decode(Item.self, from: json) // Safe in tests
     }
 }

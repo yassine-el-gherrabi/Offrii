@@ -17,6 +17,7 @@ DerivedData/
 *.xcscmblueprint
 *.xccheckout
 build/
+.build/
 
 # iOS signing (keep generic, specific keys still ignored below)
 *.p8

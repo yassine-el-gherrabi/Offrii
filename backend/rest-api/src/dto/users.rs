@@ -24,6 +24,8 @@ pub struct UpdateProfileRequest {
     pub timezone: Option<String>,
     #[validate(length(max = 10, message = "locale must be at most 10 characters"))]
     pub locale: Option<String>,
+    #[validate(length(max = 2048, message = "avatar_url must be at most 2048 characters"))]
+    pub avatar_url: Option<String>,
 }
 
 // ── Response DTOs ────────────────────────────────────────────────────
@@ -38,6 +40,7 @@ pub struct UserProfileResponse {
     pub reminder_time: NaiveTime,
     pub timezone: String,
     pub locale: String,
+    pub avatar_url: Option<String>,
     pub created_at: DateTime<Utc>,
 }
 
@@ -60,6 +63,7 @@ impl From<&User> for UserProfileResponse {
             reminder_time: u.reminder_time,
             timezone: u.timezone.clone(),
             locale: u.locale.clone(),
+            avatar_url: u.avatar_url.clone(),
             created_at: u.created_at,
         }
     }

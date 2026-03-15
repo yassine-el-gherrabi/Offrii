@@ -6,7 +6,9 @@ use uuid::Uuid;
 use validator::Validate;
 
 use crate::AppState;
-use crate::dto::items::{CreateItemRequest, ItemResponse, ListItemsQuery, UpdateItemRequest};
+use crate::dto::items::{
+    BatchDeleteRequest, CreateItemRequest, ItemResponse, ListItemsQuery, UpdateItemRequest,
+};
 use crate::dto::pagination::PaginatedResponse;
 use crate::errors::AppError;
 use crate::middleware::AuthUser;
@@ -19,11 +21,13 @@ fn validate_request(req: &impl Validate) -> Result<(), AppError> {
 pub fn router() -> Router<AppState> {
     Router::new()
         .route("/", get(list_items).post(create_item))
+        .route("/batch-delete", axum::routing::post(batch_delete))
         .route("/{id}", get(get_item).put(update_item).delete(delete_item))
         .route(
             "/{id}/claim",
             axum::routing::post(claim_item).delete(unclaim_item),
         )
+        .route("/{id}/web-claim", axum::routing::delete(owner_unclaim_web))
 }
 
 #[tracing::instrument(skip(state, req))]
@@ -33,6 +37,9 @@ async fn create_item(
     Json(req): Json<CreateItemRequest>,
 ) -> Result<(StatusCode, Json<ItemResponse>), AppError> {
     validate_request(&req)?;
+    req.validate_links().map_err(AppError::BadRequest)?;
+
+    let resolved_links = req.resolved_links();
 
     let response = state
         .items
@@ -44,6 +51,9 @@ async fn create_item(
             req.estimated_price,
             req.priority,
             req.category_id,
+            req.image_url.as_deref(),
+            resolved_links.as_deref(),
+            req.is_private,
         )
         .await?;
 
@@ -80,6 +90,9 @@ async fn update_item(
     Json(req): Json<UpdateItemRequest>,
 ) -> Result<Json<ItemResponse>, AppError> {
     validate_request(&req)?;
+    req.validate_links().map_err(AppError::BadRequest)?;
+
+    let resolved_links = req.resolved_links();
 
     let response = state
         .items
@@ -91,10 +104,11 @@ async fn update_item(
             req.url.as_deref(),
             req.estimated_price,
             req.priority,
-            // Option<Uuid> → Option<Option<Uuid>>: Some(uuid) = set, None = no change.
-            // Clearing category (explicit null) is not supported yet in the DTO.
             req.category_id.map(Some),
             req.status.as_deref(),
+            req.image_url.as_deref(),
+            resolved_links.as_deref(),
+            req.is_private,
         )
         .await?;
 
@@ -144,6 +158,45 @@ async fn unclaim_item(
     Ok(StatusCode::NO_CONTENT)
 }
 
+/// Owner removes a web claim from their own item.
+#[tracing::instrument(skip(state))]
+async fn owner_unclaim_web(
+    State(state): State<AppState>,
+    auth_user: AuthUser,
+    Path(id): Path<Uuid>,
+) -> Result<StatusCode, AppError> {
+    state
+        .items
+        .owner_unclaim_web_item(id, auth_user.user_id)
+        .await?;
+    Ok(StatusCode::NO_CONTENT)
+}
+
+#[tracing::instrument(skip(state, req))]
+async fn batch_delete(
+    State(state): State<AppState>,
+    auth_user: AuthUser,
+    Json(req): Json<BatchDeleteRequest>,
+) -> Result<StatusCode, AppError> {
+    validate_request(&req)?;
+
+    if req.ids.is_empty() {
+        return Err(AppError::BadRequest("ids must not be empty".into()));
+    }
+    if req.ids.len() > 100 {
+        return Err(AppError::BadRequest(
+            "cannot delete more than 100 items at once".into(),
+        ));
+    }
+
+    state
+        .items
+        .batch_delete_items(&req.ids, auth_user.user_id)
+        .await?;
+
+    Ok(StatusCode::NO_CONTENT)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -159,6 +212,9 @@ mod tests {
             estimated_price: None,
             priority: None,
             category_id: None,
+            image_url: None,
+            links: None,
+            is_private: None,
         }
     }
 
@@ -221,15 +277,52 @@ mod tests {
             estimated_price: Some(Decimal::from_str("9.99").unwrap()),
             priority: Some(1),
             category_id: Some(Uuid::new_v4()),
+            image_url: None,
+            links: None,
+            is_private: None,
         };
         assert!(req.validate().is_ok());
     }
 
-    // ── UpdateItemRequest ──────────────────────────────────────────
+    #[test]
+    fn create_with_links_validates() {
+        let mut req = make_create("test");
+        req.links = Some(vec![
+            "https://example.com".into(),
+            "https://other.com".into(),
+        ]);
+        assert!(req.validate().is_ok());
+        assert!(req.validate_links().is_ok());
+    }
 
     #[test]
-    fn update_accepts_empty_body() {
-        let req = UpdateItemRequest {
+    fn create_rejects_11_links() {
+        let mut req = make_create("test");
+        req.links = Some(vec!["https://x.com".into(); 11]);
+        assert!(req.validate_links().is_err());
+    }
+
+    #[test]
+    fn create_resolved_links_from_url() {
+        let mut req = make_create("test");
+        req.url = Some("https://example.com".into());
+        let resolved = req.resolved_links();
+        assert_eq!(resolved, Some(vec!["https://example.com".to_string()]));
+    }
+
+    #[test]
+    fn create_resolved_links_prefers_links_over_url() {
+        let mut req = make_create("test");
+        req.url = Some("https://old.com".into());
+        req.links = Some(vec!["https://new.com".into()]);
+        let resolved = req.resolved_links();
+        assert_eq!(resolved, Some(vec!["https://new.com".to_string()]));
+    }
+
+    // ── UpdateItemRequest ──────────────────────────────────────────
+
+    fn make_update() -> UpdateItemRequest {
+        UpdateItemRequest {
             name: None,
             description: None,
             url: None,
@@ -237,49 +330,35 @@ mod tests {
             priority: None,
             category_id: None,
             status: None,
-        };
-        assert!(req.validate().is_ok());
+            image_url: None,
+            links: None,
+            is_private: None,
+        }
+    }
+
+    #[test]
+    fn update_accepts_empty_body() {
+        assert!(make_update().validate().is_ok());
     }
 
     #[test]
     fn update_rejects_empty_name() {
-        let req = UpdateItemRequest {
-            name: Some("".into()),
-            description: None,
-            url: None,
-            estimated_price: None,
-            priority: None,
-            category_id: None,
-            status: None,
-        };
+        let mut req = make_update();
+        req.name = Some("".into());
         assert!(req.validate().is_err());
     }
 
     #[test]
     fn update_rejects_256_char_name() {
-        let req = UpdateItemRequest {
-            name: Some("a".repeat(256)),
-            description: None,
-            url: None,
-            estimated_price: None,
-            priority: None,
-            category_id: None,
-            status: None,
-        };
+        let mut req = make_update();
+        req.name = Some("a".repeat(256));
         assert!(req.validate().is_err());
     }
 
     #[test]
     fn update_accepts_valid_partial() {
-        let req = UpdateItemRequest {
-            name: Some("renamed".into()),
-            description: None,
-            url: None,
-            estimated_price: None,
-            priority: None,
-            category_id: None,
-            status: None,
-        };
+        let mut req = make_update();
+        req.name = Some("renamed".into());
         assert!(req.validate().is_ok());
     }
 }

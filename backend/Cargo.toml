@@ -16,11 +16,14 @@ a2 = "0.10"
 anyhow = "1.0"
 argon2 = "0.5"
 async-trait = "0.1"
+aws-config = { version = "1.5", features = ["behavior-version-latest"] }
+aws-sdk-s3 = "1.65"
 axum = "0.8"
 chrono = { version = "0.4", features = ["serde"] }
 chrono-tz = "0.10"
 dotenvy = "0.15"
 futures = "0.3"
+image = { version = "0.25", default-features = false, features = ["jpeg", "png", "webp"] }
 jsonwebtoken = "9"
 rand = "0.9"
 rand_core = { version = "0.6", features = ["getrandom"] }
@@ -29,6 +32,7 @@ reqwest = { version = "0.12", features = ["json", "rustls-tls"] }
 resend-rs = { version = "0.8", default-features = false, features = ["rustls-tls"] }
 rsa = "0.9"
 rust_decimal = { version = "1", features = ["serde-with-str"] }
+scraper = "0.22"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 sha1 = "0.10"

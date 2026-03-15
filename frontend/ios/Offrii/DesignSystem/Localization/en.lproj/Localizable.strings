@@ -120,6 +120,8 @@
 "wishlist.delete.confirm" = "Delete";
 "wishlist.cancel" = "Cancel";
 "wishlist.claimed" = "Someone is on it!";
+"wishlist.claimed.web" = "Reserved by %@ (via link)";
+"wishlist.unclaim.web" = "Remove reservation";
 "wishlist.markReceived" = "Mark received";
 "wishlist.share" = "Share";
 "wishlist.edit" = "Edit";
@@ -373,3 +375,89 @@
 /* Profile Progress */
 "progress.title" = "Profile %d%% complete";
 "progress.nextStep" = "Next: %@";
+
+/* Entraide - Segments */
+"entraide.segment.discover" = "Discover";
+"entraide.segment.myNeeds" = "My needs";
+"entraide.segment.myOffers" = "My offers";
+"entraide.offer.cta" = "Offer to help";
+"entraide.myOffers.empty" = "No offers yet";
+"entraide.myOffers.emptySubtitle" = "You haven't offered to help yet";
+
+/* Activity Feed */
+"activity.today" = "Today";
+"activity.yesterday" = "Yesterday";
+"activity.thisWeek" = "This week";
+"activity.older" = "Older";
+
+/* Share */
+"share.title" = "Share my wishes";
+"share.copyLink" = "Copy link";
+"share.copyLinkSubtitle" = "Anyone with the link can view and reserve";
+"share.sendVia" = "Send via...";
+"share.sendViaSubtitle" = "iMessage, WhatsApp, Email...";
+"share.linkCopied" = "Link copied!";
+"share.manageLinks" = "My share links";
+"share.toCircle" = "Share to a circle";
+"share.item" = "Share this item";
+"share.noCircles" = "No circles";
+"share.noCirclesSubtitle" = "Create a circle first to share your wishes";
+"share.shareToCount" = "Share to %d circle(s)";
+"share.unshareCount" = "Remove from %d circle(s)";
+"share.applyChanges" = "Apply";
+"share.sendViaCreateFirst" = "Create a link first";
+"share.creating" = "Creating link...";
+"share.linkReady" = "Link ready!";
+"share.yourCircles" = "Your circles";
+"share.sharedSuccess" = "Shared!";
+"share.createLink" = "Create a share link";
+"share.whatToShare" = "What to share?";
+"share.scopeAll" = "My entire list";
+"share.scopeCategory" = "A category";
+"share.scopeSelection" = "Selected items";
+"share.permissions" = "Permissions";
+"share.permViewAndClaim" = "View and reserve";
+"share.permViewOnly" = "View only";
+"share.createAndCopy" = "Create and copy link";
+"share.sendDirect" = "Send directly";
+"share.activeLinks" = "My links";
+"share.scopeAllLabel" = "Entire list";
+"share.scopeSelectionLabel" = "Selection (%d)";
+"share.privateExcluded" = "%d private item(s) excluded";
+"share.pickItems" = "Choose wishes";
+"share.itemsSelected" = "%d wish(es) selected";
+"share.linkDeleted" = "Link deleted";
+"share.modifySelection" = "Modify selection";
+"share.linkName" = "Link name (optional)";
+"share.linkNamePlaceholder" = "E.g. Christmas list, For Mom...";
+"share.ttl" = "Expiration";
+"share.ttl.never" = "Never";
+"share.ttl.oneWeek" = "1 week";
+"share.ttl.oneMonth" = "1 month";
+"share.ttl.threeMonths" = "3 months";
+"share.linkActive" = "Link active";
+"share.linkActiveHint" = "Disable to block access without deleting";
+"share.expiresAt" = "Expires in";
+"share.linkDisabled" = "Disabled";
+"share.description" = "Share your wishes with loved ones so they know what to get you.";
+
+/* Wishlist - Redesign */
+"wishlist.search.placeholder" = "Search a wish...";
+"wishlist.countSingular" = "wish";
+"wishlist.countPlural" = "wishes";
+"wishlist.copyName" = "Copy name";
+"wishlist.selected" = "selected";
+"wishlist.select" = "Select";
+"wishlist.selectAll" = "All";
+"wishlist.deleteCount" = "Delete %d";
+"wishlist.deleteConfirmBatch" = "Delete wishes?";
+"wishlist.deleteConfirmBatchMessage" = "Delete %d wish(es)? This cannot be undone.";
+"wishlist.private" = "Private";
+"wishlist.privateHint" = "Won't appear in share links";
+"item.sharedWith" = "Shared with";
+"item.links" = "Links";
+
+/* Image Picker */
+"imagePicker.add" = "Add a photo";
+"imagePicker.change" = "Change photo";
+"imagePicker.placeholder" = "Add a photo (optional)";

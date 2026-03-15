@@ -46,6 +46,9 @@ enum APIEndpoint {
     case deleteItem(id: UUID)
     case claimItem(id: UUID)
     case unclaimItem(id: UUID)
+    case uploadImage
+    case batchDeleteItems(BatchDeleteItemsBody)
+    case ownerUnclaimWeb(id: UUID)
 
     // MARK: Categories
 
@@ -69,6 +72,7 @@ enum APIEndpoint {
     case createShareLink(CreateShareLinkBody?)
     case listShareLinks
     case deleteShareLink(id: UUID)
+    case updateShareLink(id: UUID, body: UpdateShareLinkBody)
 
     // MARK: Shared (Public)
 
@@ -151,6 +155,9 @@ extension APIEndpoint {
         case .deleteItem(let id):               return "/items/\(id)"
         case .claimItem(let id):                return "/items/\(id)/claim"
         case .unclaimItem(let id):              return "/items/\(id)/claim"
+        case .uploadImage:                      return "/upload/image"
+        case .batchDeleteItems:                 return "/items/batch-delete"
+        case .ownerUnclaimWeb(let id):          return "/items/\(id)/web-claim"
 
         // Categories
         case .listCategories:                   return "/categories"
@@ -170,6 +177,7 @@ extension APIEndpoint {
         case .createShareLink:                  return "/share-links"
         case .listShareLinks:                   return "/share-links"
         case .deleteShareLink(let id):          return "/share-links/\(id)"
+        case .updateShareLink(let id, _):       return "/share-links/\(id)"
 
         // Shared
         case .getSharedView(let token):                 return "/shared/\(token)"
@@ -244,6 +252,9 @@ extension APIEndpoint {
         case .deleteItem:       return .DELETE
         case .claimItem:        return .POST
         case .unclaimItem:      return .DELETE
+        case .uploadImage:      return .POST
+        case .batchDeleteItems: return .POST
+        case .ownerUnclaimWeb:  return .DELETE
 
         // Categories
         case .listCategories:   return .GET
@@ -263,6 +274,7 @@ extension APIEndpoint {
         case .createShareLink:  return .POST
         case .listShareLinks:   return .GET
         case .deleteShareLink:  return .DELETE
+        case .updateShareLink:  return .PATCH
 
         // Shared
         case .getSharedView:    return .GET
@@ -394,6 +406,7 @@ extension APIEndpoint {
         case .updateProfile(let body):      return body
         case .registerToken(let body):      return body
         case .createShareLink(let body):    return body
+        case .updateShareLink(_, let body): return body
         case .createCircle(let body):       return body
         case .updateCircle(_, let body):    return body
         case .addMemberToCircle(_, let body): return body
@@ -403,6 +416,7 @@ extension APIEndpoint {
         case .updateCommunityWish(_, let body):     return body
         case .reportCommunityWish(_, let body):     return body
         case .sendWishMessage(_, let body):         return body
+        case .batchDeleteItems(let body):          return body
         default:                                    return nil
         }
     }

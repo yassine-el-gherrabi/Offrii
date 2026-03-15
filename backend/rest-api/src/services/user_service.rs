@@ -59,6 +59,7 @@ impl traits::UserService for PgUserService {
             && req.reminder_time.is_none()
             && req.timezone.is_none()
             && req.locale.is_none()
+            && req.avatar_url.is_none()
         {
             return self.get_profile(user_id).await;
         }
@@ -127,6 +128,7 @@ impl traits::UserService for PgUserService {
                 req.timezone.as_deref(),
                 utc_hour,
                 req.locale.as_deref(),
+                req.avatar_url.as_deref(),
             )
             .await
             .map_err(AppError::Internal)?

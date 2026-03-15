@@ -3,21 +3,27 @@ import SwiftUI
 /// Small avatar button for navigating to ProfileView from any screen header.
 struct ProfileAvatarButton: View {
     let initials: String
+    var avatarUrl: URL?
     var showBadge: Bool = false
 
     var body: some View {
         ZStack(alignment: .topTrailing) {
-            // Avatar circle with initials
-            Text(initials)
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundColor(.white)
-                .frame(width: 32, height: 32)
-                .background(Color.white.opacity(0.25))
-                .clipShape(Circle())
-                .overlay(
-                    Circle()
-                        .strokeBorder(Color.white.opacity(0.4), lineWidth: 1)
-                )
+            if let url = avatarUrl {
+                AsyncImage(url: url) { phase in
+                    switch phase {
+                    case .success(let image):
+                        image
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .frame(width: 32, height: 32)
+                            .clipShape(Circle())
+                    default:
+                        initialsView
+                    }
+                }
+            } else {
+                initialsView
+            }
 
             // Badge dot
             if showBadge {
@@ -31,6 +37,15 @@ struct ProfileAvatarButton: View {
                     .offset(x: 2, y: -2)
             }
         }
+    }
+
+    private var initialsView: some View {
+        Text(initials)
+            .font(.system(size: 13, weight: .semibold))
+            .foregroundColor(.white)
+            .frame(width: 32, height: 32)
+            .background(OffriiTheme.primary)
+            .clipShape(Circle())
     }
 
     /// Extract initials from a display name (e.g. "Yassine" → "Y", "Marie Dupont" → "MD")

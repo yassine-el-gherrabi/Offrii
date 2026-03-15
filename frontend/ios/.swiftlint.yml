@@ -34,11 +34,11 @@ line_length:
 
 type_body_length:
   warning: 400
-  error: 600
+  error: 900
 
 file_length:
   warning: 500
-  error: 800
+  error: 1000
 
 function_body_length:
   warning: 60

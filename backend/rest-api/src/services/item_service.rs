@@ -7,7 +7,7 @@ use rust_decimal::Decimal;
 use sqlx::PgPool;
 use uuid::Uuid;
 
-use crate::dto::items::{ItemResponse, ListItemsQuery};
+use crate::dto::items::{ItemResponse, ListItemsQuery, SharedCircleInfo};
 use crate::dto::pagination::{PaginatedResponse, normalize_pagination};
 use crate::errors::AppError;
 use crate::traits;
@@ -29,14 +29,21 @@ const LIST_CACHE_TTL_SECS: i64 = 300;
 pub struct PgItemService {
     pool: PgPool,
     item_repo: Arc<dyn traits::ItemRepo>,
+    circle_item_repo: Arc<dyn traits::CircleItemRepo>,
     redis: redis::Client,
 }
 
 impl PgItemService {
-    pub fn new(pool: PgPool, item_repo: Arc<dyn traits::ItemRepo>, redis: redis::Client) -> Self {
+    pub fn new(
+        pool: PgPool,
+        item_repo: Arc<dyn traits::ItemRepo>,
+        circle_item_repo: Arc<dyn traits::CircleItemRepo>,
+        redis: redis::Client,
+    ) -> Self {
         Self {
             pool,
             item_repo,
+            circle_item_repo,
             redis,
         }
     }
@@ -121,6 +128,32 @@ impl PgItemService {
         }
         Ok(())
     }
+
+    /// Enrich a list of ItemResponses with shared circle info.
+    async fn enrich_with_circles(&self, items: &mut [ItemResponse]) {
+        if items.is_empty() {
+            return;
+        }
+        let item_ids: Vec<Uuid> = items.iter().map(|i| i.id).collect();
+        let circle_map = self
+            .circle_item_repo
+            .list_circle_names_for_items(&item_ids)
+            .await
+            .unwrap_or_default();
+
+        for item in items.iter_mut() {
+            if let Some(circles) = circle_map.get(&item.id) {
+                item.shared_circles = circles
+                    .iter()
+                    .map(|(id, name, is_direct)| SharedCircleInfo {
+                        id: *id,
+                        name: name.clone(),
+                        is_direct: *is_direct,
+                    })
+                    .collect();
+            }
+        }
+    }
 }
 
 /// Hash the query parameters to create a unique cache key suffix.
@@ -147,6 +180,9 @@ impl traits::ItemService for PgItemService {
         estimated_price: Option<Decimal>,
         priority: Option<i16>,
         category_id: Option<Uuid>,
+        image_url: Option<&str>,
+        links: Option<&[String]>,
+        is_private: Option<bool>,
     ) -> Result<ItemResponse, AppError> {
         let priority = priority.unwrap_or(2);
         if !(1..=3).contains(&priority) {
@@ -175,12 +211,41 @@ impl traits::ItemService for PgItemService {
                 estimated_price,
                 priority,
                 category_id,
+                image_url,
+                links,
+                is_private.unwrap_or(false),
             )
             .await
             .map_err(AppError::Internal)?;
 
         // Invalidate list cache
         self.bump_version(user_id).await;
+
+        // Async OG fetch for the first link
+        if let Some(links) = links
+            && let Some(first_link) = links.first()
+        {
+            let item_repo = self.item_repo.clone();
+            let link = first_link.clone();
+            let item_id = item.id;
+            tokio::spawn(async move {
+                match crate::services::og_service::fetch_og_metadata(&link).await {
+                    Ok(og) => {
+                        let _ = item_repo
+                            .update_og_metadata(
+                                item_id,
+                                og.image_url.as_deref(),
+                                og.title.as_deref(),
+                                og.site_name.as_deref(),
+                            )
+                            .await;
+                    }
+                    Err(e) => {
+                        tracing::debug!(item_id = %item_id, error = %e, "OG fetch failed");
+                    }
+                }
+            });
+        }
 
         Ok(ItemResponse::from(item))
     }
@@ -194,7 +259,10 @@ impl traits::ItemService for PgItemService {
             .map_err(AppError::Internal)?
             .ok_or_else(|| AppError::NotFound("item not found".into()))?;
 
-        Ok(ItemResponse::from(item))
+        let mut resp = ItemResponse::from(item);
+        self.enrich_with_circles(std::slice::from_mut(&mut resp))
+            .await;
+        Ok(resp)
     }
 
     #[tracing::instrument(skip(self))]
@@ -249,13 +317,15 @@ impl traits::ItemService for PgItemService {
 
         // Cache miss → query DB
         let status_filter = query.status.as_deref();
+        let cat_ids = query.resolved_category_ids();
+        let cat_ids_ref = cat_ids.as_deref();
         let (items, total) = tokio::try_join!(
             async {
                 self.item_repo
                     .list(
                         user_id,
                         status_filter,
-                        query.category_id,
+                        cat_ids_ref,
                         sort,
                         order,
                         limit,
@@ -266,18 +336,17 @@ impl traits::ItemService for PgItemService {
             },
             async {
                 self.item_repo
-                    .count(user_id, status_filter, query.category_id)
+                    .count(user_id, status_filter, cat_ids_ref)
                     .await
                     .map_err(AppError::Internal)
             },
         )?;
 
-        let response = PaginatedResponse::new(
-            items.into_iter().map(ItemResponse::from).collect(),
-            total,
-            page,
-            limit,
-        );
+        let mut item_responses: Vec<ItemResponse> =
+            items.into_iter().map(ItemResponse::from).collect();
+        self.enrich_with_circles(&mut item_responses).await;
+
+        let response = PaginatedResponse::new(item_responses, total, page, limit);
 
         // Cache the result (fail-open) — reuse the same cache_key from the read path
         if let Ok(serialized) = serde_json::to_string(&response) {
@@ -299,6 +368,9 @@ impl traits::ItemService for PgItemService {
         priority: Option<i16>,
         category_id: Option<Option<Uuid>>,
         status: Option<&str>,
+        image_url: Option<&str>,
+        links: Option<&[String]>,
+        is_private: Option<bool>,
     ) -> Result<ItemResponse, AppError> {
         if let Some(p) = priority
             && !(1..=3).contains(&p)
@@ -334,10 +406,12 @@ impl traits::ItemService for PgItemService {
             || estimated_price.is_some()
             || priority.is_some()
             || category_id.is_some()
-            || status.is_some();
+            || status.is_some()
+            || image_url.is_some()
+            || links.is_some()
+            || is_private.is_some();
 
         if !has_update {
-            // Nothing to update — just return the current item
             return self.get_item(id, user_id).await;
         }
 
@@ -353,13 +427,13 @@ impl traits::ItemService for PgItemService {
                 priority,
                 category_id,
                 status,
+                image_url,
+                links,
+                is_private,
             )
             .await
             .map_err(AppError::Internal)?;
 
-        // When status is provided, the repo adds `AND status != $new_status`
-        // to the WHERE clause. Zero rows can mean either "not found" or
-        // "already has that status". Disambiguate only on the error path.
         let item = match item {
             Some(item) => item,
             None => {
@@ -381,6 +455,32 @@ impl traits::ItemService for PgItemService {
 
         // Invalidate list cache
         self.bump_version(user_id).await;
+
+        // Async OG fetch for the first link (if links changed)
+        if let Some(links) = links
+            && let Some(first_link) = links.first()
+        {
+            let item_repo = self.item_repo.clone();
+            let link = first_link.clone();
+            let item_id = item.id;
+            tokio::spawn(async move {
+                match crate::services::og_service::fetch_og_metadata(&link).await {
+                    Ok(og) => {
+                        let _ = item_repo
+                            .update_og_metadata(
+                                item_id,
+                                og.image_url.as_deref(),
+                                og.title.as_deref(),
+                                og.site_name.as_deref(),
+                            )
+                            .await;
+                    }
+                    Err(e) => {
+                        tracing::debug!(item_id = %item_id, error = %e, "OG fetch failed");
+                    }
+                }
+            });
+        }
 
         Ok(ItemResponse::from(item))
     }
@@ -427,7 +527,7 @@ impl traits::ItemService for PgItemService {
             Some(item) if item.user_id == claimer_id => {
                 Err(AppError::BadRequest("cannot claim your own item".into()))
             }
-            Some(item) if item.claimed_by.is_some() => {
+            Some(item) if item.claimed_by.is_some() || item.claimed_via.is_some() => {
                 Err(AppError::Conflict("item already claimed".into()))
             }
             Some(_) => Err(AppError::BadRequest("item is not active".into())),
@@ -455,7 +555,7 @@ impl traits::ItemService for PgItemService {
             .map_err(AppError::Internal)?
         {
             None => Err(AppError::NotFound("item not found".into())),
-            Some(item) if item.claimed_by.is_none() => {
+            Some(item) if item.claimed_by.is_none() && item.claimed_via.is_none() => {
                 Err(AppError::Conflict("item is not claimed".into()))
             }
             Some(item) if item.claimed_by != Some(claimer_id) => Err(AppError::Unauthorized(
@@ -463,5 +563,66 @@ impl traits::ItemService for PgItemService {
             )),
             Some(_) => Err(AppError::NotFound("item not found".into())),
         }
+    }
+
+    #[tracing::instrument(skip(self))]
+    async fn owner_unclaim_web_item(&self, item_id: Uuid, owner_id: Uuid) -> Result<(), AppError> {
+        let result = self
+            .item_repo
+            .owner_unclaim_web_item(item_id, owner_id)
+            .await
+            .map_err(AppError::Internal)?;
+
+        if result.is_some() {
+            self.bump_version(owner_id).await;
+            return Ok(());
+        }
+
+        // Disambiguate
+        match self
+            .item_repo
+            .find_by_id(item_id, owner_id)
+            .await
+            .map_err(AppError::Internal)?
+        {
+            None => Err(AppError::NotFound("item not found".into())),
+            Some(item) if item.claimed_via.as_deref() == Some("app") => Err(AppError::Forbidden(
+                "cannot remove an app claim — only the claimer can unclaim".into(),
+            )),
+            Some(item) if item.claimed_via.is_none() => {
+                Err(AppError::Conflict("item is not claimed".into()))
+            }
+            Some(_) => Err(AppError::NotFound("item not found".into())),
+        }
+    }
+
+    #[tracing::instrument(skip(self))]
+    async fn batch_delete_items(&self, ids: &[Uuid], user_id: Uuid) -> Result<u64, AppError> {
+        if ids.is_empty() {
+            return Err(AppError::BadRequest("ids must not be empty".into()));
+        }
+        if ids.len() > 100 {
+            return Err(AppError::BadRequest(
+                "cannot delete more than 100 items at once".into(),
+            ));
+        }
+
+        // Batch soft-delete via single SQL query
+        let result = sqlx::query(
+            "UPDATE items SET status = 'deleted' WHERE id = ANY($1) AND user_id = $2 AND status != 'deleted'"
+        )
+        .bind(ids)
+        .bind(user_id)
+        .execute(&self.pool)
+        .await
+        .map_err(|e| AppError::Internal(e.into()))?;
+
+        let count = result.rows_affected();
+
+        if count > 0 {
+            self.bump_version(user_id).await;
+        }
+
+        Ok(count)
     }
 }

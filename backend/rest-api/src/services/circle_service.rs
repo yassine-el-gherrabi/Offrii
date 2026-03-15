@@ -92,6 +92,20 @@ impl PgCircleService {
         Ok(())
     }
 
+    fn bump_item_list_version(&self, user_id: Uuid) {
+        let redis = self.redis.clone();
+        tokio::spawn(async move {
+            let ver_key = format!("items:{user_id}:ver");
+            let Ok(mut conn) = redis.get_multiplexed_async_connection().await else {
+                return;
+            };
+            let _: Result<i64, _> = redis::cmd("INCR")
+                .arg(&ver_key)
+                .query_async(&mut conn)
+                .await;
+        });
+    }
+
     fn bump_circle_version(&self, circle_id: Uuid) {
         let redis = self.redis.clone();
         tokio::spawn(async move {
@@ -678,6 +692,7 @@ impl traits::CircleService for PgCircleService {
             );
 
             self.bump_circle_version(circle_id);
+            self.bump_item_list_version(user_id);
         }
 
         Ok(())
@@ -785,6 +800,7 @@ impl traits::CircleService for PgCircleService {
             .map_err(AppError::Internal)?;
 
         self.bump_circle_version(circle_id);
+        self.bump_item_list_version(user_id);
 
         Ok(())
     }

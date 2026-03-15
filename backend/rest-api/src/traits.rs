@@ -64,6 +64,7 @@ pub trait UserRepo: Send + Sync {
         timezone: Option<&str>,
         utc_reminder_hour: Option<i16>,
         locale: Option<&str>,
+        avatar_url: Option<&str>,
     ) -> Result<Option<User>>;
 
     async fn delete_user(&self, id: Uuid) -> Result<bool>;
@@ -140,6 +141,9 @@ pub trait ItemRepo: Send + Sync {
         estimated_price: Option<rust_decimal::Decimal>,
         priority: i16,
         category_id: Option<Uuid>,
+        image_url: Option<&str>,
+        links: Option<&[String]>,
+        is_private: bool,
     ) -> Result<Item>;
 
     async fn find_by_id(&self, id: Uuid, user_id: Uuid) -> Result<Option<Item>>;
@@ -148,7 +152,7 @@ pub trait ItemRepo: Send + Sync {
         &self,
         user_id: Uuid,
         status: Option<&str>,
-        category_id: Option<Uuid>,
+        category_ids: Option<&[Uuid]>,
         sort: &str,
         order: &str,
         limit: i64,
@@ -159,7 +163,7 @@ pub trait ItemRepo: Send + Sync {
         &self,
         user_id: Uuid,
         status: Option<&str>,
-        category_id: Option<Uuid>,
+        category_ids: Option<&[Uuid]>,
     ) -> Result<i64>;
 
     async fn update(
@@ -173,6 +177,9 @@ pub trait ItemRepo: Send + Sync {
         priority: Option<i16>,
         category_id: Option<Option<Uuid>>,
         status: Option<&str>,
+        image_url: Option<&str>,
+        links: Option<&[String]>,
+        is_private: Option<bool>,
     ) -> Result<Option<Item>>;
 
     async fn soft_delete(&self, id: Uuid, user_id: Uuid) -> Result<bool>;
@@ -192,6 +199,28 @@ pub trait ItemRepo: Send + Sync {
     async fn find_by_ids(&self, user_id: Uuid, ids: &[Uuid]) -> Result<Vec<Item>>;
 
     async fn find_by_ids_any_user(&self, ids: &[Uuid]) -> Result<Vec<Item>>;
+
+    /// Web claim: anonymous user claims an item. Returns (owner_user_id, web_claim_token).
+    async fn web_claim_item(
+        &self,
+        id: Uuid,
+        name: &str,
+        link_id: Uuid,
+    ) -> Result<Option<(Uuid, Uuid)>>;
+
+    /// Web unclaim: anonymous user cancels their claim using the web_claim_token.
+    async fn web_unclaim_item(&self, id: Uuid, token: Uuid) -> Result<Option<Uuid>>;
+
+    /// Owner unclaim for web claims: item owner removes a web claim.
+    async fn owner_unclaim_web_item(&self, id: Uuid, owner_id: Uuid) -> Result<Option<Uuid>>;
+
+    async fn update_og_metadata(
+        &self,
+        id: Uuid,
+        og_image_url: Option<&str>,
+        og_title: Option<&str>,
+        og_site_name: Option<&str>,
+    ) -> Result<bool>;
 }
 
 #[async_trait]
@@ -271,6 +300,9 @@ pub trait ItemService: Send + Sync {
         estimated_price: Option<rust_decimal::Decimal>,
         priority: Option<i16>,
         category_id: Option<Uuid>,
+        image_url: Option<&str>,
+        links: Option<&[String]>,
+        is_private: Option<bool>,
     ) -> Result<ItemResponse, AppError>;
 
     async fn get_item(&self, id: Uuid, user_id: Uuid) -> Result<ItemResponse, AppError>;
@@ -292,13 +324,21 @@ pub trait ItemService: Send + Sync {
         priority: Option<i16>,
         category_id: Option<Option<Uuid>>,
         status: Option<&str>,
+        image_url: Option<&str>,
+        links: Option<&[String]>,
+        is_private: Option<bool>,
     ) -> Result<ItemResponse, AppError>;
 
     async fn delete_item(&self, id: Uuid, user_id: Uuid) -> Result<(), AppError>;
 
+    async fn batch_delete_items(&self, ids: &[Uuid], user_id: Uuid) -> Result<u64, AppError>;
+
     async fn claim_item(&self, item_id: Uuid, claimer_id: Uuid) -> Result<(), AppError>;
 
     async fn unclaim_item(&self, item_id: Uuid, claimer_id: Uuid) -> Result<(), AppError>;
+
+    /// Owner unclaim for web claims: item owner can remove a web claim.
+    async fn owner_unclaim_web_item(&self, item_id: Uuid, owner_id: Uuid) -> Result<(), AppError>;
 }
 
 #[async_trait]
@@ -493,6 +533,13 @@ pub trait CircleItemRepo: Send + Sync {
     async fn find(&self, circle_id: Uuid, item_id: Uuid) -> Result<Option<CircleItem>>;
 
     async fn list_circles_for_item(&self, item_id: Uuid) -> Result<Vec<Uuid>>;
+
+    /// Batch fetch circle names for multiple items.
+    /// Returns: item_id → Vec<(circle_id, name, is_direct)>
+    async fn list_circle_names_for_items(
+        &self,
+        item_ids: &[Uuid],
+    ) -> Result<std::collections::HashMap<Uuid, Vec<(Uuid, String, bool)>>>;
 }
 
 #[async_trait]
@@ -688,6 +735,22 @@ pub trait ShareLinkService: Send + Sync {
         token: &str,
         item_id: Uuid,
         claimer_id: Uuid,
+    ) -> Result<(), AppError>;
+
+    /// Web claim via share link (no auth required).
+    async fn web_claim_via_share(
+        &self,
+        token: &str,
+        item_id: Uuid,
+        name: &str,
+    ) -> Result<Uuid, AppError>;
+
+    /// Web unclaim via share link (no auth required, uses web_claim_token).
+    async fn web_unclaim_via_share(
+        &self,
+        token: &str,
+        item_id: Uuid,
+        web_claim_token: Uuid,
     ) -> Result<(), AppError>;
 }
 
@@ -963,4 +1026,15 @@ pub trait WishMessageService: Send + Sync {
         PaginatedResponse<crate::dto::wish_messages::MessageResponse>,
         crate::errors::AppError,
     >;
+}
+
+// ── Upload service ──────────────────────────────────────────────────
+
+#[async_trait]
+pub trait UploadService: Send + Sync {
+    /// Upload an image, process it, store in R2, return the public CDN URL.
+    async fn upload_image(&self, data: &[u8], content_type: &str) -> Result<String, AppError>;
+
+    /// Delete an image from R2 by its public URL.
+    async fn delete_image(&self, url: &str) -> Result<(), AppError>;
 }

@@ -57,11 +57,17 @@ struct QuickCreateSheet: View {
             }
         }
         .sheet(isPresented: $navigateToAddWish) {
-            QuickAddSheet { name in
-                _ = try? await ItemService.shared.createItem(name: name)
+            QuickAddSheet { name, price, categoryId, priority, imageUrl, links in
+                _ = try? await ItemService.shared.createItem(
+                    name: name,
+                    estimatedPrice: price,
+                    priority: priority,
+                    categoryId: categoryId,
+                    imageUrl: imageUrl,
+                    links: links
+                )
                 return true
             }
-            .presentationDetents([.medium])
         }
         .sheet(isPresented: $navigateToCreateCircle) {
             CreateCircleSheet { _ in }

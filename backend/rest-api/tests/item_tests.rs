@@ -1605,6 +1605,177 @@ async fn is_claimed_visible_in_list_endpoint() {
     assert_eq!(items[0]["is_claimed"], true);
 }
 
+// ── Shared circles ──────────────────────────────────────────────────
+
+#[tokio::test]
+async fn get_item_includes_shared_circles() {
+    let app = TestApp::new().await;
+    let token = app
+        .setup_user_token("shared-circles@example.com", TEST_PASSWORD)
+        .await;
+
+    // Create item
+    let item = app
+        .create_item(&token, &serde_json::json!({ "name": "shared item" }))
+        .await;
+    let item_id = item["id"].as_str().unwrap();
+
+    // Create circle
+    let (status, circle) = app
+        .post_json_with_auth(
+            "/circles",
+            &serde_json::json!({ "name": "Famille" }),
+            &token,
+        )
+        .await;
+    assert_eq!(status, StatusCode::CREATED);
+    let circle_id = circle["id"].as_str().unwrap();
+
+    // Share item to circle
+    let (status, _) = app
+        .post_json_with_auth(
+            &format!("/circles/{circle_id}/items"),
+            &serde_json::json!({ "item_id": item_id }),
+            &token,
+        )
+        .await;
+    assert!(
+        status.is_success(),
+        "share item should succeed, got {status}"
+    );
+
+    // Get item — should include shared_circles
+    let (status, body) = app
+        .get_with_auth(&format!("/items/{item_id}"), &token)
+        .await;
+    assert_eq!(status, StatusCode::OK);
+
+    let shared_circles = body["shared_circles"]
+        .as_array()
+        .expect("shared_circles should be an array");
+    assert!(
+        !shared_circles.is_empty(),
+        "shared_circles should have at least one entry"
+    );
+    assert_eq!(shared_circles[0]["id"], circle_id);
+    assert_eq!(shared_circles[0]["name"], "Famille");
+}
+
+#[tokio::test]
+async fn list_items_includes_shared_circles() {
+    let app = TestApp::new().await;
+    let token = app
+        .setup_user_token("shared-circles-list@example.com", TEST_PASSWORD)
+        .await;
+
+    // Create item
+    let item = app
+        .create_item(&token, &serde_json::json!({ "name": "listed item" }))
+        .await;
+    let item_id = item["id"].as_str().unwrap();
+
+    // Create circle
+    let (status, circle) = app
+        .post_json_with_auth("/circles", &serde_json::json!({ "name": "Amis" }), &token)
+        .await;
+    assert_eq!(status, StatusCode::CREATED);
+    let circle_id = circle["id"].as_str().unwrap();
+
+    // Share item to circle
+    let (status, _) = app
+        .post_json_with_auth(
+            &format!("/circles/{circle_id}/items"),
+            &serde_json::json!({ "item_id": item_id }),
+            &token,
+        )
+        .await;
+    assert!(
+        status.is_success(),
+        "share item should succeed, got {status}"
+    );
+
+    // List items — first item should have non-empty shared_circles
+    let (status, body) = app.get_with_auth("/items", &token).await;
+    assert_eq!(status, StatusCode::OK);
+
+    let items = body["data"].as_array().unwrap();
+    assert!(!items.is_empty(), "should have at least one item");
+
+    let first = &items[0];
+    let shared_circles = first["shared_circles"]
+        .as_array()
+        .expect("shared_circles should be an array in list response");
+    assert!(
+        !shared_circles.is_empty(),
+        "shared_circles should be non-empty after sharing"
+    );
+}
+
+#[tokio::test]
+async fn unshare_removes_from_shared_circles() {
+    let app = TestApp::new().await;
+    let token = app
+        .setup_user_token("shared-circles-unshr@example.com", TEST_PASSWORD)
+        .await;
+
+    // Create item
+    let item = app
+        .create_item(&token, &serde_json::json!({ "name": "unshare item" }))
+        .await;
+    let item_id = item["id"].as_str().unwrap();
+
+    // Create circle
+    let (status, circle) = app
+        .post_json_with_auth(
+            "/circles",
+            &serde_json::json!({ "name": "Collègues" }),
+            &token,
+        )
+        .await;
+    assert_eq!(status, StatusCode::CREATED);
+    let circle_id = circle["id"].as_str().unwrap();
+
+    // Share item to circle
+    let (status, _) = app
+        .post_json_with_auth(
+            &format!("/circles/{circle_id}/items"),
+            &serde_json::json!({ "item_id": item_id }),
+            &token,
+        )
+        .await;
+    assert!(
+        status.is_success(),
+        "share item should succeed, got {status}"
+    );
+
+    // Verify it is shared
+    let (_, body) = app
+        .get_with_auth(&format!("/items/{item_id}"), &token)
+        .await;
+    let shared = body["shared_circles"].as_array().unwrap();
+    assert!(!shared.is_empty(), "should be shared before unshare");
+
+    // Unshare: DELETE /circles/{circle_id}/items/{item_id}
+    let (status, _) = app
+        .delete_with_auth(&format!("/circles/{circle_id}/items/{item_id}"), &token)
+        .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+
+    // Get item again — shared_circles should be empty
+    let (status, body) = app
+        .get_with_auth(&format!("/items/{item_id}"), &token)
+        .await;
+    assert_eq!(status, StatusCode::OK);
+
+    let shared_circles = body["shared_circles"]
+        .as_array()
+        .expect("shared_circles should be an array");
+    assert!(
+        shared_circles.is_empty(),
+        "shared_circles should be empty after unshare"
+    );
+}
+
 // ── Cache consistency ───────────────────────────────────────────────
 
 #[tokio::test]

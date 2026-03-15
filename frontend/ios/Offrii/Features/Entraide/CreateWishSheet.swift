@@ -80,19 +80,13 @@ struct CreateWishSheet: View {
                     }
                     .tint(OffriiTheme.primary)
 
-                    // Image URL
+                    // Image picker
                     VStack(alignment: .leading, spacing: OffriiTheme.spacingXS) {
                         Text("entraide.create.imageUrlLabel")
                             .font(OffriiTypography.headline)
                             .foregroundColor(OffriiTheme.text)
 
-                        OffriiTextField(
-                            label: "",
-                            text: $viewModel.imageUrl,
-                            placeholder: "https://...",
-                            keyboardType: .URL,
-                            autocapitalization: .never
-                        )
+                        OffriiImagePicker(selectedImage: $viewModel.selectedImage)
                     }
 
                     // Links

@@ -93,8 +93,15 @@ struct CirclesListView: View {
 
                 // Content
                 if viewModel.isLoading && viewModel.circles.isEmpty {
-                    SkeletonList(count: 5)
+                    ScrollView {
+                        LazyVStack(spacing: OffriiTheme.spacingSM) {
+                            ForEach(0..<5, id: \.self) { _ in
+                                SkeletonRow(height: 76)
+                            }
+                        }
+                        .padding(.horizontal, OffriiTheme.spacingBase)
                         .padding(.top, OffriiTheme.spacingBase)
+                    }
                 } else if viewModel.circles.isEmpty {
                     Spacer()
                     OffriiEmptyState(
@@ -106,21 +113,29 @@ struct CirclesListView: View {
                     )
                     Spacer()
                 } else {
-                    List {
-                        ForEach(viewModel.circles) { circle in
-                            NavigationLink(value: circle.id) {
-                                circleRow(circle)
-                            }
-                            .swipeActions(edge: .trailing) {
-                                Button(role: .destructive) {
-                                    Task { await viewModel.deleteCircle(circle) }
-                                } label: {
-                                    Label(NSLocalizedString("common.delete", comment: ""), systemImage: "trash")
+                    ScrollView {
+                        LazyVStack(spacing: OffriiTheme.spacingSM) {
+                            ForEach(viewModel.circles) { circle in
+                                NavigationLink(value: circle.id) {
+                                    CircleCardRow(circle: circle)
+                                }
+                                .buttonStyle(.plain)
+                                .contextMenu {
+                                    Button(role: .destructive) {
+                                        Task { await viewModel.deleteCircle(circle) }
+                                    } label: {
+                                        Label(NSLocalizedString("common.delete", comment: ""), systemImage: "trash")
+                                    }
                                 }
                             }
                         }
+                        .padding(.horizontal, OffriiTheme.spacingBase)
+                        .padding(.vertical, OffriiTheme.spacingSM)
                     }
-                    .listStyle(.plain)
+                    .refreshable {
+                        await viewModel.loadCircles()
+                        await viewModel.loadPendingCount()
+                    }
                 }
             }
         }
@@ -133,45 +148,10 @@ struct CirclesListView: View {
                 Task { await viewModel.loadCircles() }
             }
         }
-        .refreshable {
-            await viewModel.loadCircles()
-            await viewModel.loadPendingCount()
-        }
         .task {
             await viewModel.loadCircles()
             await viewModel.loadPendingCount()
             tipManager.showIfNeeded(.circlesCreate)
         }
-    }
-
-    @ViewBuilder
-    private func circleRow(_ circle: OffriiCircle) -> some View {
-        HStack(spacing: OffriiTheme.spacingSM) {
-            Image(systemName: circle.isDirect ? "bubble.left.fill" : "person.2.fill")
-                .font(.system(size: 16))
-                .foregroundColor(OffriiTheme.primary)
-                .frame(width: 32, height: 32)
-                .background(OffriiTheme.primary.opacity(0.1))
-                .clipShape(Circle())
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text(circle.name ?? NSLocalizedString("circles.unnamed", comment: ""))
-                    .font(OffriiTypography.body)
-                    .foregroundColor(OffriiTheme.text)
-
-                if circle.isDirect {
-                    Text("1-to-1")
-                        .font(OffriiTypography.caption)
-                        .foregroundColor(OffriiTheme.textMuted)
-                } else {
-                    Text(String(format: NSLocalizedString("circles.memberCount", comment: ""), circle.memberCount))
-                        .font(OffriiTypography.caption)
-                        .foregroundColor(OffriiTheme.textMuted)
-                }
-            }
-
-            Spacer()
-        }
-        .padding(.vertical, OffriiTheme.spacingXS)
     }
 }

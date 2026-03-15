@@ -636,3 +636,58 @@ async fn profile_survives_password_change() {
     assert_eq!(status, StatusCode::OK);
     assert_eq!(body["display_name"], "Survivor");
 }
+
+// ── Avatar URL tests ────────────────────────────────────────────────
+
+#[tokio::test]
+async fn update_profile_avatar_url_200() {
+    let app = TestApp::new().await;
+    let token = app
+        .setup_user_token("avatar@example.com", TEST_PASSWORD)
+        .await;
+
+    let patch_body = serde_json::json!({ "avatar_url": "https://example.com/avatar.jpg" });
+    let (status, body) = app
+        .patch_json_with_auth("/users/me", &patch_body, &token)
+        .await;
+
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(body["avatar_url"], "https://example.com/avatar.jpg");
+}
+
+#[tokio::test]
+async fn get_profile_includes_avatar_url() {
+    let app = TestApp::new().await;
+    let token = app
+        .setup_user_token("avatar-get@example.com", TEST_PASSWORD)
+        .await;
+
+    // Set avatar
+    let patch_body = serde_json::json!({ "avatar_url": "https://example.com/avatar.jpg" });
+    let (status, _) = app
+        .patch_json_with_auth("/users/me", &patch_body, &token)
+        .await;
+    assert_eq!(status, StatusCode::OK);
+
+    // GET should include avatar_url
+    let (status, body) = app.get_with_auth("/users/me", &token).await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(body["avatar_url"], "https://example.com/avatar.jpg");
+}
+
+#[tokio::test]
+async fn update_profile_avatar_url_too_long_400() {
+    let app = TestApp::new().await;
+    let token = app
+        .setup_user_token("avatar-long@example.com", TEST_PASSWORD)
+        .await;
+
+    let long_url = format!("https://example.com/{}", "a".repeat(2049));
+    let patch_body = serde_json::json!({ "avatar_url": long_url });
+    let (status, body) = app
+        .patch_json_with_auth("/users/me", &patch_body, &token)
+        .await;
+
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    assert_error(&body, "BAD_REQUEST");
+}

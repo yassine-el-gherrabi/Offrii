@@ -74,6 +74,9 @@ struct CommunityWish: Codable, Identifiable, Equatable, Sendable {
     let imageUrl: String?
     let links: [String]?
     let createdAt: Date
+    let ogImageUrl: String?
+    let ogTitle: String?
+    let ogSiteName: String?
 
     enum CodingKeys: String, CodingKey {
         case id, title, description, category, status, links
@@ -82,6 +85,15 @@ struct CommunityWish: Codable, Identifiable, Equatable, Sendable {
         case isMatchedByMe = "is_matched_by_me"
         case imageUrl = "image_url"
         case createdAt = "created_at"
+        case ogImageUrl = "og_image_url"
+        case ogTitle = "og_title"
+        case ogSiteName = "og_site_name"
+    }
+
+    var displayImageUrl: URL? {
+        if let u = imageUrl, let url = URL(string: u) { return url }
+        if let u = ogImageUrl, let url = URL(string: u) { return url }
+        return nil
     }
 }
 
@@ -102,6 +114,9 @@ struct WishDetail: Codable, Identifiable, Equatable, Sendable {
     let matchedAt: Date?
     let fulfilledAt: Date?
     let createdAt: Date
+    let ogImageUrl: String?
+    let ogTitle: String?
+    let ogSiteName: String?
 
     enum CodingKeys: String, CodingKey {
         case id, title, description, category, status, links
@@ -113,6 +128,9 @@ struct WishDetail: Codable, Identifiable, Equatable, Sendable {
         case matchedAt = "matched_at"
         case fulfilledAt = "fulfilled_at"
         case createdAt = "created_at"
+        case ogImageUrl = "og_image_url"
+        case ogTitle = "og_title"
+        case ogSiteName = "og_site_name"
     }
 }
 
@@ -135,6 +153,9 @@ struct MyWish: Codable, Identifiable, Equatable, Sendable {
     let matchedAt: Date?
     let fulfilledAt: Date?
     let closedAt: Date?
+    let ogImageUrl: String?
+    let ogTitle: String?
+    let ogSiteName: String?
 
     enum CodingKeys: String, CodingKey {
         case id, title, description, category, status, links
@@ -148,6 +169,9 @@ struct MyWish: Codable, Identifiable, Equatable, Sendable {
         case matchedAt = "matched_at"
         case fulfilledAt = "fulfilled_at"
         case closedAt = "closed_at"
+        case ogImageUrl = "og_image_url"
+        case ogTitle = "og_title"
+        case ogSiteName = "og_site_name"
     }
 }
 

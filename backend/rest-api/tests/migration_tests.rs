@@ -204,7 +204,7 @@ async fn migration_001_creates_users_table() {
     let mdb = MigrationDb::new().await;
 
     assert!(mdb.table_exists("users").await);
-    assert_eq!(mdb.column_count("users").await, 16);
+    assert_eq!(mdb.column_count("users").await, 18);
 
     // Column types & nullability
     mdb.assert_not_null("users", "id").await;
@@ -299,7 +299,7 @@ async fn migration_003_creates_items_table() {
     let mdb = MigrationDb::new().await;
 
     assert!(mdb.table_exists("items").await);
-    assert_eq!(mdb.column_count("items").await, 14);
+    assert_eq!(mdb.column_count("items").await, 24);
 
     mdb.assert_not_null("items", "id").await;
     mdb.assert_not_null("items", "user_id").await;

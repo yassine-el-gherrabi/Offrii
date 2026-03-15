@@ -43,6 +43,7 @@ impl ShareLinkResponse {
 pub struct ShareLinkListItem {
     pub id: Uuid,
     pub token: String,
+    pub url: String,
     pub label: Option<String>,
     pub permissions: String,
     pub scope: String,
@@ -51,11 +52,13 @@ pub struct ShareLinkListItem {
     pub expires_at: Option<DateTime<Utc>>,
 }
 
-impl From<ShareLink> for ShareLinkListItem {
-    fn from(link: ShareLink) -> Self {
+impl ShareLinkListItem {
+    pub fn from_model(link: ShareLink, base_url: &str) -> Self {
+        let url = format!("{base_url}/shared/{}", link.token);
         Self {
             id: link.id,
             token: link.token,
+            url,
             label: link.label,
             permissions: link.permissions,
             scope: link.scope,
@@ -69,6 +72,7 @@ impl From<ShareLink> for ShareLinkListItem {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SharedViewResponse {
     pub user_username: String,
+    pub user_display_name: Option<String>,
     pub permissions: String,
     pub items: Vec<ItemResponse>,
 }

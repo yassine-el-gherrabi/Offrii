@@ -120,6 +120,8 @@
 "wishlist.delete.confirm" = "Supprimer";
 "wishlist.cancel" = "Annuler";
 "wishlist.claimed" = "Quelqu'un s'en occupe !";
+"wishlist.claimed.web" = "Réservé par %@ (via lien)";
+"wishlist.unclaim.web" = "Retirer la réservation";
 "wishlist.markReceived" = "Marquer reçu";
 "wishlist.share" = "Partager";
 "wishlist.edit" = "Modifier";
@@ -373,3 +375,89 @@
 /* Progression profil */
 "progress.title" = "Profil complet à %d%%";
 "progress.nextStep" = "Prochaine étape : %@";
+
+/* Entraide - Segments */
+"entraide.segment.discover" = "Découvrir";
+"entraide.segment.myNeeds" = "Mes besoins";
+"entraide.segment.myOffers" = "Mes offres";
+"entraide.offer.cta" = "Proposer mon aide";
+"entraide.myOffers.empty" = "Aucune offre";
+"entraide.myOffers.emptySubtitle" = "Vous n'avez pas encore proposé votre aide";
+
+/* Activity Feed */
+"activity.today" = "Aujourd'hui";
+"activity.yesterday" = "Hier";
+"activity.thisWeek" = "Cette semaine";
+"activity.older" = "Plus ancien";
+
+/* Share */
+"share.title" = "Partager mes envies";
+"share.copyLink" = "Copier le lien";
+"share.copyLinkSubtitle" = "Toute personne avec le lien pourra voir et réserver";
+"share.sendVia" = "Envoyer via...";
+"share.sendViaSubtitle" = "iMessage, WhatsApp, Email...";
+"share.linkCopied" = "Lien copié !";
+"share.manageLinks" = "Mes liens de partage";
+"share.toCircle" = "Partager dans un cercle";
+"share.item" = "Partager cet item";
+"share.noCircles" = "Pas de cercles";
+"share.noCirclesSubtitle" = "Créez un cercle d'abord pour partager vos envies";
+"share.shareToCount" = "Partager dans %d cercle(s)";
+"share.unshareCount" = "Retirer de %d cercle(s)";
+"share.applyChanges" = "Appliquer";
+"share.sendViaCreateFirst" = "Créez un lien d'abord";
+"share.creating" = "Création du lien...";
+"share.linkReady" = "Lien prêt !";
+"share.yourCircles" = "Vos cercles";
+"share.sharedSuccess" = "Partagé !";
+"share.createLink" = "Créer un lien de partage";
+"share.whatToShare" = "Que partager ?";
+"share.scopeAll" = "Toute ma liste";
+"share.scopeCategory" = "Une catégorie";
+"share.scopeSelection" = "Items sélectionnés";
+"share.permissions" = "Permissions";
+"share.permViewAndClaim" = "Voir et réserver";
+"share.permViewOnly" = "Voir seulement";
+"share.createAndCopy" = "Créer et copier le lien";
+"share.sendDirect" = "Envoyer directement";
+"share.activeLinks" = "Mes liens";
+"share.scopeAllLabel" = "Toute la liste";
+"share.scopeSelectionLabel" = "Sélection (%d)";
+"share.privateExcluded" = "%d item(s) privé(s) exclu(s)";
+"share.pickItems" = "Choisir les envies";
+"share.itemsSelected" = "%d envie(s) sélectionnée(s)";
+"share.linkDeleted" = "Lien supprimé";
+"share.modifySelection" = "Modifier la sélection";
+"share.linkName" = "Nom du lien (optionnel)";
+"share.linkNamePlaceholder" = "Ex : Liste Noël, Pour Maman...";
+"share.ttl" = "Expiration";
+"share.ttl.never" = "Jamais";
+"share.ttl.oneWeek" = "1 sem.";
+"share.ttl.oneMonth" = "1 mois";
+"share.ttl.threeMonths" = "3 mois";
+"share.linkActive" = "Lien actif";
+"share.linkActiveHint" = "Désactiver pour bloquer l'accès sans supprimer";
+"share.expiresAt" = "Expire dans";
+"share.linkDisabled" = "Désactivé";
+"share.description" = "Partagez vos envies avec vos proches pour qu'ils sachent quoi vous offrir.";
+
+/* Wishlist - Redesign */
+"wishlist.search.placeholder" = "Rechercher une envie...";
+"wishlist.countSingular" = "envie";
+"wishlist.countPlural" = "envies";
+"wishlist.copyName" = "Copier le nom";
+"wishlist.selected" = "sélectionné(s)";
+"wishlist.select" = "Sélectionner";
+"wishlist.selectAll" = "Tout";
+"wishlist.deleteCount" = "Supprimer %d";
+"wishlist.deleteConfirmBatch" = "Supprimer les envies ?";
+"wishlist.deleteConfirmBatchMessage" = "Supprimer %d envie(s) ? Cette action est irréversible.";
+"wishlist.private" = "Privé";
+"wishlist.privateHint" = "Ne sera pas visible dans les liens de partage";
+"item.sharedWith" = "Partagé avec";
+"item.links" = "Liens";
+
+/* Image Picker */
+"imagePicker.add" = "Ajouter une photo";
+"imagePicker.change" = "Changer la photo";
+"imagePicker.placeholder" = "Ajouter une photo (optionnel)";

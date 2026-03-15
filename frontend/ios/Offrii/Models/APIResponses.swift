@@ -89,17 +89,27 @@ struct CategoryResponse: Codable {
     }
 }
 
-struct ShareLinkResponse: Codable {
+struct ShareLinkResponse: Codable, Identifiable {
     let id: UUID
     let token: String
-    let url: String
+    let url: String?
+    let label: String?
+    let permissions: String?
+    let scope: String?
+    let isActive: Bool?
     let createdAt: Date
     let expiresAt: Date?
 
     enum CodingKeys: String, CodingKey {
-        case id, token, url
+        case id, token, url, label, permissions, scope
+        case isActive = "is_active"
         case createdAt = "created_at"
         case expiresAt = "expires_at"
+    }
+
+    /// Display URL — always provided by backend, fallback to token-based URL
+    var displayUrl: String {
+        url ?? "https://offrii.com/shared/\(token)"
     }
 }
 

@@ -67,6 +67,56 @@ final class APIClient: Sendable {
         let _: EmptyResponse = try await execute(urlRequest, endpoint: endpoint, isRetry: false)
     }
 
+    // MARK: - Multipart Upload
+
+    /// Uploads an image via multipart/form-data and returns the CDN URL.
+    func uploadImage(_ imageData: Data, filename: String = "photo.jpg") async throws -> String {
+        guard let url = APIEndpoint.uploadImage.url else {
+            throw APIError.invalidURL
+        }
+
+        let boundary = "Boundary-\(UUID().uuidString)"
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+
+        if let token = KeychainService.shared.accessToken {
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
+
+        var body = Data()
+        body.append("--\(boundary)\r\n".data(using: .utf8)!)
+        body.append("Content-Disposition: form-data; name=\"image\"; filename=\"\(filename)\"\r\n".data(using: .utf8)!)
+        body.append("Content-Type: image/jpeg\r\n\r\n".data(using: .utf8)!)
+        body.append(imageData)
+        body.append("\r\n--\(boundary)--\r\n".data(using: .utf8)!)
+
+        request.httpBody = body
+
+        let data: Data
+        let response: URLResponse
+
+        do {
+            (data, response) = try await session.data(for: request)
+        } catch {
+            logger.error("Upload network error: \(error.localizedDescription)")
+            throw APIError.networkError(error)
+        }
+
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw APIError.unknown(0, "Invalid response type")
+        }
+
+        guard (200..<300).contains(httpResponse.statusCode) else {
+            let errMsg = String(data: data, encoding: .utf8) ?? "Upload failed"
+            throw APIError.unknown(httpResponse.statusCode, errMsg)
+        }
+
+        struct UploadResponse: Decodable { let url: String }
+        let uploadResponse = try decoder.decode(UploadResponse.self, from: data)
+        return uploadResponse.url
+    }
+
     // MARK: - Build Request
 
     private func buildRequest(for endpoint: APIEndpoint) throws -> URLRequest {
