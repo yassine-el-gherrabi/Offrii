@@ -1988,3 +1988,102 @@ async fn feed_hides_unclaim_events_from_item_owner() {
         "owner should not see any claim/unclaim events"
     );
 }
+
+// ═══════════════════════════════════════════════════════════════════
+// Item received lifecycle
+// ═══════════════════════════════════════════════════════════════════
+
+#[tokio::test]
+async fn item_received_creates_feed_event() {
+    let app = TestApp::new().await;
+    let (alice, _) = setup_user_with_id(&app, "alice-received@test.com").await;
+    let (bob, _) = setup_user_with_id(&app, "bob-received@test.com").await;
+
+    let cid = create_circle(&app, &alice, "Gift Lifecycle").await;
+    invite_and_join(&app, &cid, &alice, &bob).await;
+
+    // Alice creates, shares, Bob claims
+    let item = app
+        .create_item(&alice, &serde_json::json!({ "name": "Birthday Gift" }))
+        .await;
+    let item_id = item["id"].as_str().unwrap();
+
+    app.post_json_with_auth(
+        &format!("/circles/{cid}/items"),
+        &serde_json::json!({ "item_id": item_id }),
+        &alice,
+    )
+    .await;
+
+    app.post_with_auth(&format!("/items/{item_id}/claim"), &bob)
+        .await;
+
+    // Alice marks as received
+    let (status, _) = app
+        .put_json_with_auth(
+            &format!("/items/{item_id}"),
+            &serde_json::json!({ "status": "purchased" }),
+            &alice,
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK);
+
+    // Feed should have an item_received event visible to Bob
+    let (_, feed) = app
+        .get_with_auth(&format!("/circles/{cid}/feed"), &bob)
+        .await;
+    let received_events: Vec<&serde_json::Value> = feed["data"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter(|e| e["event_type"] == "item_received")
+        .collect();
+    assert!(
+        !received_events.is_empty(),
+        "feed should contain item_received event"
+    );
+    assert_eq!(received_events[0]["target_item_name"], "Birthday Gift");
+}
+
+#[tokio::test]
+async fn purchased_item_still_visible_in_circle_with_status() {
+    let app = TestApp::new().await;
+    let (alice, _) = setup_user_with_id(&app, "alice-purch@test.com").await;
+    let (bob, _) = setup_user_with_id(&app, "bob-purch@test.com").await;
+
+    let cid = create_circle(&app, &alice, "Status Check").await;
+    invite_and_join(&app, &cid, &alice, &bob).await;
+
+    let item = app
+        .create_item(&alice, &serde_json::json!({ "name": "Watch" }))
+        .await;
+    let item_id = item["id"].as_str().unwrap();
+
+    app.post_json_with_auth(
+        &format!("/circles/{cid}/items"),
+        &serde_json::json!({ "item_id": item_id }),
+        &alice,
+    )
+    .await;
+
+    // Mark as purchased
+    app.put_json_with_auth(
+        &format!("/items/{item_id}"),
+        &serde_json::json!({ "status": "purchased" }),
+        &alice,
+    )
+    .await;
+
+    // Item should still be in circle items with status "purchased"
+    let (status, items) = app
+        .get_with_auth(&format!("/circles/{cid}/items"), &bob)
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    let circle_items = items.as_array().unwrap();
+    let watch = circle_items.iter().find(|i| i["name"] == "Watch");
+    assert!(
+        watch.is_some(),
+        "purchased item should still appear in circle"
+    );
+    assert_eq!(watch.unwrap()["status"], "purchased");
+}

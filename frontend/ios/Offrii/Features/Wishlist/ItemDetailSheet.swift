@@ -169,7 +169,9 @@ struct ItemDetailSheet: View {
                                 VStack(spacing: OffriiTheme.spacingSM) {
                                     if item.isActive {
                                         OffriiButton(
-                                            NSLocalizedString("wishlist.markReceived", comment: ""),
+                                            item.isClaimed
+                                                ? NSLocalizedString("wishlist.receivedGift", comment: "")
+                                                : NSLocalizedString("wishlist.markReceived", comment: ""),
                                             variant: .primary,
                                             isLoading: viewModel.isUpdating
                                         ) {

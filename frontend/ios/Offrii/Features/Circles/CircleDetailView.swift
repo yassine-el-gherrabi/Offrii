@@ -538,8 +538,19 @@ struct CircleDetailView: View {
                     gradientPlaceholder(style: style)
                 }
 
-                // Reserved overlay
-                if item.isClaimed {
+                // Status overlay
+                if item.status == "purchased" {
+                    Color.black.opacity(0.25)
+                    VStack(spacing: 4) {
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.system(size: 20))
+                        Text(NSLocalizedString("circles.detail.received", comment: ""))
+                            .font(.system(size: 11, weight: .bold))
+                            .tracking(1)
+                            .textCase(.uppercase)
+                    }
+                    .foregroundColor(.white)
+                } else if item.isClaimed {
                     Color.black.opacity(0.35)
                     Text(NSLocalizedString("wishlist.reserved", comment: ""))
                         .font(.system(size: 13, weight: .bold))

@@ -676,6 +676,8 @@ pub trait CircleService: Send + Sync {
     async fn on_item_claimed(&self, item_id: Uuid, claimer_id: Uuid) -> Result<(), AppError>;
 
     async fn on_item_unclaimed(&self, item_id: Uuid, claimer_id: Uuid) -> Result<(), AppError>;
+
+    async fn on_item_received(&self, item_id: Uuid, owner_id: Uuid) -> Result<(), AppError>;
 }
 
 // ── Share link traits ───────────────────────────────────────────────

@@ -235,6 +235,9 @@
 "circles.detail.youHandleIt" = "You're on it";
 "circles.detail.reservedBy" = "Reserved by %@";
 "circles.detail.unclaim" = "Release";
+"circles.detail.received" = "Received";
+"circles.event.itemReceived" = "%@ received %@";
+"wishlist.receivedGift" = "🎉 I received this gift!";
 "circles.edit.title" = "Edit circle";
 "circles.edit.save" = "Save";
 "circles.oneToOne" = "1-to-1";

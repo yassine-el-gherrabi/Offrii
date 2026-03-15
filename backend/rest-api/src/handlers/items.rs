@@ -112,6 +112,13 @@ async fn update_item(
         )
         .await?;
 
+    // If status changed to "purchased", fire the received event
+    if req.status.as_deref() == Some("purchased")
+        && let Err(e) = state.circles.on_item_received(id, auth_user.user_id).await
+    {
+        tracing::warn!(error = %e, "on_item_received failed (non-fatal)");
+    }
+
     Ok(Json(response))
 }
 
@@ -121,7 +128,13 @@ async fn delete_item(
     auth_user: AuthUser,
     Path(id): Path<Uuid>,
 ) -> Result<StatusCode, AppError> {
+    // Check if the item was claimed before deleting (to notify claimer)
+    let item_before = state.items.get_item(id, auth_user.user_id).await.ok();
+
     state.items.delete_item(id, auth_user.user_id).await?;
+
+    // Future: notify claimer if item was claimed when deleted
+    let _ = item_before;
 
     Ok(StatusCode::NO_CONTENT)
 }

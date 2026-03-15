@@ -119,6 +119,7 @@ struct CircleActivityFeed: View {
         case "item_shared":   return "square.and.arrow.up"
         case "item_claimed":  return "gift.fill"
         case "item_unclaimed": return "gift"
+        case "item_received": return "checkmark.circle.fill"
         case "member_joined": return "person.badge.plus"
         case "member_left":   return "person.badge.minus"
         default:              return "bell.fill"
@@ -130,6 +131,7 @@ struct CircleActivityFeed: View {
         case "item_shared":   return OffriiTheme.primary
         case "item_claimed":  return OffriiTheme.success
         case "item_unclaimed": return OffriiTheme.accent
+        case "item_received": return OffriiTheme.success
         case "member_joined": return OffriiTheme.primary
         case "member_left":   return OffriiTheme.textMuted
         default:              return OffriiTheme.textSecondary
@@ -149,6 +151,8 @@ struct CircleActivityFeed: View {
             return String(format: NSLocalizedString("circles.event.itemClaimed", comment: ""), actor, itemName)
         case "item_unclaimed":
             return String(format: NSLocalizedString("circles.event.itemUnclaimed", comment: ""), actor, itemName)
+        case "item_received":
+            return String(format: NSLocalizedString("circles.event.itemReceived", comment: ""), actor, itemName)
         case "member_joined":
             let target = event.targetUsername ?? actor
             return String(format: NSLocalizedString("circles.event.memberJoined", comment: ""), target)

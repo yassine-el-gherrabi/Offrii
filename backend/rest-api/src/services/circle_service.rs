@@ -1225,6 +1225,57 @@ impl traits::CircleService for PgCircleService {
     }
 
     #[tracing::instrument(skip(self))]
+    async fn on_item_received(&self, item_id: Uuid, owner_id: Uuid) -> Result<(), AppError> {
+        let circle_ids = self
+            .circle_item_repo
+            .list_circles_for_item(item_id)
+            .await
+            .map_err(AppError::Internal)?;
+
+        for circle_id in &circle_ids {
+            if let Err(e) = self
+                .circle_event_repo
+                .insert(*circle_id, owner_id, "item_received", Some(item_id), None)
+                .await
+            {
+                tracing::warn!(%circle_id, error = %e, "failed to insert item_received event");
+                continue;
+            }
+            self.bump_circle_version(*circle_id);
+        }
+
+        // Notify the claimer that the owner received their gift
+        let item = self
+            .item_repo
+            .find_by_id_any_user(item_id)
+            .await
+            .ok()
+            .flatten();
+        if let Some(ref item) = item
+            && let Some(claimer_id) = item.claimed_by
+        {
+            let owner = self.user_repo.find_by_id(owner_id).await.ok().flatten();
+            let owner_name = owner
+                .as_ref()
+                .and_then(|u| u.display_name.clone())
+                .unwrap_or_else(|| {
+                    owner
+                        .as_ref()
+                        .map(|u| u.username.clone())
+                        .unwrap_or_default()
+                });
+
+            self.notify_user(
+                claimer_id,
+                "Cadeau reçu !".to_string(),
+                format!("{} a bien reçu {} !", owner_name, item.name),
+            );
+        }
+
+        Ok(())
+    }
+
+    #[tracing::instrument(skip(self))]
     async fn get_feed(
         &self,
         circle_id: Uuid,
