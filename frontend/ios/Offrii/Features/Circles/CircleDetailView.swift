@@ -565,7 +565,7 @@ struct CircleDetailView: View {
                     .padding(.top, 6)
                 }
 
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: OffriiTheme.spacingXS) {
                     Text(item.name)
                         .font(.system(size: 14, weight: .semibold))
                         .foregroundColor(OffriiTheme.text)
@@ -580,6 +580,7 @@ struct CircleDetailView: View {
 
                     if showClaimButtons && !itemIsOwner {
                         claimButton(item)
+                            .padding(.top, 2)
                     }
                 }
             }
@@ -625,16 +626,21 @@ struct CircleDetailView: View {
                         await viewModel.loadFeed(circleId: circleId)
                     }
                 } label: {
-                    HStack(spacing: 3) {
-                        Image(systemName: "checkmark.circle.fill")
+                    HStack(spacing: 4) {
+                        Image(systemName: "checkmark")
+                            .font(.system(size: 9, weight: .bold))
                         Text(NSLocalizedString("circles.detail.youHandleIt", comment: ""))
                     }
                     .font(.system(size: 11, weight: .semibold))
-                    .foregroundColor(.white)
+                    .foregroundColor(OffriiTheme.primary)
                     .padding(.horizontal, OffriiTheme.spacingSM)
                     .padding(.vertical, OffriiTheme.spacingXXS)
-                    .background(OffriiTheme.success)
+                    .background(OffriiTheme.primary.opacity(0.15))
                     .cornerRadius(OffriiTheme.cornerRadiusXL)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: OffriiTheme.cornerRadiusXL)
+                            .strokeBorder(OffriiTheme.primary, lineWidth: 1)
+                    )
                 }
             } else if let claimer = item.claimedBy, !isDirect {
                 // State: someone ELSE claimed — show who (group only)
