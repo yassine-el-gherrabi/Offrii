@@ -97,6 +97,11 @@ pub struct CircleItemResponse {
     pub status: String,
     pub is_claimed: bool,
     pub claimed_by: Option<ClaimedByInfo>,
+    pub image_url: Option<String>,
+    pub links: Option<Vec<String>>,
+    pub og_image_url: Option<String>,
+    pub og_title: Option<String>,
+    pub og_site_name: Option<String>,
     pub shared_at: DateTime<Utc>,
     pub shared_by: Uuid,
 }

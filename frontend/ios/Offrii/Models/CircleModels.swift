@@ -46,15 +46,24 @@ struct CircleItemResponse: Codable, Identifiable {
     let status: String
     let isClaimed: Bool
     let claimedBy: ClaimedByInfo?
+    let imageUrl: String?
+    let links: [String]?
+    let ogImageUrl: String?
+    let ogTitle: String?
+    let ogSiteName: String?
     let sharedAt: Date
     let sharedBy: UUID
 
     enum CodingKeys: String, CodingKey {
-        case id, name, description, url, priority, status
+        case id, name, description, url, priority, status, links
         case estimatedPrice = "estimated_price"
         case categoryId = "category_id"
         case isClaimed = "is_claimed"
         case claimedBy = "claimed_by"
+        case imageUrl = "image_url"
+        case ogImageUrl = "og_image_url"
+        case ogTitle = "og_title"
+        case ogSiteName = "og_site_name"
         case sharedAt = "shared_at"
         case sharedBy = "shared_by"
     }
@@ -70,6 +79,11 @@ struct CircleItemResponse: Codable, Identifiable {
         status = try container.decode(String.self, forKey: .status)
         isClaimed = try container.decode(Bool.self, forKey: .isClaimed)
         claimedBy = try container.decodeIfPresent(ClaimedByInfo.self, forKey: .claimedBy)
+        imageUrl = try container.decodeIfPresent(String.self, forKey: .imageUrl)
+        links = try container.decodeIfPresent([String].self, forKey: .links)
+        ogImageUrl = try container.decodeIfPresent(String.self, forKey: .ogImageUrl)
+        ogTitle = try container.decodeIfPresent(String.self, forKey: .ogTitle)
+        ogSiteName = try container.decodeIfPresent(String.self, forKey: .ogSiteName)
         sharedAt = try container.decode(Date.self, forKey: .sharedAt)
         sharedBy = try container.decode(UUID.self, forKey: .sharedBy)
 

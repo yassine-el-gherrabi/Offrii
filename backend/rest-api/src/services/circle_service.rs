@@ -827,6 +827,11 @@ impl traits::CircleService for PgCircleService {
                     status: item.status.clone(),
                     is_claimed,
                     claimed_by,
+                    image_url: item.image_url.clone(),
+                    links: item.links.clone(),
+                    og_image_url: item.og_image_url.clone(),
+                    og_title: item.og_title.clone(),
+                    og_site_name: item.og_site_name.clone(),
                     shared_at: ci.shared_at,
                     shared_by: ci.shared_by,
                 })
@@ -885,6 +890,11 @@ impl traits::CircleService for PgCircleService {
             status: item.status,
             is_claimed,
             claimed_by,
+            image_url: item.image_url,
+            links: item.links,
+            og_image_url: item.og_image_url,
+            og_title: item.og_title,
+            og_site_name: item.og_site_name,
             shared_at: circle_item.shared_at,
             shared_by: circle_item.shared_by,
         })
