@@ -181,7 +181,7 @@ struct WishlistShareSheet: View {
                             Button {
                                 Task { await shareToCircle(circle) }
                             } label: {
-                                Text(NSLocalizedString("share.toCircle", comment: ""))
+                                Text(NSLocalizedString("share.addPeople", comment: ""))
                                     .font(.system(size: 12, weight: .semibold))
                                     .foregroundColor(.white)
                                     .padding(.horizontal, 12)

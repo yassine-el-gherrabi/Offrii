@@ -17,6 +17,7 @@ struct ItemEditView: View {
     @State private var selectedImage: UIImage?
     @State private var isUploadingImage = false
     @State private var isPrivate: Bool
+    @State private var showShareToCircle = false
 
     init(item: Item, onSave: @escaping (Item) -> Void) {
         self.item = item
@@ -130,45 +131,66 @@ struct ItemEditView: View {
                 .padding(.horizontal, OffriiTheme.spacingLG)
 
                 // Shared with section
-                if !item.sharedCircles.isEmpty {
-                    VStack(alignment: .leading, spacing: OffriiTheme.spacingSM) {
-                        Text(NSLocalizedString("item.sharedWith", comment: ""))
-                            .font(OffriiTypography.subheadline)
-                            .foregroundColor(OffriiTheme.textMuted)
+                VStack(alignment: .leading, spacing: OffriiTheme.spacingSM) {
+                    Text(NSLocalizedString("item.sharedWith", comment: ""))
+                        .font(OffriiTypography.subheadline)
+                        .foregroundColor(OffriiTheme.textMuted)
 
-                        ForEach(item.sharedCircles) { circle in
-                            HStack(spacing: OffriiTheme.spacingSM) {
-                                Text(circle.initial)
-                                    .font(.system(size: 11, weight: .bold))
-                                    .foregroundColor(.white)
-                                    .frame(width: 24, height: 24)
-                                    .background(OffriiTheme.primary)
-                                    .clipShape(Circle())
+                    ForEach(item.sharedCircles) { circle in
+                        HStack(spacing: OffriiTheme.spacingSM) {
+                            Text(circle.initial)
+                                .font(.system(size: 11, weight: .bold))
+                                .foregroundColor(.white)
+                                .frame(width: 24, height: 24)
+                                .background(OffriiTheme.primary)
+                                .clipShape(Circle())
 
-                                Text(circle.name)
-                                    .font(.system(size: 13, weight: .medium))
-                                    .foregroundColor(OffriiTheme.text)
+                            Text(circle.name)
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundColor(OffriiTheme.text)
 
-                                Spacer()
+                            Spacer()
 
-                                Button {
-                                    Task {
-                                        try? await CircleService.shared.unshareItem(circleId: circle.id, itemId: item.id)
-                                    }
-                                } label: {
-                                    Image(systemName: "xmark")
-                                        .font(.system(size: 10, weight: .semibold))
-                                        .foregroundColor(OffriiTheme.textMuted)
+                            Button {
+                                Task {
+                                    try? await CircleService.shared.unshareItem(circleId: circle.id, itemId: item.id)
                                 }
+                            } label: {
+                                Image(systemName: "xmark")
+                                    .font(.system(size: 10, weight: .semibold))
+                                    .foregroundColor(OffriiTheme.textMuted)
                             }
-                            .padding(OffriiTheme.spacingSM)
-                            .background(OffriiTheme.surface)
-                            .cornerRadius(OffriiTheme.cornerRadiusSM)
                         }
+                        .padding(OffriiTheme.spacingSM)
+                        .background(OffriiTheme.surface)
+                        .cornerRadius(OffriiTheme.cornerRadiusSM)
                     }
-                    .padding(.horizontal, OffriiTheme.spacingLG)
-                    .padding(.top, OffriiTheme.spacingSM)
+
+                    // Add row
+                    Button {
+                        showShareToCircle = true
+                    } label: {
+                        HStack(spacing: OffriiTheme.spacingSM) {
+                            Image(systemName: "plus")
+                                .font(.system(size: 11, weight: .semibold))
+                                .foregroundColor(.white)
+                                .frame(width: 24, height: 24)
+                                .background(OffriiTheme.primary)
+                                .clipShape(Circle())
+
+                            Text(NSLocalizedString("share.addPeople", comment: ""))
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundColor(OffriiTheme.primary)
+                        }
+                        .padding(OffriiTheme.spacingSM)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(OffriiTheme.surface)
+                        .cornerRadius(OffriiTheme.cornerRadiusSM)
+                    }
+                    .buttonStyle(.plain)
                 }
+                .padding(.horizontal, OffriiTheme.spacingLG)
+                .padding(.top, OffriiTheme.spacingSM)
 
                 OffriiButton(
                     NSLocalizedString("item.save", comment: ""),
@@ -197,6 +219,13 @@ struct ItemEditView: View {
                 categories: categories,
                 selectedId: $categoryId
             )
+        }
+        .sheet(isPresented: $showShareToCircle) {
+            ShareToCircleSheet(
+                itemId: item.id,
+                alreadySharedCircleIds: Set(item.sharedCircles.map(\.id))
+            )
+            .presentationDetents([.medium])
         }
         .task {
             do {
@@ -293,6 +322,13 @@ struct ItemEditView: View {
             )
             onSave(updated)
             dismiss()
+
+            Task {
+                let withOG = await ItemService.shared.refetchIfMissingOG(updated)
+                if withOG.ogImageUrl != nil {
+                    onSave(withOG)
+                }
+            }
         } catch {
             // Could show error
         }

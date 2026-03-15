@@ -439,6 +439,7 @@
 "share.linkActiveHint" = "Désactiver pour bloquer l'accès sans supprimer";
 "share.expiresAt" = "Expire dans";
 "share.linkDisabled" = "Désactivé";
+"share.addPeople" = "Partager avec...";
 "share.description" = "Partagez vos envies avec vos proches pour qu'ils sachent quoi vous offrir.";
 
 /* Wishlist - Redesign */

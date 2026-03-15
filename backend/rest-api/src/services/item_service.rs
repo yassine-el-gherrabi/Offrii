@@ -228,9 +228,16 @@ impl traits::ItemService for PgItemService {
             let item_repo = self.item_repo.clone();
             let link = first_link.clone();
             let item_id = item.id;
+            tracing::info!(item_id = %item_id, link = %link, "OG fetch starting");
             tokio::spawn(async move {
                 match crate::services::og_service::fetch_og_metadata(&link).await {
                     Ok(og) => {
+                        tracing::info!(
+                            item_id = %item_id,
+                            og_image = ?og.image_url,
+                            og_title = ?og.title,
+                            "OG fetch succeeded"
+                        );
                         let _ = item_repo
                             .update_og_metadata(
                                 item_id,
@@ -241,7 +248,7 @@ impl traits::ItemService for PgItemService {
                             .await;
                     }
                     Err(e) => {
-                        tracing::debug!(item_id = %item_id, error = %e, "OG fetch failed");
+                        tracing::warn!(item_id = %item_id, error = %e, "OG fetch failed");
                     }
                 }
             });
@@ -463,9 +470,16 @@ impl traits::ItemService for PgItemService {
             let item_repo = self.item_repo.clone();
             let link = first_link.clone();
             let item_id = item.id;
+            tracing::info!(item_id = %item_id, link = %link, "OG fetch starting (update)");
             tokio::spawn(async move {
                 match crate::services::og_service::fetch_og_metadata(&link).await {
                     Ok(og) => {
+                        tracing::info!(
+                            item_id = %item_id,
+                            og_image = ?og.image_url,
+                            og_title = ?og.title,
+                            "OG fetch succeeded (update)"
+                        );
                         let _ = item_repo
                             .update_og_metadata(
                                 item_id,
@@ -476,7 +490,7 @@ impl traits::ItemService for PgItemService {
                             .await;
                     }
                     Err(e) => {
-                        tracing::debug!(item_id = %item_id, error = %e, "OG fetch failed");
+                        tracing::warn!(item_id = %item_id, error = %e, "OG fetch failed (update)");
                     }
                 }
             });

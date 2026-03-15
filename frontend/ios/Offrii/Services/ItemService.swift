@@ -117,4 +117,17 @@ final class ItemService: Sendable {
     func uploadImage(_ imageData: Data) async throws -> String {
         try await client.uploadImage(imageData)
     }
+
+    // MARK: - OG Metadata Retry
+
+    /// Re-fetches the item after a delay if it has links but no OG metadata yet.
+    /// Returns the updated item if OG was populated, otherwise the original.
+    func refetchIfMissingOG(_ item: Item, delay: Duration = .seconds(2)) async -> Item {
+        guard let links = item.links, !links.isEmpty, item.ogImageUrl == nil else {
+            return item
+        }
+        try? await Task.sleep(for: delay)
+        guard !Task.isCancelled else { return item }
+        return (try? await getItem(id: item.id)) ?? item
+    }
 }

@@ -439,6 +439,7 @@
 "share.linkActiveHint" = "Disable to block access without deleting";
 "share.expiresAt" = "Expires in";
 "share.linkDisabled" = "Disabled";
+"share.addPeople" = "Share with...";
 "share.description" = "Share your wishes with loved ones so they know what to get you.";
 
 /* Wishlist - Redesign */

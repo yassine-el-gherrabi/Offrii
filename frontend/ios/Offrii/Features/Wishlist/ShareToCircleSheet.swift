@@ -109,7 +109,7 @@ struct ShareToCircleSheet: View {
                     .background(OffriiTheme.background)
                 }
             }
-            .navigationTitle(NSLocalizedString("share.toCircle", comment: ""))
+            .navigationTitle(NSLocalizedString("share.addPeople", comment: ""))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {

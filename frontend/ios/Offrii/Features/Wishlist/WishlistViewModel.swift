@@ -132,6 +132,13 @@ final class WishlistViewModel {
             if selectedStatus == "active" {
                 items.insert(item, at: 0)
                 totalItems += 1
+
+                Task {
+                    let updated = await ItemService.shared.refetchIfMissingOG(item)
+                    if updated.ogImageUrl != nil, let idx = items.firstIndex(where: { $0.id == item.id }) {
+                        items[idx] = updated
+                    }
+                }
             }
             return true
         } catch {

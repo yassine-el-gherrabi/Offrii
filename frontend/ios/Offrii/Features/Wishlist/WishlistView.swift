@@ -341,7 +341,7 @@ struct WishlistView: View {
                                 Button {
                                     shareToCircleItemId = item.id
                                 } label: {
-                                    Label(NSLocalizedString("share.toCircle", comment: ""), systemImage: "person.2")
+                                    Label(NSLocalizedString("share.addPeople", comment: ""), systemImage: "person.2")
                                 }
 
                                 Button {

@@ -9,6 +9,7 @@ struct ItemDetailSheet: View {
     @State private var viewModel = ItemDetailViewModel()
     @State private var showEdit = false
     @State private var showDeleteAlert = false
+    @State private var showShareToCircle = false
 
     var body: some View {
         NavigationStack {
@@ -251,6 +252,18 @@ struct ItemDetailSheet: View {
                     }
                 }
             }
+            .sheet(isPresented: $showShareToCircle) {
+                if let item = viewModel.item {
+                    ShareToCircleSheet(
+                        itemId: item.id,
+                        alreadySharedCircleIds: Set(item.sharedCircles.map(\.id))
+                    )
+                    .presentationDetents([.medium])
+                    .onDisappear {
+                        Task { await viewModel.loadItem(id: itemId) }
+                    }
+                }
+            }
             .task {
                 await viewModel.loadItem(id: itemId)
             }
@@ -315,58 +328,79 @@ struct ItemDetailSheet: View {
 
     @ViewBuilder
     private func sharedWithSection(_ item: Item) -> some View {
-        if !item.sharedCircles.isEmpty {
-            VStack(alignment: .leading, spacing: OffriiTheme.spacingSM) {
-                Text(NSLocalizedString("item.sharedWith", comment: ""))
-                    .font(OffriiTypography.subheadline)
-                    .foregroundColor(OffriiTheme.textMuted)
+        VStack(alignment: .leading, spacing: OffriiTheme.spacingSM) {
+            Text(NSLocalizedString("item.sharedWith", comment: ""))
+                .font(OffriiTypography.subheadline)
+                .foregroundColor(OffriiTheme.textMuted)
 
-                ForEach(item.sharedCircles) { circle in
-                    HStack(spacing: OffriiTheme.spacingSM) {
-                        ZStack {
-                            Text(circle.initial)
-                                .font(.system(size: 12, weight: .bold))
-                                .foregroundColor(.white)
-                                .frame(width: 28, height: 28)
-                                .background(circle.isDirect == true ? OffriiTheme.textSecondary : OffriiTheme.primary)
-                                .clipShape(Circle())
-                        }
-                        .overlay(alignment: .bottomTrailing) {
-                            Image(systemName: circle.isDirect == true ? "person.fill" : "person.2.fill")
-                                .font(.system(size: 7, weight: .bold))
-                                .foregroundColor(.white)
-                                .padding(2)
-                                .background(circle.isDirect == true ? OffriiTheme.textSecondary : OffriiTheme.primary)
-                                .clipShape(Circle())
-                                .overlay(Circle().strokeBorder(.white, lineWidth: 1))
-                                .offset(x: 3, y: 3)
-                        }
-
-                        Text(circle.name)
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundColor(OffriiTheme.text)
-
-                        Spacer()
-
-                        Button {
-                            Task {
-                                await viewModel.unshareFromCircle(circleId: circle.id)
-                            }
-                        } label: {
-                            Image(systemName: "xmark")
-                                .font(.system(size: 11, weight: .semibold))
-                                .foregroundColor(OffriiTheme.textMuted)
-                        }
+            ForEach(item.sharedCircles) { circle in
+                HStack(spacing: OffriiTheme.spacingSM) {
+                    ZStack {
+                        Text(circle.initial)
+                            .font(.system(size: 12, weight: .bold))
+                            .foregroundColor(.white)
+                            .frame(width: 28, height: 28)
+                            .background(circle.isDirect == true ? OffriiTheme.textSecondary : OffriiTheme.primary)
+                            .clipShape(Circle())
                     }
-                    .padding(OffriiTheme.spacingSM)
-                    .background(OffriiTheme.surface)
-                    .cornerRadius(OffriiTheme.cornerRadiusMD)
+                    .overlay(alignment: .bottomTrailing) {
+                        Image(systemName: circle.isDirect == true ? "person.fill" : "person.2.fill")
+                            .font(.system(size: 7, weight: .bold))
+                            .foregroundColor(.white)
+                            .padding(2)
+                            .background(circle.isDirect == true ? OffriiTheme.textSecondary : OffriiTheme.primary)
+                            .clipShape(Circle())
+                            .overlay(Circle().strokeBorder(.white, lineWidth: 1))
+                            .offset(x: 3, y: 3)
+                    }
+
+                    Text(circle.name)
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(OffriiTheme.text)
+
+                    Spacer()
+
+                    Button {
+                        Task {
+                            await viewModel.unshareFromCircle(circleId: circle.id)
+                        }
+                    } label: {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundColor(OffriiTheme.textMuted)
+                    }
                 }
+                .padding(OffriiTheme.spacingSM)
+                .background(OffriiTheme.surface)
+                .cornerRadius(OffriiTheme.cornerRadiusMD)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, OffriiTheme.spacingLG)
-            .padding(.top, OffriiTheme.spacingBase)
+
+            // Add row — iOS standard pattern
+            Button {
+                showShareToCircle = true
+            } label: {
+                HStack(spacing: OffriiTheme.spacingSM) {
+                    Image(systemName: "plus")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(.white)
+                        .frame(width: 28, height: 28)
+                        .background(OffriiTheme.primary)
+                        .clipShape(Circle())
+
+                    Text(NSLocalizedString("share.addPeople", comment: ""))
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(OffriiTheme.primary)
+                }
+                .padding(OffriiTheme.spacingSM)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(OffriiTheme.surface)
+                .cornerRadius(OffriiTheme.cornerRadiusMD)
+            }
+            .buttonStyle(.plain)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, OffriiTheme.spacingLG)
+        .padding(.top, OffriiTheme.spacingBase)
     }
 
     // MARK: - Links Section
