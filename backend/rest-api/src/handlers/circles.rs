@@ -7,9 +7,9 @@ use validator::Validate;
 
 use crate::AppState;
 use crate::dto::circles::{
-    AddMemberRequest, CircleDetailResponse, CircleEventResponse, CircleResponse,
-    CreateCircleRequest, CreateInviteRequest, FeedQuery, InviteResponse, JoinResponse,
-    ShareItemRequest, UpdateCircleRequest,
+    AddMemberRequest, CircleDetailResponse, CircleEventResponse, CircleItemResponse,
+    CircleResponse, CreateCircleRequest, CreateInviteRequest, FeedQuery, InviteResponse,
+    JoinResponse, ShareItemRequest, UpdateCircleRequest,
 };
 use crate::dto::pagination::{PaginatedResponse, normalize_pagination};
 use crate::errors::AppError;
@@ -35,7 +35,10 @@ pub fn router() -> Router<AppState> {
         .route("/{id}/invites", get(list_invites))
         .route("/{id}/invites/{iid}", delete(revoke_invite))
         .route("/{id}/items", post(share_item).get(list_circle_items))
-        .route("/{id}/items/{iid}", delete(unshare_item))
+        .route(
+            "/{id}/items/{iid}",
+            get(get_circle_item).delete(unshare_item),
+        )
         .route("/{id}/feed", get(get_feed))
 }
 
@@ -216,6 +219,19 @@ async fn list_circle_items(
         .list_circle_items(id, auth_user.user_id)
         .await?;
     Ok(Json(response))
+}
+
+#[tracing::instrument(skip(state))]
+async fn get_circle_item(
+    State(state): State<AppState>,
+    auth_user: AuthUser,
+    Path((id, iid)): Path<(Uuid, Uuid)>,
+) -> Result<Json<CircleItemResponse>, AppError> {
+    let item = state
+        .circles
+        .get_circle_item(id, iid, auth_user.user_id)
+        .await?;
+    Ok(Json(item))
 }
 
 #[tracing::instrument(skip(state))]

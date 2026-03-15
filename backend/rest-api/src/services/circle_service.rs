@@ -837,6 +837,60 @@ impl traits::CircleService for PgCircleService {
     }
 
     #[tracing::instrument(skip(self))]
+    async fn get_circle_item(
+        &self,
+        circle_id: Uuid,
+        item_id: Uuid,
+        user_id: Uuid,
+    ) -> Result<CircleItemResponse, AppError> {
+        self.require_membership(circle_id, user_id).await?;
+
+        let circle_item = self
+            .circle_item_repo
+            .find(circle_id, item_id)
+            .await
+            .map_err(AppError::Internal)?
+            .ok_or_else(|| AppError::NotFound("item not shared in this circle".into()))?;
+
+        let item = self
+            .item_repo
+            .find_by_id_any_user(item_id)
+            .await
+            .map_err(AppError::Internal)?
+            .ok_or_else(|| AppError::NotFound("item not found".into()))?;
+
+        let is_claimed = item.claimed_by.is_some();
+
+        // Anti-spoiler: item owner can't see who claimed their item
+        let claimed_by = if user_id == item.user_id {
+            None
+        } else if let Some(cid) = item.claimed_by {
+            let claimer_map = self.user_lookup(&[cid]).await?;
+            claimer_map.get(&cid).map(|(username, _)| ClaimedByInfo {
+                user_id: cid,
+                username: username.clone(),
+            })
+        } else {
+            None
+        };
+
+        Ok(CircleItemResponse {
+            id: item.id,
+            name: item.name,
+            description: item.description,
+            url: item.url,
+            estimated_price: item.estimated_price,
+            priority: item.priority,
+            category_id: item.category_id,
+            status: item.status,
+            is_claimed,
+            claimed_by,
+            shared_at: circle_item.shared_at,
+            shared_by: circle_item.shared_by,
+        })
+    }
+
+    #[tracing::instrument(skip(self))]
     async fn unshare_item(
         &self,
         circle_id: Uuid,

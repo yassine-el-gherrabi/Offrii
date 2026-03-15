@@ -643,6 +643,13 @@ pub trait CircleService: Send + Sync {
         user_id: Uuid,
     ) -> Result<Vec<CircleItemResponse>, AppError>;
 
+    async fn get_circle_item(
+        &self,
+        circle_id: Uuid,
+        item_id: Uuid,
+        user_id: Uuid,
+    ) -> Result<CircleItemResponse, AppError>;
+
     async fn unshare_item(
         &self,
         circle_id: Uuid,

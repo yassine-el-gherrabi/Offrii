@@ -45,6 +45,10 @@ final class CircleService: Sendable {
         try await client.request(.listCircleItems(circleId: circleId))
     }
 
+    func getItem(circleId: UUID, itemId: UUID) async throws -> CircleItemResponse {
+        try await client.request(.getCircleItem(circleId: circleId, itemId: itemId))
+    }
+
     func unshareItem(circleId: UUID, itemId: UUID) async throws {
         try await client.requestVoid(.unshareItem(circleId: circleId, itemId: itemId))
     }

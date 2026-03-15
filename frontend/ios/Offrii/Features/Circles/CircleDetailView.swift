@@ -63,7 +63,7 @@ struct CircleDetailView: View {
             }
         }
         .sheet(item: $selectedItemId) { itemId in
-            ItemDetailSheet(itemId: itemId)
+            ItemDetailSheet(itemId: itemId, circleId: circleId)
                 .environment(authManager)
                 .presentationDetents([.medium, .large])
         }

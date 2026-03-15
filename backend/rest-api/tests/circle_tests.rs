@@ -1737,3 +1737,142 @@ async fn claim_event_has_correct_target_item_name() {
 
     assert_eq!(claim_event["target_item_name"], "Casque Sony WH-1000XM5");
 }
+
+// ═══════════════════════════════════════════════════════════════════
+// GET /circles/{id}/items/{iid} — single circle item
+// ═══════════════════════════════════════════════════════════════════
+
+#[tokio::test]
+async fn get_circle_item_returns_item_for_member() {
+    let app = TestApp::new().await;
+    let (alice, _) = setup_user_with_id(&app, "alice-gci@test.com").await;
+    let (bob, _) = setup_user_with_id(&app, "bob-gci@test.com").await;
+
+    let cid = create_circle(&app, &alice, "Gift Circle").await;
+    invite_and_join(&app, &cid, &alice, &bob).await;
+
+    // Alice creates and shares an item
+    let item = app
+        .create_item(
+            &alice,
+            &serde_json::json!({ "name": "Headphones", "priority": 3 }),
+        )
+        .await;
+    let item_id = item["id"].as_str().unwrap();
+
+    let (status, _) = app
+        .post_json_with_auth(
+            &format!("/circles/{cid}/items"),
+            &serde_json::json!({ "item_id": item_id }),
+            &alice,
+        )
+        .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+
+    // Bob can fetch the single item
+    let (status, resp) = app
+        .get_with_auth(&format!("/circles/{cid}/items/{item_id}"), &bob)
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(resp["name"], "Headphones");
+    assert_eq!(resp["priority"], 3);
+}
+
+#[tokio::test]
+async fn get_circle_item_404_when_not_shared() {
+    let app = TestApp::new().await;
+    let (alice, _) = setup_user_with_id(&app, "alice-gci404@test.com").await;
+
+    let cid = create_circle(&app, &alice, "My Circle").await;
+
+    // Alice creates item but does NOT share it
+    let item = app
+        .create_item(&alice, &serde_json::json!({ "name": "Secret" }))
+        .await;
+    let item_id = item["id"].as_str().unwrap();
+
+    let (status, resp) = app
+        .get_with_auth(&format!("/circles/{cid}/items/{item_id}"), &alice)
+        .await;
+    assert_eq!(status, StatusCode::NOT_FOUND);
+    assert_error(&resp, "NOT_FOUND");
+}
+
+#[tokio::test]
+async fn get_circle_item_403_for_non_member() {
+    let app = TestApp::new().await;
+    let (alice, _) = setup_user_with_id(&app, "alice-gci403@test.com").await;
+    let (charlie, _) = setup_user_with_id(&app, "charlie-gci403@test.com").await;
+
+    let cid = create_circle(&app, &alice, "Private Circle").await;
+
+    let item = app
+        .create_item(&alice, &serde_json::json!({ "name": "Gift" }))
+        .await;
+    let item_id = item["id"].as_str().unwrap();
+
+    let (status, _) = app
+        .post_json_with_auth(
+            &format!("/circles/{cid}/items"),
+            &serde_json::json!({ "item_id": item_id }),
+            &alice,
+        )
+        .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+
+    // Charlie is NOT a member — should get 403
+    let (status, _) = app
+        .get_with_auth(&format!("/circles/{cid}/items/{item_id}"), &charlie)
+        .await;
+    assert_eq!(status, StatusCode::FORBIDDEN);
+}
+
+#[tokio::test]
+async fn get_circle_item_anti_spoiler_hides_claimer_from_owner() {
+    let app = TestApp::new().await;
+    let (alice, _) = setup_user_with_id(&app, "alice-gcispoiler@test.com").await;
+    let (bob, _) = setup_user_with_id(&app, "bob-gcispoiler@test.com").await;
+
+    let cid = create_circle(&app, &alice, "Surprise Circle").await;
+    invite_and_join(&app, &cid, &alice, &bob).await;
+
+    // Alice creates and shares an item
+    let item = app
+        .create_item(&alice, &serde_json::json!({ "name": "Surprise Gift" }))
+        .await;
+    let item_id = item["id"].as_str().unwrap();
+
+    let (status, _) = app
+        .post_json_with_auth(
+            &format!("/circles/{cid}/items"),
+            &serde_json::json!({ "item_id": item_id }),
+            &alice,
+        )
+        .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+
+    // Bob claims the item
+    let (status, _) = app
+        .post_with_auth(&format!("/items/{item_id}/claim"), &bob)
+        .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+
+    // Alice (owner) should NOT see who claimed — claimed_by is null
+    let (status, resp) = app
+        .get_with_auth(&format!("/circles/{cid}/items/{item_id}"), &alice)
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    assert!(resp["is_claimed"].as_bool().unwrap());
+    assert!(resp["claimed_by"].is_null(), "owner should not see claimer");
+
+    // Bob (claimer) SHOULD see who claimed
+    let (status, resp) = app
+        .get_with_auth(&format!("/circles/{cid}/items/{item_id}"), &bob)
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    assert!(resp["is_claimed"].as_bool().unwrap());
+    assert!(
+        !resp["claimed_by"].is_null(),
+        "non-owner should see claimer"
+    );
+}

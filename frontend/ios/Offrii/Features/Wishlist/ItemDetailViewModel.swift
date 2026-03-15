@@ -18,16 +18,36 @@ final class ItemDetailViewModel {
         isLoading = true
         do {
             item = try await ItemService.shared.getItem(id: id)
-            if let categoryId = item?.categoryId {
-                let categories = try await CategoryService.shared.listCategories()
-                let cat = categories.first { $0.id == categoryId }
-                categoryName = cat?.name
-                categoryIcon = cat?.icon
-            }
+            await loadCategoryInfo()
         } catch {
             self.error = error.localizedDescription
         }
         isLoading = false
+    }
+
+    func loadCircleItem(circleId: UUID, itemId: UUID) async {
+        isLoading = true
+        do {
+            let circleItem = try await CircleService.shared.getItem(
+                circleId: circleId,
+                itemId: itemId
+            )
+            // Map CircleItemResponse to Item for display
+            item = Item.fromCircleItem(circleItem)
+            await loadCategoryInfo()
+        } catch {
+            self.error = error.localizedDescription
+        }
+        isLoading = false
+    }
+
+    private func loadCategoryInfo() async {
+        if let categoryId = item?.categoryId {
+            let categories = (try? await CategoryService.shared.listCategories()) ?? []
+            let cat = categories.first { $0.id == categoryId }
+            categoryName = cat?.name
+            categoryIcon = cat?.icon
+        }
     }
 
     func markPurchased() async -> Bool {

@@ -6,6 +6,7 @@ import SwiftUI
 // swiftlint:disable:next type_body_length
 struct ItemDetailSheet: View {
     let itemId: UUID
+    var circleId: UUID?
     @Environment(AuthManager.self) private var authManager
     @Environment(\.dismiss) private var dismiss
     @State private var viewModel = ItemDetailViewModel()
@@ -266,7 +267,11 @@ struct ItemDetailSheet: View {
                 }
             }
             .task {
-                await viewModel.loadItem(id: itemId)
+                if let circleId {
+                    await viewModel.loadCircleItem(circleId: circleId, itemId: itemId)
+                } else {
+                    await viewModel.loadItem(id: itemId)
+                }
             }
         }
     }

@@ -92,6 +92,7 @@ enum APIEndpoint {
     case removeMember(circleId: UUID, userId: UUID)
     case shareItemToCircle(circleId: UUID, body: ShareItemBody)
     case listCircleItems(circleId: UUID)
+    case getCircleItem(circleId: UUID, itemId: UUID)
     case unshareItem(circleId: UUID, itemId: UUID)
     case getCircleFeed(circleId: UUID, page: Int, perPage: Int)
 
@@ -195,6 +196,7 @@ extension APIEndpoint {
         case .removeMember(let circleId, let userId):   return "/circles/\(circleId)/members/\(userId)"
         case .shareItemToCircle(let circleId, _):       return "/circles/\(circleId)/items"
         case .listCircleItems(let circleId):            return "/circles/\(circleId)/items"
+        case .getCircleItem(let circleId, let itemId):  return "/circles/\(circleId)/items/\(itemId)"
         case .unshareItem(let circleId, let itemId):    return "/circles/\(circleId)/items/\(itemId)"
         case .getCircleFeed(let circleId, _, _):        return "/circles/\(circleId)/feed"
 
@@ -292,6 +294,7 @@ extension APIEndpoint {
         case .removeMember:         return .DELETE
         case .shareItemToCircle:    return .POST
         case .listCircleItems:      return .GET
+        case .getCircleItem:        return .GET
         case .unshareItem:          return .DELETE
         case .getCircleFeed:        return .GET
 

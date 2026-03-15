@@ -72,6 +72,27 @@ struct Item: Codable, Identifiable, Equatable {
         }
     }
 
+    init(
+        id: UUID, name: String, description: String?, url: String?,
+        estimatedPrice: Decimal?, priority: Int, categoryId: UUID?,
+        status: String, purchasedAt: Date?, createdAt: Date, updatedAt: Date,
+        isClaimed: Bool, imageUrl: String?, links: [String]?,
+        ogImageUrl: String?, ogTitle: String?, ogSiteName: String?,
+        isPrivate: Bool, sharedCircles: [SharedCircleInfo],
+        claimedVia: String?, claimedName: String?
+    ) {
+        self.id = id; self.name = name; self.description = description
+        self.url = url; self.estimatedPrice = estimatedPrice
+        self.priority = priority; self.categoryId = categoryId
+        self.status = status; self.purchasedAt = purchasedAt
+        self.createdAt = createdAt; self.updatedAt = updatedAt
+        self.isClaimed = isClaimed; self.imageUrl = imageUrl
+        self.links = links; self.ogImageUrl = ogImageUrl
+        self.ogTitle = ogTitle; self.ogSiteName = ogSiteName
+        self.isPrivate = isPrivate; self.sharedCircles = sharedCircles
+        self.claimedVia = claimedVia; self.claimedName = claimedName
+    }
+
     /// Display image priority: uploaded > OG > nil
     var displayImageUrl: URL? {
         if let imageUrl, let url = URL(string: imageUrl) { return url }
@@ -100,6 +121,33 @@ struct Item: Codable, Identifiable, Equatable {
         case 3: return String(localized: "priority.high")
         default: return String(localized: "priority.medium")
         }
+    }
+
+    /// Create an Item from a CircleItemResponse for display in ItemDetailSheet.
+    static func fromCircleItem(_ ci: CircleItemResponse) -> Item {
+        Item(
+            id: ci.id,
+            name: ci.name,
+            description: ci.description,
+            url: ci.url,
+            estimatedPrice: ci.estimatedPrice,
+            priority: Int(ci.priority),
+            categoryId: ci.categoryId,
+            status: ci.status,
+            purchasedAt: nil,
+            createdAt: ci.sharedAt,
+            updatedAt: ci.sharedAt,
+            isClaimed: ci.isClaimed,
+            imageUrl: nil,
+            links: ci.url != nil ? [ci.url!] : nil,
+            ogImageUrl: nil,
+            ogTitle: nil,
+            ogSiteName: nil,
+            isPrivate: false,
+            sharedCircles: [],
+            claimedVia: nil,
+            claimedName: ci.claimedBy?.username
+        )
     }
 }
 
