@@ -1876,3 +1876,115 @@ async fn get_circle_item_anti_spoiler_hides_claimer_from_owner() {
         "non-owner should see claimer"
     );
 }
+
+// ═══════════════════════════════════════════════════════════════════
+// Feed anti-spoiler: claim events hidden from item owner
+// ═══════════════════════════════════════════════════════════════════
+
+#[tokio::test]
+async fn feed_hides_claim_events_from_item_owner() {
+    let app = TestApp::new().await;
+    let (alice, _) = setup_user_with_id(&app, "alice-feedspoil@test.com").await;
+    let (bob, _) = setup_user_with_id(&app, "bob-feedspoil@test.com").await;
+
+    let cid = create_circle(&app, &alice, "Feed Spoiler Test").await;
+    invite_and_join(&app, &cid, &alice, &bob).await;
+
+    // Alice creates and shares an item
+    let item = app
+        .create_item(&alice, &serde_json::json!({ "name": "Secret Gift" }))
+        .await;
+    let item_id = item["id"].as_str().unwrap();
+
+    let (status, _) = app
+        .post_json_with_auth(
+            &format!("/circles/{cid}/items"),
+            &serde_json::json!({ "item_id": item_id }),
+            &alice,
+        )
+        .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+
+    // Bob claims Alice's item
+    let (status, _) = app
+        .post_with_auth(&format!("/items/{item_id}/claim"), &bob)
+        .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+
+    // Alice (owner) should NOT see the claim event in the feed
+    let (status, feed) = app
+        .get_with_auth(&format!("/circles/{cid}/feed"), &alice)
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    let alice_events: Vec<&serde_json::Value> = feed["data"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter(|e| e["event_type"] == "item_claimed")
+        .collect();
+    assert!(
+        alice_events.is_empty(),
+        "item owner should NOT see claim events in feed"
+    );
+
+    // Bob (claimer, non-owner) SHOULD see the claim event
+    let (status, feed) = app
+        .get_with_auth(&format!("/circles/{cid}/feed"), &bob)
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    let bob_events: Vec<&serde_json::Value> = feed["data"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter(|e| e["event_type"] == "item_claimed")
+        .collect();
+    assert!(
+        !bob_events.is_empty(),
+        "non-owner should see claim events in feed"
+    );
+}
+
+#[tokio::test]
+async fn feed_hides_unclaim_events_from_item_owner() {
+    let app = TestApp::new().await;
+    let (alice, _) = setup_user_with_id(&app, "alice-feedunclaim@test.com").await;
+    let (bob, _) = setup_user_with_id(&app, "bob-feedunclaim@test.com").await;
+
+    let cid = create_circle(&app, &alice, "Unclaim Feed Test").await;
+    invite_and_join(&app, &cid, &alice, &bob).await;
+
+    let item = app
+        .create_item(&alice, &serde_json::json!({ "name": "Unclaim Test" }))
+        .await;
+    let item_id = item["id"].as_str().unwrap();
+
+    let (status, _) = app
+        .post_json_with_auth(
+            &format!("/circles/{cid}/items"),
+            &serde_json::json!({ "item_id": item_id }),
+            &alice,
+        )
+        .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+
+    // Bob claims then unclaims
+    app.post_with_auth(&format!("/items/{item_id}/claim"), &bob)
+        .await;
+    app.delete_with_auth(&format!("/items/{item_id}/claim"), &bob)
+        .await;
+
+    // Alice should NOT see unclaim events either
+    let (_, feed) = app
+        .get_with_auth(&format!("/circles/{cid}/feed"), &alice)
+        .await;
+    let claim_events: Vec<&serde_json::Value> = feed["data"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter(|e| e["event_type"] == "item_claimed" || e["event_type"] == "item_unclaimed")
+        .collect();
+    assert!(
+        claim_events.is_empty(),
+        "owner should not see any claim/unclaim events"
+    );
+}

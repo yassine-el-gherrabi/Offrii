@@ -617,21 +617,35 @@ struct CircleDetailView: View {
     private func claimButton(_ item: CircleItemResponse) -> some View {
         if item.isClaimed {
             if item.claimedBy?.userId == currentUserId {
+                // State: YOU claimed this — show unclaim option
                 Button {
                     Task {
                         await viewModel.unclaimItem(itemId: item.id)
                         await viewModel.loadItems(circleId: circleId)
-                                                await viewModel.loadFeed(circleId: circleId)
+                        await viewModel.loadFeed(circleId: circleId)
                     }
                 } label: {
-                    Label(
-                        NSLocalizedString("circles.detail.claimed", comment: ""),
-                        systemImage: "checkmark.circle.fill"
-                    )
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundColor(OffriiTheme.success)
+                    HStack(spacing: 3) {
+                        Image(systemName: "checkmark.circle.fill")
+                        Text(NSLocalizedString("circles.detail.youHandleIt", comment: ""))
+                    }
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundColor(.white)
+                    .padding(.horizontal, OffriiTheme.spacingSM)
+                    .padding(.vertical, OffriiTheme.spacingXXS)
+                    .background(OffriiTheme.success)
+                    .cornerRadius(OffriiTheme.cornerRadiusXL)
                 }
+            } else if let claimer = item.claimedBy, !isDirect {
+                // State: someone ELSE claimed — show who (group only)
+                Text(String(
+                    format: NSLocalizedString("circles.detail.reservedBy", comment: ""),
+                    claimer.username
+                ))
+                .font(.system(size: 11))
+                .foregroundColor(OffriiTheme.textMuted)
             } else {
+                // State: someone claimed in 1:1 — no name
                 Text(NSLocalizedString("wishlist.reserved", comment: ""))
                     .font(.system(size: 11))
                     .foregroundColor(OffriiTheme.textMuted)
@@ -641,7 +655,7 @@ struct CircleDetailView: View {
                 Task {
                     await viewModel.claimItem(itemId: item.id)
                     await viewModel.loadItems(circleId: circleId)
-                                                await viewModel.loadFeed(circleId: circleId)
+                    await viewModel.loadFeed(circleId: circleId)
                 }
             } label: {
                 Text(NSLocalizedString("circles.detail.handleIt", comment: ""))

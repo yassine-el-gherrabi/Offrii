@@ -1267,23 +1267,23 @@ impl traits::CircleService for PgCircleService {
         };
         let item_map: HashMap<Uuid, _> = items.into_iter().map(|i| (i.id, i)).collect();
 
-        let event_responses = events
+        let event_responses: Vec<CircleEventResponse> = events
             .into_iter()
-            .map(|e| {
-                // Anti-spoiler: for item_claimed events, hide actor from item owner
-                let is_claim_event = e.event_type == "item_claimed";
+            .filter_map(|e| {
+                let is_claim_event =
+                    e.event_type == "item_claimed" || e.event_type == "item_unclaimed";
                 let viewer_is_item_owner = e
                     .target_item_id
                     .and_then(|iid| item_map.get(&iid))
                     .map(|item| item.user_id == user_id)
                     .unwrap_or(false);
 
-                let (actor_id, actor_username) = if is_claim_event && viewer_is_item_owner {
-                    (None, Some("Quelqu'un".to_string()))
-                } else {
-                    let username = user_map.get(&e.actor_id).map(|(u, _)| u.clone());
-                    (Some(e.actor_id), username)
-                };
+                // Anti-spoiler: completely hide claim/unclaim events from the item owner
+                if is_claim_event && viewer_is_item_owner {
+                    return None;
+                }
+
+                let username = user_map.get(&e.actor_id).map(|(u, _)| u.clone());
 
                 let target_item_name = e
                     .target_item_id
@@ -1295,17 +1295,17 @@ impl traits::CircleService for PgCircleService {
                     .and_then(|uid| user_map.get(&uid))
                     .map(|(u, _)| u.clone());
 
-                CircleEventResponse {
+                Some(CircleEventResponse {
                     id: e.id,
                     event_type: e.event_type,
-                    actor_id,
-                    actor_username,
+                    actor_id: Some(e.actor_id),
+                    actor_username: username,
                     target_item_id: e.target_item_id,
                     target_item_name,
                     target_user_id: e.target_user_id,
                     target_username,
                     created_at: e.created_at,
-                }
+                })
             })
             .collect();
 

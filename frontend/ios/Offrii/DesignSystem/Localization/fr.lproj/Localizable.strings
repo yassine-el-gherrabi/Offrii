@@ -232,6 +232,9 @@
 "circles.context.delete" = "Supprimer";
 "circles.detail.members" = "Membres";
 "circles.detail.inviteMembers" = "Inviter des membres";
+"circles.detail.youHandleIt" = "Tu t'en occupes";
+"circles.detail.reservedBy" = "Réservé par %@";
+"circles.detail.unclaim" = "Libérer";
 "circles.edit.title" = "Modifier le cercle";
 "circles.edit.save" = "Enregistrer";
 "circles.oneToOne" = "1 à 1";

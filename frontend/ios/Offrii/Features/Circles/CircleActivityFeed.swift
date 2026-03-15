@@ -139,15 +139,13 @@ struct CircleActivityFeed: View {
     private func descriptionForEvent(_ event: CircleEventResponse) -> String {
         let actor = event.actorUsername ?? NSLocalizedString("circles.detail.someone", comment: "")
         let itemName = event.targetItemName ?? ""
-        let isOwner = event.targetUserId == currentUserId
 
         switch event.eventType {
         case "item_shared":
             return String(format: NSLocalizedString("circles.event.itemShared", comment: ""), actor, itemName)
         case "item_claimed":
-            if isOwner {
-                return String(format: NSLocalizedString("circles.event.itemClaimedAnti", comment: ""), itemName)
-            }
+            // Anti-spoiler: claim events for owned items are filtered out by the backend.
+            // If one reaches here, the viewer is NOT the owner — show full info.
             return String(format: NSLocalizedString("circles.event.itemClaimed", comment: ""), actor, itemName)
         case "item_unclaimed":
             return String(format: NSLocalizedString("circles.event.itemUnclaimed", comment: ""), actor, itemName)
