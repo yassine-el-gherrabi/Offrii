@@ -211,6 +211,36 @@
 "circles.members.leave" = "Leave circle";
 "circles.members.leaveConfirm.title" = "Leave circle?";
 "circles.members.leaveConfirm.message" = "You will no longer see items shared in this circle.";
+"circles.search.placeholder" = "Search a circle...";
+"circles.tab.myCircles" = "My Circles";
+"circles.tab.myFriends" = "My Friends";
+"circles.unreservedCount" = "%d available";
+"circles.noUnreserved" = "All reserved!";
+"circles.lastActivity.none" = "No activity";
+"circles.swipe.leave" = "Leave";
+"circles.context.edit" = "Edit";
+"circles.context.shareLink" = "Share link";
+"circles.context.leave" = "Leave circle";
+"circles.context.delete" = "Delete";
+"circles.detail.members" = "Members";
+"circles.detail.inviteMembers" = "Invite members";
+"circles.edit.title" = "Edit circle";
+"circles.edit.save" = "Save";
+"circles.oneToOne" = "1-to-1";
+"friends.title" = "My Friends";
+"friends.emptyTitle" = "No friends yet";
+"friends.emptySubtitle" = "Add friends to share your wishes";
+"friends.inviteContacts" = "Invite from contacts";
+"friends.shareInviteLink" = "Share invite link";
+"friends.wishCount" = "%d wishes";
+"friends.search.placeholder" = "Search a friend...";
+"friends.pending" = "Pending invitations";
+"friends.sent" = "Sent requests";
+"friends.remove" = "Remove";
+"friends.accept" = "Accept";
+"friends.decline" = "Decline";
+"friends.cancel" = "Cancel";
+"contacts.permissionMessage" = "Offrii uses your contacts to help you invite friends.";
 
 /* Friends */
 "friends.title" = "My friends";

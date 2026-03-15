@@ -226,6 +226,10 @@ impl traits::CircleService for PgCircleService {
             is_direct: circle.is_direct,
             owner_id: circle.owner_id,
             member_count: count,
+            unreserved_item_count: 0,
+            last_activity: None,
+            last_activity_at: None,
+            member_names: vec![],
             created_at: circle.created_at,
         })
     }
@@ -240,19 +244,48 @@ impl traits::CircleService for PgCircleService {
 
         let responses = rows
             .into_iter()
-            .map(|(circle, count, other_username)| {
-                let name = if circle.is_direct {
-                    other_username.or(circle.name)
+            .map(|row| {
+                let name = if row.circle.is_direct {
+                    row.other_username.or(row.circle.name)
                 } else {
-                    circle.name
+                    row.circle.name
                 };
+
+                let last_activity = match (
+                    row.last_activity_event_type.as_deref(),
+                    row.last_activity_actor.as_deref(),
+                    row.last_activity_item.as_deref(),
+                ) {
+                    (Some("item_shared"), Some(actor), Some(item)) => {
+                        Some(format!("{actor} a partagé {item}"))
+                    }
+                    (Some("item_claimed"), Some(actor), Some(item)) => {
+                        Some(format!("{actor} a réservé {item}"))
+                    }
+                    (Some("item_unclaimed"), _, Some(item)) => {
+                        Some(format!("{item} n'est plus réservé"))
+                    }
+                    (Some("member_joined"), Some(actor), _) => {
+                        Some(format!("{actor} a rejoint le cercle"))
+                    }
+                    (Some("member_left"), Some(actor), _) => {
+                        Some(format!("{actor} a quitté le cercle"))
+                    }
+                    (Some("item_unshared"), _, Some(item)) => Some(format!("{item} a été retiré")),
+                    _ => None,
+                };
+
                 CircleResponse {
-                    id: circle.id,
+                    id: row.circle.id,
                     name,
-                    is_direct: circle.is_direct,
-                    owner_id: circle.owner_id,
-                    member_count: count,
-                    created_at: circle.created_at,
+                    is_direct: row.circle.is_direct,
+                    owner_id: row.circle.owner_id,
+                    member_count: row.member_count,
+                    unreserved_item_count: row.unreserved_item_count,
+                    last_activity,
+                    last_activity_at: row.last_activity_at,
+                    member_names: row.member_names,
+                    created_at: row.circle.created_at,
                 }
             })
             .collect();
@@ -365,6 +398,10 @@ impl traits::CircleService for PgCircleService {
             is_direct: updated.is_direct,
             owner_id: updated.owner_id,
             member_count: count,
+            unreserved_item_count: 0,
+            last_activity: None,
+            last_activity_at: None,
+            member_names: vec![],
             created_at: updated.created_at,
         })
     }
@@ -444,6 +481,10 @@ impl traits::CircleService for PgCircleService {
             is_direct: circle.is_direct,
             owner_id: circle.owner_id,
             member_count: 2,
+            unreserved_item_count: 0,
+            last_activity: None,
+            last_activity_at: None,
+            member_names: vec![],
             created_at: circle.created_at,
         })
     }

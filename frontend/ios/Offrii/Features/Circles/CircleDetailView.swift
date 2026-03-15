@@ -4,12 +4,14 @@ struct CircleDetailView: View {
     let circleId: UUID
     @Environment(AuthManager.self) private var authManager
     @Environment(OnboardingTipManager.self) private var tipManager
+    @Environment(\.dismiss) private var dismiss
     @State private var viewModel = CircleDetailViewModel()
     @State private var showInvite = false
-    @State private var showMembers = false
-    @State private var selectedMemberId: UUID?
+    @State private var showEdit = false
+    @State private var showLeaveAlert = false
 
     private var currentUserId: UUID? { authManager.currentUser?.id }
+    private var isOwner: Bool { viewModel.detail?.ownerId == currentUserId }
 
     private let gridColumns = [
         GridItem(.flexible(), spacing: OffriiTheme.spacingSM),
@@ -25,17 +27,19 @@ struct CircleDetailView: View {
                     .padding(.top, OffriiTheme.spacingBase)
             } else if let detail = viewModel.detail {
                 VStack(spacing: 0) {
-                    // Member carousel
+                    // Member carousel filter
                     MemberCarousel(
                         members: detail.members,
-                        selectedMemberId: $selectedMemberId,
+                        selectedMemberId: $viewModel.selectedMemberFilter,
                         currentUserId: currentUserId
                     )
 
-                    // Segmented control
+                    // 3-tab segmented control
                     Picker("", selection: $viewModel.selectedTab) {
                         Text(NSLocalizedString("circles.detail.items", comment: ""))
                             .tag(CircleDetailViewModel.DetailTab.items)
+                        Text(NSLocalizedString("circles.detail.members", comment: ""))
+                            .tag(CircleDetailViewModel.DetailTab.members)
                         Text(NSLocalizedString("circles.detail.activity", comment: ""))
                             .tag(CircleDetailViewModel.DetailTab.activity)
                     }
@@ -45,7 +49,9 @@ struct CircleDetailView: View {
 
                     switch viewModel.selectedTab {
                     case .items:
-                        itemsGridContent(detail)
+                        itemsTabContent(detail)
+                    case .members:
+                        membersTabContent(detail)
                     case .activity:
                         CircleActivityFeed(
                             events: viewModel.feed,
@@ -65,16 +71,21 @@ struct CircleDetailView: View {
                 }
             }
         }
-        .navigationTitle(viewModel.detail?.name ?? NSLocalizedString("circles.unnamed", comment: ""))
+        .navigationTitle(
+            viewModel.detail?.name
+                ?? NSLocalizedString("circles.unnamed", comment: "")
+        )
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 HStack(spacing: OffriiTheme.spacingSM) {
-                    Button {
-                        showMembers = true
-                    } label: {
-                        Image(systemName: "person.2")
-                            .font(.system(size: 16))
+                    if isOwner {
+                        Button {
+                            showEdit = true
+                        } label: {
+                            Image(systemName: "pencil")
+                                .font(.system(size: 16))
+                        }
                     }
 
                     Button {
@@ -86,7 +97,9 @@ struct CircleDetailView: View {
                     .overlay(alignment: .bottom) {
                         if tipManager.activeTip == .circlesShare {
                             OffriiTooltip(
-                                message: OnboardingTipManager.message(for: .circlesShare),
+                                message: OnboardingTipManager.message(
+                                    for: .circlesShare
+                                ),
                                 arrow: .top
                             ) {
                                 tipManager.dismiss(.circlesShare)
@@ -107,16 +120,37 @@ struct CircleDetailView: View {
                 )
             }
         }
-        .sheet(isPresented: $showMembers) {
-            if let detail = viewModel.detail {
-                CircleMembersSheet(
+        .sheet(isPresented: $showEdit) {
+            if let name = viewModel.detail?.name {
+                EditCircleSheet(
                     circleId: circleId,
-                    members: detail.members,
-                    ownerId: detail.ownerId,
-                    onLeft: { Task { await reload() } },
-                    currentUserId: currentUserId
-                )
+                    currentName: name
+                ) {
+                    Task { await reload() }
+                }
+                .presentationDetents([.medium])
             }
+        }
+        .alert(
+            NSLocalizedString("circles.members.leaveConfirm.title", comment: ""),
+            isPresented: $showLeaveAlert
+        ) {
+            Button(
+                NSLocalizedString("circles.members.leave", comment: ""),
+                role: .destructive
+            ) {
+                Task {
+                    if await viewModel.leaveCircle(circleId: circleId) {
+                        dismiss()
+                    }
+                }
+            }
+            Button(NSLocalizedString("common.cancel", comment: ""), role: .cancel) {}
+        } message: {
+            Text(NSLocalizedString(
+                "circles.members.leaveConfirm.message",
+                comment: ""
+            ))
         }
         .refreshable {
             await reload()
@@ -128,24 +162,27 @@ struct CircleDetailView: View {
         }
     }
 
-    // MARK: - Items Grid
+    // MARK: - Items Tab
 
     @ViewBuilder
-    private func itemsGridContent(_ detail: CircleDetailResponse) -> some View {
-        let filteredItems = filteredItemsForMember()
+    private func itemsTabContent(_ detail: CircleDetailResponse) -> some View {
+        let displayed = viewModel.filteredItems
 
-        if filteredItems.isEmpty {
+        if displayed.isEmpty {
             Spacer()
             OffriiEmptyState(
                 icon: "tray",
                 title: NSLocalizedString("circles.detail.noItems", comment: ""),
-                subtitle: NSLocalizedString("circles.detail.noItemsSubtitle", comment: "")
+                subtitle: NSLocalizedString(
+                    "circles.detail.noItemsSubtitle",
+                    comment: ""
+                )
             )
             Spacer()
         } else {
             ScrollView {
                 LazyVGrid(columns: gridColumns, spacing: OffriiTheme.spacingSM) {
-                    ForEach(filteredItems) { item in
+                    ForEach(displayed) { item in
                         circleItemCard(item)
                     }
                 }
@@ -155,21 +192,157 @@ struct CircleDetailView: View {
         }
     }
 
-    private func filteredItemsForMember() -> [CircleItemResponse] {
-        guard let memberId = selectedMemberId else {
-            return viewModel.items
+    // MARK: - Members Tab
+
+    @ViewBuilder
+    // swiftlint:disable:next function_body_length
+    private func membersTabContent(_ detail: CircleDetailResponse) -> some View {
+        ScrollView {
+            LazyVStack(spacing: 0) {
+                ForEach(detail.members) { member in
+                    let isSelf = member.userId == currentUserId
+                    let isMemberOwner = member.role == "owner"
+
+                    HStack(spacing: OffriiTheme.spacingSM) {
+                        AvatarView(
+                            member.displayName ?? member.username,
+                            size: .small
+                        )
+
+                        VStack(alignment: .leading, spacing: 2) {
+                            HStack(spacing: OffriiTheme.spacingXS) {
+                                Text(member.displayName ?? member.username)
+                                    .font(OffriiTypography.body)
+                                    .foregroundColor(OffriiTheme.text)
+
+                                if isSelf {
+                                    Text(NSLocalizedString(
+                                        "circles.members.you",
+                                        comment: ""
+                                    ))
+                                    .font(OffriiTypography.caption)
+                                    .foregroundColor(OffriiTheme.textMuted)
+                                }
+                            }
+
+                            Text("@\(member.username)")
+                                .font(OffriiTypography.caption)
+                                .foregroundColor(OffriiTheme.textMuted)
+                        }
+
+                        Spacer()
+
+                        if isMemberOwner {
+                            Text(NSLocalizedString(
+                                "circles.members.owner",
+                                comment: ""
+                            ))
+                            .font(OffriiTypography.caption)
+                            .fontWeight(.medium)
+                            .foregroundColor(OffriiTheme.accent)
+                            .padding(.horizontal, OffriiTheme.spacingSM)
+                            .padding(.vertical, OffriiTheme.spacingXXS)
+                            .background(OffriiTheme.accent.opacity(0.1))
+                            .cornerRadius(OffriiTheme.cornerRadiusFull)
+                        }
+                    }
+                    .padding(.horizontal, OffriiTheme.spacingLG)
+                    .padding(.vertical, OffriiTheme.spacingSM)
+                    .contextMenu {
+                        if isOwner && !isSelf && member.role != "owner" {
+                            Button(role: .destructive) {
+                                Task {
+                                    await viewModel.removeMember(
+                                        circleId: circleId,
+                                        userId: member.userId
+                                    )
+                                }
+                            } label: {
+                                Label(
+                                    NSLocalizedString("friends.remove", comment: ""),
+                                    systemImage: "person.badge.minus"
+                                )
+                            }
+                        }
+                    }
+
+                    if member.id != detail.members.last?.id {
+                        Divider()
+                            .padding(.leading, 56)
+                            .padding(.horizontal, OffriiTheme.spacingLG)
+                    }
+                }
+
+                // Invite button
+                Button {
+                    showInvite = true
+                } label: {
+                    HStack(spacing: OffriiTheme.spacingSM) {
+                        Image(systemName: "plus")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundColor(.white)
+                            .frame(width: 32, height: 32)
+                            .background(OffriiTheme.primary)
+                            .clipShape(Circle())
+
+                        Text(NSLocalizedString(
+                            "circles.detail.inviteMembers",
+                            comment: ""
+                        ))
+                        .font(OffriiTypography.body)
+                        .foregroundColor(OffriiTheme.primary)
+                    }
+                    .padding(.horizontal, OffriiTheme.spacingLG)
+                    .padding(.vertical, OffriiTheme.spacingMD)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .buttonStyle(.plain)
+
+                // Leave button (non-owners only)
+                if !isOwner {
+                    Divider()
+                        .padding(.horizontal, OffriiTheme.spacingLG)
+
+                    Button {
+                        showLeaveAlert = true
+                    } label: {
+                        HStack(spacing: OffriiTheme.spacingSM) {
+                            Image(
+                                systemName: "rectangle.portrait.and.arrow.right"
+                            )
+                            .font(.system(size: 14))
+                            .foregroundColor(OffriiTheme.danger)
+
+                            Text(NSLocalizedString(
+                                "circles.members.leave",
+                                comment: ""
+                            ))
+                            .font(OffriiTypography.body)
+                            .foregroundColor(OffriiTheme.danger)
+                        }
+                        .padding(.horizontal, OffriiTheme.spacingLG)
+                        .padding(.vertical, OffriiTheme.spacingMD)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.top, OffriiTheme.spacingSM)
         }
-        return viewModel.items.filter { $0.sharedBy == memberId }
     }
+
+    // MARK: - Item Card
 
     @ViewBuilder
     private func circleItemCard(_ item: CircleItemResponse) -> some View {
-        let isOwner = item.sharedBy == currentUserId
+        let itemIsOwner = item.sharedBy == currentUserId
 
         VStack(alignment: .leading, spacing: 0) {
-            // Image placeholder
             LinearGradient(
-                colors: [OffriiTheme.primary.opacity(0.25), OffriiTheme.accent.opacity(0.15)],
+                colors: [
+                    OffriiTheme.primary.opacity(0.25),
+                    OffriiTheme.accent.opacity(0.15),
+                ],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
@@ -180,26 +353,22 @@ struct CircleDetailView: View {
                     .foregroundColor(.white.opacity(0.6))
             )
             .overlay(alignment: .topTrailing) {
-                if item.isClaimed {
-                    if isOwner {
-                        // Owner sees "reserved" but not by whom
-                        HStack(spacing: 3) {
-                            Image(systemName: "lock.fill")
-                                .font(.system(size: 8))
-                            Text(NSLocalizedString("wishlist.reserved", comment: ""))
-                                .font(.system(size: 9, weight: .semibold))
-                        }
-                        .foregroundColor(OffriiTheme.accent)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 3)
-                        .background(.ultraThinMaterial)
-                        .cornerRadius(OffriiTheme.cornerRadiusXS)
-                        .padding(OffriiTheme.spacingSM)
+                if item.isClaimed && itemIsOwner {
+                    HStack(spacing: 3) {
+                        Image(systemName: "lock.fill")
+                            .font(.system(size: 8))
+                        Text(NSLocalizedString("wishlist.reserved", comment: ""))
+                            .font(.system(size: 9, weight: .semibold))
                     }
+                    .foregroundColor(OffriiTheme.accent)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 3)
+                    .background(.ultraThinMaterial)
+                    .cornerRadius(OffriiTheme.cornerRadiusXS)
+                    .padding(OffriiTheme.spacingSM)
                 }
             }
 
-            // Text + claim action
             VStack(alignment: .leading, spacing: OffriiTheme.spacingXXS) {
                 Text(item.name)
                     .font(.system(size: 14, weight: .semibold))
@@ -212,7 +381,7 @@ struct CircleDetailView: View {
                         .foregroundColor(OffriiTheme.textMuted)
                 }
 
-                if !isOwner {
+                if !itemIsOwner {
                     claimButton(item)
                 }
             }
@@ -224,6 +393,8 @@ struct CircleDetailView: View {
         .shadow(color: OffriiTheme.cardShadowColor, radius: 6, x: 0, y: 2)
     }
 
+    // MARK: - Claim Button
+
     @ViewBuilder
     private func claimButton(_ item: CircleItemResponse) -> some View {
         if item.isClaimed {
@@ -234,9 +405,12 @@ struct CircleDetailView: View {
                         await viewModel.loadItems(circleId: circleId)
                     }
                 } label: {
-                    Label(NSLocalizedString("circles.detail.claimed", comment: ""), systemImage: "checkmark.circle.fill")
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundColor(OffriiTheme.success)
+                    Label(
+                        NSLocalizedString("circles.detail.claimed", comment: ""),
+                        systemImage: "checkmark.circle.fill"
+                    )
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundColor(OffriiTheme.success)
                 }
             } else {
                 Text(NSLocalizedString("wishlist.reserved", comment: ""))

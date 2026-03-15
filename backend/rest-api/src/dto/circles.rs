@@ -48,6 +48,10 @@ pub struct CircleResponse {
     pub is_direct: bool,
     pub owner_id: Uuid,
     pub member_count: i64,
+    pub unreserved_item_count: i64,
+    pub last_activity: Option<String>,
+    pub last_activity_at: Option<DateTime<Utc>>,
+    pub member_names: Vec<String>,
     pub created_at: DateTime<Utc>,
 }
 

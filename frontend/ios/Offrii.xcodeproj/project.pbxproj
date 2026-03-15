@@ -8,7 +8,11 @@
 
 /* Begin PBXBuildFile section */
 		0638910913C06604578BE696 /* CircleActivityFeed.swift in Sources */ = {isa = PBXBuildFile; fileRef = FCAB52FA02BBFD4399C16A7E /* CircleActivityFeed.swift */; };
-		0817889119B494866721B449 /* CircleMembersSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = B62EA9A572E752338706A6D3 /* CircleMembersSheet.swift */; };
+		CC00000000000000000000A1 /* CircleListContent.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000A1 /* CircleListContent.swift */; };
+		CC00000000000000000000A2 /* FriendsListContent.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000A2 /* FriendsListContent.swift */; };
+		CC00000000000000000000A3 /* ContactPickerRepresentable.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000A3 /* ContactPickerRepresentable.swift */; };
+		CC00000000000000000000A4 /* InviteContactsSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000A4 /* InviteContactsSheet.swift */; };
+		CC00000000000000000000A5 /* EditCircleSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000A5 /* EditCircleSheet.swift */; };
 		0C40392769386148C2161636 /* AddFriendSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00A795E6C64A02C75791ABC0 /* AddFriendSheet.swift */; };
 		0EB44304D486DC547B3D90E6 /* WishCategoryChip.swift in Sources */ = {isa = PBXBuildFile; fileRef = 692F105AB59AB2CCA6E9CE33 /* WishCategoryChip.swift */; };
 		103EEE9EB1A6E8CF566004BD /* CircleModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D046AFC11C42380646B6BC6 /* CircleModels.swift */; };
@@ -18,7 +22,7 @@
 		23FA9072F7BDBF70352D1FA0 /* ReportWishSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD62B53D9E28CE73279B751F /* ReportWishSheet.swift */; };
 		249F82836FB8810148FEA28A /* AvatarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2CC946E23E60A612A2F1640C /* AvatarView.swift */; };
 		321B1A5FCD094D16E6F36A9C /* WishlistPreviewSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 647F61CB6950B77626E4ACDB /* WishlistPreviewSection.swift */; };
-		3C0C772343E04A68E451260E /* FriendsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00BCE22B8D5B86F102AA3B11 /* FriendsViewModel.swift */; };
+
 		41FB56C5232340B03F9A8E6D /* InviteFriendsSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2226B543C70CC51CA48162BB /* InviteFriendsSheet.swift */; };
 		4AFAE5C6EF7FCFC90F62C36E /* MyOffersSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E908388E47B4C176C2481A3 /* MyOffersSection.swift */; };
 		4B1A9B7C129CB3C414C47584 /* QuickCreateSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6DE51F114489FF7F830B2B0 /* QuickCreateSheet.swift */; };
@@ -110,7 +114,7 @@
 		B30000000000000000000005 /* ProfileViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000005 /* ProfileViewModelTests.swift */; };
 		B30000000000000000000006 /* WishlistViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000006 /* WishlistViewModelTests.swift */; };
 		B40000000000000000000001 /* KeychainAccess in Frameworks */ = {isa = PBXBuildFile; productRef = P10000000000000000000001 /* KeychainAccess */; };
-		B4996C252354EF923F99C08E /* PendingRequestsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A657449D2170CAA14D047289 /* PendingRequestsView.swift */; };
+
 		B747C7A63F234CF4323C22D4 /* ItemDetailSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2CC1BDA19FAA9BEFBA0592C /* ItemDetailSheet.swift */; };
 		BB0000000000000000000001 /* Spacing.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000001 /* Spacing.swift */; };
 		BB0000000000000000000002 /* Radius.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000002 /* Radius.swift */; };
@@ -167,7 +171,7 @@
 
 /* Begin PBXFileReference section */
 		00A795E6C64A02C75791ABC0 /* AddFriendSheet.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AddFriendSheet.swift; sourceTree = "<group>"; };
-		00BCE22B8D5B86F102AA3B11 /* FriendsViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FriendsViewModel.swift; sourceTree = "<group>"; };
+
 		01DC52B5F972089F4E983F51 /* CreateWishViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateWishViewModel.swift; sourceTree = "<group>"; };
 		03A39F274A017FFE24AC4AEF /* ShareToCircleSheet.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ShareToCircleSheet.swift; sourceTree = "<group>"; };
 		0822596525E78FF89DE7A719 /* OffriiGridCard.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OffriiGridCard.swift; sourceTree = "<group>"; };
@@ -277,7 +281,7 @@
 		A40000000000000000000001 /* Offrii.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Offrii.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A40000000000000000000002 /* OffriiTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = OffriiTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		A649953541EA0B166757A25A /* EntraideSegment.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = EntraideSegment.swift; sourceTree = "<group>"; };
-		A657449D2170CAA14D047289 /* PendingRequestsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PendingRequestsView.swift; sourceTree = "<group>"; };
+
 		A8A2D4B4151E04BA716C8555 /* WishDetailSheet.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WishDetailSheet.swift; sourceTree = "<group>"; };
 		AA0000000000000000000001 /* Spacing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Spacing.swift; sourceTree = "<group>"; };
 		AA0000000000000000000002 /* Radius.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Radius.swift; sourceTree = "<group>"; };
@@ -296,7 +300,11 @@
 		AA0000000000000000000015 /* OnboardingTipManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingTipManager.swift; sourceTree = "<group>"; };
 		AA0000000000000000000016 /* ProfileAvatarButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileAvatarButton.swift; sourceTree = "<group>"; };
 		AB746F8E4C0CA62230678B26 /* WishStatusBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WishStatusBadge.swift; sourceTree = "<group>"; };
-		B62EA9A572E752338706A6D3 /* CircleMembersSheet.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CircleMembersSheet.swift; sourceTree = "<group>"; };
+		DD00000000000000000000A1 /* CircleListContent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CircleListContent.swift; sourceTree = "<group>"; };
+		DD00000000000000000000A2 /* FriendsListContent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FriendsListContent.swift; sourceTree = "<group>"; };
+		DD00000000000000000000A3 /* ContactPickerRepresentable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContactPickerRepresentable.swift; sourceTree = "<group>"; };
+		DD00000000000000000000A4 /* InviteContactsSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InviteContactsSheet.swift; sourceTree = "<group>"; };
+		DD00000000000000000000A5 /* EditCircleSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditCircleSheet.swift; sourceTree = "<group>"; };
 		B6DE51F114489FF7F830B2B0 /* QuickCreateSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickCreateSheet.swift; sourceTree = "<group>"; };
 		C1A0908792D02CBC0E9E8344 /* FriendsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FriendsView.swift; sourceTree = "<group>"; };
 		C600B057F0DED66541E7F7BB /* FriendService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FriendService.swift; sourceTree = "<group>"; };
@@ -343,7 +351,11 @@
 				6ACFAD24E9E205201275BF6E /* CircleDetailViewModel.swift */,
 				9CB58C031CA34EDF11A6C318 /* CreateCircleSheet.swift */,
 				2226B543C70CC51CA48162BB /* InviteFriendsSheet.swift */,
-				B62EA9A572E752338706A6D3 /* CircleMembersSheet.swift */,
+				DD00000000000000000000A1 /* CircleListContent.swift */,
+				DD00000000000000000000A2 /* FriendsListContent.swift */,
+				DD00000000000000000000A3 /* ContactPickerRepresentable.swift */,
+				DD00000000000000000000A4 /* InviteContactsSheet.swift */,
+				DD00000000000000000000A5 /* EditCircleSheet.swift */,
 				8B683101570004796AF55C19 /* CircleCardRow.swift */,
 				FCAB52FA02BBFD4399C16A7E /* CircleActivityFeed.swift */,
 			);
@@ -354,9 +366,7 @@
 			isa = PBXGroup;
 			children = (
 				C1A0908792D02CBC0E9E8344 /* FriendsView.swift */,
-				00BCE22B8D5B86F102AA3B11 /* FriendsViewModel.swift */,
 				00A795E6C64A02C75791ABC0 /* AddFriendSheet.swift */,
-				A657449D2170CAA14D047289 /* PendingRequestsView.swift */,
 			);
 			path = Friends;
 			sourceTree = "<group>";
@@ -909,11 +919,13 @@
 				CF0E285AAF14E9E693D4F508 /* CircleDetailViewModel.swift in Sources */,
 				798ABA96D107D82F3F8E6B20 /* CreateCircleSheet.swift in Sources */,
 				41FB56C5232340B03F9A8E6D /* InviteFriendsSheet.swift in Sources */,
-				0817889119B494866721B449 /* CircleMembersSheet.swift in Sources */,
+				CC00000000000000000000A1 /* CircleListContent.swift in Sources */,
+				CC00000000000000000000A2 /* FriendsListContent.swift in Sources */,
+				CC00000000000000000000A3 /* ContactPickerRepresentable.swift in Sources */,
+				CC00000000000000000000A4 /* InviteContactsSheet.swift in Sources */,
+				CC00000000000000000000A5 /* EditCircleSheet.swift in Sources */,
 				E4649986E80031FD18F2016D /* FriendsView.swift in Sources */,
-				3C0C772343E04A68E451260E /* FriendsViewModel.swift in Sources */,
 				0C40392769386148C2161636 /* AddFriendSheet.swift in Sources */,
-				B4996C252354EF923F99C08E /* PendingRequestsView.swift in Sources */,
 				249F82836FB8810148FEA28A /* AvatarView.swift in Sources */,
 				9819CC8EE7964F14CDE7D48F /* StackedAvatarsView.swift in Sources */,
 				9E5A06B3602ED34AAE5C175B /* CommunityWish.swift in Sources */,

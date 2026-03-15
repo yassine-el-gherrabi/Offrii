@@ -15,5 +15,7 @@
 			<string>Google Sign-In</string>
 		</dict>
 	</array>
+	<key>NSContactsUsageDescription</key>
+	<string>Offrii utilise vos contacts pour vous aider à inviter vos proches.</string>
 </dict>
 </plist>

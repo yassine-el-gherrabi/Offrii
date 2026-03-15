@@ -38,7 +38,7 @@ impl traits::CircleRepo for PgCircleRepo {
         delete(&self.pool, id).await
     }
 
-    async fn list_by_member(&self, user_id: Uuid) -> Result<Vec<(Circle, i64, Option<String>)>> {
+    async fn list_by_member(&self, user_id: Uuid) -> Result<Vec<CircleListRow>> {
         list_by_member(&self.pool, user_id).await
     }
 }
@@ -100,25 +100,73 @@ pub(crate) async fn delete(exec: impl PgExecutor<'_>, id: Uuid) -> Result<bool> 
     Ok(result.rows_affected() > 0)
 }
 
-/// Returns circles the user is a member of, with member counts and
-/// (for direct circles) the other member's username.
+/// Row returned by the enriched list query.
+pub struct CircleListRow {
+    pub circle: Circle,
+    pub member_count: i64,
+    pub other_username: Option<String>,
+    pub unreserved_item_count: i64,
+    pub last_activity_at: Option<chrono::DateTime<chrono::Utc>>,
+    pub last_activity_event_type: Option<String>,
+    pub last_activity_actor: Option<String>,
+    pub last_activity_item: Option<String>,
+    pub member_names: Vec<String>,
+}
+
+/// Returns circles the user is a member of, enriched with member counts,
+/// unreserved item count, last activity, and first 3 member names.
 pub(crate) async fn list_by_member(
     exec: impl PgExecutor<'_>,
     user_id: Uuid,
-) -> Result<Vec<(Circle, i64, Option<String>)>> {
+) -> Result<Vec<CircleListRow>> {
     let rows = sqlx::query(
-        "SELECT c.id, c.name, c.owner_id, c.is_direct, c.created_at, \
-                COUNT(cm2.user_id) AS member_count, \
-                ( \
-                    SELECT u.username FROM circle_members cm3 \
-                    JOIN users u ON u.id = cm3.user_id \
-                    WHERE cm3.circle_id = c.id AND cm3.user_id != $1 \
-                    LIMIT 1 \
-                ) AS other_username \
-         FROM circles c \
-         JOIN circle_members cm ON cm.circle_id = c.id AND cm.user_id = $1 \
-         JOIN circle_members cm2 ON cm2.circle_id = c.id \
-         GROUP BY c.id \
+        "SELECT c.id, c.name, c.owner_id, c.is_direct, c.created_at,
+                COUNT(DISTINCT cm2.user_id) AS member_count,
+                (
+                    SELECT u.username FROM circle_members cm3
+                    JOIN users u ON u.id = cm3.user_id
+                    WHERE cm3.circle_id = c.id AND cm3.user_id != $1
+                    LIMIT 1
+                ) AS other_username,
+                COALESCE((
+                    SELECT COUNT(*) FROM circle_items ci
+                    JOIN items i ON i.id = ci.item_id
+                    WHERE ci.circle_id = c.id AND i.claimed_by IS NULL AND i.status = 'active'
+                ), 0) AS unreserved_item_count,
+                (
+                    SELECT ce.created_at FROM circle_events ce
+                    WHERE ce.circle_id = c.id
+                    ORDER BY ce.created_at DESC LIMIT 1
+                ) AS last_activity_at,
+                (
+                    SELECT ce.event_type FROM circle_events ce
+                    WHERE ce.circle_id = c.id
+                    ORDER BY ce.created_at DESC LIMIT 1
+                ) AS last_activity_event_type,
+                (
+                    SELECT COALESCE(u.display_name, u.username) FROM circle_events ce
+                    JOIN users u ON u.id = ce.actor_id
+                    WHERE ce.circle_id = c.id
+                    ORDER BY ce.created_at DESC LIMIT 1
+                ) AS last_activity_actor,
+                (
+                    SELECT i.name FROM circle_events ce
+                    JOIN items i ON i.id = ce.target_item_id
+                    WHERE ce.circle_id = c.id AND ce.target_item_id IS NOT NULL
+                    ORDER BY ce.created_at DESC LIMIT 1
+                ) AS last_activity_item,
+                COALESCE(ARRAY(
+                    SELECT COALESCE(u.display_name, u.username)
+                    FROM circle_members cm4
+                    JOIN users u ON u.id = cm4.user_id
+                    WHERE cm4.circle_id = c.id
+                    ORDER BY cm4.joined_at ASC
+                    LIMIT 3
+                ), ARRAY[]::TEXT[]) AS member_names
+         FROM circles c
+         JOIN circle_members cm ON cm.circle_id = c.id AND cm.user_id = $1
+         JOIN circle_members cm2 ON cm2.circle_id = c.id
+         GROUP BY c.id
          ORDER BY c.created_at DESC",
     )
     .bind(user_id)
@@ -127,17 +175,22 @@ pub(crate) async fn list_by_member(
 
     let results = rows
         .into_iter()
-        .map(|row| {
-            let circle = Circle {
+        .map(|row| CircleListRow {
+            circle: Circle {
                 id: row.get("id"),
                 name: row.get("name"),
                 owner_id: row.get("owner_id"),
                 is_direct: row.get("is_direct"),
                 created_at: row.get("created_at"),
-            };
-            let count: i64 = row.get("member_count");
-            let other_username: Option<String> = row.get("other_username");
-            (circle, count, other_username)
+            },
+            member_count: row.get("member_count"),
+            other_username: row.get("other_username"),
+            unreserved_item_count: row.get("unreserved_item_count"),
+            last_activity_at: row.get("last_activity_at"),
+            last_activity_event_type: row.get("last_activity_event_type"),
+            last_activity_actor: row.get("last_activity_actor"),
+            last_activity_item: row.get("last_activity_item"),
+            member_names: row.get("member_names"),
         })
         .collect();
 

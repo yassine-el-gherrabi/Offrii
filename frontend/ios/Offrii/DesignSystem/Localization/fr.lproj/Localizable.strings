@@ -211,6 +211,36 @@
 "circles.members.leave" = "Quitter le cercle";
 "circles.members.leaveConfirm.title" = "Quitter le cercle ?";
 "circles.members.leaveConfirm.message" = "Vous ne verrez plus les envies partagées dans ce cercle.";
+"circles.search.placeholder" = "Rechercher un cercle...";
+"circles.tab.myCircles" = "Mes Cercles";
+"circles.tab.myFriends" = "Mes Proches";
+"circles.unreservedCount" = "%d dispo";
+"circles.noUnreserved" = "Tout réservé !";
+"circles.lastActivity.none" = "Aucune activité";
+"circles.swipe.leave" = "Quitter";
+"circles.context.edit" = "Modifier";
+"circles.context.shareLink" = "Partager le lien";
+"circles.context.leave" = "Quitter le cercle";
+"circles.context.delete" = "Supprimer";
+"circles.detail.members" = "Membres";
+"circles.detail.inviteMembers" = "Inviter des membres";
+"circles.edit.title" = "Modifier le cercle";
+"circles.edit.save" = "Enregistrer";
+"circles.oneToOne" = "1 à 1";
+"friends.title" = "Mes Proches";
+"friends.emptyTitle" = "Pas encore de proches";
+"friends.emptySubtitle" = "Ajoutez vos proches pour partager vos envies";
+"friends.inviteContacts" = "Inviter depuis mes contacts";
+"friends.shareInviteLink" = "Partager un lien d'invitation";
+"friends.wishCount" = "%d envies";
+"friends.search.placeholder" = "Rechercher un proche...";
+"friends.pending" = "Invitations en attente";
+"friends.sent" = "Demandes envoyées";
+"friends.remove" = "Supprimer";
+"friends.accept" = "Accepter";
+"friends.decline" = "Refuser";
+"friends.cancel" = "Annuler";
+"contacts.permissionMessage" = "Offrii utilise vos contacts pour vous aider à inviter vos proches.";
 
 /* Friends */
 "friends.title" = "Mes amis";

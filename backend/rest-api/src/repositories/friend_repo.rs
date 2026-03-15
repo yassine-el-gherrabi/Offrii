@@ -1,6 +1,8 @@
+use std::collections::HashMap;
+
 use anyhow::Result;
 use async_trait::async_trait;
-use sqlx::{PgExecutor, PgPool};
+use sqlx::{PgExecutor, PgPool, Row};
 use uuid::Uuid;
 
 use crate::models::friend::{FriendRequest, FriendRequestStatus, FriendWithSince, Friendship};
@@ -70,6 +72,13 @@ impl traits::FriendRepo for PgFriendRepo {
         to_user_id: Uuid,
     ) -> Result<Option<FriendRequest>> {
         find_pending_between(&self.pool, from_user_id, to_user_id).await
+    }
+
+    async fn count_active_items_per_user(
+        &self,
+        user_ids: &[Uuid],
+    ) -> Result<std::collections::HashMap<Uuid, i64>> {
+        count_active_items_per_user(&self.pool, user_ids).await
     }
 }
 
@@ -271,4 +280,34 @@ pub(crate) async fn find_pending_between(
     .await?;
 
     Ok(req)
+}
+
+/// Count active items per user (for friend list badges).
+pub(crate) async fn count_active_items_per_user(
+    exec: impl PgExecutor<'_>,
+    user_ids: &[Uuid],
+) -> Result<HashMap<Uuid, i64>> {
+    if user_ids.is_empty() {
+        return Ok(HashMap::new());
+    }
+    let rows = sqlx::query(
+        "SELECT user_id, COUNT(*) AS cnt \
+         FROM items \
+         WHERE user_id = ANY($1) AND status = 'active' \
+         GROUP BY user_id",
+    )
+    .bind(user_ids)
+    .fetch_all(exec)
+    .await?;
+
+    let map = rows
+        .into_iter()
+        .map(|row| {
+            let uid: Uuid = row.get("user_id");
+            let cnt: i64 = row.get("cnt");
+            (uid, cnt)
+        })
+        .collect();
+
+    Ok(map)
 }

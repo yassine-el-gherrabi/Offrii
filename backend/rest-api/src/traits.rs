@@ -424,6 +424,11 @@ pub trait FriendRepo: Send + Sync {
         from_user_id: Uuid,
         to_user_id: Uuid,
     ) -> Result<Option<FriendRequest>>;
+
+    async fn count_active_items_per_user(
+        &self,
+        user_ids: &[Uuid],
+    ) -> Result<std::collections::HashMap<Uuid, i64>>;
 }
 
 #[async_trait]
@@ -477,8 +482,11 @@ pub trait CircleRepo: Send + Sync {
 
     async fn delete(&self, id: Uuid) -> Result<bool>;
 
-    /// Returns (Circle, member_count) pairs, plus optional other_username for direct circles.
-    async fn list_by_member(&self, user_id: Uuid) -> Result<Vec<(Circle, i64, Option<String>)>>;
+    /// Returns enriched circle rows for the list view.
+    async fn list_by_member(
+        &self,
+        user_id: Uuid,
+    ) -> Result<Vec<crate::repositories::circle_repo::CircleListRow>>;
 }
 
 #[async_trait]

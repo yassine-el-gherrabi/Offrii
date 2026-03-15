@@ -45,6 +45,7 @@ pub struct FriendResponse {
     pub username: String,
     pub display_name: Option<String>,
     pub since: DateTime<Utc>,
+    pub shared_item_count: i64,
 }
 
 #[derive(Debug, Clone, Serialize)]

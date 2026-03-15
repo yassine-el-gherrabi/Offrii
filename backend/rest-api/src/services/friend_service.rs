@@ -338,6 +338,7 @@ impl traits::FriendService for PgFriendService {
             username: friend_user.username,
             display_name: friend_user.display_name,
             since: friendship.created_at,
+            shared_item_count: 0,
         })
     }
 
@@ -378,13 +379,25 @@ impl traits::FriendService for PgFriendService {
             .await
             .map_err(AppError::Internal)?;
 
+        // Count active items per friend (shared via common circles)
+        let friend_ids: Vec<Uuid> = friends.iter().map(|f| f.user_id).collect();
+        let item_counts = self
+            .friend_repo
+            .count_active_items_per_user(&friend_ids)
+            .await
+            .unwrap_or_default();
+
         Ok(friends
             .into_iter()
-            .map(|f| FriendResponse {
-                user_id: f.user_id,
-                username: f.username,
-                display_name: f.display_name,
-                since: f.since,
+            .map(|f| {
+                let count = item_counts.get(&f.user_id).copied().unwrap_or(0);
+                FriendResponse {
+                    user_id: f.user_id,
+                    username: f.username,
+                    display_name: f.display_name,
+                    since: f.since,
+                    shared_item_count: count,
+                }
             })
             .collect())
     }

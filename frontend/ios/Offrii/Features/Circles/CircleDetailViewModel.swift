@@ -7,38 +7,20 @@ final class CircleDetailViewModel {
     var items: [CircleItemResponse] = []
     var feed: [CircleEventResponse] = []
     var selectedTab: DetailTab = .items
+    var selectedMemberFilter: UUID?
     var isLoading = false
     var error: String?
+    var currentUserId: UUID?
 
     enum DetailTab: String, CaseIterable {
         case items
+        case members
         case activity
     }
 
-    var currentUserId: UUID?
-
-    /// Items grouped by member: current user's items first, then others.
-    var itemsByMember: [(member: CircleMember, items: [CircleItemResponse])] {
-        guard let detail else { return [] }
-        let grouped = Dictionary(grouping: items) { $0.sharedBy }
-        var result: [(member: CircleMember, items: [CircleItemResponse])] = []
-
-        // Current user first
-        if let userId = currentUserId,
-           let member = detail.members.first(where: { $0.userId == userId }),
-           let memberItems = grouped[userId], !memberItems.isEmpty {
-            result.append((member: member, items: memberItems))
-        }
-
-        // Other members
-        for member in detail.members {
-            if member.userId == currentUserId { continue }
-            if let memberItems = grouped[member.userId], !memberItems.isEmpty {
-                result.append((member: member, items: memberItems))
-            }
-        }
-
-        return result
+    var filteredItems: [CircleItemResponse] {
+        guard let memberId = selectedMemberFilter else { return items }
+        return items.filter { $0.sharedBy == memberId }
     }
 
     func loadDetail(circleId: UUID) async {
@@ -91,6 +73,17 @@ final class CircleDetailViewModel {
             detail?.members.removeAll { $0.userId == userId }
         } catch {
             self.error = error.localizedDescription
+        }
+    }
+
+    func leaveCircle(circleId: UUID) async -> Bool {
+        guard let userId = currentUserId else { return false }
+        do {
+            try await CircleService.shared.removeMember(circleId: circleId, userId: userId)
+            return true
+        } catch {
+            self.error = error.localizedDescription
+            return false
         }
     }
 }
