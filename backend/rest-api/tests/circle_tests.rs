@@ -2083,3 +2083,190 @@ async fn purchased_item_still_visible_in_circle_with_status() {
     );
     assert_eq!(watch.unwrap()["status"], "purchased");
 }
+
+// ═══════════════════════════════════════════════════════════════════
+// Additional edge case tests
+// ═══════════════════════════════════════════════════════════════════
+
+#[tokio::test]
+async fn feed_shows_unclaim_event_to_non_owner() {
+    let app = TestApp::new().await;
+    let (alice, _) = setup_user_with_id(&app, "alice-uncfeed@test.com").await;
+    let (bob, _) = setup_user_with_id(&app, "bob-uncfeed@test.com").await;
+    let (charlie, _) = setup_user_with_id(&app, "charlie-uncfeed@test.com").await;
+
+    let cid = create_circle(&app, &alice, "Unclaim Feed Visible").await;
+    invite_and_join(&app, &cid, &alice, &bob).await;
+    invite_and_join(&app, &cid, &alice, &charlie).await;
+
+    let item = app
+        .create_item(&alice, &serde_json::json!({ "name": "Headset" }))
+        .await;
+    let item_id = item["id"].as_str().unwrap();
+
+    app.post_json_with_auth(
+        &format!("/circles/{cid}/items"),
+        &serde_json::json!({ "item_id": item_id }),
+        &alice,
+    )
+    .await;
+
+    // Bob claims then unclaims
+    app.post_with_auth(&format!("/items/{item_id}/claim"), &bob)
+        .await;
+    app.delete_with_auth(&format!("/items/{item_id}/claim"), &bob)
+        .await;
+
+    // Charlie (non-owner, non-claimer) should see the unclaim event
+    let (_, feed) = app
+        .get_with_auth(&format!("/circles/{cid}/feed"), &charlie)
+        .await;
+    let unclaim_events: Vec<&serde_json::Value> = feed["data"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter(|e| e["event_type"] == "item_unclaimed")
+        .collect();
+    assert!(
+        !unclaim_events.is_empty(),
+        "non-owner should see unclaim events"
+    );
+}
+
+#[tokio::test]
+async fn mark_received_unclaimed_item_no_received_event_for_claimer() {
+    let app = TestApp::new().await;
+    let (alice, _) = setup_user_with_id(&app, "alice-selfbuy@test.com").await;
+    let (bob, _) = setup_user_with_id(&app, "bob-selfbuy@test.com").await;
+
+    let cid = create_circle(&app, &alice, "Self Buy").await;
+    invite_and_join(&app, &cid, &alice, &bob).await;
+
+    // Alice creates and shares but nobody claims
+    let item = app
+        .create_item(&alice, &serde_json::json!({ "name": "Self Purchase" }))
+        .await;
+    let item_id = item["id"].as_str().unwrap();
+
+    app.post_json_with_auth(
+        &format!("/circles/{cid}/items"),
+        &serde_json::json!({ "item_id": item_id }),
+        &alice,
+    )
+    .await;
+
+    // Alice marks as received (self-purchase, no claimer)
+    let (status, _) = app
+        .put_json_with_auth(
+            &format!("/items/{item_id}"),
+            &serde_json::json!({ "status": "purchased" }),
+            &alice,
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK);
+
+    // Feed should still have item_received event (visible to Bob)
+    let (_, feed) = app
+        .get_with_auth(&format!("/circles/{cid}/feed"), &bob)
+        .await;
+    let received = feed["data"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter(|e| e["event_type"] == "item_received")
+        .collect::<Vec<_>>();
+    assert!(
+        !received.is_empty(),
+        "item_received event should exist even for self-purchase"
+    );
+}
+
+#[tokio::test]
+async fn deleted_claimed_item_disappears_from_circle() {
+    let app = TestApp::new().await;
+    let (alice, _) = setup_user_with_id(&app, "alice-delclaim@test.com").await;
+    let (bob, _) = setup_user_with_id(&app, "bob-delclaim@test.com").await;
+
+    let cid = create_circle(&app, &alice, "Delete Claimed").await;
+    invite_and_join(&app, &cid, &alice, &bob).await;
+
+    let item = app
+        .create_item(&alice, &serde_json::json!({ "name": "DeleteMe" }))
+        .await;
+    let item_id = item["id"].as_str().unwrap();
+
+    app.post_json_with_auth(
+        &format!("/circles/{cid}/items"),
+        &serde_json::json!({ "item_id": item_id }),
+        &alice,
+    )
+    .await;
+
+    // Bob claims
+    app.post_with_auth(&format!("/items/{item_id}/claim"), &bob)
+        .await;
+
+    // Verify item is in circle
+    let (_, items_before) = app
+        .get_with_auth(&format!("/circles/{cid}/items"), &bob)
+        .await;
+    assert!(
+        items_before
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|i| i["name"] == "DeleteMe"),
+        "item should be in circle before delete"
+    );
+
+    // Alice deletes the item
+    let (status, _) = app
+        .delete_with_auth(&format!("/items/{item_id}"), &alice)
+        .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+
+    // Item should disappear from circle
+    let (_, items_after) = app
+        .get_with_auth(&format!("/circles/{cid}/items"), &bob)
+        .await;
+    assert!(
+        !items_after
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|i| i["name"] == "DeleteMe"),
+        "deleted item should disappear from circle"
+    );
+}
+
+#[tokio::test]
+async fn double_mark_received_returns_409() {
+    let app = TestApp::new().await;
+    let (alice, _) = setup_user_with_id(&app, "alice-double@test.com").await;
+
+    let item = app
+        .create_item(&alice, &serde_json::json!({ "name": "DoubleRcv" }))
+        .await;
+    let item_id = item["id"].as_str().unwrap();
+
+    // First mark
+    let (status, _) = app
+        .put_json_with_auth(
+            &format!("/items/{item_id}"),
+            &serde_json::json!({ "status": "purchased" }),
+            &alice,
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK);
+
+    // Second mark — should 409
+    let (status, resp) = app
+        .put_json_with_auth(
+            &format!("/items/{item_id}"),
+            &serde_json::json!({ "status": "purchased" }),
+            &alice,
+        )
+        .await;
+    assert_eq!(status, StatusCode::CONFLICT);
+    assert_error(&resp, "CONFLICT");
+}
