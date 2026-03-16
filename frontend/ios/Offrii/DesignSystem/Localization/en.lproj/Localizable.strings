@@ -237,7 +237,7 @@
 "circles.detail.unclaim" = "Release";
 "circles.detail.received" = "Received";
 "circles.event.itemReceived" = "%@ received %@";
-"wishlist.receivedGift" = "🎉 I received this gift!";
+"wishlist.receivedGift" = "I received this gift!";
 "wishlist.unarchive" = "Move back to wishes";
 "circles.edit.title" = "Edit circle";
 "circles.edit.save" = "Save";
