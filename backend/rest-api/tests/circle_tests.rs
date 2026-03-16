@@ -1415,24 +1415,21 @@ async fn feed_anti_spoiler_hides_claimer_from_item_owner() {
         .await;
     assert_eq!(claim_status, StatusCode::NO_CONTENT);
 
-    // Alice views feed — item_claimed event should hide actor
+    // Alice views feed — item_claimed event should be completely hidden from the owner
     let (status, feed) = app
         .get_with_auth(&format!("/circles/{circle_id}/feed"), &alice)
         .await;
     assert_eq!(status, StatusCode::OK);
 
     let events = feed["data"].as_array().unwrap();
-    let claim_event = events
+    let claim_events: Vec<_> = events
         .iter()
-        .find(|e| e["event_type"] == "item_claimed")
-        .expect("should have item_claimed event");
-
+        .filter(|e| e["event_type"] == "item_claimed")
+        .collect();
     assert!(
-        claim_event["actor_id"].is_null(),
-        "actor_id must be hidden from item owner"
+        claim_events.is_empty(),
+        "item_claimed events must be fully hidden from item owner"
     );
-    assert_eq!(claim_event["actor_username"], "Quelqu'un");
-    assert_eq!(claim_event["target_item_id"], item_id);
 
     // Bob views the same feed — he SHOULD see the actor (he is the claimer, not the owner)
     let (_, bob_feed) = app
@@ -1448,7 +1445,6 @@ async fn feed_anti_spoiler_hides_claimer_from_item_owner() {
         "non-owner should see actor_id"
     );
     assert!(bob_claim_event["actor_username"].is_string());
-    assert_ne!(bob_claim_event["actor_username"], "Quelqu'un");
 }
 
 // ── Multi-circle item ──────────────────────────────────────────────
