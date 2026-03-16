@@ -119,6 +119,16 @@ async fn update_item(
         tracing::warn!(error = %e, "on_item_received failed (non-fatal)");
     }
 
+    // If status changed back to "active" (unarchive), notify claimer
+    if req.status.as_deref() == Some("active")
+        && let Err(e) = state
+            .circles
+            .on_item_unarchived(id, auth_user.user_id)
+            .await
+    {
+        tracing::warn!(error = %e, "on_item_unarchived failed (non-fatal)");
+    }
+
     Ok(Json(response))
 }
 

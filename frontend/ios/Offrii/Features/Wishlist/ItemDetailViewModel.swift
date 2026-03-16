@@ -64,6 +64,20 @@ final class ItemDetailViewModel {
         }
     }
 
+    func unarchive() async -> Bool {
+        guard let item else { return false }
+        isUpdating = true
+        do {
+            self.item = try await ItemService.shared.updateItem(id: item.id, status: "active")
+            isUpdating = false
+            return true
+        } catch {
+            self.error = error.localizedDescription
+            isUpdating = false
+            return false
+        }
+    }
+
     func deleteItem() async -> Bool {
         guard let item else { return false }
         do {

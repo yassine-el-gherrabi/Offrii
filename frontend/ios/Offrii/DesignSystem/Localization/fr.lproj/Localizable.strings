@@ -238,6 +238,7 @@
 "circles.detail.received" = "Reçu";
 "circles.event.itemReceived" = "%@ a bien reçu %@";
 "wishlist.receivedGift" = "🎉 J'ai reçu ce cadeau !";
+"wishlist.unarchive" = "Remettre dans mes envies";
 "circles.edit.title" = "Modifier le cercle";
 "circles.edit.save" = "Enregistrer";
 "circles.oneToOne" = "1 à 1";

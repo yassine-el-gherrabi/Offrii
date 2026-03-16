@@ -183,6 +183,28 @@ struct ItemDetailSheet: View {
                                         }
                                     }
 
+                                    if item.isPurchased {
+                                        Button {
+                                            Task {
+                                                if await viewModel.unarchive() {
+                                                    dismiss()
+                                                }
+                                            }
+                                        } label: {
+                                            HStack(spacing: OffriiTheme.spacingXS) {
+                                                Image(systemName: "arrow.uturn.backward")
+                                                Text(NSLocalizedString("wishlist.unarchive", comment: ""))
+                                            }
+                                            .font(OffriiTypography.subheadline)
+                                            .fontWeight(.medium)
+                                            .foregroundColor(OffriiTheme.textSecondary)
+                                            .frame(maxWidth: .infinity)
+                                            .padding(.vertical, OffriiTheme.spacingSM)
+                                            .background(OffriiTheme.textMuted.opacity(0.1))
+                                            .cornerRadius(OffriiTheme.cornerRadiusSM)
+                                        }
+                                    }
+
                                     HStack(spacing: OffriiTheme.spacingSM) {
                                         Button {
                                             showEdit = true

@@ -1276,6 +1276,52 @@ impl traits::CircleService for PgCircleService {
     }
 
     #[tracing::instrument(skip(self))]
+    async fn on_item_unarchived(&self, item_id: Uuid, owner_id: Uuid) -> Result<(), AppError> {
+        // Notify the claimer that the item is back in the wishlist
+        let item = self
+            .item_repo
+            .find_by_id_any_user(item_id)
+            .await
+            .ok()
+            .flatten();
+        if let Some(ref item) = item
+            && let Some(claimer_id) = item.claimed_by
+        {
+            let owner = self.user_repo.find_by_id(owner_id).await.ok().flatten();
+            let owner_name = owner
+                .as_ref()
+                .and_then(|u| u.display_name.clone())
+                .unwrap_or_else(|| {
+                    owner
+                        .as_ref()
+                        .map(|u| u.username.clone())
+                        .unwrap_or_default()
+                });
+
+            self.notify_user(
+                claimer_id,
+                "Envie de retour".to_string(),
+                format!(
+                    "{} est de retour dans les envies de {}",
+                    item.name, owner_name
+                ),
+            );
+        }
+
+        // Bump circle versions for all circles this item is shared in
+        let circle_ids = self
+            .circle_item_repo
+            .list_circles_for_item(item_id)
+            .await
+            .map_err(AppError::Internal)?;
+        for circle_id in &circle_ids {
+            self.bump_circle_version(*circle_id);
+        }
+
+        Ok(())
+    }
+
+    #[tracing::instrument(skip(self))]
     async fn get_feed(
         &self,
         circle_id: Uuid,

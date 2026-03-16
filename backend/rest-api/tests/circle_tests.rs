@@ -2270,3 +2270,35 @@ async fn double_mark_received_returns_409() {
     assert_eq!(status, StatusCode::CONFLICT);
     assert_error(&resp, "CONFLICT");
 }
+
+#[tokio::test]
+async fn unarchive_item_returns_to_active() {
+    let app = TestApp::new().await;
+    let (alice, _) = setup_user_with_id(&app, "alice-unarch@test.com").await;
+
+    let item = app
+        .create_item(&alice, &serde_json::json!({ "name": "Unarchive Test" }))
+        .await;
+    let item_id = item["id"].as_str().unwrap();
+
+    // Mark purchased
+    let (status, _) = app
+        .put_json_with_auth(
+            &format!("/items/{item_id}"),
+            &serde_json::json!({ "status": "purchased" }),
+            &alice,
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK);
+
+    // Unarchive back to active
+    let (status, resp) = app
+        .put_json_with_auth(
+            &format!("/items/{item_id}"),
+            &serde_json::json!({ "status": "active" }),
+            &alice,
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(resp["status"], "active");
+}

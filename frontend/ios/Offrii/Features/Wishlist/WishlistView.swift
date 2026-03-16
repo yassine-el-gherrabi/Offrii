@@ -1,5 +1,6 @@
 import SwiftUI
 
+// swiftlint:disable:next type_body_length
 struct WishlistView: View {
     @Environment(AuthManager.self) private var authManager
     @Environment(OnboardingTipManager.self) private var tipManager
@@ -365,7 +366,20 @@ struct WishlistView: View {
                                 Button {
                                     Task { await viewModel.markPurchased(item) }
                                 } label: {
-                                    Label(NSLocalizedString("wishlist.markReceived", comment: ""), systemImage: "checkmark.circle")
+                                    Label(
+                                        item.isClaimed
+                                            ? NSLocalizedString("wishlist.receivedGift", comment: "")
+                                            : NSLocalizedString("wishlist.markReceived", comment: ""),
+                                        systemImage: "checkmark.circle"
+                                    )
+                                }
+                            }
+
+                            if item.isPurchased {
+                                Button {
+                                    Task { await viewModel.unarchiveItem(item) }
+                                } label: {
+                                    Label(NSLocalizedString("wishlist.unarchive", comment: ""), systemImage: "arrow.uturn.backward")
                                 }
                             }
 

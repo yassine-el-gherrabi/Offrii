@@ -170,6 +170,16 @@ final class WishlistViewModel {
         }
     }
 
+    func unarchiveItem(_ item: Item) async {
+        do {
+            _ = try await ItemService.shared.updateItem(id: item.id, status: "active")
+            items.removeAll { $0.id == item.id }
+            totalItems -= 1
+        } catch {
+            self.error = error.localizedDescription
+        }
+    }
+
     // MARK: - Batch Delete
 
     func toggleSelectMode() {
