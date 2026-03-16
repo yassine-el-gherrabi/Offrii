@@ -50,7 +50,21 @@ struct CircleCardRow: View {
 
     @ViewBuilder
     private var avatarSection: some View {
-        if circle.isDirect {
+        if let imageUrl = circle.imageUrl, let url = URL(string: imageUrl) {
+            // Circle has a custom image
+            AsyncImage(url: url) { phase in
+                switch phase {
+                case .success(let image):
+                    image
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .frame(width: 44, height: 44)
+                        .clipShape(Circle())
+                default:
+                    AvatarView(circle.name, size: .medium)
+                }
+            }
+        } else if circle.isDirect {
             // Single avatar for 1:1
             AvatarView(
                 circle.memberNames.first ?? circle.name,

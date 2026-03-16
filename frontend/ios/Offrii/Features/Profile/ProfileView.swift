@@ -1,3 +1,4 @@
+import PhotosUI
 import SwiftUI
 
 struct ProfileView: View {
@@ -5,6 +6,8 @@ struct ProfileView: View {
     @Environment(OnboardingTipManager.self) private var tipManager
     @State private var viewModel = ProfileViewModel()
     @State private var profileProgress = ProfileProgress()
+    @State private var selectedAvatarImage: UIImage?
+    @State private var isUploadingAvatar = false
     var body: some View {
         ZStack {
             OffriiTheme.background.ignoresSafeArea()
@@ -21,7 +24,43 @@ struct ProfileView: View {
 
                         // Avatar overlapping the header bottom
                         VStack(spacing: OffriiTheme.spacingSM) {
-                            AvatarView(viewModel.displayName, size: .xl)
+                            ZStack(alignment: .bottomTrailing) {
+                                if let selected = selectedAvatarImage {
+                                    Image(uiImage: selected)
+                                        .resizable()
+                                        .aspectRatio(contentMode: .fill)
+                                        .frame(width: 96, height: 96)
+                                        .clipShape(Circle())
+                                } else {
+                                    AvatarView(
+                                        viewModel.displayName,
+                                        size: .xl,
+                                        url: viewModel.avatarUrl
+                                    )
+                                }
+
+                                PhotosPicker(
+                                    selection: Binding(
+                                        get: { nil },
+                                        set: { item in
+                                            if let item {
+                                                Task { await loadAvatarImage(item) }
+                                            }
+                                        }
+                                    ),
+                                    matching: .images
+                                ) {
+                                    Image(systemName: "camera.fill")
+                                        .font(.system(size: 12))
+                                        .foregroundColor(.white)
+                                        .frame(width: 28, height: 28)
+                                        .background(OffriiTheme.primary)
+                                        .clipShape(Circle())
+                                        .overlay(
+                                            Circle().strokeBorder(.white, lineWidth: 2)
+                                        )
+                                }
+                            }
 
                             if !viewModel.username.isEmpty {
                                 Text("@\(viewModel.username)")
@@ -284,5 +323,34 @@ struct ProfileView: View {
                 .foregroundColor(OffriiTheme.textMuted)
         }
         .padding(.vertical, OffriiTheme.spacingSM)
+    }
+
+    // MARK: - Avatar Upload
+
+    private func loadAvatarImage(_ item: PhotosPickerItem) async {
+        guard let data = try? await item.loadTransferable(type: Data.self),
+              let image = UIImage(data: data) else { return }
+        selectedAvatarImage = image
+        await uploadAvatar(image)
+    }
+
+    private func uploadAvatar(_ image: UIImage) async {
+        guard let data = image.compressForUpload() else { return }
+        isUploadingAvatar = true
+        do {
+            let url = try await APIClient.shared.uploadImage(data, type: "avatar")
+            let body = UpdateProfileBody(
+                displayName: nil, username: nil, avatarUrl: url,
+                reminderFreq: nil, reminderTime: nil, timezone: nil, locale: nil
+            )
+            _ = try await APIClient.shared.request(.updateProfile(body)) as UserProfileResponse
+            viewModel.avatarUrlString = url
+            try? await authManager.loadCurrentUser()
+            selectedAvatarImage = nil
+        } catch {
+            // Revert selection on error
+            selectedAvatarImage = nil
+        }
+        isUploadingAvatar = false
     }
 }

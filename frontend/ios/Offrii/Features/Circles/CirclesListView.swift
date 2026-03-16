@@ -147,7 +147,8 @@ struct CirclesListView: View {
                     ProfileAvatarButton(
                         initials: ProfileAvatarButton.initials(
                             from: authManager.currentUser?.displayName
-                        )
+                        ),
+                        avatarUrl: authManager.currentUser?.avatarUrl.flatMap { URL(string: $0) }
                     )
                 }
             }

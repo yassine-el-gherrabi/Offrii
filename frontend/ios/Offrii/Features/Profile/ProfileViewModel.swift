@@ -6,10 +6,16 @@ final class ProfileViewModel {
     var displayName = ""
     var username = ""
     var email = ""
+    var avatarUrlString: String?
     var reminderFreq = "never"
     var reminderTime = "09:00"
     var isLoggingOut = false
     var loadError: String?
+
+    var avatarUrl: URL? {
+        guard let str = avatarUrlString else { return nil }
+        return URL(string: str)
+    }
 
     var initials: String {
         let name = displayName.isEmpty ? email : displayName
@@ -36,6 +42,7 @@ final class ProfileViewModel {
             displayName = profile.displayName ?? ""
             username = profile.username
             email = profile.email
+            avatarUrlString = profile.avatarUrl
             reminderFreq = profile.reminderFreq ?? "never"
             reminderTime = profile.reminderTime ?? "09:00"
         } catch {

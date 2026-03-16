@@ -39,7 +39,8 @@ struct EntraideView: View {
                 ) {
                     NavigationLink(destination: ProfileView()) {
                         ProfileAvatarButton(
-                            initials: ProfileAvatarButton.initials(from: authManager.currentUser?.displayName)
+                            initials: ProfileAvatarButton.initials(from: authManager.currentUser?.displayName),
+                            avatarUrl: authManager.currentUser?.avatarUrl.flatMap { URL(string: $0) }
                         )
                     }
                 }

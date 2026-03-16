@@ -4,15 +4,23 @@ struct EditCircleSheet: View {
     @Environment(\.dismiss) private var dismiss
     let circleId: UUID
     let currentName: String
+    let currentImageUrl: String?
     let onSaved: () -> Void
 
     @State private var name: String
+    @State private var selectedImage: UIImage?
     @State private var isSaving = false
     @State private var error: String?
 
-    init(circleId: UUID, currentName: String, onSaved: @escaping () -> Void) {
+    init(
+        circleId: UUID,
+        currentName: String,
+        currentImageUrl: String? = nil,
+        onSaved: @escaping () -> Void
+    ) {
         self.circleId = circleId
         self.currentName = currentName
+        self.currentImageUrl = currentImageUrl
         self.onSaved = onSaved
         _name = State(initialValue: currentName)
     }
@@ -23,10 +31,19 @@ struct EditCircleSheet: View {
                 OffriiTheme.background.ignoresSafeArea()
 
                 VStack(spacing: OffriiTheme.spacingLG) {
+                    // Circle image
+                    OffriiImagePicker(
+                        selectedImage: $selectedImage,
+                        existingImageUrl: currentImageUrl.flatMap { URL(string: $0) }
+                    )
+
                     OffriiTextField(
                         label: NSLocalizedString("circles.createName", comment: ""),
                         text: $name,
-                        placeholder: NSLocalizedString("circles.createNamePlaceholder", comment: ""),
+                        placeholder: NSLocalizedString(
+                            "circles.createNamePlaceholder",
+                            comment: ""
+                        ),
                         errorMessage: error
                     )
 
@@ -61,7 +78,23 @@ struct EditCircleSheet: View {
 
         isSaving = true
         error = nil
+
+        // Upload image if selected (stored for future use)
+        var uploadedImageUrl: String?
+        if let image = selectedImage {
+            if let data = image.compressForUpload() {
+                do {
+                    uploadedImageUrl = try await APIClient.shared.uploadImage(data, type: "circle")
+                } catch {
+                    self.error = error.localizedDescription
+                    isSaving = false
+                    return
+                }
+            }
+        }
+
         do {
+            _ = uploadedImageUrl // TODO: pass to updateCircle when backend supports it in response
             _ = try await CircleService.shared.updateCircle(id: circleId, name: trimmed)
             onSaved()
             dismiss()

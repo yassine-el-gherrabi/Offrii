@@ -55,7 +55,8 @@ struct CircleDetailView: View {
             if let name = viewModel.detail?.name {
                 EditCircleSheet(
                     circleId: circleId,
-                    currentName: name
+                    currentName: name,
+                    currentImageUrl: viewModel.detail?.imageUrl
                 ) {
                     Task { await reload() }
                 }
