@@ -6,7 +6,7 @@ use uuid::Uuid;
 use crate::models::Circle;
 use crate::traits;
 
-const CIRCLE_COLS: &str = "id, name, owner_id, is_direct, created_at";
+const CIRCLE_COLS: &str = "id, name, owner_id, is_direct, image_url, created_at";
 
 // ── Concrete implementation ──────────────────────────────────────────
 
@@ -120,7 +120,7 @@ pub(crate) async fn list_by_member(
     user_id: Uuid,
 ) -> Result<Vec<CircleListRow>> {
     let rows = sqlx::query(
-        "SELECT c.id, c.name, c.owner_id, c.is_direct, c.created_at,
+        "SELECT c.id, c.name, c.owner_id, c.is_direct, c.image_url, c.created_at,
                 COUNT(DISTINCT cm2.user_id) AS member_count,
                 (
                     SELECT COALESCE(u.display_name, u.username) FROM circle_members cm3
@@ -184,6 +184,7 @@ pub(crate) async fn list_by_member(
                 name: row.get("name"),
                 owner_id: row.get("owner_id"),
                 is_direct: row.get("is_direct"),
+                image_url: row.get("image_url"),
                 created_at: row.get("created_at"),
             },
             member_count: row.get("member_count"),

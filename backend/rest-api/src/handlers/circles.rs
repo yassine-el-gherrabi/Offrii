@@ -83,9 +83,10 @@ async fn update_circle(
     Json(req): Json<UpdateCircleRequest>,
 ) -> Result<Json<CircleResponse>, AppError> {
     validate_request(&req)?;
+    let name = req.name.as_deref().unwrap_or("");
     let response = state
         .circles
-        .update_circle(id, auth_user.user_id, &req.name)
+        .update_circle(id, auth_user.user_id, name)
         .await?;
     Ok(Json(response))
 }

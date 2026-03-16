@@ -1052,7 +1052,13 @@ pub trait WishMessageService: Send + Sync {
 #[async_trait]
 pub trait UploadService: Send + Sync {
     /// Upload an image, process it, store in R2, return the public CDN URL.
-    async fn upload_image(&self, data: &[u8], content_type: &str) -> Result<String, AppError>;
+    /// `upload_type`: "item" (800px), "avatar" (400px square), "circle" (400px square)
+    async fn upload_image(
+        &self,
+        data: &[u8],
+        content_type: &str,
+        upload_type: &str,
+    ) -> Result<String, AppError>;
 
     /// Delete an image from R2 by its public URL.
     async fn delete_image(&self, url: &str) -> Result<(), AppError>;

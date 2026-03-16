@@ -8,6 +8,7 @@ pub struct Circle {
     pub name: Option<String>,
     pub owner_id: Uuid,
     pub is_direct: bool,
+    pub image_url: Option<String>,
     pub created_at: DateTime<Utc>,
 }
 

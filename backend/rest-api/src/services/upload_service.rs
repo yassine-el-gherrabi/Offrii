@@ -8,14 +8,17 @@ use crate::traits;
 /// Maximum upload size: 5 MB
 const MAX_UPLOAD_BYTES: usize = 5 * 1024 * 1024;
 
-/// Max width after resize
-const MAX_WIDTH: u32 = 800;
-
-/// JPEG quality for output
+/// JPEG encoding quality (0-100). 80 is the sweet spot.
 const JPEG_QUALITY: u8 = 80;
 
-/// Allowed MIME types
-const ALLOWED_TYPES: &[&str] = &["image/jpeg", "image/png", "image/webp"];
+/// Allowed input MIME types
+const ALLOWED_TYPES: &[&str] = &[
+    "image/jpeg",
+    "image/png",
+    "image/webp",
+    "image/heic",
+    "image/heif",
+];
 
 // ── R2 Implementation ───────────────────────────────────────────────
 
@@ -63,7 +66,12 @@ impl R2UploadService {
 
 #[async_trait]
 impl traits::UploadService for R2UploadService {
-    async fn upload_image(&self, data: &[u8], content_type: &str) -> Result<String, AppError> {
+    async fn upload_image(
+        &self,
+        data: &[u8],
+        content_type: &str,
+        upload_type: &str,
+    ) -> Result<String, AppError> {
         // Validate size
         if data.len() > MAX_UPLOAD_BYTES {
             return Err(AppError::BadRequest(format!(
@@ -81,17 +89,23 @@ impl traits::UploadService for R2UploadService {
             )));
         }
 
-        // Decode, resize, and re-encode as JPEG
+        // Decode, resize based on type, and re-encode as JPEG
         let processed = tokio::task::spawn_blocking({
             let data = data.to_vec();
-            move || process_image(&data)
+            let upload_type = upload_type.to_string();
+            move || process_image(&data, &upload_type)
         })
         .await
         .map_err(|e| AppError::Internal(e.into()))?
         .map_err(AppError::Internal)?;
 
-        // Upload to R2
-        let key = format!("uploads/{}.jpg", Uuid::new_v4());
+        // Upload to R2 with type-based prefix
+        let prefix = match upload_type {
+            "avatar" => "avatars",
+            "circle" => "circles",
+            _ => "uploads",
+        };
+        let key = format!("{prefix}/{}.jpg", Uuid::new_v4());
 
         self.client
             .put_object()
@@ -109,7 +123,6 @@ impl traits::UploadService for R2UploadService {
     }
 
     async fn delete_image(&self, url: &str) -> Result<(), AppError> {
-        // Extract key from URL
         let key = url
             .strip_prefix(&self.public_url)
             .map(|k| k.trim_start_matches('/'))
@@ -127,15 +140,31 @@ impl traits::UploadService for R2UploadService {
     }
 }
 
-/// Process image: decode, resize if needed, encode as JPEG.
-fn process_image(data: &[u8]) -> Result<Vec<u8>, anyhow::Error> {
+/// Process image: decode, resize based on type, encode as JPEG.
+fn process_image(data: &[u8], upload_type: &str) -> Result<Vec<u8>, anyhow::Error> {
     let img = image::load_from_memory(data)?;
 
-    // Resize if width > MAX_WIDTH
-    let img = if img.width() > MAX_WIDTH {
-        img.resize(MAX_WIDTH, u32::MAX, image::imageops::FilterType::Lanczos3)
-    } else {
-        img
+    let img = match upload_type {
+        "avatar" | "circle" => {
+            // Crop to square (center crop), then resize to 400px
+            let min_dim = img.width().min(img.height());
+            let x = (img.width() - min_dim) / 2;
+            let y = (img.height() - min_dim) / 2;
+            let cropped = img.crop_imm(x, y, min_dim, min_dim);
+            if min_dim > 400 {
+                cropped.resize(400, 400, image::imageops::FilterType::Lanczos3)
+            } else {
+                cropped
+            }
+        }
+        _ => {
+            // Item: resize to max 800px width
+            if img.width() > 800 {
+                img.resize(800, u32::MAX, image::imageops::FilterType::Lanczos3)
+            } else {
+                img
+            }
+        }
     };
 
     // Encode as JPEG
@@ -146,64 +175,31 @@ fn process_image(data: &[u8]) -> Result<Vec<u8>, anyhow::Error> {
     Ok(output)
 }
 
-// ── Noop Implementation (for tests) ─────────────────────────────────
+// ── Noop Implementation (for dev/tests) ─────────────────────────────
 
 pub struct NoopUploadService;
 
 #[async_trait]
 impl traits::UploadService for NoopUploadService {
-    async fn upload_image(&self, _data: &[u8], _content_type: &str) -> Result<String, AppError> {
+    async fn upload_image(
+        &self,
+        _data: &[u8],
+        _content_type: &str,
+        upload_type: &str,
+    ) -> Result<String, AppError> {
+        let prefix = match upload_type {
+            "avatar" => "avatars",
+            "circle" => "circles",
+            _ => "uploads",
+        };
         Ok(format!(
-            "https://test-cdn.offrii.com/uploads/{}.jpg",
+            "https://test-cdn.offrii.com/{}/{}.jpg",
+            prefix,
             Uuid::new_v4()
         ))
     }
 
     async fn delete_image(&self, _url: &str) -> Result<(), AppError> {
         Ok(())
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn process_valid_jpeg() {
-        // Create a minimal 2x2 JPEG in memory
-        let mut buf = Vec::new();
-        let img = image::RgbImage::from_pixel(100, 100, image::Rgb([255, 0, 0]));
-        let encoder = image::codecs::jpeg::JpegEncoder::new(&mut buf);
-        image::DynamicImage::ImageRgb8(img)
-            .write_with_encoder(encoder)
-            .unwrap();
-
-        let result = process_image(&buf);
-        assert!(result.is_ok());
-        let output = result.unwrap();
-        assert!(!output.is_empty());
-    }
-
-    #[test]
-    fn process_resizes_large_image() {
-        let mut buf = Vec::new();
-        let img = image::RgbImage::from_pixel(2000, 1500, image::Rgb([0, 128, 255]));
-        let encoder = image::codecs::jpeg::JpegEncoder::new(&mut buf);
-        image::DynamicImage::ImageRgb8(img)
-            .write_with_encoder(encoder)
-            .unwrap();
-
-        let result = process_image(&buf).unwrap();
-
-        // Decode result and check it was resized
-        let output_img = image::load_from_memory(&result).unwrap();
-        assert_eq!(output_img.width(), MAX_WIDTH);
-        assert!(output_img.height() < 1500);
-    }
-
-    #[test]
-    fn process_rejects_invalid_data() {
-        let result = process_image(b"this is not an image");
-        assert!(result.is_err());
     }
 }

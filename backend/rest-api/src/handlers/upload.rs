@@ -1,9 +1,9 @@
-use axum::extract::State;
+use axum::extract::{Query, State};
 use axum::http::StatusCode;
 use axum::routing::post;
 use axum::{Json, Router};
 use axum_extra::extract::Multipart;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 use crate::AppState;
 use crate::errors::AppError;
@@ -17,6 +17,12 @@ pub struct UploadResponse {
     pub url: String,
 }
 
+#[derive(Debug, Deserialize)]
+pub struct UploadQuery {
+    #[serde(rename = "type")]
+    pub upload_type: Option<String>,
+}
+
 pub fn router() -> Router<AppState> {
     Router::new().route("/image", post(upload_image))
 }
@@ -25,8 +31,18 @@ pub fn router() -> Router<AppState> {
 async fn upload_image(
     State(state): State<AppState>,
     _auth_user: AuthUser,
+    Query(query): Query<UploadQuery>,
     mut multipart: Multipart,
 ) -> Result<(StatusCode, Json<UploadResponse>), AppError> {
+    let upload_type = query.upload_type.as_deref().unwrap_or("item");
+
+    // Validate type
+    if !["item", "avatar", "circle"].contains(&upload_type) {
+        return Err(AppError::BadRequest(format!(
+            "invalid upload type: {upload_type}. Allowed: item, avatar, circle"
+        )));
+    }
+
     // Extract the "image" field from multipart form
     let mut image_data: Option<(Vec<u8>, String)> = None;
 
@@ -62,7 +78,10 @@ async fn upload_image(
     let (data, content_type) =
         image_data.ok_or_else(|| AppError::BadRequest("missing 'image' field".into()))?;
 
-    let url = state.uploads.upload_image(&data, &content_type).await?;
+    let url = state
+        .uploads
+        .upload_image(&data, &content_type, upload_type)
+        .await?;
 
     Ok((StatusCode::CREATED, Json(UploadResponse { url })))
 }

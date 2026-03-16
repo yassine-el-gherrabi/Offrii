@@ -14,7 +14,8 @@ pub struct CreateCircleRequest {
 #[derive(Debug, Deserialize, Validate)]
 pub struct UpdateCircleRequest {
     #[validate(length(min = 1, max = 100, message = "name must be 1-100 characters"))]
-    pub name: String,
+    pub name: Option<String>,
+    pub image_url: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -47,6 +48,7 @@ pub struct CircleResponse {
     pub name: Option<String>,
     pub is_direct: bool,
     pub owner_id: Uuid,
+    pub image_url: Option<String>,
     pub member_count: i64,
     pub unreserved_item_count: i64,
     pub last_activity: Option<String>,
@@ -61,6 +63,7 @@ pub struct CircleDetailResponse {
     pub name: Option<String>,
     pub is_direct: bool,
     pub owner_id: Uuid,
+    pub image_url: Option<String>,
     pub members: Vec<CircleMemberResponse>,
     pub created_at: DateTime<Utc>,
 }
