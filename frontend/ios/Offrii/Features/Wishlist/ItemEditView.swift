@@ -18,6 +18,7 @@ struct ItemEditView: View {
     @State private var isUploadingImage = false
     @State private var isPrivate: Bool
     @State private var showShareToCircle = false
+    @State private var uploadError: String?
 
     init(item: Item, onSave: @escaping (Item) -> Void) {
         self.item = item
@@ -232,6 +233,19 @@ struct ItemEditView: View {
                 categories = try await CategoryService.shared.listCategories()
             } catch {}
         }
+        .alert(
+            NSLocalizedString("common.error", comment: ""),
+            isPresented: Binding(
+                get: { uploadError != nil },
+                set: { if !$0 { uploadError = nil } }
+            )
+        ) {
+            Button(NSLocalizedString("common.ok", comment: ""), role: .cancel) {}
+        } message: {
+            if let uploadError {
+                Text(uploadError)
+            }
+        }
     }
 
     // MARK: - Links Section
@@ -302,6 +316,7 @@ struct ItemEditView: View {
                 do {
                     imageUrl = try await ItemService.shared.uploadImage(data)
                 } catch {
+                    uploadError = error.localizedDescription
                     isSaving = false
                     return
                 }

@@ -297,6 +297,7 @@ async fn main() -> anyhow::Result<()> {
         .merge(wish_messages::router())
         .nest("/upload", upload::router())
         .nest("/admin", admin::router())
+        .layer(axum::extract::DefaultBodyLimit::max(10 * 1024 * 1024)) // 10 MB
         .layer(TraceLayer::new_for_http())
         .layer(
             CorsLayer::new()
