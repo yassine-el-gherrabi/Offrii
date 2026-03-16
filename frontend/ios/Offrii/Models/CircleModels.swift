@@ -22,6 +22,7 @@ struct CircleDetailResponse: Codable {
     let name: String?
     let isDirect: Bool
     let ownerId: UUID
+    let imageUrl: String?
     var members: [CircleMember]
     let createdAt: Date
 
@@ -30,6 +31,7 @@ struct CircleDetailResponse: Codable {
         case name
         case isDirect = "is_direct"
         case ownerId = "owner_id"
+        case imageUrl = "image_url"
         case members
         case createdAt = "created_at"
     }

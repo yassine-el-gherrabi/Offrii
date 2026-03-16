@@ -35,10 +35,12 @@ enum AvatarSize {
 struct AvatarView: View {
     let name: String?
     let size: AvatarSize
+    var url: URL?
 
-    init(_ name: String?, size: AvatarSize = .medium) {
+    init(_ name: String?, size: AvatarSize = .medium, url: URL? = nil) {
         self.name = name
         self.size = size
+        self.url = url
     }
 
     private var initials: String {
@@ -51,6 +53,25 @@ struct AvatarView: View {
     }
 
     var body: some View {
+        if let url {
+            AsyncImage(url: url) { phase in
+                switch phase {
+                case .success(let image):
+                    image
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .frame(width: size.dimension, height: size.dimension)
+                        .clipShape(Circle())
+                default:
+                    initialsView
+                }
+            }
+        } else {
+            initialsView
+        }
+    }
+
+    private var initialsView: some View {
         Text(initials)
             .font(.system(size: size.fontSize, weight: .semibold))
             .foregroundColor(.white)

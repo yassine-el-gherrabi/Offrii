@@ -5,6 +5,7 @@ struct User: Codable, Identifiable, Equatable {
     let email: String
     let username: String
     let displayName: String?
+    let avatarUrl: String?
     let reminderFreq: String
     let reminderTime: String
     let timezone: String
@@ -15,6 +16,7 @@ struct User: Codable, Identifiable, Equatable {
     enum CodingKeys: String, CodingKey {
         case id, email, username
         case displayName = "display_name"
+        case avatarUrl = "avatar_url"
         case reminderFreq = "reminder_freq"
         case reminderTime = "reminder_time"
         case timezone, locale

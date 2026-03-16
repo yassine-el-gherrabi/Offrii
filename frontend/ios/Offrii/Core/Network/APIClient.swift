@@ -70,8 +70,19 @@ final class APIClient: Sendable {
     // MARK: - Multipart Upload
 
     /// Uploads an image via multipart/form-data and returns the CDN URL.
-    func uploadImage(_ imageData: Data, filename: String = "photo.jpg") async throws -> String {
-        guard let url = APIEndpoint.uploadImage.url else {
+    /// - Parameters:
+    ///   - imageData: JPEG data
+    ///   - type: "item" (default), "avatar", or "circle" — controls server-side resize
+    func uploadImage(
+        _ imageData: Data,
+        type: String = "item",
+        filename: String = "photo.jpg"
+    ) async throws -> String {
+        guard var components = URLComponents(string: APIEndpoint.uploadImage.url?.absoluteString ?? "") else {
+            throw APIError.invalidURL
+        }
+        components.queryItems = [URLQueryItem(name: "type", value: type)]
+        guard let url = components.url else {
             throw APIError.invalidURL
         }
 

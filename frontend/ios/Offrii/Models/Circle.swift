@@ -5,6 +5,7 @@ struct OffriiCircle: Codable, Identifiable, Equatable {
     let name: String?
     let isDirect: Bool
     let ownerId: UUID
+    let imageUrl: String?
     let memberCount: Int
     let unreservedItemCount: Int
     let lastActivity: String?
@@ -17,6 +18,7 @@ struct OffriiCircle: Codable, Identifiable, Equatable {
         case name
         case isDirect = "is_direct"
         case ownerId = "owner_id"
+        case imageUrl = "image_url"
         case memberCount = "member_count"
         case unreservedItemCount = "unreserved_item_count"
         case lastActivity = "last_activity"
@@ -31,6 +33,7 @@ struct OffriiCircle: Codable, Identifiable, Equatable {
         name = try container.decodeIfPresent(String.self, forKey: .name)
         isDirect = try container.decode(Bool.self, forKey: .isDirect)
         ownerId = try container.decode(UUID.self, forKey: .ownerId)
+        imageUrl = try container.decodeIfPresent(String.self, forKey: .imageUrl)
         memberCount = try container.decode(Int.self, forKey: .memberCount)
         unreservedItemCount = try container.decodeIfPresent(Int.self, forKey: .unreservedItemCount) ?? 0
         lastActivity = try container.decodeIfPresent(String.self, forKey: .lastActivity)

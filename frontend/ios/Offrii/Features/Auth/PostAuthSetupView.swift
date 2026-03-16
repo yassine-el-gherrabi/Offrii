@@ -207,6 +207,7 @@ struct PostAuthSetupView: View {
             let body = UpdateProfileBody(
                 displayName: trimmed,
                 username: nil,
+                avatarUrl: nil,
                 reminderFreq: nil,
                 reminderTime: nil,
                 timezone: nil,
@@ -234,6 +235,7 @@ struct PostAuthSetupView: View {
             let body = UpdateProfileBody(
                 displayName: nil,
                 username: trimmed,
+                avatarUrl: nil,
                 reminderFreq: nil,
                 reminderTime: nil,
                 timezone: nil,

@@ -45,6 +45,7 @@ final class UserService: Sendable {
         let body = UpdateProfileBody(
             displayName: displayName,
             username: username,
+            avatarUrl: nil,
             reminderFreq: reminderFreq,
             reminderTime: reminderTime,
             timezone: timezone,

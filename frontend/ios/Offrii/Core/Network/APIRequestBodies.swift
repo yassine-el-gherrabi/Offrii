@@ -158,6 +158,7 @@ struct CreateCategoryBody: Encodable {
 struct UpdateProfileBody: Encodable {
     let displayName: String?
     let username: String?
+    let avatarUrl: String?
     let reminderFreq: String?
     let reminderTime: String?
     let timezone: String?
@@ -166,6 +167,7 @@ struct UpdateProfileBody: Encodable {
     enum CodingKeys: String, CodingKey {
         case displayName = "display_name"
         case username
+        case avatarUrl = "avatar_url"
         case reminderFreq = "reminder_freq"
         case reminderTime = "reminder_time"
         case timezone
