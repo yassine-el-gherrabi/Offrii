@@ -682,9 +682,11 @@ struct WishlistShareSheet: View {
                 Label(NSLocalizedString("share.copyLink", comment: ""), systemImage: "doc.on.doc")
                     .font(.system(size: 11, weight: .medium)).foregroundColor(OffriiTheme.primary)
             }
-            Button { shareViaSystem(url: link.displayUrl) } label: {
-                Label(NSLocalizedString("share.sendDirect", comment: ""), systemImage: "square.and.arrow.up")
-                    .font(.system(size: 11, weight: .medium)).foregroundColor(OffriiTheme.primary)
+            if let shareUrl = URL(string: link.displayUrl) {
+                ShareLink(item: shareUrl) {
+                    Label(NSLocalizedString("share.sendDirect", comment: ""), systemImage: "square.and.arrow.up")
+                        .font(.system(size: 11, weight: .medium)).foregroundColor(OffriiTheme.primary)
+                }
             }
             Button { linkToDelete = link.id } label: {
                 Label(NSLocalizedString("common.delete", comment: ""), systemImage: "trash")
@@ -832,15 +834,6 @@ struct WishlistShareSheet: View {
             showToast(NSLocalizedString("share.linkDeleted", comment: ""))
         } catch {
             OffriiHaptics.error()
-        }
-    }
-
-    private func shareViaSystem(url: String) {
-        guard let shareUrl = URL(string: url) else { return }
-        let activityVC = UIActivityViewController(activityItems: [shareUrl], applicationActivities: nil)
-        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-           let rootVC = windowScene.windows.first?.rootViewController {
-            rootVC.present(activityVC, animated: true)
         }
     }
 

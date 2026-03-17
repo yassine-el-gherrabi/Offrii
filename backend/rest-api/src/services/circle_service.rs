@@ -736,7 +736,19 @@ impl traits::CircleService for PgCircleService {
         invite_id: Uuid,
         user_id: Uuid,
     ) -> Result<(), AppError> {
-        self.require_owner(circle_id, user_id).await?;
+        // Allow creator of the invite OR circle owner to revoke
+        self.require_membership(circle_id, user_id).await?;
+
+        let invite = self
+            .circle_invite_repo
+            .find_by_id(invite_id)
+            .await
+            .map_err(AppError::Internal)?
+            .ok_or_else(|| AppError::NotFound("invite not found".into()))?;
+
+        if invite.created_by != user_id {
+            self.require_owner(circle_id, user_id).await?;
+        }
 
         let deleted = self
             .circle_invite_repo

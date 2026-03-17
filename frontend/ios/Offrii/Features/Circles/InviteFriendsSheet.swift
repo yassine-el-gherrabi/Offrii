@@ -194,12 +194,12 @@ struct InviteFriendsSheet: View {
                     .foregroundColor(copiedInviteId == invite.id ? OffriiTheme.success : OffriiTheme.primary)
                 }
 
-                Button {
-                    shareInvite(url: inviteUrl)
-                } label: {
-                    Label(NSLocalizedString("share.sendDirect", comment: ""), systemImage: "square.and.arrow.up")
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundColor(OffriiTheme.primary)
+                if let shareUrl = URL(string: inviteUrl) {
+                    ShareLink(item: shareUrl) {
+                        Label(NSLocalizedString("share.sendDirect", comment: ""), systemImage: "square.and.arrow.up")
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundColor(OffriiTheme.primary)
+                    }
                 }
 
                 Button {
@@ -338,12 +338,4 @@ struct InviteFriendsSheet: View {
         }
     }
 
-    private func shareInvite(url: String) {
-        guard let shareUrl = URL(string: url) else { return }
-        let activityVC = UIActivityViewController(activityItems: [shareUrl], applicationActivities: nil)
-        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-           let rootVC = windowScene.windows.first?.rootViewController {
-            rootVC.present(activityVC, animated: true)
-        }
-    }
 }

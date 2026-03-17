@@ -38,6 +38,10 @@ impl traits::CircleInviteRepo for PgCircleInviteRepo {
         .await
     }
 
+    async fn find_by_id(&self, id: Uuid) -> Result<Option<CircleInvite>> {
+        find_by_id(&self.pool, id).await
+    }
+
     async fn find_by_token(&self, token: &str) -> Result<Option<CircleInvite>> {
         find_by_token(&self.pool, token).await
     }
@@ -79,6 +83,18 @@ pub(crate) async fn create(
         .fetch_one(exec)
         .await?;
 
+    Ok(invite)
+}
+
+pub(crate) async fn find_by_id(
+    exec: impl PgExecutor<'_>,
+    id: Uuid,
+) -> Result<Option<CircleInvite>> {
+    let sql = format!("SELECT {INVITE_COLS} FROM circle_invites WHERE id = $1");
+    let invite = sqlx::query_as::<_, CircleInvite>(&sql)
+        .bind(id)
+        .fetch_optional(exec)
+        .await?;
     Ok(invite)
 }
 

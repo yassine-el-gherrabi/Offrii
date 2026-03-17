@@ -393,7 +393,7 @@ fn render_join_html(
 <title>{title} — Offrii</title>
 <meta property="og:title" content="{title}">
 <meta property="og:description" content="{subtitle}">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎁</text></svg>">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='16' fill='%23FF6B6B'/><text x='16' y='22' text-anchor='middle' fill='white' font-size='18' font-weight='bold' font-family='system-ui'>O</text></svg>">
 <style>
 *{{margin:0;padding:0;box-sizing:border-box}}
 body{{font-family:-apple-system,system-ui,sans-serif;background:#FFFAF9;display:flex;justify-content:center;align-items:center;min-height:100vh;padding:20px}}

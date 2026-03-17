@@ -520,6 +520,7 @@ pub trait CircleInviteRepo: Send + Sync {
         max_uses: i32,
     ) -> Result<CircleInvite>;
 
+    async fn find_by_id(&self, id: Uuid) -> Result<Option<CircleInvite>>;
     async fn find_by_token(&self, token: &str) -> Result<Option<CircleInvite>>;
 
     async fn increment_use_count(&self, id: Uuid) -> Result<bool>;
