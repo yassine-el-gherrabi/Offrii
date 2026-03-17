@@ -108,8 +108,9 @@ struct OffriiGridCard: View {
                     if level >= 2 {
                         StatusDot(variant: .priority(level), size: 10)
                             .padding(6)
-                            .background(.ultraThinMaterial)
+                            .background(.white)
                             .cornerRadius(OffriiTheme.cornerRadiusXS)
+                            .shadow(color: .black.opacity(0.08), radius: 4, x: 0, y: 1)
                     }
                 case .reserved:
                     HStack(spacing: 3) {
@@ -118,17 +119,19 @@ struct OffriiGridCard: View {
                         Text(NSLocalizedString("wishlist.reserved", comment: ""))
                             .font(.system(size: 9, weight: .semibold))
                     }
-                    .foregroundColor(OffriiTheme.accent)
+                    .foregroundColor(OffriiTheme.primary)
                     .padding(.horizontal, 6)
                     .padding(.vertical, 3)
-                    .background(.ultraThinMaterial)
+                    .background(.white)
                     .cornerRadius(OffriiTheme.cornerRadiusXS)
+                    .shadow(color: .black.opacity(0.08), radius: 4, x: 0, y: 1)
                 case .status(let variant):
                     StatusDot(variant: variant, showLabel: true, size: 8)
                         .padding(.horizontal, 6)
                         .padding(.vertical, 3)
-                        .background(.ultraThinMaterial)
+                        .background(.white)
                         .cornerRadius(OffriiTheme.cornerRadiusXS)
+                        .shadow(color: .black.opacity(0.08), radius: 4, x: 0, y: 1)
                 }
             }
         }

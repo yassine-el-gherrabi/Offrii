@@ -209,28 +209,20 @@ struct WishlistGridCard: View {
             }
     }
 
-    /// Unified glass morphism badge style
+    /// Badge style: white background + corail icons
     private func glassBadge<Content: View>(@ViewBuilder content: () -> Content) -> some View {
         HStack(spacing: 3) {
             content()
         }
-        .foregroundColor(.white)
+        .foregroundColor(OffriiTheme.primary)
         .font(.system(size: 9, weight: .semibold))
         .padding(.horizontal, 7)
         .padding(.vertical, 4)
         .background(
             RoundedRectangle(cornerRadius: 6)
-                .fill(.black.opacity(0.35))
-                .background(
-                    RoundedRectangle(cornerRadius: 6)
-                        .fill(.ultraThinMaterial)
-                )
+                .fill(.white)
         )
         .clipShape(RoundedRectangle(cornerRadius: 6))
-        .overlay(
-            RoundedRectangle(cornerRadius: 6)
-                .strokeBorder(.white.opacity(0.2), lineWidth: 0.5)
-        )
-        .shadow(color: .black.opacity(0.15), radius: 2, x: 0, y: 1)
+        .shadow(color: .black.opacity(0.08), radius: 4, x: 0, y: 1)
     }
 }

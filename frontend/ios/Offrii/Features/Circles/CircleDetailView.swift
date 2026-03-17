@@ -634,8 +634,9 @@ struct CircleDetailView: View {
                     )
                     .padding(.horizontal, 6)
                     .padding(.vertical, 3)
-                    .background(.ultraThinMaterial)
+                    .background(.white)
                     .cornerRadius(OffriiTheme.cornerRadiusXS)
+                    .shadow(color: .black.opacity(0.08), radius: 4, x: 0, y: 1)
                     .frame(
                         maxWidth: .infinity, maxHeight: .infinity,
                         alignment: .topTrailing
