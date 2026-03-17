@@ -11,6 +11,7 @@ struct WishlistView: View {
     @State private var shareToCircleItemId: UUID?
     @State private var editItem: Item?
     @State private var showBatchDeleteConfirm = false
+    @State private var itemToDelete: Item?
     @State private var shareItemId: UUID?
 
     private let gridColumns = [
@@ -156,6 +157,25 @@ struct WishlistView: View {
             }
         } message: {
             Text(String(format: NSLocalizedString("wishlist.deleteConfirmBatchMessage", comment: ""), viewModel.selectedItemIds.count))
+        }
+        .alert(
+            NSLocalizedString("wishlist.delete.title", comment: ""),
+            isPresented: Binding(
+                get: { itemToDelete != nil },
+                set: { if !$0 { itemToDelete = nil } }
+            )
+        ) {
+            Button(NSLocalizedString("common.delete", comment: ""), role: .destructive) {
+                if let item = itemToDelete {
+                    Task { await viewModel.deleteItem(item) }
+                }
+                itemToDelete = nil
+            }
+            Button(NSLocalizedString("common.cancel", comment: ""), role: .cancel) {
+                itemToDelete = nil
+            }
+        } message: {
+            Text(NSLocalizedString("wishlist.delete.message", comment: ""))
         }
         .task {
             await viewModel.loadCategories()
@@ -399,7 +419,7 @@ struct WishlistView: View {
                             Divider()
 
                             Button(role: .destructive) {
-                                Task { await viewModel.deleteItem(item) }
+                                itemToDelete = item
                             } label: {
                                 Label(NSLocalizedString("common.delete", comment: ""), systemImage: "trash")
                             }

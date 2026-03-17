@@ -467,21 +467,19 @@ struct CircleDetailView: View {
                             .background(OffriiTheme.accent.opacity(0.1))
                             .cornerRadius(OffriiTheme.cornerRadiusFull)
                         }
-                    }
-                    .padding(.horizontal, OffriiTheme.spacingLG)
-                    .padding(.vertical, OffriiTheme.spacingSM)
-                    .swipeActions(edge: .trailing) {
-                        if isOwner && !isSelf && member.role != "owner" {
-                            Button(role: .destructive) {
+
+                        if isOwner && !isSelf && !isMemberOwner {
+                            Button {
                                 memberToRemove = member
                             } label: {
-                                Label(
-                                    NSLocalizedString("friends.remove", comment: ""),
-                                    systemImage: "person.badge.minus"
-                                )
+                                Image(systemName: "minus.circle.fill")
+                                    .font(.system(size: 20))
+                                    .foregroundColor(OffriiTheme.danger)
                             }
                         }
                     }
+                    .padding(.horizontal, OffriiTheme.spacingLG)
+                    .padding(.vertical, OffriiTheme.spacingSM)
                     .contextMenu {
                         if isOwner && !isSelf {
                             if member.role != "owner" {
