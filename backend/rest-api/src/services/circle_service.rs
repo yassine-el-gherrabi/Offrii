@@ -544,7 +544,8 @@ impl traits::CircleService for PgCircleService {
 
         Ok(InviteResponse {
             id: invite.id,
-            token: invite.token,
+            token: invite.token.clone(),
+            url: String::new(),
             circle_id: invite.circle_id,
             expires_at: invite.expires_at,
             max_uses: invite.max_uses,
@@ -715,7 +716,8 @@ impl traits::CircleService for PgCircleService {
             .into_iter()
             .map(|inv| InviteResponse {
                 id: inv.id,
-                token: inv.token,
+                token: inv.token.clone(),
+                url: String::new(),
                 circle_id: inv.circle_id,
                 expires_at: inv.expires_at,
                 max_uses: inv.max_uses,
@@ -1460,7 +1462,10 @@ impl traits::CircleService for PgCircleService {
         Ok(PaginatedResponse::new(event_responses, total, page, limit))
     }
 
-    async fn get_invite_circle_name(&self, token: &str) -> Result<String, AppError> {
+    async fn get_invite_circle_info(
+        &self,
+        token: &str,
+    ) -> Result<(String, Option<String>), AppError> {
         let invite = self
             .circle_invite_repo
             .find_by_token(token)
@@ -1475,7 +1480,7 @@ impl traits::CircleService for PgCircleService {
             .map_err(AppError::Internal)?
             .ok_or_else(|| AppError::NotFound("circle not found".into()))?;
 
-        Ok(circle.name.unwrap_or_default())
+        Ok((circle.name.unwrap_or_default(), circle.image_url))
     }
 
     #[tracing::instrument(skip(self))]

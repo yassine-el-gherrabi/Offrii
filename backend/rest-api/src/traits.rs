@@ -687,7 +687,11 @@ pub trait CircleService: Send + Sync {
 
     async fn on_item_unarchived(&self, item_id: Uuid, owner_id: Uuid) -> Result<(), AppError>;
 
-    async fn get_invite_circle_name(&self, token: &str) -> Result<String, AppError>;
+    /// Returns (circle_name, circle_image_url) for the invite page.
+    async fn get_invite_circle_info(
+        &self,
+        token: &str,
+    ) -> Result<(String, Option<String>), AppError>;
 
     async fn transfer_ownership(
         &self,

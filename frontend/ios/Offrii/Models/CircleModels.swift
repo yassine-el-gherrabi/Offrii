@@ -161,6 +161,7 @@ struct FeedResponse: Codable {
 struct CircleInviteResponse: Codable, Identifiable {
     let id: UUID
     let token: String
+    let url: String
     let circleId: UUID
     let expiresAt: Date
     let maxUses: Int
@@ -168,7 +169,7 @@ struct CircleInviteResponse: Codable, Identifiable {
     let createdAt: Date
 
     enum CodingKeys: String, CodingKey {
-        case id, token
+        case id, token, url
         case circleId = "circle_id"
         case expiresAt = "expires_at"
         case maxUses = "max_uses"

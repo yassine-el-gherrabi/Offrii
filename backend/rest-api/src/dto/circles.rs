@@ -85,11 +85,19 @@ pub struct CircleMemberResponse {
 pub struct InviteResponse {
     pub id: Uuid,
     pub token: String,
+    pub url: String,
     pub circle_id: Uuid,
     pub expires_at: DateTime<Utc>,
     pub max_uses: i32,
     pub use_count: i32,
     pub created_at: DateTime<Utc>,
+}
+
+impl InviteResponse {
+    pub fn with_url(mut self, base_url: &str) -> Self {
+        self.url = format!("{base_url}/join/{}", self.token);
+        self
+    }
 }
 
 #[derive(Debug, Clone, Serialize)]

@@ -16,6 +16,7 @@ struct InviteFriendsSheet: View {
     @State private var invites: [CircleInviteResponse] = []
     @State private var isCreatingInvite = false
     @State private var copiedInviteId: UUID?
+    @State private var inviteToDelete: CircleInviteResponse?
 
     var body: some View {
         NavigationStack {
@@ -64,6 +65,25 @@ struct InviteFriendsSheet: View {
             }
             .task {
                 await loadData()
+            }
+            .alert(
+                NSLocalizedString("share.deleteLink.title", comment: ""),
+                isPresented: Binding(
+                    get: { inviteToDelete != nil },
+                    set: { if !$0 { inviteToDelete = nil } }
+                )
+            ) {
+                Button(NSLocalizedString("common.delete", comment: ""), role: .destructive) {
+                    if let invite = inviteToDelete {
+                        Task { await revokeInvite(invite) }
+                    }
+                    inviteToDelete = nil
+                }
+                Button(NSLocalizedString("common.cancel", comment: ""), role: .cancel) {
+                    inviteToDelete = nil
+                }
+            } message: {
+                Text(NSLocalizedString("share.deleteLink.message", comment: ""))
             }
             .alert(
                 NSLocalizedString("common.error", comment: ""),
@@ -122,59 +142,76 @@ struct InviteFriendsSheet: View {
         }
     }
 
+    // swiftlint:disable:next function_body_length
     private func inviteCard(_ invite: CircleInviteResponse) -> some View {
-        let isCopied = copiedInviteId == invite.id
-        let inviteUrl = "https://offrii.com/join/\(invite.token)"
+        let inviteUrl = invite.url
 
-        return HStack(spacing: OffriiTheme.spacingSM) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(inviteUrl)
-                    .font(.system(size: 12, weight: .medium))
+        return VStack(alignment: .leading, spacing: OffriiTheme.spacingSM) {
+            // Tappable URL
+            if let url = URL(string: inviteUrl) {
+                Link(destination: url) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "link")
+                            .font(.system(size: 11))
+                        Text(inviteUrl)
+                            .font(.system(size: 12, weight: .medium))
+                            .lineLimit(1)
+                        Spacer()
+                        Image(systemName: "arrow.up.right")
+                            .font(.system(size: 10))
+                    }
                     .foregroundColor(OffriiTheme.primary)
-                    .lineLimit(1)
-
-                HStack(spacing: 4) {
-                    Text("\(invite.useCount)/\(invite.maxUses)")
-                        .font(.system(size: 10))
-                    Text("\u{00B7}")
-                    Text(invite.expiresAt, style: .relative)
-                        .font(.system(size: 10))
                 }
-                .foregroundColor(OffriiTheme.textMuted)
             }
 
-            Spacer()
+            // Info
+            HStack(spacing: 4) {
+                Image(systemName: "clock").font(.system(size: 9))
+                Text(invite.expiresAt, style: .relative)
+                    .font(.system(size: 10))
+            }
+            .foregroundColor(OffriiTheme.textMuted)
 
-            Button {
-                UIPasteboard.general.string = inviteUrl
-                OffriiHaptics.success()
-                copiedInviteId = invite.id
-                DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                    if copiedInviteId == invite.id { copiedInviteId = nil }
+            // Action buttons — same style as share link cards
+            HStack(spacing: OffriiTheme.spacingBase) {
+                Spacer()
+
+                Button {
+                    UIPasteboard.general.string = inviteUrl
+                    OffriiHaptics.success()
+                    copiedInviteId = invite.id
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                        if copiedInviteId == invite.id { copiedInviteId = nil }
+                    }
+                } label: {
+                    Label(
+                        copiedInviteId == invite.id
+                            ? NSLocalizedString("share.linkCopied", comment: "")
+                            : NSLocalizedString("share.copyLink", comment: ""),
+                        systemImage: copiedInviteId == invite.id ? "checkmark" : "doc.on.doc"
+                    )
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundColor(copiedInviteId == invite.id ? OffriiTheme.success : OffriiTheme.primary)
                 }
-            } label: {
-                Image(systemName: isCopied ? "checkmark" : "doc.on.doc")
-                    .font(.system(size: 14))
-                    .foregroundColor(isCopied ? OffriiTheme.success : OffriiTheme.primary)
-            }
 
-            Button {
-                shareInvite(url: inviteUrl)
-            } label: {
-                Image(systemName: "square.and.arrow.up")
-                    .font(.system(size: 14))
-                    .foregroundColor(OffriiTheme.primary)
-            }
+                Button {
+                    shareInvite(url: inviteUrl)
+                } label: {
+                    Label(NSLocalizedString("share.sendDirect", comment: ""), systemImage: "square.and.arrow.up")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundColor(OffriiTheme.primary)
+                }
 
-            Button {
-                Task { await revokeInvite(invite) }
-            } label: {
-                Image(systemName: "trash")
-                    .font(.system(size: 14))
-                    .foregroundColor(OffriiTheme.danger)
+                Button {
+                    inviteToDelete = invite
+                } label: {
+                    Label(NSLocalizedString("common.delete", comment: ""), systemImage: "trash")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundColor(OffriiTheme.danger)
+                }
             }
         }
-        .padding(OffriiTheme.spacingBase)
+        .padding(OffriiTheme.spacingMD)
         .background(OffriiTheme.surface)
         .cornerRadius(OffriiTheme.cornerRadiusMD)
         .padding(.horizontal, OffriiTheme.spacingLG)
@@ -257,7 +294,7 @@ struct InviteFriendsSheet: View {
         do {
             let invite = try await CircleService.shared.createInvite(circleId: circleId)
             withAnimation { invites.insert(invite, at: 0) }
-            let url = "https://offrii.com/join/\(invite.token)"
+            let url = invite.url
             UIPasteboard.general.string = url
             OffriiHaptics.success()
             copiedInviteId = invite.id

@@ -31,4 +31,5 @@ pub struct AppState {
     pub community_wishes: Arc<dyn traits::CommunityWishService>,
     pub wish_messages: Arc<dyn traits::WishMessageService>,
     pub uploads: Arc<dyn traits::UploadService>,
+    pub app_base_url: String,
 }

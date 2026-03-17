@@ -173,7 +173,8 @@ async fn create_invite(
     let response = state
         .circles
         .create_invite(id, auth_user.user_id, max_uses, expires_in_hours)
-        .await?;
+        .await?
+        .with_url(&state.app_base_url);
     Ok((StatusCode::CREATED, Json(response)))
 }
 
@@ -209,7 +210,14 @@ async fn list_invites(
     auth_user: AuthUser,
     Path(id): Path<Uuid>,
 ) -> Result<Json<Vec<InviteResponse>>, AppError> {
-    let response = state.circles.list_invites(id, auth_user.user_id).await?;
+    let base_url = &state.app_base_url;
+    let response: Vec<InviteResponse> = state
+        .circles
+        .list_invites(id, auth_user.user_id)
+        .await?
+        .into_iter()
+        .map(|r| r.with_url(base_url))
+        .collect();
     Ok(Json(response))
 }
 
@@ -324,14 +332,20 @@ pub async fn join_page(
     Path(token): Path<String>,
 ) -> Response {
     // Look up the invite to get circle info
-    let circle_name = match state.circles.get_invite_circle_name(&token).await {
-        Ok(name) => name,
+    let (circle_name, circle_image) = match state.circles.get_invite_circle_info(&token).await {
+        Ok(info) => info,
         Err(_) => {
             return Html(render_join_error_html(&headers)).into_response();
         }
     };
 
-    Html(render_join_html(&token, &circle_name, &headers)).into_response()
+    Html(render_join_html(
+        &token,
+        &circle_name,
+        circle_image.as_deref(),
+        &headers,
+    ))
+    .into_response()
 }
 
 fn get_lang(headers: &HeaderMap) -> &str {
@@ -342,7 +356,12 @@ fn get_lang(headers: &HeaderMap) -> &str {
         .unwrap_or("fr")
 }
 
-fn render_join_html(token: &str, circle_name: &str, headers: &HeaderMap) -> String {
+fn render_join_html(
+    token: &str,
+    circle_name: &str,
+    circle_image: Option<&str>,
+    headers: &HeaderMap,
+) -> String {
     let lang = get_lang(headers);
     let (title, subtitle, btn, or_text, dl_text) = if lang == "en" {
         (
@@ -374,12 +393,14 @@ fn render_join_html(token: &str, circle_name: &str, headers: &HeaderMap) -> Stri
 <title>{title} — Offrii</title>
 <meta property="og:title" content="{title}">
 <meta property="og:description" content="{subtitle}">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎁</text></svg>">
 <style>
 *{{margin:0;padding:0;box-sizing:border-box}}
 body{{font-family:-apple-system,system-ui,sans-serif;background:#FFFAF9;display:flex;justify-content:center;align-items:center;min-height:100vh;padding:20px}}
 .c{{max-width:400px;text-align:center}}
 .logo{{font-size:1.5rem;font-weight:800;color:#FF6B6B;letter-spacing:-0.02em;margin-bottom:24px}}
 .av{{width:72px;height:72px;border-radius:50%;background:#FF6B6B;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:1.5rem;font-weight:600;color:#fff}}
+.av-img{{width:72px;height:72px;border-radius:50%;object-fit:cover;margin:0 auto 16px}}
 h1{{font-size:1.3rem;font-weight:700;margin-bottom:8px;color:#1a1a1a}}
 .sub{{color:#666;margin-bottom:24px;font-size:0.95rem}}
 .btn{{display:block;background:#FF6B6B;color:#fff;text-decoration:none;padding:14px 24px;border-radius:12px;font-weight:600;font-size:1rem;margin-bottom:12px}}
@@ -389,7 +410,7 @@ h1{{font-size:1.3rem;font-weight:700;margin-bottom:8px;color:#1a1a1a}}
 </style></head><body>
 <div class="c">
 <div class="logo">offrii</div>
-<div class="av">{initials}</div>
+{avatar_html}
 <h1>{title}</h1>
 <p class="sub">{subtitle}</p>
 <a class="btn" href="offrii://join/{token}">{btn}</a>
@@ -403,7 +424,14 @@ h1{{font-size:1.3rem;font-weight:700;margin-bottom:8px;color:#1a1a1a}}
         or_text = or_text,
         dl_text = dl_text,
         token = token,
-        initials = escaped_name.chars().next().unwrap_or('?').to_uppercase(),
+        avatar_html = if let Some(img) = circle_image {
+            format!("<img class=\"av-img\" src=\"{}\" alt=\"\">", img)
+        } else {
+            format!(
+                "<div class=\"av\">{}</div>",
+                escaped_name.chars().next().unwrap_or('?').to_uppercase()
+            )
+        },
     )
 }
 

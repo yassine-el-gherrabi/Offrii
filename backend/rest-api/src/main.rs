@@ -140,7 +140,7 @@ async fn main() -> anyhow::Result<()> {
         share_link_repo,
         item_repo.clone(),
         user_repo.clone(),
-        config.app_base_url,
+        config.app_base_url.clone(),
     ));
 
     // APNs notification service
@@ -277,6 +277,7 @@ async fn main() -> anyhow::Result<()> {
         community_wishes: community_wish_svc,
         wish_messages: wish_message_svc,
         uploads: upload_svc,
+        app_base_url: config.app_base_url,
     };
 
     let app = Router::new()
