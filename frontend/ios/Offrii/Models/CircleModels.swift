@@ -56,6 +56,8 @@ struct CircleItemResponse: Codable, Identifiable {
     let ogSiteName: String?
     let sharedAt: Date
     let sharedBy: UUID
+    let sharedByName: String?
+    let sharedByAvatarUrl: String?
 
     enum CodingKeys: String, CodingKey {
         case id, name, description, url, priority, status, links
@@ -70,6 +72,8 @@ struct CircleItemResponse: Codable, Identifiable {
         case ogSiteName = "og_site_name"
         case sharedAt = "shared_at"
         case sharedBy = "shared_by"
+        case sharedByName = "shared_by_name"
+        case sharedByAvatarUrl = "shared_by_avatar_url"
     }
 
     init(from decoder: Decoder) throws {
@@ -91,6 +95,8 @@ struct CircleItemResponse: Codable, Identifiable {
         ogSiteName = try container.decodeIfPresent(String.self, forKey: .ogSiteName)
         sharedAt = try container.decode(Date.self, forKey: .sharedAt)
         sharedBy = try container.decode(UUID.self, forKey: .sharedBy)
+        sharedByName = try container.decodeIfPresent(String.self, forKey: .sharedByName)
+        sharedByAvatarUrl = try container.decodeIfPresent(String.self, forKey: .sharedByAvatarUrl)
 
         if let stringValue = try? container.decodeIfPresent(String.self, forKey: .estimatedPrice) {
             estimatedPrice = Decimal(string: stringValue)

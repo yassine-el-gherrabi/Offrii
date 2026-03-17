@@ -110,6 +110,8 @@ pub struct CircleItemResponse {
     pub og_site_name: Option<String>,
     pub shared_at: DateTime<Utc>,
     pub shared_by: Uuid,
+    pub shared_by_name: Option<String>,
+    pub shared_by_avatar_url: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize)]

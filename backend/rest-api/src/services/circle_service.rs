@@ -188,6 +188,21 @@ impl PgCircleService {
     }
 
     /// Build a user_id → (username, display_name) lookup from member list.
+    async fn owner_lookup(
+        &self,
+        user_ids: &[Uuid],
+    ) -> Result<HashMap<Uuid, (String, Option<String>, Option<String>)>, AppError> {
+        let users = self
+            .user_repo
+            .find_by_ids(user_ids)
+            .await
+            .map_err(AppError::Internal)?;
+        Ok(users
+            .into_iter()
+            .map(|u| (u.id, (u.username, u.display_name, u.avatar_url)))
+            .collect())
+    }
+
     async fn user_lookup(
         &self,
         user_ids: &[Uuid],
@@ -804,6 +819,10 @@ impl traits::CircleService for PgCircleService {
         let claimer_ids: Vec<Uuid> = items_map.values().filter_map(|i| i.claimed_by).collect();
         let claimer_map = self.user_lookup(&claimer_ids).await?;
 
+        // Build owner info map (shared_by users)
+        let owner_ids: Vec<Uuid> = circle_items.iter().map(|ci| ci.shared_by).collect();
+        let owner_info = self.owner_lookup(&owner_ids).await?;
+
         // Build category icon map
         let cat_ids: Vec<Uuid> = items_map.values().filter_map(|i| i.category_id).collect();
         let cat_icon_map: HashMap<Uuid, String> = if !cat_ids.is_empty() {
@@ -863,6 +882,12 @@ impl traits::CircleService for PgCircleService {
                     og_site_name: item.og_site_name.clone(),
                     shared_at: ci.shared_at,
                     shared_by: ci.shared_by,
+                    shared_by_name: owner_info
+                        .get(&ci.shared_by)
+                        .and_then(|(_, display_name, _)| display_name.clone()),
+                    shared_by_avatar_url: owner_info
+                        .get(&ci.shared_by)
+                        .and_then(|(_, _, avatar)| avatar.clone()),
                 })
             })
             .collect();
@@ -920,6 +945,13 @@ impl traits::CircleService for PgCircleService {
             None
         };
 
+        let owner = self
+            .user_repo
+            .find_by_id(circle_item.shared_by)
+            .await
+            .ok()
+            .flatten();
+
         Ok(CircleItemResponse {
             id: item.id,
             name: item.name,
@@ -939,6 +971,8 @@ impl traits::CircleService for PgCircleService {
             og_site_name: item.og_site_name,
             shared_at: circle_item.shared_at,
             shared_by: circle_item.shared_by,
+            shared_by_name: owner.as_ref().and_then(|u| u.display_name.clone()),
+            shared_by_avatar_url: owner.and_then(|u| u.avatar_url),
         })
     }
 

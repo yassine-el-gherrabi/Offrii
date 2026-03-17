@@ -649,23 +649,45 @@ struct CircleDetailView: View {
 
             // Text zone
             VStack(alignment: .leading, spacing: OffriiTheme.spacingXS) {
-                    Text(item.name)
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundColor(OffriiTheme.text)
-                        .lineLimit(2)
-                        .multilineTextAlignment(.leading)
+                Text(item.name)
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(OffriiTheme.text)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.leading)
 
-                    if let price = item.estimatedPrice {
-                        Text(price.formatted(.currency(code: "EUR")))
-                            .font(.system(size: 12))
-                            .foregroundColor(OffriiTheme.textMuted)
-                    }
+                if let price = item.estimatedPrice {
+                    Text(price.formatted(.currency(code: "EUR")))
+                        .font(.system(size: 12))
+                        .foregroundColor(OffriiTheme.textMuted)
+                }
 
-                    if showClaimButtons && !itemIsOwner {
-                        claimButton(item)
-                            .padding(.top, 2)
+                // Owner avatar + name
+                if !isDirect, let ownerName = item.sharedByName {
+                    HStack(spacing: 4) {
+                        if let avatarStr = item.sharedByAvatarUrl, let url = URL(string: avatarStr) {
+                            LazyImage(url: url) { state in
+                                if let image = state.image {
+                                    image.resizable().aspectRatio(contentMode: .fill)
+                                        .frame(width: 16, height: 16).clipShape(Circle())
+                                } else {
+                                    itemOwnerInitial(ownerName)
+                                }
+                            }
+                        } else {
+                            itemOwnerInitial(ownerName)
+                        }
+                        Text(ownerName)
+                            .font(.system(size: 11))
+                            .foregroundColor(OffriiTheme.textSecondary)
+                            .lineLimit(1)
                     }
                 }
+
+                if showClaimButtons && !itemIsOwner {
+                    claimButton(item)
+                        .padding(.top, 2)
+                }
+            }
             .padding(.horizontal, OffriiTheme.spacingSM)
             .padding(.vertical, OffriiTheme.spacingSM)
         }
@@ -678,6 +700,15 @@ struct CircleDetailView: View {
         guard let categoryId,
               let categories = viewModel.categories else { return nil }
         return categories.first { $0.id == categoryId }?.icon
+    }
+
+    private func itemOwnerInitial(_ name: String) -> some View {
+        Text(String(name.prefix(1)).uppercased())
+            .font(.system(size: 8, weight: .bold))
+            .foregroundColor(.white)
+            .frame(width: 16, height: 16)
+            .background(OffriiTheme.primary)
+            .clipShape(Circle())
     }
 
     private func gradientPlaceholder(style: CategoryStyle) -> some View {
