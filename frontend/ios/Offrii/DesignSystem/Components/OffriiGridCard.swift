@@ -1,3 +1,4 @@
+import NukeUI
 import SwiftUI
 
 // MARK: - Grid Card Badge
@@ -66,12 +67,14 @@ struct OffriiGridCard: View {
     @ViewBuilder
     private var imageZone: some View {
         if let url = imageURL {
-            AsyncImage(url: url) { image in
-                image
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
-            } placeholder: {
-                placeholderView
+            LazyImage(url: url) { state in
+                if let image = state.image {
+                    image
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                } else {
+                    placeholderView
+                }
             }
             .frame(height: 120)
             .clipped()

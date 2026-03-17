@@ -1,3 +1,4 @@
+import NukeUI
 import PhotosUI
 import SwiftUI
 
@@ -31,9 +32,8 @@ struct OffriiImagePicker: View {
                     .clipped()
                     .cornerRadius(OffriiTheme.cornerRadiusMD)
             } else if let existingImageUrl {
-                AsyncImage(url: existingImageUrl) { phase in
-                    switch phase {
-                    case .success(let image):
+                LazyImage(url: existingImageUrl) { state in
+                    if let image = state.image {
                         image
                             .resizable()
                             .aspectRatio(contentMode: .fill)
@@ -41,7 +41,7 @@ struct OffriiImagePicker: View {
                             .frame(height: 180)
                             .clipped()
                             .cornerRadius(OffriiTheme.cornerRadiusMD)
-                    default:
+                    } else {
                         placeholderView
                     }
                 }

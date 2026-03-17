@@ -1,4 +1,5 @@
 // swiftlint:disable file_length
+import NukeUI
 import SwiftUI
 
 // MARK: - ItemDetailSheet
@@ -313,17 +314,16 @@ struct ItemDetailSheet: View {
         ZStack {
             Group {
                 if let url = item.displayImageUrl {
-                    AsyncImage(url: url) { phase in
-                        switch phase {
-                        case .success(let image):
+                    LazyImage(url: url) { state in
+                        if let image = state.image {
                             image
                                 .resizable()
                                 .aspectRatio(contentMode: .fill)
                                 .frame(height: 200)
                                 .clipped()
-                        case .failure:
+                        } else if state.error != nil {
                             categoryGradientView
-                        default:
+                        } else {
                             categoryGradientView
                                 .shimmer()
                         }
@@ -374,12 +374,31 @@ struct ItemDetailSheet: View {
             ForEach(item.sharedCircles) { circle in
                 HStack(spacing: OffriiTheme.spacingSM) {
                     ZStack {
-                        Text(circle.initial)
-                            .font(.system(size: 12, weight: .bold))
-                            .foregroundColor(.white)
-                            .frame(width: 28, height: 28)
-                            .background(circle.isDirect == true ? OffriiTheme.textSecondary : OffriiTheme.primary)
-                            .clipShape(Circle())
+                        if let url = circle.imageURL {
+                            LazyImage(url: url) { state in
+                                if let image = state.image {
+                                    image
+                                        .resizable()
+                                        .aspectRatio(contentMode: .fill)
+                                        .frame(width: 28, height: 28)
+                                        .clipShape(Circle())
+                                } else {
+                                    Text(circle.initial)
+                                        .font(.system(size: 12, weight: .bold))
+                                        .foregroundColor(.white)
+                                        .frame(width: 28, height: 28)
+                                        .background(circle.isDirect == true ? OffriiTheme.textSecondary : OffriiTheme.primary)
+                                        .clipShape(Circle())
+                                }
+                            }
+                        } else {
+                            Text(circle.initial)
+                                .font(.system(size: 12, weight: .bold))
+                                .foregroundColor(.white)
+                                .frame(width: 28, height: 28)
+                                .background(circle.isDirect == true ? OffriiTheme.textSecondary : OffriiTheme.primary)
+                                .clipShape(Circle())
+                        }
                     }
                     .overlay(alignment: .bottomTrailing) {
                         Image(systemName: circle.isDirect == true ? "person.fill" : "person.2.fill")

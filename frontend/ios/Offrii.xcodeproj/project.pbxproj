@@ -37,6 +37,7 @@
 		8E9D80D59CDEA2E765571C00 /* WishDetailViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12CD4CA251235E5ADD02FE90 /* WishDetailViewModel.swift */; };
 		9082DA2F2F6622E1002BBF41 /* BlurView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9082DA2E2F6622E1002BBF41 /* BlurView.swift */; };
 		90DB1C562F63676B00EB59C4 /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = P10000000000000000000002 /* GoogleSignIn */; };
+		CC00000000000000000000C1 /* NukeUI in Frameworks */ = {isa = PBXBuildFile; productRef = P10000000000000000000003 /* NukeUI */; };
 		9819CC8EE7964F14CDE7D48F /* StackedAvatarsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F19D296A0047D817CD0475CC /* StackedAvatarsView.swift */; };
 		99AD360522789939E56AB458 /* CircleDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9EEDF827539742DBA3A5617E /* CircleDetailView.swift */; };
 		9BE2E54145DD2F357A4186FC /* ProfileProgressCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7CD43FCFA25254BFA5826718 /* ProfileProgressCard.swift */; };
@@ -328,6 +329,7 @@
 			files = (
 				90DB1C562F63676B00EB59C4 /* GoogleSignIn in Frameworks */,
 				B40000000000000000000001 /* KeychainAccess in Frameworks */,
+				CC00000000000000000000C1 /* NukeUI in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -762,6 +764,7 @@
 			packageProductDependencies = (
 				P10000000000000000000001 /* KeychainAccess */,
 				P10000000000000000000002 /* GoogleSignIn */,
+				P10000000000000000000003 /* NukeUI */,
 			);
 			productName = Offrii;
 			productReference = A40000000000000000000001 /* Offrii.app */;
@@ -817,6 +820,7 @@
 			packageReferences = (
 				R10000000000000000000001 /* XCRemoteSwiftPackageReference "KeychainAccess" */,
 				R10000000000000000000002 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */,
+				R10000000000000000000003 /* XCRemoteSwiftPackageReference "Nuke" */,
 			);
 			productRefGroup = C00000000000000000000004 /* Products */;
 			projectDirPath = "";
@@ -1262,6 +1266,14 @@
 				minimumVersion = 8.0.0;
 			};
 		};
+		R10000000000000000000003 /* XCRemoteSwiftPackageReference "Nuke" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/kean/Nuke.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 12.0.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -1274,6 +1286,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = R10000000000000000000002 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */;
 			productName = GoogleSignIn;
+		};
+		P10000000000000000000003 /* NukeUI */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = R10000000000000000000003 /* XCRemoteSwiftPackageReference "Nuke" */;
+			productName = NukeUI;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

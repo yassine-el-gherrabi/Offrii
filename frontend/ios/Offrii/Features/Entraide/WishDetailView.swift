@@ -1,3 +1,4 @@
+import NukeUI
 import SwiftUI
 
 // MARK: - WishDetailView
@@ -150,18 +151,20 @@ struct WishDetailView: View {
     @ViewBuilder
     private func cardImageSection(wish: WishDetail) -> some View {
         if let imageUrl = wish.imageUrl, let url = URL(string: imageUrl) {
-            AsyncImage(url: url) { image in
-                image
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
-                    .frame(maxHeight: 200)
-                    .cornerRadius(OffriiTheme.cornerRadiusSM)
-                    .clipped()
-            } placeholder: {
-                RoundedRectangle(cornerRadius: OffriiTheme.cornerRadiusSM)
-                    .fill(OffriiTheme.surface)
-                    .frame(height: 120)
-                    .shimmer()
+            LazyImage(url: url) { state in
+                if let image = state.image {
+                    image
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .frame(maxHeight: 200)
+                        .cornerRadius(OffriiTheme.cornerRadiusSM)
+                        .clipped()
+                } else {
+                    RoundedRectangle(cornerRadius: OffriiTheme.cornerRadiusSM)
+                        .fill(OffriiTheme.surface)
+                        .frame(height: 120)
+                        .shimmer()
+                }
             }
         }
     }

@@ -1,3 +1,4 @@
+import NukeUI
 import SwiftUI
 
 // MARK: - WishlistGridCard
@@ -53,15 +54,22 @@ struct WishlistGridCard: View {
                         let overflow = item.sharedCircles.count - maxVisible
                         HStack(spacing: -6) {
                             ForEach(item.sharedCircles.prefix(maxVisible)) { circle in
-                                Text(circle.initial)
-                                    .font(.system(size: 8, weight: .bold))
-                                    .foregroundColor(.white)
-                                    .frame(width: 20, height: 20)
-                                    .background(circle.isDirect == true ? OffriiTheme.textSecondary : OffriiTheme.primary)
-                                    .clipShape(Circle())
-                                    .overlay(
-                                        Circle().strokeBorder(.white, lineWidth: 1.5)
-                                    )
+                                if let url = circle.imageURL {
+                                    LazyImage(url: url) { state in
+                                        if let image = state.image {
+                                            image
+                                                .resizable()
+                                                .aspectRatio(contentMode: .fill)
+                                                .frame(width: 20, height: 20)
+                                                .clipShape(Circle())
+                                                .overlay(Circle().strokeBorder(.white, lineWidth: 1.5))
+                                        } else {
+                                            circleInitial(circle)
+                                        }
+                                    }
+                                } else {
+                                    circleInitial(circle)
+                                }
                             }
                             if overflow > 0 {
                                 Text("+\(overflow)")
@@ -110,18 +118,17 @@ struct WishlistGridCard: View {
     @ViewBuilder
     private var imageZone: some View {
         if let url = item.displayImageUrl {
-            AsyncImage(url: url) { phase in
-                switch phase {
-                case .success(let image):
+            LazyImage(url: url) { state in
+                if let image = state.image {
                     image
                         .resizable()
                         .aspectRatio(contentMode: .fill)
                         .frame(minWidth: 0, maxWidth: .infinity)
                         .frame(height: 130)
                         .clipped()
-                case .failure:
+                } else if state.error != nil {
                     placeholderView
-                default:
+                } else {
                     placeholderView
                         .shimmer()
                 }
@@ -145,6 +152,16 @@ struct WishlistGridCard: View {
                 .font(.system(size: 32, weight: .light))
                 .foregroundColor(.white.opacity(0.7))
         )
+    }
+
+    private func circleInitial(_ circle: SharedCircleInfo) -> some View {
+        Text(circle.initial)
+            .font(.system(size: 8, weight: .bold))
+            .foregroundColor(.white)
+            .frame(width: 20, height: 20)
+            .background(circle.isDirect == true ? OffriiTheme.textSecondary : OffriiTheme.primary)
+            .clipShape(Circle())
+            .overlay(Circle().strokeBorder(.white, lineWidth: 1.5))
     }
 
     // MARK: - Badge Overlay (non-claimed badges)

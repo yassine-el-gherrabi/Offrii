@@ -8,6 +8,10 @@ use crate::traits;
 
 const CIRCLE_ITEM_COLS: &str = "circle_id, item_id, shared_by, shared_at";
 
+/// (circle_id, name, is_direct, image_url)
+pub type CircleInfoTuple = (Uuid, String, bool, Option<String>);
+pub type CircleInfoMap = std::collections::HashMap<Uuid, Vec<CircleInfoTuple>>;
+
 // ── Concrete implementation ──────────────────────────────────────────
 
 pub struct PgCircleItemRepo {
@@ -47,10 +51,7 @@ impl traits::CircleItemRepo for PgCircleItemRepo {
         list_circles_for_item(&self.pool, item_id).await
     }
 
-    async fn list_circle_names_for_items(
-        &self,
-        item_ids: &[Uuid],
-    ) -> Result<std::collections::HashMap<Uuid, Vec<(Uuid, String, bool)>>> {
+    async fn list_circle_names_for_items(&self, item_ids: &[Uuid]) -> Result<CircleInfoMap> {
         list_circle_names_for_items(&self.pool, item_ids).await
     }
 }
@@ -146,10 +147,10 @@ pub(crate) async fn list_circles_for_item(
 pub(crate) async fn list_circle_names_for_items(
     exec: impl PgExecutor<'_>,
     item_ids: &[Uuid],
-) -> Result<std::collections::HashMap<Uuid, Vec<(Uuid, String, bool)>>> {
+) -> Result<CircleInfoMap> {
     // For direct circles (name IS NULL), use the other member's display_name or username
     let rows = sqlx::query(
-        "SELECT ci.item_id, c.id, c.is_direct, \
+        "SELECT ci.item_id, c.id, c.is_direct, c.image_url, \
            CASE WHEN c.name IS NOT NULL THEN c.name \
                 ELSE COALESCE(u.display_name, u.username, '') \
            END AS name \
@@ -164,16 +165,16 @@ pub(crate) async fn list_circle_names_for_items(
     .fetch_all(exec)
     .await?;
 
-    let mut map: std::collections::HashMap<Uuid, Vec<(Uuid, String, bool)>> =
-        std::collections::HashMap::new();
+    let mut map: CircleInfoMap = std::collections::HashMap::new();
     for row in rows {
         let item_id: Uuid = row.get("item_id");
         let circle_id: Uuid = row.get("id");
         let name: String = row.get("name");
         let is_direct: bool = row.get("is_direct");
+        let image_url: Option<String> = row.get("image_url");
         map.entry(item_id)
             .or_default()
-            .push((circle_id, name, is_direct));
+            .push((circle_id, name, is_direct, image_url));
     }
 
     Ok(map)

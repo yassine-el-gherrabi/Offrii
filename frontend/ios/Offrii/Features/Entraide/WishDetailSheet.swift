@@ -1,3 +1,4 @@
+import NukeUI
 import SwiftUI
 
 // MARK: - WishDetailSheet
@@ -192,14 +193,16 @@ struct WishDetailSheet: View {
     @ViewBuilder
     private func wishHeader(_ wish: WishDetail) -> some View {
         if let imageUrl = wish.imageUrl, let url = URL(string: imageUrl) {
-            AsyncImage(url: url) { image in
-                image
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
-                    .frame(height: 180)
-                    .clipped()
-            } placeholder: {
-                categoryGradientHeader(wish.category)
+            LazyImage(url: url) { state in
+                if let image = state.image {
+                    image
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .frame(height: 180)
+                        .clipped()
+                } else {
+                    categoryGradientHeader(wish.category)
+                }
             }
         } else {
             categoryGradientHeader(wish.category)

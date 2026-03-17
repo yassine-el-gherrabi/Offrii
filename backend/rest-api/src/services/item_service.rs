@@ -145,10 +145,11 @@ impl PgItemService {
             if let Some(circles) = circle_map.get(&item.id) {
                 item.shared_circles = circles
                     .iter()
-                    .map(|(id, name, is_direct)| SharedCircleInfo {
+                    .map(|(id, name, is_direct, image_url)| SharedCircleInfo {
                         id: *id,
                         name: name.clone(),
                         is_direct: *is_direct,
+                        image_url: image_url.clone(),
                     })
                     .collect();
             }

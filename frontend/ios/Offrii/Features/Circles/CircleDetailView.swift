@@ -1,3 +1,4 @@
+import NukeUI
 import SwiftUI
 
 // swiftlint:disable file_length type_body_length
@@ -520,16 +521,15 @@ struct CircleDetailView: View {
             ZStack {
                 if let imageUrl = item.imageUrl ?? item.ogImageUrl,
                    let url = URL(string: imageUrl) {
-                    AsyncImage(url: url) { phase in
-                        switch phase {
-                        case .success(let image):
+                    LazyImage(url: url) { state in
+                        if let image = state.image {
                             image
                                 .resizable()
                                 .aspectRatio(contentMode: .fill)
                                 .frame(minWidth: 0, maxWidth: .infinity)
                                 .frame(height: 130)
                                 .clipped()
-                        default:
+                        } else {
                             gradientPlaceholder(style: style)
                         }
                     }

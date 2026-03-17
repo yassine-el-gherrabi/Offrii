@@ -177,6 +177,7 @@ pub struct SharedCircleInfo {
     pub id: Uuid,
     pub name: String,
     pub is_direct: bool,
+    pub image_url: Option<String>,
 }
 
 impl From<Item> for ItemResponse {

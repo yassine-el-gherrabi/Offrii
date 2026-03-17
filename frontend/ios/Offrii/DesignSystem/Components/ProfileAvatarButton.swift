@@ -1,3 +1,4 @@
+import NukeUI
 import SwiftUI
 
 /// Small avatar button for navigating to ProfileView from any screen header.
@@ -9,15 +10,14 @@ struct ProfileAvatarButton: View {
     var body: some View {
         ZStack(alignment: .topTrailing) {
             if let url = avatarUrl {
-                AsyncImage(url: url) { phase in
-                    switch phase {
-                    case .success(let image):
+                LazyImage(url: url) { state in
+                    if let image = state.image {
                         image
                             .resizable()
                             .aspectRatio(contentMode: .fill)
                             .frame(width: 32, height: 32)
                             .clipShape(Circle())
-                    default:
+                    } else {
                         initialsView
                     }
                 }

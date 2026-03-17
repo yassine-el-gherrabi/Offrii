@@ -1,3 +1,4 @@
+import NukeUI
 import SwiftUI
 
 // MARK: - Avatar Size
@@ -54,15 +55,14 @@ struct AvatarView: View {
 
     var body: some View {
         if let url {
-            AsyncImage(url: url) { phase in
-                switch phase {
-                case .success(let image):
+            LazyImage(url: url) { state in
+                if let image = state.image {
                     image
                         .resizable()
                         .aspectRatio(contentMode: .fill)
                         .frame(width: size.dimension, height: size.dimension)
                         .clipShape(Circle())
-                default:
+                } else {
                     initialsView
                 }
             }

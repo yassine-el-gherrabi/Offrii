@@ -155,14 +155,20 @@ struct SharedCircleInfo: Codable, Identifiable, Equatable {
     let id: UUID
     let name: String
     let isDirect: Bool?
+    let imageUrl: String?
 
     var initial: String {
         String(name.prefix(1)).uppercased()
     }
 
+    var imageURL: URL? {
+        imageUrl.flatMap { URL(string: $0) }
+    }
+
     enum CodingKeys: String, CodingKey {
         case id, name
         case isDirect = "is_direct"
+        case imageUrl = "image_url"
     }
 
     init(from decoder: Decoder) throws {
@@ -170,5 +176,6 @@ struct SharedCircleInfo: Codable, Identifiable, Equatable {
         id = try container.decode(UUID.self, forKey: .id)
         name = try container.decode(String.self, forKey: .name)
         isDirect = try container.decodeIfPresent(Bool.self, forKey: .isDirect)
+        imageUrl = try container.decodeIfPresent(String.self, forKey: .imageUrl)
     }
 }

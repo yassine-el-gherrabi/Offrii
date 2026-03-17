@@ -1,3 +1,4 @@
+import NukeUI
 import SwiftUI
 
 // MARK: - CircleCardRow
@@ -52,15 +53,14 @@ struct CircleCardRow: View {
     private var avatarSection: some View {
         if let imageUrl = circle.imageUrl, let url = URL(string: imageUrl) {
             // Circle has a custom image
-            AsyncImage(url: url) { phase in
-                switch phase {
-                case .success(let image):
+            LazyImage(url: url) { state in
+                if let image = state.image {
                     image
                         .resizable()
                         .aspectRatio(contentMode: .fill)
                         .frame(width: 44, height: 44)
                         .clipShape(Circle())
-                default:
+                } else {
                     AvatarView(circle.name, size: .medium)
                 }
             }

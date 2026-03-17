@@ -548,7 +548,7 @@ pub trait CircleItemRepo: Send + Sync {
     async fn list_circle_names_for_items(
         &self,
         item_ids: &[Uuid],
-    ) -> Result<std::collections::HashMap<Uuid, Vec<(Uuid, String, bool)>>>;
+    ) -> Result<crate::repositories::circle_item_repo::CircleInfoMap>;
 }
 
 #[async_trait]
