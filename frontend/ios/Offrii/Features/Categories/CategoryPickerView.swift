@@ -30,9 +30,13 @@ struct CategoryPickerView: View {
                         selectedId = category.id
                         dismiss()
                     } label: {
-                        HStack {
+                        HStack(spacing: OffriiTheme.spacingSM) {
                             if let icon = category.icon {
-                                Text(icon)
+                                let style = CategoryStyle(icon: icon)
+                                Image(systemName: style.sfSymbol)
+                                    .font(.system(size: 16))
+                                    .foregroundColor(OffriiTheme.primary)
+                                    .frame(width: 28)
                             }
                             Text(category.name)
                                 .font(OffriiTypography.body)
