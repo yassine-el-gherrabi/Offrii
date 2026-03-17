@@ -4,10 +4,8 @@ import SwiftUI
 
 struct MemberCarousel: View {
     let members: [CircleMember]
-    @Binding var selectedMemberIds: Set<UUID>
+    @Binding var selectedMemberId: UUID?
     let currentUserId: UUID?
-
-    private var allSelected: Bool { selectedMemberIds.isEmpty }
 
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
@@ -28,7 +26,7 @@ struct MemberCarousel: View {
     private var allButton: some View {
         Button {
             OffriiHaptics.selection()
-            selectedMemberIds.removeAll()
+            selectedMemberId = nil
         } label: {
             VStack(spacing: 4) {
                 Circle()
@@ -48,14 +46,14 @@ struct MemberCarousel: View {
                     .overlay(
                         Circle()
                             .strokeBorder(
-                                allSelected ? OffriiTheme.primary : .clear,
+                                selectedMemberId == nil ? OffriiTheme.primary : .clear,
                                 lineWidth: 2.5
                             )
                     )
 
                 Text(NSLocalizedString("entraide.category.all", comment: ""))
-                    .font(.system(size: 11, weight: allSelected ? .semibold : .regular))
-                    .foregroundColor(allSelected ? OffriiTheme.primary : OffriiTheme.textMuted)
+                    .font(.system(size: 11, weight: selectedMemberId == nil ? .semibold : .regular))
+                    .foregroundColor(selectedMemberId == nil ? OffriiTheme.primary : OffriiTheme.textMuted)
                     .lineLimit(1)
             }
             .frame(width: 56)
@@ -66,51 +64,39 @@ struct MemberCarousel: View {
     // MARK: - Member Button
 
     private func memberButton(_ member: CircleMember) -> some View {
-        let isSelected = selectedMemberIds.contains(member.userId)
+        let isSelected = selectedMemberId == member.userId
         let isMe = member.userId == currentUserId
         let displayLabel = isMe
             ? NSLocalizedString("circles.detail.myWishes", comment: "")
             : (member.displayName ?? member.username)
 
-        return VStack(spacing: 4) {
-            AvatarView(member.displayName ?? member.username, size: .medium)
-                .overlay(
-                    Circle()
-                        .strokeBorder(
-                            isSelected ? OffriiTheme.primary : .clear,
-                            lineWidth: 2.5
-                        )
-                )
-
-            Text(displayLabel)
-                .font(.system(size: 11, weight: isSelected ? .semibold : .regular))
-                .foregroundColor(isSelected ? OffriiTheme.primary : OffriiTheme.textMuted)
-                .lineLimit(1)
-        }
-        .frame(width: 56)
-        .onTapGesture {
+        return Button {
             OffriiHaptics.selection()
-            toggleMember(member.userId)
-        }
-        .onLongPressGesture(minimumDuration: 0.5) {
-            OffriiHaptics.tap()
-            selectOnly(member.userId)
-        }
-    }
+            if isSelected {
+                // Tap same = deselect → back to "all"
+                selectedMemberId = nil
+            } else {
+                // Tap different = select this one
+                selectedMemberId = member.userId
+            }
+        } label: {
+            VStack(spacing: 4) {
+                AvatarView(member.displayName ?? member.username, size: .medium)
+                    .overlay(
+                        Circle()
+                            .strokeBorder(
+                                isSelected ? OffriiTheme.primary : .clear,
+                                lineWidth: 2.5
+                            )
+                    )
 
-    // MARK: - Logic
-
-    /// Tap: toggle member in/out of selection. If all deselected → back to "all".
-    private func toggleMember(_ id: UUID) {
-        if selectedMemberIds.contains(id) {
-            selectedMemberIds.remove(id)
-        } else {
-            selectedMemberIds.insert(id)
+                Text(displayLabel)
+                    .font(.system(size: 11, weight: isSelected ? .semibold : .regular))
+                    .foregroundColor(isSelected ? OffriiTheme.primary : OffriiTheme.textMuted)
+                    .lineLimit(1)
+            }
+            .frame(width: 56)
         }
-    }
-
-    /// Long press: select only this member (deselect all others).
-    private func selectOnly(_ id: UUID) {
-        selectedMemberIds = [id]
+        .buttonStyle(.plain)
     }
 }

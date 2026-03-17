@@ -336,7 +336,7 @@ struct CircleDetailView: View {
             // Member carousel filter
             MemberCarousel(
                 members: detail.members,
-                selectedMemberIds: $viewModel.selectedMemberFilter,
+                selectedMemberId: $viewModel.selectedMemberFilter,
                 currentUserId: currentUserId
             )
 

@@ -8,7 +8,7 @@ final class CircleDetailViewModel {
     var feed: [CircleEventResponse] = []
     var categories: [CategoryResponse]?
     var selectedTab: DetailTab = .items
-    var selectedMemberFilter: Set<UUID> = []
+    var selectedMemberFilter: UUID?
     var isLoading = false
     var error: String?
     var currentUserId: UUID?
@@ -23,8 +23,8 @@ final class CircleDetailViewModel {
     // MARK: - Computed Properties
 
     var filteredItems: [CircleItemResponse] {
-        guard !selectedMemberFilter.isEmpty else { return items }
-        return items.filter { selectedMemberFilter.contains($0.sharedBy) }
+        guard let memberId = selectedMemberFilter else { return items }
+        return items.filter { $0.sharedBy == memberId }
     }
 
     var myItems: [CircleItemResponse] {
