@@ -22,6 +22,8 @@ struct ItemEditView: View {
     @State private var imageRemoved = false
     @State private var existingImageUrl: URL?
     @State private var circleToUnshare: SharedCircleInfo?
+    @State private var didCancel = false
+    @State private var didSave = false
 
     init(item: Item, onSave: @escaping (Item) -> Void) {
         self.item = item
@@ -194,14 +196,8 @@ struct ItemEditView: View {
                 .padding(.horizontal, OffriiTheme.spacingLG)
                 .padding(.top, OffriiTheme.spacingSM)
 
-                OffriiButton(
-                    NSLocalizedString("item.save", comment: ""),
-                    isLoading: isSaving,
-                    isDisabled: name.trimmingCharacters(in: .whitespaces).isEmpty
-                ) {
-                    Task { await save() }
-                }
-                .padding(.horizontal, OffriiTheme.spacingLG)
+                // Spacer for bottom padding
+                Spacer().frame(height: OffriiTheme.spacingLG)
             }
             .padding(.top, OffriiTheme.spacingBase)
         }
@@ -211,11 +207,35 @@ struct ItemEditView: View {
         .toolbar {
             ToolbarItem(placement: .cancellationAction) {
                 Button(NSLocalizedString("common.cancel", comment: "")) {
+                    didCancel = true
                     dismiss()
                 }
                 .foregroundColor(OffriiTheme.primary)
             }
+            ToolbarItem(placement: .confirmationAction) {
+                if isSaving {
+                    ProgressView()
+                } else {
+                    Button(NSLocalizedString("common.ok", comment: "")) {
+                        Task {
+                            await save()
+                            didSave = true
+                            dismiss()
+                        }
+                    }
+                    .fontWeight(.semibold)
+                    .foregroundColor(OffriiTheme.primary)
+                    .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)
+                }
+            }
         }
+        .onDisappear {
+            // Auto-save on swipe-dismiss (not on explicit cancel)
+            if !didCancel && !didSave {
+                Task { await save() }
+            }
+        }
+        .interactiveDismissDisabled(isSaving)
         .sheet(isPresented: $showCategoryPicker) {
             CategoryPickerView(
                 categories: categories,
