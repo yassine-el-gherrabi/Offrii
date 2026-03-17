@@ -184,9 +184,7 @@ struct EntraideView: View {
 
                     OffriiChip(
                         title: item.label,
-                        isSelected: isSelected,
-                        backgroundColor: item.category?.backgroundColor,
-                        textColor: item.category?.textColor
+                        isSelected: isSelected
                     ) {
                         viewModel.selectCategory(item.category)
                     }

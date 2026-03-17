@@ -24,12 +24,12 @@ struct CategoryGridPicker: View {
                         .padding(.vertical, OffriiTheme.spacingSM + 2)
                         .background(
                             selectedCategory == category
-                                ? category.backgroundColor
+                                ? OffriiTheme.primary
                                 : OffriiTheme.surface
                         )
                         .foregroundColor(
                             selectedCategory == category
-                                ? category.textColor
+                                ? .white
                                 : OffriiTheme.textSecondary
                         )
                         .cornerRadius(OffriiTheme.cornerRadiusMD)
@@ -37,7 +37,7 @@ struct CategoryGridPicker: View {
                             RoundedRectangle(cornerRadius: OffriiTheme.cornerRadiusMD)
                                 .strokeBorder(
                                     selectedCategory == category
-                                        ? category.textColor
+                                        ? OffriiTheme.primary
                                         : Color.clear,
                                     lineWidth: 1.5
                                 )
