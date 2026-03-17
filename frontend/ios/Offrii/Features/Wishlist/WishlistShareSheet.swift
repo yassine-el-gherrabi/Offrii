@@ -355,10 +355,20 @@ struct WishlistShareSheet: View {
                             .fontWeight(.medium)
                             .foregroundColor(OffriiTheme.primary)
                     } else {
-                        Text(String(format: NSLocalizedString("share.sharedItemCount", comment: ""), sharedCount))
+                        Text(sharedCount == 1
+                            ? NSLocalizedString("share.sharedItemSingular", comment: "")
+                            : String(format: NSLocalizedString("share.sharedItemPlural", comment: ""), sharedCount))
                             .font(OffriiTypography.caption)
                             .fontWeight(.medium)
                             .foregroundColor(OffriiTheme.primary)
+                    }
+
+                    // Detail: item names
+                    if sharedCount > 0 && sharedCount < totalActive {
+                        Text(sharedItems.map(\.name).joined(separator: ", "))
+                            .font(.system(size: 11))
+                            .foregroundColor(OffriiTheme.textSecondary)
+                            .lineLimit(2)
                     }
                 }
 

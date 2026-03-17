@@ -492,6 +492,8 @@
 "share.noLinks" = "No share links";
 "share.noLinksSubtitle" = "Create a link to share your wishes with anyone";
 "share.sharedItemCount" = "%d wish(es) shared";
+"share.sharedItemSingular" = "1 wish shared";
+"share.sharedItemPlural" = "%d wishes shared";
 "share.noSharedItems" = "No wishes shared";
 "share.seesAllList" = "Sees entire list";
 "share.scopeCategories" = "By categories";
