@@ -508,6 +508,10 @@
 "circles.transferOwnership.title" = "Transférer la propriété";
 "circles.transferOwnership.message" = "%@ deviendra le propriétaire de ce cercle. Vous ne pourrez plus le gérer.";
 "circles.transferOwnership.action" = "Transférer";
+"circles.invite.linkTitle" = "Lien d'invitation";
+"circles.invite.linkSubtitle" = "Partagez ce lien pour inviter des personnes, meme si elles ne sont pas encore sur Offrii.";
+"circles.invite.createLink" = "Creer un lien d'invitation";
+"circles.invite.friendsTitle" = "Ajouter des amis";
 "item.unshare.title" = "Retirer du cercle";
 "item.unshare.message" = "Cette envie ne sera plus visible dans %@.";
 "circles.filter.reservations" = "Réservations";

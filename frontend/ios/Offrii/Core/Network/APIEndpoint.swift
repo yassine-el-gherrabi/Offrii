@@ -97,6 +97,10 @@ enum APIEndpoint {
     case getCircleFeed(circleId: UUID, page: Int, perPage: Int)
     case transferCircleOwnership(circleId: UUID, body: TransferOwnershipBody)
     case listReservations
+    case createCircleInvite(circleId: UUID, body: CreateCircleInviteBody?)
+    case listCircleInvites(circleId: UUID)
+    case revokeCircleInvite(circleId: UUID, inviteId: UUID)
+    case joinCircleViaInvite(token: String)
 
     // MARK: Friends
 
@@ -203,6 +207,10 @@ extension APIEndpoint {
         case .getCircleFeed(let circleId, _, _):        return "/circles/\(circleId)/feed"
         case .transferCircleOwnership(let circleId, _): return "/circles/\(circleId)/transfer"
         case .listReservations:                         return "/circles/my-reservations"
+        case .createCircleInvite(let circleId, _):      return "/circles/\(circleId)/invite"
+        case .listCircleInvites(let circleId):          return "/circles/\(circleId)/invites"
+        case .revokeCircleInvite(let cid, let iid):     return "/circles/\(cid)/invites/\(iid)"
+        case .joinCircleViaInvite(let token):           return "/circles/join/\(token)"
 
         // Friends
         case .searchUsers:                              return "/users/search"
@@ -303,6 +311,10 @@ extension APIEndpoint {
         case .getCircleFeed:        return .GET
         case .transferCircleOwnership: return .POST
         case .listReservations:     return .GET
+        case .createCircleInvite:   return .POST
+        case .listCircleInvites:    return .GET
+        case .revokeCircleInvite:   return .DELETE
+        case .joinCircleViaInvite:  return .POST
 
         // Friends
         case .searchUsers:              return .GET
@@ -421,6 +433,7 @@ extension APIEndpoint {
         case .addMemberToCircle(_, let body): return body
         case .shareItemToCircle(_, let body): return body
         case .transferCircleOwnership(_, let body): return body
+        case .createCircleInvite(_, let body):      return body
         case .sendFriendRequest(let body):          return body
         case .createCommunityWish(let body):        return body
         case .updateCommunityWish(_, let body):     return body

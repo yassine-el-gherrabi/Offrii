@@ -158,6 +158,35 @@ struct FeedResponse: Codable {
     var page: Int { pagination.page }
 }
 
+struct CircleInviteResponse: Codable, Identifiable {
+    let id: UUID
+    let token: String
+    let circleId: UUID
+    let expiresAt: Date
+    let maxUses: Int
+    let useCount: Int
+    let createdAt: Date
+
+    enum CodingKeys: String, CodingKey {
+        case id, token
+        case circleId = "circle_id"
+        case expiresAt = "expires_at"
+        case maxUses = "max_uses"
+        case useCount = "use_count"
+        case createdAt = "created_at"
+    }
+}
+
+struct JoinCircleResponse: Codable {
+    let circleId: UUID
+    let circleName: String?
+
+    enum CodingKeys: String, CodingKey {
+        case circleId = "circle_id"
+        case circleName = "circle_name"
+    }
+}
+
 struct ReservationResponse: Codable, Identifiable {
     let itemId: UUID
     let itemName: String

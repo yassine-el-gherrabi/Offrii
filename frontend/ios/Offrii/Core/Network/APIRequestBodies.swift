@@ -300,6 +300,16 @@ struct UpdateCircleBody: Encodable {
     }
 }
 
+struct CreateCircleInviteBody: Encodable {
+    let maxUses: Int?
+    let expiresInHours: Int?
+
+    enum CodingKeys: String, CodingKey {
+        case maxUses = "max_uses"
+        case expiresInHours = "expires_in_hours"
+    }
+}
+
 struct TransferOwnershipBody: Encodable {
     let userId: UUID
 
