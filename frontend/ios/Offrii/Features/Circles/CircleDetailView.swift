@@ -289,11 +289,50 @@ struct CircleDetailView: View {
         .padding(.vertical, OffriiTheme.spacingLG)
     }
 
+    // MARK: - Group Header
+
+    @ViewBuilder
+    private func groupHeader(_ detail: CircleDetailResponse) -> some View {
+        VStack(spacing: OffriiTheme.spacingSM) {
+            if let imageUrl = detail.imageUrl, let url = URL(string: imageUrl) {
+                LazyImage(url: url) { state in
+                    if let image = state.image {
+                        image
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .frame(width: 72, height: 72)
+                            .clipShape(Circle())
+                    } else {
+                        groupAvatarFallback(detail)
+                    }
+                }
+            } else {
+                groupAvatarFallback(detail)
+            }
+
+            Text(String(
+                format: NSLocalizedString("circles.memberCount", comment: ""),
+                detail.members.count
+            ))
+            .font(OffriiTypography.caption)
+            .foregroundColor(OffriiTheme.textMuted)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, OffriiTheme.spacingBase)
+    }
+
+    private func groupAvatarFallback(_ detail: CircleDetailResponse) -> some View {
+        AvatarView(detail.name, size: .large)
+    }
+
     // MARK: - Group Content
 
     @ViewBuilder
     private func groupCircleContent(_ detail: CircleDetailResponse) -> some View {
         VStack(spacing: 0) {
+            // Circle avatar header
+            groupHeader(detail)
+
             // Member carousel filter
             MemberCarousel(
                 members: detail.members,
