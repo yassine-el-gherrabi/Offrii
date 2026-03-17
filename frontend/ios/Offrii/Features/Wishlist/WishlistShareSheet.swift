@@ -1,26 +1,40 @@
 // swiftlint:disable file_length
+import NukeUI
 import SwiftUI
+
+// MARK: - Share Tab
+
+private enum ShareTab: String, CaseIterable {
+    case proches
+    case liens
+
+    var label: String {
+        switch self {
+        case .proches: return NSLocalizedString("share.tab.proches", comment: "")
+        case .liens: return NSLocalizedString("share.tab.liens", comment: "")
+        }
+    }
+}
 
 // MARK: - Share Scope
 
 private enum ShareScope: String, CaseIterable {
     case all
-    case category
     case selection
 }
 
 private enum LinkTTL: String, CaseIterable {
-    case never
+    case oneDay
     case oneWeek
     case oneMonth
-    case threeMonths
+    case never
 
     var label: String {
         switch self {
-        case .never:       return NSLocalizedString("share.ttl.never", comment: "")
+        case .oneDay:      return NSLocalizedString("share.ttl.oneDay", comment: "")
         case .oneWeek:     return NSLocalizedString("share.ttl.oneWeek", comment: "")
         case .oneMonth:    return NSLocalizedString("share.ttl.oneMonth", comment: "")
-        case .threeMonths: return NSLocalizedString("share.ttl.threeMonths", comment: "")
+        case .never:       return NSLocalizedString("share.ttl.never", comment: "")
         }
     }
 
@@ -29,10 +43,10 @@ private enum LinkTTL: String, CaseIterable {
         let formatter = ISO8601DateFormatter()
         formatter.formatOptions = [.withInternetDateTime]
         switch self {
-        case .never: return nil
+        case .oneDay: return formatter.string(from: calendar.date(byAdding: .day, value: 1, to: Date())!)
         case .oneWeek: return formatter.string(from: calendar.date(byAdding: .day, value: 7, to: Date())!)
         case .oneMonth: return formatter.string(from: calendar.date(byAdding: .month, value: 1, to: Date())!)
-        case .threeMonths: return formatter.string(from: calendar.date(byAdding: .month, value: 3, to: Date())!)
+        case .never: return nil
         }
     }
 }
@@ -43,61 +57,56 @@ private enum LinkTTL: String, CaseIterable {
 struct WishlistShareSheet: View {
     var items: [Item] = []
     var selectedItemIds: Set<UUID> = []
-    var categories: [CategoryResponse] = []
     var privateItemCount: Int = 0
 
     @Environment(\.dismiss) private var dismiss
 
-    // Circles
+    // Tab
+    @State private var selectedTab: ShareTab = .proches
+
+    // Proches
     @State private var circles: [OffriiCircle] = []
     @State private var isLoadingCircles = false
-    @State private var sharedCircleIds: Set<UUID> = []
+    @State private var shareToCircleSheet = false
+
+    // Links
+    @State private var shareLinks: [ShareLinkResponse] = []
+    @State private var isLoadingLinks = false
+    @State private var editingLink: ShareLinkResponse?
 
     // Link creation
     @State private var scope: ShareScope = .all
-    @State private var selectedCategoryIds: Set<UUID> = []
     @State private var pickedItemIds: Set<UUID> = []
     @State private var showItemPicker = false
     @State private var permission: String = "view_and_claim"
     @State private var linkLabel: String = ""
     @State private var linkTTL: LinkTTL = .never
-    @State private var showAllItemsDetail = false
     @State private var isCreatingLink = false
     @State private var justCreatedLink: String?
 
-    // Active links
-    @State private var shareLinks: [ShareLinkResponse] = []
-    @State private var isLoadingLinks = false
+    // Toasts
     @State private var toastMessage: String?
-    /// Maps link ID → item names for links created in this session
-    @State private var linkItemNames: [UUID: [String]] = [:]
-    @State private var editingLink: ShareLinkResponse?
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: OffriiTheme.spacingLG) {
-
-                    // Header description
-                    Text(NSLocalizedString("share.description", comment: ""))
-                        .font(OffriiTypography.subheadline)
-                        .foregroundColor(OffriiTheme.textSecondary)
-                        .padding(.horizontal, OffriiTheme.spacingLG)
-
-                    // ── SECTION 1: Cercles ──
-                    circlesSection
-
-                    Divider().padding(.horizontal, OffriiTheme.spacingLG)
-
-                    // ── SECTION 2: Créer un lien ──
-                    createLinkSection
-
-                    Divider().padding(.horizontal, OffriiTheme.spacingLG)
-
-                    // ── SECTION 3: Liens actifs ──
-                    activeLinksSection
+            VStack(spacing: 0) {
+                // Segmented picker
+                Picker("", selection: $selectedTab) {
+                    ForEach(ShareTab.allCases, id: \.rawValue) { tab in
+                        Text(tab.label).tag(tab)
+                    }
                 }
-                .padding(.vertical, OffriiTheme.spacingBase)
+                .pickerStyle(.segmented)
+                .padding(.horizontal, OffriiTheme.spacingLG)
+                .padding(.vertical, OffriiTheme.spacingSM)
+
+                // Content
+                switch selectedTab {
+                case .proches:
+                    prochesContent
+                case .liens:
+                    liensContent
+                }
             }
             .background(OffriiTheme.background)
             .navigationTitle(NSLocalizedString("share.title", comment: ""))
@@ -110,6 +119,10 @@ struct WishlistShareSheet: View {
                             .foregroundColor(OffriiTheme.textSecondary)
                     }
                 }
+            }
+            .sheet(isPresented: $shareToCircleSheet) {
+                ShareToCircleSheet(itemId: nil)
+                    .presentationDetents([.medium])
             }
             .sheet(item: $editingLink) { link in
                 EditShareLinkSheet(link: link) { updated in
@@ -124,84 +137,288 @@ struct WishlistShareSheet: View {
                     .presentationDetents([.medium, .large])
             }
             .task {
-                async let circles: () = loadCircles()
-                async let links: () = loadShareLinks()
-                _ = await (circles, links)
+                async let circlesLoad: () = loadCircles()
+                async let linksLoad: () = loadShareLinks()
+                _ = await (circlesLoad, linksLoad)
             }
         }
     }
 
-    // MARK: - Section 1: Cercles
+    // MARK: - Onglet Proches
 
-    private var circlesSection: some View {
-        VStack(alignment: .leading, spacing: OffriiTheme.spacingSM) {
-            Text(NSLocalizedString("share.yourCircles", comment: ""))
-                .font(OffriiTypography.headline)
-                .foregroundColor(OffriiTheme.text)
-                .padding(.horizontal, OffriiTheme.spacingLG)
-
-            if isLoadingCircles {
-                SkeletonRow()
-                    .padding(.horizontal, OffriiTheme.spacingLG)
-            } else if circles.isEmpty {
-                Text(NSLocalizedString("share.noCircles", comment: ""))
-                    .font(OffriiTypography.subheadline)
-                    .foregroundColor(OffriiTheme.textMuted)
-                    .padding(.horizontal, OffriiTheme.spacingLG)
-            } else {
-                ForEach(circles) { circle in
-                    let isShared = sharedCircleIds.contains(circle.id)
-
-                    HStack(spacing: OffriiTheme.spacingMD) {
-                        Image(systemName: circle.isDirect ? "bubble.left.fill" : "person.2.fill")
-                            .font(.system(size: 14))
-                            .foregroundColor(OffriiTheme.primary)
-                            .frame(width: 32, height: 32)
-                            .background(OffriiTheme.primary.opacity(0.1))
-                            .clipShape(Circle())
-
-                        VStack(alignment: .leading, spacing: 1) {
-                            Text(circle.name ?? NSLocalizedString("circles.unnamed", comment: ""))
-                                .font(OffriiTypography.body)
-                                .foregroundColor(OffriiTheme.text)
-                            Text(String(format: NSLocalizedString("circles.memberCount", comment: ""), circle.memberCount))
-                                .font(OffriiTypography.caption)
-                                .foregroundColor(OffriiTheme.textMuted)
-                        }
-
-                        Spacer()
-
-                        if isShared {
-                            HStack(spacing: 4) {
-                                Image(systemName: "checkmark")
-                                    .font(.system(size: 11, weight: .bold))
-                                Text(NSLocalizedString("share.sharedSuccess", comment: ""))
-                                    .font(.system(size: 12, weight: .medium))
-                            }
-                            .foregroundColor(OffriiTheme.success)
-                        } else {
-                            Button {
-                                Task { await shareToCircle(circle) }
-                            } label: {
-                                Text(NSLocalizedString("share.addPeople", comment: ""))
-                                    .font(.system(size: 12, weight: .semibold))
-                                    .foregroundColor(.white)
-                                    .padding(.horizontal, 12)
-                                    .padding(.vertical, 6)
-                                    .background(OffriiTheme.primary)
-                                    .cornerRadius(OffriiTheme.cornerRadiusXL)
-                            }
+    private var prochesContent: some View {
+        ScrollView {
+            VStack(spacing: 0) {
+                if isLoadingCircles {
+                    SkeletonList(count: 4)
+                        .padding(.horizontal, OffriiTheme.spacingLG)
+                } else if circles.isEmpty {
+                    Spacer().frame(height: 60)
+                    OffriiEmptyState(
+                        icon: "person.2.fill",
+                        title: NSLocalizedString("share.noCircles", comment: ""),
+                        subtitle: NSLocalizedString("share.noCirclesSubtitle", comment: "")
+                    )
+                } else {
+                    VStack(spacing: OffriiTheme.spacingXS) {
+                        ForEach(circles) { circle in
+                            circleRow(circle)
                         }
                     }
                     .padding(.horizontal, OffriiTheme.spacingLG)
-                    .padding(.vertical, OffriiTheme.spacingXS)
-                    .animation(OffriiAnimation.snappy, value: isShared)
+                    .padding(.top, OffriiTheme.spacingSM)
                 }
             }
         }
     }
 
-    // MARK: - Section 2: Créer un lien
+    private func circleRow(_ circle: OffriiCircle) -> some View {
+        let sharedCount = items.filter { item in
+            item.sharedCircles.contains(where: { $0.id == circle.id })
+        }.count
+
+        return Button {
+            shareToCircleSheet = true
+        } label: {
+            HStack(spacing: OffriiTheme.spacingMD) {
+                // Avatar
+                circleAvatar(circle)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(circle.name ?? NSLocalizedString("circles.unnamed", comment: ""))
+                        .font(OffriiTypography.body)
+                        .foregroundColor(OffriiTheme.text)
+
+                    if sharedCount > 0 {
+                        Text(String(format: NSLocalizedString("share.sharedItemCount", comment: ""), sharedCount))
+                            .font(OffriiTypography.caption)
+                            .fontWeight(.medium)
+                            .foregroundColor(OffriiTheme.primary)
+                    } else {
+                        Text(NSLocalizedString("share.noSharedItems", comment: ""))
+                            .font(OffriiTypography.caption)
+                            .foregroundColor(OffriiTheme.textMuted)
+                    }
+                }
+
+                Spacer()
+
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundColor(OffriiTheme.textMuted)
+            }
+            .padding(OffriiTheme.spacingBase)
+            .background(OffriiTheme.card)
+            .cornerRadius(OffriiTheme.cornerRadiusLG)
+            .shadow(color: OffriiTheme.cardShadowColor, radius: 6, x: 0, y: 2)
+        }
+        .buttonStyle(.plain)
+    }
+
+    @ViewBuilder
+    private func circleAvatar(_ circle: OffriiCircle) -> some View {
+        if let imageUrl = circle.imageUrl, let url = URL(string: imageUrl) {
+            LazyImage(url: url) { state in
+                if let image = state.image {
+                    image
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .frame(width: 40, height: 40)
+                        .clipShape(Circle())
+                } else {
+                    AvatarView(circle.name, size: .medium)
+                }
+            }
+        } else {
+            AvatarView(
+                circle.isDirect ? circle.memberNames.first ?? circle.name : circle.name,
+                size: .medium
+            )
+        }
+    }
+
+    // MARK: - Onglet Liens
+
+    private var liensContent: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: OffriiTheme.spacingLG) {
+
+                // Toast
+                if let msg = toastMessage {
+                    toastView(msg)
+                }
+
+                // Section 1: Liens existants
+                activeLinksSection
+
+                Divider().padding(.horizontal, OffriiTheme.spacingLG)
+
+                // Section 2: Créer un lien
+                createLinkSection
+            }
+            .padding(.vertical, OffriiTheme.spacingBase)
+        }
+    }
+
+    // MARK: - Active Links
+
+    private var activeLinksSection: some View {
+        VStack(alignment: .leading, spacing: OffriiTheme.spacingSM) {
+            if isLoadingLinks {
+                SkeletonList(count: 2)
+                    .padding(.horizontal, OffriiTheme.spacingLG)
+            } else if shareLinks.isEmpty {
+                VStack(spacing: OffriiTheme.spacingSM) {
+                    Spacer().frame(height: 20)
+                    OffriiEmptyState(
+                        icon: "link",
+                        title: NSLocalizedString("share.noLinks", comment: ""),
+                        subtitle: NSLocalizedString("share.noLinksSubtitle", comment: "")
+                    )
+                }
+            } else {
+                Text(NSLocalizedString("share.activeLinks", comment: "") + " (\(shareLinks.count))")
+                    .font(OffriiTypography.headline)
+                    .foregroundColor(OffriiTheme.text)
+                    .padding(.horizontal, OffriiTheme.spacingLG)
+
+                ForEach(shareLinks) { link in
+                    linkCard(link)
+                }
+            }
+        }
+    }
+
+    private func linkCard(_ link: ShareLinkResponse) -> some View {
+        let isDisabled = link.isActive == false
+
+        return VStack(alignment: .leading, spacing: OffriiTheme.spacingSM) {
+            linkCardHeader(link, isDisabled: isDisabled)
+            linkCardUrl(link, isDisabled: isDisabled)
+            linkCardInfo(link)
+
+            linkCardActions(link)
+        }
+        .padding(OffriiTheme.spacingMD)
+        .background(isDisabled ? OffriiTheme.surface.opacity(0.6) : OffriiTheme.surface)
+        .cornerRadius(OffriiTheme.cornerRadiusMD)
+        .overlay(
+            RoundedRectangle(cornerRadius: OffriiTheme.cornerRadiusMD)
+                .strokeBorder(isDisabled ? OffriiTheme.border : .clear, lineWidth: 1)
+        )
+        .contextMenu { linkContextMenu(link) }
+        .padding(.horizontal, OffriiTheme.spacingLG)
+    }
+
+    @ViewBuilder
+    private func linkCardHeader(_ link: ShareLinkResponse, isDisabled: Bool) -> some View {
+        HStack(spacing: OffriiTheme.spacingSM) {
+            if isDisabled {
+                Text(NSLocalizedString("share.linkDisabled", comment: ""))
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .background(OffriiTheme.textMuted)
+                    .cornerRadius(4)
+            }
+            if let label = link.label, !label.isEmpty {
+                Text(label)
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundColor(isDisabled ? OffriiTheme.textMuted : OffriiTheme.text)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func linkCardUrl(_ link: ShareLinkResponse, isDisabled: Bool) -> some View {
+        if !isDisabled, let url = URL(string: link.displayUrl) {
+            Link(destination: url) {
+                HStack(spacing: 6) {
+                    Image(systemName: "link").font(.system(size: 11))
+                    Text(link.displayUrl).font(.system(size: 12, weight: .medium)).lineLimit(1)
+                    Spacer()
+                    Image(systemName: "arrow.up.right").font(.system(size: 10))
+                }
+                .foregroundColor(OffriiTheme.primary)
+            }
+        } else {
+            HStack(spacing: 6) {
+                Image(systemName: "link").font(.system(size: 11))
+                Text(link.displayUrl).font(.system(size: 12, weight: .medium)).lineLimit(1).strikethrough(isDisabled)
+            }
+            .foregroundColor(OffriiTheme.textMuted)
+        }
+    }
+
+    private func linkCardInfo(_ link: ShareLinkResponse) -> some View {
+        HStack(spacing: 4) {
+            Text(scopeLabel(link.scope))
+            Text("\u{00B7}")
+            Text(permissionLabel(link.permissions))
+            Text("\u{00B7}")
+            if let exp = link.expiresAt {
+                Text(exp, style: .relative)
+            } else {
+                Text(NSLocalizedString("share.ttl.never", comment: ""))
+            }
+        }
+        .font(.system(size: 10))
+        .foregroundColor(OffriiTheme.textMuted)
+    }
+
+    private func linkCardActions(_ link: ShareLinkResponse) -> some View {
+        HStack(spacing: OffriiTheme.spacingBase) {
+            Spacer()
+            Button {
+                UIPasteboard.general.string = link.displayUrl
+                OffriiHaptics.success()
+                showToast(NSLocalizedString("share.linkCopied", comment: ""))
+            } label: {
+                Label(NSLocalizedString("share.copyLink", comment: ""), systemImage: "doc.on.doc")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundColor(OffriiTheme.primary)
+            }
+            Button {
+                shareViaSystem(url: link.displayUrl)
+            } label: {
+                Label(NSLocalizedString("share.sendDirect", comment: ""), systemImage: "square.and.arrow.up")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundColor(OffriiTheme.primary)
+            }
+            Button {
+                Task { await deleteLink(id: link.id) }
+            } label: {
+                Label(NSLocalizedString("common.delete", comment: ""), systemImage: "trash")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundColor(OffriiTheme.danger)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func linkContextMenu(_ link: ShareLinkResponse) -> some View {
+        Button {
+            editingLink = link
+        } label: {
+            Label(NSLocalizedString("wishlist.edit", comment: ""), systemImage: "pencil")
+        }
+        Button {
+            UIPasteboard.general.string = link.displayUrl
+            OffriiHaptics.success()
+            showToast(NSLocalizedString("share.linkCopied", comment: ""))
+        } label: {
+            Label(NSLocalizedString("share.copyLink", comment: ""), systemImage: "doc.on.doc")
+        }
+        Divider()
+        Button(role: .destructive) {
+            Task { await deleteLink(id: link.id) }
+        } label: {
+            Label(NSLocalizedString("common.delete", comment: ""), systemImage: "trash")
+        }
+    }
+
+    // MARK: - Create Link Section
 
     private var createLinkSection: some View {
         VStack(alignment: .leading, spacing: OffriiTheme.spacingSM) {
@@ -210,182 +427,93 @@ struct WishlistShareSheet: View {
                 .foregroundColor(OffriiTheme.text)
                 .padding(.horizontal, OffriiTheme.spacingLG)
 
-            // Scope picker
-            VStack(alignment: .leading, spacing: OffriiTheme.spacingSM) {
-                Text(NSLocalizedString("share.whatToShare", comment: ""))
-                    .font(OffriiTypography.subheadline)
-                    .foregroundColor(OffriiTheme.textMuted)
+            // Scope
+            scopeSelectionSection
 
-                // Radio: All + expandable detail
-                HStack {
-                    scopeOption(.all, icon: "list.bullet", label: NSLocalizedString("share.scopeAll", comment: ""))
+            // Permissions + Name + TTL
+            linkOptionsSection
 
-                    if scope == .all {
-                        let activeNonPrivate = items.filter { $0.isActive && !$0.isPrivate }
-                        Text("(\(activeNonPrivate.count))")
-                            .font(.system(size: 12))
-                            .foregroundColor(OffriiTheme.textMuted)
+            // Success toast
+            if justCreatedLink != nil {
+                linkCreatedToast
+            }
 
-                        Button {
-                            withAnimation(OffriiAnimation.snappy) {
-                                showAllItemsDetail.toggle()
-                            }
-                        } label: {
-                            Image(systemName: showAllItemsDetail ? "chevron.up" : "chevron.down")
-                                .font(.system(size: 10, weight: .semibold))
-                                .foregroundColor(OffriiTheme.textMuted)
-                        }
-                    }
-                }
+            // Create button
+            createLinkButton
+        }
+    }
 
-                if scope == .all && showAllItemsDetail {
-                    VStack(alignment: .leading, spacing: 3) {
-                        ForEach(items.filter { $0.isActive && !$0.isPrivate }) { item in
-                            HStack(spacing: 6) {
-                                Image(systemName: "gift.fill")
-                                    .font(.system(size: 9))
-                                    .foregroundColor(OffriiTheme.primary.opacity(0.6))
-                                Text(item.name)
-                                    .font(.system(size: 11))
-                                    .foregroundColor(OffriiTheme.textSecondary)
-                                    .lineLimit(1)
-                            }
-                        }
-                    }
-                    .padding(.leading, OffriiTheme.spacingXXL)
-                    .transition(.opacity.combined(with: .move(edge: .top)))
-                }
+    private var scopeSelectionSection: some View {
+        VStack(alignment: .leading, spacing: OffriiTheme.spacingSM) {
+            Text(NSLocalizedString("share.whatToShare", comment: ""))
+                .font(OffriiTypography.subheadline)
+                .foregroundColor(OffriiTheme.textMuted)
 
-                // Radio: Categories (multi-select)
-                scopeOption(.category, icon: "tag.fill", label: NSLocalizedString("share.scopeCategory", comment: ""))
+            scopeOption(.all, icon: "list.bullet", label: NSLocalizedString("share.scopeAll", comment: ""))
 
-                if scope == .category && !categories.isEmpty {
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: OffriiTheme.spacingSM) {
-                            ForEach(categories, id: \.id) { cat in
-                                let isSelected = selectedCategoryIds.contains(cat.id)
-                                let style = CategoryStyle(icon: cat.icon)
-
-                                Button {
-                                    if isSelected {
-                                        selectedCategoryIds.remove(cat.id)
-                                    } else {
-                                        selectedCategoryIds.insert(cat.id)
-                                    }
-                                } label: {
-                                    HStack(spacing: 4) {
-                                        Image(systemName: style.sfSymbol)
-                                            .font(.system(size: 10))
-                                        Text(cat.name)
-                                            .font(.system(size: 12, weight: isSelected ? .semibold : .regular))
-                                    }
-                                    .foregroundColor(isSelected ? .white : OffriiTheme.textSecondary)
-                                    .padding(.horizontal, 10)
-                                    .padding(.vertical, 6)
-                                    .background(isSelected ? style.chipColor : OffriiTheme.surface)
-                                    .cornerRadius(OffriiTheme.cornerRadiusXL)
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: OffriiTheme.cornerRadiusXL)
-                                            .strokeBorder(isSelected ? .clear : OffriiTheme.border, lineWidth: 1)
-                                    )
-                                }
-                                .buttonStyle(.plain)
-                            }
-                        }
-                    }
-                    .padding(.leading, OffriiTheme.spacingXXL)
-                }
-
-                // Radio: Selection (pick specific items) — opens picker immediately
-                Button {
-                    withAnimation(OffriiAnimation.snappy) {
-                        scope = .selection
-                    }
-                    showItemPicker = true
-                } label: {
-                    HStack(spacing: OffriiTheme.spacingSM) {
-                        Image(systemName: scope == .selection ? "largecircle.fill.circle" : "circle")
-                            .font(.system(size: 18))
-                            .foregroundColor(scope == .selection ? OffriiTheme.primary : OffriiTheme.textMuted)
-
-                        Image(systemName: "checkmark.circle")
-                            .font(.system(size: 13))
-                            .foregroundColor(OffriiTheme.textSecondary)
-
-                        Text(NSLocalizedString("share.scopeSelection", comment: ""))
-                            .font(OffriiTypography.body)
-                            .foregroundColor(OffriiTheme.text)
-
-                        Spacer()
-                    }
-                }
-                .buttonStyle(.plain)
-
-                // Show picked items preview OR pick button
-                if scope == .selection {
-                    if pickedItemIds.isEmpty {
-                        // Nothing selected yet — show pick button
-                        Button {
-                            showItemPicker = true
-                        } label: {
-                            HStack(spacing: 6) {
-                                Image(systemName: "plus.circle")
-                                    .font(.system(size: 14))
-                                Text(NSLocalizedString("share.pickItems", comment: ""))
-                                    .font(.system(size: 13, weight: .medium))
-                            }
-                            .foregroundColor(OffriiTheme.primary)
-                        }
-                        .padding(.leading, OffriiTheme.spacingXXL)
-                    } else {
-                        // Show selected items
-                        VStack(alignment: .leading, spacing: 4) {
-                            ForEach(items.filter { pickedItemIds.contains($0.id) }) { item in
-                                HStack(spacing: 6) {
-                                    Image(systemName: "gift.fill")
-                                        .font(.system(size: 10))
-                                        .foregroundColor(OffriiTheme.primary)
-                                    Text(item.name)
-                                        .font(.system(size: 12))
-                                        .foregroundColor(OffriiTheme.text)
-                                        .lineLimit(1)
-                                }
-                            }
-
-                            Button {
-                                showItemPicker = true
-                            } label: {
-                                Text(NSLocalizedString("share.modifySelection", comment: ""))
-                                    .font(.system(size: 12, weight: .medium))
-                                    .foregroundColor(OffriiTheme.primary)
-                            }
-                        }
-                        .padding(.leading, OffriiTheme.spacingXXL)
-                    }
+            Button {
+                withAnimation(OffriiAnimation.snappy) { scope = .selection }
+                showItemPicker = true
+            } label: {
+                HStack(spacing: OffriiTheme.spacingSM) {
+                    Image(systemName: scope == .selection ? "largecircle.fill.circle" : "circle")
+                        .font(.system(size: 18))
+                        .foregroundColor(scope == .selection ? OffriiTheme.primary : OffriiTheme.textMuted)
+                    Image(systemName: "checkmark.circle")
+                        .font(.system(size: 13))
+                        .foregroundColor(OffriiTheme.textSecondary)
+                    Text(NSLocalizedString("share.scopeSelection", comment: ""))
+                        .font(OffriiTypography.body)
+                        .foregroundColor(OffriiTheme.text)
+                    Spacer()
                 }
             }
-            .padding(.horizontal, OffriiTheme.spacingLG)
+            .buttonStyle(.plain)
 
-            // Permissions picker
+            if scope == .selection && !pickedItemIds.isEmpty {
+                VStack(alignment: .leading, spacing: 4) {
+                    ForEach(items.filter { pickedItemIds.contains($0.id) }) { item in
+                        HStack(spacing: 6) {
+                            Image(systemName: "gift.fill")
+                                .font(.system(size: 10))
+                                .foregroundColor(OffriiTheme.primary)
+                            Text(item.name)
+                                .font(.system(size: 12))
+                                .foregroundColor(OffriiTheme.text)
+                                .lineLimit(1)
+                        }
+                    }
+                    Button { showItemPicker = true } label: {
+                        Text(NSLocalizedString("share.modifySelection", comment: ""))
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(OffriiTheme.primary)
+                    }
+                }
+                .padding(.leading, OffriiTheme.spacingXXL)
+            }
+        }
+        .padding(.horizontal, OffriiTheme.spacingLG)
+    }
+
+    private var linkOptionsSection: some View {
+        VStack(alignment: .leading, spacing: OffriiTheme.spacingSM) {
+            // Permissions
             VStack(alignment: .leading, spacing: OffriiTheme.spacingXS) {
                 Text(NSLocalizedString("share.permissions", comment: ""))
                     .font(OffriiTypography.subheadline)
                     .foregroundColor(OffriiTheme.textMuted)
-
                 Picker("", selection: $permission) {
                     Text(NSLocalizedString("share.permViewAndClaim", comment: "")).tag("view_and_claim")
                     Text(NSLocalizedString("share.permViewOnly", comment: "")).tag("view_only")
                 }
                 .pickerStyle(.segmented)
             }
-            .padding(.horizontal, OffriiTheme.spacingLG)
 
-            // Link name (optional)
+            // Link name
             VStack(alignment: .leading, spacing: OffriiTheme.spacingXS) {
                 Text(NSLocalizedString("share.linkName", comment: ""))
                     .font(OffriiTypography.subheadline)
                     .foregroundColor(OffriiTheme.textMuted)
-
                 TextField(NSLocalizedString("share.linkNamePlaceholder", comment: ""), text: $linkLabel)
                     .font(OffriiTypography.body)
                     .padding(.horizontal, OffriiTheme.spacingMD)
@@ -397,14 +525,12 @@ struct WishlistShareSheet: View {
                             .strokeBorder(OffriiTheme.border, lineWidth: 1)
                     )
             }
-            .padding(.horizontal, OffriiTheme.spacingLG)
 
             // TTL
             VStack(alignment: .leading, spacing: OffriiTheme.spacingXS) {
                 Text(NSLocalizedString("share.ttl", comment: ""))
                     .font(OffriiTypography.subheadline)
                     .foregroundColor(OffriiTheme.textMuted)
-
                 Picker("", selection: $linkTTL) {
                     ForEach(LinkTTL.allCases, id: \.rawValue) { ttl in
                         Text(ttl.label).tag(ttl)
@@ -412,7 +538,6 @@ struct WishlistShareSheet: View {
                 }
                 .pickerStyle(.segmented)
             }
-            .padding(.horizontal, OffriiTheme.spacingLG)
 
             // Private items warning
             if privateItemCount > 0 && scope == .all {
@@ -423,289 +548,100 @@ struct WishlistShareSheet: View {
                         .font(OffriiTypography.caption)
                 }
                 .foregroundColor(OffriiTheme.textMuted)
-                .padding(.horizontal, OffriiTheme.spacingLG)
             }
+        }
+        .padding(.horizontal, OffriiTheme.spacingLG)
+    }
 
-            // Success toast
-            if justCreatedLink != nil {
-                HStack(spacing: OffriiTheme.spacingSM) {
-                    Image(systemName: "checkmark.circle.fill")
-                        .foregroundColor(OffriiTheme.success)
-                    Text(NSLocalizedString("share.linkCopied", comment: ""))
-                        .font(OffriiTypography.subheadline)
-                        .foregroundColor(OffriiTheme.success)
-                }
-                .frame(maxWidth: .infinity)
-                .padding(OffriiTheme.spacingSM)
-                .background(OffriiTheme.success.opacity(0.1))
-                .cornerRadius(OffriiTheme.cornerRadiusSM)
-                .padding(.horizontal, OffriiTheme.spacingLG)
-                .transition(.move(edge: .top).combined(with: .opacity))
-                .onAppear {
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
-                        withAnimation { justCreatedLink = nil }
-                    }
-                }
+    private var linkCreatedToast: some View {
+        HStack(spacing: OffriiTheme.spacingSM) {
+            Image(systemName: "checkmark.circle.fill")
+                .foregroundColor(OffriiTheme.success)
+            Text(NSLocalizedString("share.linkCopied", comment: ""))
+                .font(OffriiTypography.subheadline)
+                .foregroundColor(OffriiTheme.success)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(OffriiTheme.spacingSM)
+        .background(OffriiTheme.success.opacity(0.1))
+        .cornerRadius(OffriiTheme.cornerRadiusSM)
+        .padding(.horizontal, OffriiTheme.spacingLG)
+        .transition(.move(edge: .top).combined(with: .opacity))
+        .onAppear {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                withAnimation { justCreatedLink = nil }
             }
-
-            // Action buttons
-            VStack(spacing: OffriiTheme.spacingSM) {
-                // Create + copy
-                Button {
-                    Task { await createLink(openShareSheet: false) }
-                } label: {
-                    HStack(spacing: OffriiTheme.spacingSM) {
-                        Image(systemName: "doc.on.doc")
-                        Text(NSLocalizedString("share.createAndCopy", comment: ""))
-                    }
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 14)
-                    .background(isCreateDisabled ? OffriiTheme.textMuted : OffriiTheme.primary)
-                    .cornerRadius(OffriiTheme.cornerRadiusMD)
-                }
-                .disabled(isCreateDisabled || isCreatingLink)
-                .overlay { if isCreatingLink { ProgressView().tint(.white) } }
-
-                // Send directly via iOS share sheet
-                Button {
-                    Task { await createLink(openShareSheet: true) }
-                } label: {
-                    HStack(spacing: OffriiTheme.spacingSM) {
-                        Image(systemName: "square.and.arrow.up")
-                        Text(NSLocalizedString("share.sendDirect", comment: ""))
-                    }
-                    .font(.system(size: 15, weight: .medium))
-                    .foregroundColor(OffriiTheme.primary)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 14)
-                    .background(OffriiTheme.primary.opacity(0.1))
-                    .cornerRadius(OffriiTheme.cornerRadiusMD)
-                }
-                .disabled(isCreateDisabled || isCreatingLink)
-            }
-            .padding(.horizontal, OffriiTheme.spacingLG)
         }
     }
 
-    // MARK: - Section 3: Liens actifs
-
-    private var activeLinksSection: some View {
-        VStack(alignment: .leading, spacing: OffriiTheme.spacingSM) {
-            // Toast
-            if let msg = toastMessage {
-                HStack(spacing: 6) {
-                    Image(systemName: "checkmark.circle.fill")
-                    Text(msg)
-                        .font(.system(size: 13, weight: .medium))
-                }
-                .foregroundColor(OffriiTheme.success)
-                .frame(maxWidth: .infinity)
-                .padding(OffriiTheme.spacingSM)
-                .background(OffriiTheme.success.opacity(0.1))
-                .cornerRadius(OffriiTheme.cornerRadiusSM)
-                .padding(.horizontal, OffriiTheme.spacingLG)
-                .transition(.move(edge: .top).combined(with: .opacity))
-                .onAppear {
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                        withAnimation { toastMessage = nil }
-                    }
-                }
+    private var createLinkButton: some View {
+        Button {
+            Task { await createLink() }
+        } label: {
+            HStack(spacing: OffriiTheme.spacingSM) {
+                Image(systemName: "link.badge.plus")
+                Text(NSLocalizedString("share.createLink", comment: ""))
             }
-
-            if !shareLinks.isEmpty {
-                Text(NSLocalizedString("share.activeLinks", comment: "") + " (\(shareLinks.count))")
-                    .font(OffriiTypography.headline)
-                    .foregroundColor(OffriiTheme.text)
-                    .padding(.horizontal, OffriiTheme.spacingLG)
-
-                ForEach(shareLinks) { link in
-                    let isDisabled = link.isActive == false
-
-                    VStack(alignment: .leading, spacing: OffriiTheme.spacingSM) {
-                        // Disabled badge + label
-                        HStack(spacing: OffriiTheme.spacingSM) {
-                            if isDisabled {
-                                Text(NSLocalizedString("share.linkDisabled", comment: ""))
-                                    .font(.system(size: 10, weight: .semibold))
-                                    .foregroundColor(.white)
-                                    .padding(.horizontal, 6)
-                                    .padding(.vertical, 2)
-                                    .background(OffriiTheme.textMuted)
-                                    .cornerRadius(4)
-                            }
-
-                            if let label = link.label, !label.isEmpty {
-                                Text(label)
-                                    .font(.system(size: 13, weight: .semibold))
-                                    .foregroundColor(isDisabled ? OffriiTheme.textMuted : OffriiTheme.text)
-                            }
-                        }
-
-                        // Tappable URL → opens default browser (disabled if inactive)
-                        if !isDisabled, let url = URL(string: link.displayUrl) {
-                            Link(destination: url) {
-                                HStack(spacing: 6) {
-                                    Image(systemName: "link")
-                                        .font(.system(size: 11))
-                                    Text(link.displayUrl)
-                                        .font(.system(size: 12, weight: .medium))
-                                        .lineLimit(1)
-                                    Spacer()
-                                    Image(systemName: "arrow.up.right")
-                                        .font(.system(size: 10))
-                                }
-                                .foregroundColor(OffriiTheme.primary)
-                            }
-                        } else {
-                            HStack(spacing: 6) {
-                                Image(systemName: "link")
-                                    .font(.system(size: 11))
-                                Text(link.displayUrl)
-                                    .font(.system(size: 12, weight: .medium))
-                                    .lineLimit(1)
-                                    .strikethrough(isDisabled)
-                            }
-                            .foregroundColor(OffriiTheme.textMuted)
-                        }
-
-                        // Info rows
-                        VStack(alignment: .leading, spacing: 3) {
-                            // Scope + permissions
-                            HStack(spacing: 4) {
-                                Text(scopeLabel(link.scope))
-                                Text("·")
-                                Text(permissionLabel(link.permissions))
-                            }
-                            .font(.system(size: 11))
-                            .foregroundColor(OffriiTheme.textMuted)
-
-                            // Creation + expiration
-                            HStack(spacing: 4) {
-                                Image(systemName: "clock")
-                                    .font(.system(size: 9))
-                                Text(link.createdAt, style: .relative)
-                                if let exp = link.expiresAt {
-                                    Text("·")
-                                    Image(systemName: "timer")
-                                        .font(.system(size: 9))
-                                    Text(NSLocalizedString("share.expiresAt", comment: "") + " ")
-                                        .font(.system(size: 10))
-                                    + Text(exp, style: .relative)
-                                        .font(.system(size: 10))
-                                } else {
-                                    Text("·")
-                                    Text(NSLocalizedString("share.ttl.never", comment: ""))
-                                }
-                            }
-                            .font(.system(size: 10))
-                            .foregroundColor(OffriiTheme.textMuted)
-
-                            // Item names for selection links
-                            if let names = linkItemNames[link.id], !names.isEmpty {
-                                Text(names.joined(separator: ", "))
-                                    .font(.system(size: 11))
-                                    .foregroundColor(OffriiTheme.textSecondary)
-                                    .lineLimit(2)
-                            }
-                        }
-
-                        // Actions: copy + delete
-                        HStack(spacing: OffriiTheme.spacingBase) {
-                            Spacer()
-
-                            Button {
-                                UIPasteboard.general.string = link.displayUrl
-                                OffriiHaptics.success()
-                                showToast(NSLocalizedString("share.linkCopied", comment: ""))
-                            } label: {
-                                Label(NSLocalizedString("share.copyLink", comment: ""), systemImage: "doc.on.doc")
-                                    .font(.system(size: 11, weight: .medium))
-                                    .foregroundColor(OffriiTheme.primary)
-                            }
-
-                            Button {
-                                Task { await deleteLink(id: link.id) }
-                            } label: {
-                                Label(NSLocalizedString("common.delete", comment: ""), systemImage: "trash")
-                                    .font(.system(size: 11, weight: .medium))
-                                    .foregroundColor(OffriiTheme.danger)
-                            }
-                        }
-                    }
-                    .padding(OffriiTheme.spacingMD)
-                    .background(isDisabled ? OffriiTheme.surface.opacity(0.6) : OffriiTheme.surface)
-                    .cornerRadius(OffriiTheme.cornerRadiusMD)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: OffriiTheme.cornerRadiusMD)
-                            .strokeBorder(isDisabled ? OffriiTheme.border : .clear, lineWidth: 1)
-                    )
-                    .contextMenu {
-                        Button {
-                            editingLink = link
-                        } label: {
-                            Label(NSLocalizedString("wishlist.edit", comment: ""), systemImage: "pencil")
-                        }
-
-                        Button {
-                            UIPasteboard.general.string = link.displayUrl
-                            OffriiHaptics.success()
-                            showToast(NSLocalizedString("share.linkCopied", comment: ""))
-                        } label: {
-                            Label(NSLocalizedString("share.copyLink", comment: ""), systemImage: "doc.on.doc")
-                        }
-
-                        Divider()
-
-                        Button(role: .destructive) {
-                            Task { await deleteLink(id: link.id) }
-                        } label: {
-                            Label(NSLocalizedString("common.delete", comment: ""), systemImage: "trash")
-                        }
-                    }
-                    .padding(.horizontal, OffriiTheme.spacingLG)
-                }
-            } else if isLoadingLinks {
-                SkeletonRow()
-                    .padding(.horizontal, OffriiTheme.spacingLG)
-            }
+            .font(.system(size: 15, weight: .semibold))
+            .foregroundColor(.white)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 14)
+            .background(isCreateDisabled ? OffriiTheme.textMuted : OffriiTheme.primary)
+            .cornerRadius(OffriiTheme.cornerRadiusMD)
         }
+        .disabled(isCreateDisabled || isCreatingLink)
+        .overlay { if isCreatingLink { ProgressView().tint(.white) } }
+        .padding(.horizontal, OffriiTheme.spacingLG)
     }
 
     // MARK: - Scope Option
 
     private func scopeOption(_ option: ShareScope, icon: String, label: String) -> some View {
         Button {
-            withAnimation(OffriiAnimation.snappy) {
-                scope = option
-            }
+            withAnimation(OffriiAnimation.snappy) { scope = option }
         } label: {
             HStack(spacing: OffriiTheme.spacingSM) {
                 Image(systemName: scope == option ? "largecircle.fill.circle" : "circle")
                     .font(.system(size: 18))
                     .foregroundColor(scope == option ? OffriiTheme.primary : OffriiTheme.textMuted)
-
                 Image(systemName: icon)
                     .font(.system(size: 13))
                     .foregroundColor(OffriiTheme.textSecondary)
-
                 Text(label)
                     .font(OffriiTypography.body)
                     .foregroundColor(OffriiTheme.text)
-
                 Spacer()
             }
         }
         .buttonStyle(.plain)
     }
 
+    // MARK: - Toast
+
+    private func toastView(_ message: String) -> some View {
+        HStack(spacing: 6) {
+            Image(systemName: "checkmark.circle.fill")
+            Text(message)
+                .font(.system(size: 13, weight: .medium))
+        }
+        .foregroundColor(OffriiTheme.success)
+        .frame(maxWidth: .infinity)
+        .padding(OffriiTheme.spacingSM)
+        .background(OffriiTheme.success.opacity(0.1))
+        .cornerRadius(OffriiTheme.cornerRadiusSM)
+        .padding(.horizontal, OffriiTheme.spacingLG)
+        .transition(.move(edge: .top).combined(with: .opacity))
+        .onAppear {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                withAnimation { toastMessage = nil }
+            }
+        }
+    }
+
     // MARK: - Helpers
 
     private var isCreateDisabled: Bool {
-        if scope == .category && selectedCategoryIds.isEmpty { return true }
-        if scope == .selection && pickedItemIds.isEmpty { return true }
-        return false
+        scope == .selection && pickedItemIds.isEmpty
     }
 
     private func scopeLabel(_ scope: String?) -> String {
@@ -738,47 +674,16 @@ struct WishlistShareSheet: View {
         isLoadingLinks = false
     }
 
-    private func shareToCircle(_ circle: OffriiCircle) async {
-        // For now, this is a placeholder — sharing all items to a circle
-        // would require iterating items. Just mark as shared for UX feedback.
-        _ = withAnimation {
-            sharedCircleIds.insert(circle.id)
-        }
-        OffriiHaptics.success()
-    }
-
-    // swiftlint:disable:next function_body_length
-    private func createLink(openShareSheet: Bool) async {
+    private func createLink() async {
         isCreatingLink = true
 
-        let scopeData: ScopeData?
         let scopeStr: String
+        let scopeData: ScopeData?
 
         switch scope {
         case .all:
             scopeStr = "all"
             scopeData = nil
-        case .category:
-            if selectedCategoryIds.count == 1, let catId = selectedCategoryIds.first {
-                // Single category → use native backend scope "category"
-                scopeStr = "category"
-                scopeData = ScopeData(categoryId: catId.uuidString, itemIds: nil)
-            } else {
-                // Multi-category → use "selection" with items from those categories
-                let itemIds = items
-                    .filter { item in
-                        guard let catId = item.categoryId else { return false }
-                        return selectedCategoryIds.contains(catId) && !item.isPrivate
-                    }
-                    .map { $0.id.uuidString }
-                if itemIds.isEmpty {
-                    OffriiHaptics.error()
-                    isCreatingLink = false
-                    return
-                }
-                scopeStr = "selection"
-                scopeData = ScopeData(categoryId: nil, itemIds: itemIds)
-            }
         case .selection:
             scopeStr = "selection"
             scopeData = ScopeData(categoryId: nil, itemIds: pickedItemIds.map { $0.uuidString })
@@ -786,7 +691,8 @@ struct WishlistShareSheet: View {
 
         let body = CreateShareLinkBody(
             expiresAt: linkTTL.expiresAt,
-            label: linkLabel.trimmingCharacters(in: .whitespaces).isEmpty ? nil : linkLabel.trimmingCharacters(in: .whitespaces),
+            label: linkLabel.trimmingCharacters(in: .whitespaces).isEmpty
+                ? nil : linkLabel.trimmingCharacters(in: .whitespaces),
             permissions: permission,
             scope: scopeStr,
             scopeData: scopeData
@@ -797,40 +703,12 @@ struct WishlistShareSheet: View {
             let url = response.displayUrl
 
             UIPasteboard.general.string = url
-            // Store display names for this link
-            let names: [String]
-            switch scope {
-            case .selection:
-                names = items.filter { pickedItemIds.contains($0.id) }.map(\.name)
-            case .category:
-                let catNames = categories
-                    .filter { selectedCategoryIds.contains($0.id) }
-                    .map(\.name)
-                names = catNames
-            case .all:
-                names = []
-            }
-            linkItemNames[response.id] = names
 
             withAnimation(OffriiAnimation.defaultSpring) {
                 justCreatedLink = url
                 shareLinks.insert(response, at: 0)
             }
             OffriiHaptics.success()
-
-            if openShareSheet {
-                // Small delay to let the UI update before opening system share sheet
-                try? await Task.sleep(for: .milliseconds(300))
-                await MainActor.run {
-                    if let url = URL(string: url) {
-                        let activityVC = UIActivityViewController(activityItems: [url], applicationActivities: nil)
-                        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-                           let rootVC = windowScene.windows.first?.rootViewController {
-                            rootVC.present(activityVC, animated: true)
-                        }
-                    }
-                }
-            }
         } catch {
             OffriiHaptics.error()
         }
@@ -847,6 +725,15 @@ struct WishlistShareSheet: View {
             showToast(NSLocalizedString("share.linkDeleted", comment: ""))
         } catch {
             OffriiHaptics.error()
+        }
+    }
+
+    private func shareViaSystem(url: String) {
+        guard let shareUrl = URL(string: url) else { return }
+        let activityVC = UIActivityViewController(activityItems: [shareUrl], applicationActivities: nil)
+        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+           let rootVC = windowScene.windows.first?.rootViewController {
+            rootVC.present(activityVC, animated: true)
         }
     }
 

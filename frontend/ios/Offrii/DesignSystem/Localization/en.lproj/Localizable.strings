@@ -487,6 +487,13 @@
 "share.linkDisabled" = "Disabled";
 "share.addPeople" = "Share with...";
 "share.description" = "Share your wishes with loved ones so they know what to get you.";
+"share.tab.proches" = "Close ones";
+"share.tab.liens" = "Links";
+"share.noLinks" = "No share links";
+"share.noLinksSubtitle" = "Create a link to share your wishes with anyone";
+"share.sharedItemCount" = "%d wish(es) shared";
+"share.noSharedItems" = "No wishes shared";
+"share.ttl.oneDay" = "1 day";
 
 /* Wishlist - Redesign */
 "wishlist.search.placeholder" = "Search a wish...";

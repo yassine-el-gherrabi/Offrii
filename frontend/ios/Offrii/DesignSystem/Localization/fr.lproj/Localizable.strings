@@ -487,6 +487,13 @@
 "share.linkDisabled" = "Désactivé";
 "share.addPeople" = "Partager avec...";
 "share.description" = "Partagez vos envies avec vos proches pour qu'ils sachent quoi vous offrir.";
+"share.tab.proches" = "Proches";
+"share.tab.liens" = "Liens";
+"share.noLinks" = "Aucun lien de partage";
+"share.noLinksSubtitle" = "Créez un lien pour partager vos envies avec n'importe qui";
+"share.sharedItemCount" = "%d envie(s) partagée(s)";
+"share.noSharedItems" = "Aucune envie partagée";
+"share.ttl.oneDay" = "1 jour";
 
 /* Wishlist - Redesign */
 "wishlist.search.placeholder" = "Rechercher une envie...";
