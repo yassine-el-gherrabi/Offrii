@@ -88,6 +88,7 @@ pub struct InviteResponse {
     pub url: String,
     pub circle_id: Uuid,
     pub created_by: Uuid,
+    pub created_by_name: Option<String>,
     pub expires_at: DateTime<Utc>,
     pub max_uses: i32,
     pub use_count: i32,

@@ -164,6 +164,7 @@ struct CircleInviteResponse: Codable, Identifiable {
     let url: String
     let circleId: UUID
     let createdBy: UUID
+    let createdByName: String?
     let expiresAt: Date
     let maxUses: Int
     let useCount: Int
@@ -173,6 +174,7 @@ struct CircleInviteResponse: Codable, Identifiable {
         case id, token, url
         case circleId = "circle_id"
         case createdBy = "created_by"
+        case createdByName = "created_by_name"
         case expiresAt = "expires_at"
         case maxUses = "max_uses"
         case useCount = "use_count"

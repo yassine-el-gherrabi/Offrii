@@ -166,8 +166,13 @@ struct InviteFriendsSheet: View {
                 }
             }
 
-            // Info
+            // Info: creator + expiration
             HStack(spacing: 4) {
+                if let name = invite.createdByName {
+                    Image(systemName: "person.fill").font(.system(size: 9))
+                    Text(name).font(.system(size: 10))
+                    Text("\u{00B7}")
+                }
                 Image(systemName: "clock").font(.system(size: 9))
                 Text(invite.expiresAt, style: .relative)
                     .font(.system(size: 10))

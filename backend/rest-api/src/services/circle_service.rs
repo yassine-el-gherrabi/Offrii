@@ -542,12 +542,22 @@ impl traits::CircleService for PgCircleService {
             .await
             .map_err(AppError::Internal)?;
 
+        // Look up creator name
+        let creator_name = self
+            .user_repo
+            .find_by_id(invite.created_by)
+            .await
+            .ok()
+            .flatten()
+            .and_then(|u| u.display_name.or(Some(u.username)));
+
         Ok(InviteResponse {
             id: invite.id,
             token: invite.token.clone(),
             url: String::new(),
             circle_id: invite.circle_id,
             created_by: invite.created_by,
+            created_by_name: creator_name,
             expires_at: invite.expires_at,
             max_uses: invite.max_uses,
             use_count: invite.use_count,
@@ -713,18 +723,29 @@ impl traits::CircleService for PgCircleService {
             .await
             .map_err(AppError::Internal)?;
 
+        let creator_ids: Vec<Uuid> = invites.iter().map(|i| i.created_by).collect();
+        let creator_map = self.user_lookup(&creator_ids).await?;
+
         let responses = invites
             .into_iter()
-            .map(|inv| InviteResponse {
-                id: inv.id,
-                token: inv.token.clone(),
-                url: String::new(),
-                circle_id: inv.circle_id,
-                created_by: inv.created_by,
-                expires_at: inv.expires_at,
-                max_uses: inv.max_uses,
-                use_count: inv.use_count,
-                created_at: inv.created_at,
+            .map(|inv| {
+                let name = creator_map
+                    .get(&inv.created_by)
+                    .map(|(username, display_name)| {
+                        display_name.clone().unwrap_or_else(|| username.clone())
+                    });
+                InviteResponse {
+                    id: inv.id,
+                    token: inv.token.clone(),
+                    url: String::new(),
+                    circle_id: inv.circle_id,
+                    created_by: inv.created_by,
+                    created_by_name: name,
+                    expires_at: inv.expires_at,
+                    max_uses: inv.max_uses,
+                    use_count: inv.use_count,
+                    created_at: inv.created_at,
+                }
             })
             .collect();
 
