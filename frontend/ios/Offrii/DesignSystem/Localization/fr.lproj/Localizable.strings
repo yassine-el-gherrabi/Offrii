@@ -493,6 +493,7 @@
 "share.noLinksSubtitle" = "Créez un lien pour partager vos envies avec n'importe qui";
 "share.sharedItemCount" = "%d envie(s) partagée(s)";
 "share.noSharedItems" = "Aucune envie partagée";
+"share.toWhom" = "A qui ?";
 "share.ttl.oneDay" = "1 jour";
 
 /* Wishlist - Redesign */

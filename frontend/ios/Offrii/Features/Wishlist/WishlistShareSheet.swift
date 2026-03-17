@@ -20,6 +20,7 @@ private enum ShareTab: String, CaseIterable {
 
 private enum ShareScope: String, CaseIterable {
     case all
+    case category
     case selection
 }
 
@@ -57,6 +58,7 @@ private enum LinkTTL: String, CaseIterable {
 struct WishlistShareSheet: View {
     var items: [Item] = []
     var selectedItemIds: Set<UUID> = []
+    var categories: [CategoryResponse] = []
     var privateItemCount: Int = 0
 
     @Environment(\.dismiss) private var dismiss
@@ -64,20 +66,22 @@ struct WishlistShareSheet: View {
     // Tab
     @State private var selectedTab: ShareTab = .proches
 
+    // Shared state (used by both tabs)
+    @State private var scope: ShareScope = .all
+    @State private var selectedCategoryIds: Set<UUID> = []
+    @State private var pickedItemIds: Set<UUID> = []
+    @State private var showItemPicker = false
+
     // Proches
     @State private var circles: [OffriiCircle] = []
     @State private var isLoadingCircles = false
-    @State private var shareToCircleSheet = false
+    @State private var selectedCircleIds: Set<UUID> = []
+    @State private var isSharing = false
 
     // Links
     @State private var shareLinks: [ShareLinkResponse] = []
     @State private var isLoadingLinks = false
     @State private var editingLink: ShareLinkResponse?
-
-    // Link creation
-    @State private var scope: ShareScope = .all
-    @State private var pickedItemIds: Set<UUID> = []
-    @State private var showItemPicker = false
     @State private var permission: String = "view_and_claim"
     @State private var linkLabel: String = ""
     @State private var linkTTL: LinkTTL = .never
@@ -90,7 +94,6 @@ struct WishlistShareSheet: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
-                // Segmented picker
                 Picker("", selection: $selectedTab) {
                     ForEach(ShareTab.allCases, id: \.rawValue) { tab in
                         Text(tab.label).tag(tab)
@@ -100,7 +103,6 @@ struct WishlistShareSheet: View {
                 .padding(.horizontal, OffriiTheme.spacingLG)
                 .padding(.vertical, OffriiTheme.spacingSM)
 
-                // Content
                 switch selectedTab {
                 case .proches:
                     prochesContent
@@ -119,10 +121,6 @@ struct WishlistShareSheet: View {
                             .foregroundColor(OffriiTheme.textSecondary)
                     }
                 }
-            }
-            .sheet(isPresented: $shareToCircleSheet) {
-                ShareToCircleSheet(itemId: nil)
-                    .presentationDetents([.medium])
             }
             .sheet(item: $editingLink) { link in
                 EditShareLinkSheet(link: link) { updated in
@@ -144,313 +142,25 @@ struct WishlistShareSheet: View {
         }
     }
 
-    // MARK: - Onglet Proches
+    // MARK: - Scope Selector (shared between tabs)
 
-    private var prochesContent: some View {
-        ScrollView {
-            VStack(spacing: 0) {
-                if isLoadingCircles {
-                    SkeletonList(count: 4)
-                        .padding(.horizontal, OffriiTheme.spacingLG)
-                } else if circles.isEmpty {
-                    Spacer().frame(height: 60)
-                    OffriiEmptyState(
-                        icon: "person.2.fill",
-                        title: NSLocalizedString("share.noCircles", comment: ""),
-                        subtitle: NSLocalizedString("share.noCirclesSubtitle", comment: "")
-                    )
-                } else {
-                    VStack(spacing: OffriiTheme.spacingXS) {
-                        ForEach(circles) { circle in
-                            circleRow(circle)
-                        }
-                    }
-                    .padding(.horizontal, OffriiTheme.spacingLG)
-                    .padding(.top, OffriiTheme.spacingSM)
-                }
-            }
-        }
-    }
-
-    private func circleRow(_ circle: OffriiCircle) -> some View {
-        let sharedCount = items.filter { item in
-            item.sharedCircles.contains(where: { $0.id == circle.id })
-        }.count
-
-        return Button {
-            shareToCircleSheet = true
-        } label: {
-            HStack(spacing: OffriiTheme.spacingMD) {
-                // Avatar
-                circleAvatar(circle)
-
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(circle.name ?? NSLocalizedString("circles.unnamed", comment: ""))
-                        .font(OffriiTypography.body)
-                        .foregroundColor(OffriiTheme.text)
-
-                    if sharedCount > 0 {
-                        Text(String(format: NSLocalizedString("share.sharedItemCount", comment: ""), sharedCount))
-                            .font(OffriiTypography.caption)
-                            .fontWeight(.medium)
-                            .foregroundColor(OffriiTheme.primary)
-                    } else {
-                        Text(NSLocalizedString("share.noSharedItems", comment: ""))
-                            .font(OffriiTypography.caption)
-                            .foregroundColor(OffriiTheme.textMuted)
-                    }
-                }
-
-                Spacer()
-
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundColor(OffriiTheme.textMuted)
-            }
-            .padding(OffriiTheme.spacingBase)
-            .background(OffriiTheme.card)
-            .cornerRadius(OffriiTheme.cornerRadiusLG)
-            .shadow(color: OffriiTheme.cardShadowColor, radius: 6, x: 0, y: 2)
-        }
-        .buttonStyle(.plain)
-    }
-
-    @ViewBuilder
-    private func circleAvatar(_ circle: OffriiCircle) -> some View {
-        if let imageUrl = circle.imageUrl, let url = URL(string: imageUrl) {
-            LazyImage(url: url) { state in
-                if let image = state.image {
-                    image
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                        .frame(width: 40, height: 40)
-                        .clipShape(Circle())
-                } else {
-                    AvatarView(circle.name, size: .medium)
-                }
-            }
-        } else {
-            AvatarView(
-                circle.isDirect ? circle.memberNames.first ?? circle.name : circle.name,
-                size: .medium
-            )
-        }
-    }
-
-    // MARK: - Onglet Liens
-
-    private var liensContent: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: OffriiTheme.spacingLG) {
-
-                // Toast
-                if let msg = toastMessage {
-                    toastView(msg)
-                }
-
-                // Section 1: Liens existants
-                activeLinksSection
-
-                Divider().padding(.horizontal, OffriiTheme.spacingLG)
-
-                // Section 2: Créer un lien
-                createLinkSection
-            }
-            .padding(.vertical, OffriiTheme.spacingBase)
-        }
-    }
-
-    // MARK: - Active Links
-
-    private var activeLinksSection: some View {
-        VStack(alignment: .leading, spacing: OffriiTheme.spacingSM) {
-            if isLoadingLinks {
-                SkeletonList(count: 2)
-                    .padding(.horizontal, OffriiTheme.spacingLG)
-            } else if shareLinks.isEmpty {
-                VStack(spacing: OffriiTheme.spacingSM) {
-                    Spacer().frame(height: 20)
-                    OffriiEmptyState(
-                        icon: "link",
-                        title: NSLocalizedString("share.noLinks", comment: ""),
-                        subtitle: NSLocalizedString("share.noLinksSubtitle", comment: "")
-                    )
-                }
-            } else {
-                Text(NSLocalizedString("share.activeLinks", comment: "") + " (\(shareLinks.count))")
-                    .font(OffriiTypography.headline)
-                    .foregroundColor(OffriiTheme.text)
-                    .padding(.horizontal, OffriiTheme.spacingLG)
-
-                ForEach(shareLinks) { link in
-                    linkCard(link)
-                }
-            }
-        }
-    }
-
-    private func linkCard(_ link: ShareLinkResponse) -> some View {
-        let isDisabled = link.isActive == false
-
-        return VStack(alignment: .leading, spacing: OffriiTheme.spacingSM) {
-            linkCardHeader(link, isDisabled: isDisabled)
-            linkCardUrl(link, isDisabled: isDisabled)
-            linkCardInfo(link)
-
-            linkCardActions(link)
-        }
-        .padding(OffriiTheme.spacingMD)
-        .background(isDisabled ? OffriiTheme.surface.opacity(0.6) : OffriiTheme.surface)
-        .cornerRadius(OffriiTheme.cornerRadiusMD)
-        .overlay(
-            RoundedRectangle(cornerRadius: OffriiTheme.cornerRadiusMD)
-                .strokeBorder(isDisabled ? OffriiTheme.border : .clear, lineWidth: 1)
-        )
-        .contextMenu { linkContextMenu(link) }
-        .padding(.horizontal, OffriiTheme.spacingLG)
-    }
-
-    @ViewBuilder
-    private func linkCardHeader(_ link: ShareLinkResponse, isDisabled: Bool) -> some View {
-        HStack(spacing: OffriiTheme.spacingSM) {
-            if isDisabled {
-                Text(NSLocalizedString("share.linkDisabled", comment: ""))
-                    .font(.system(size: 10, weight: .semibold))
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 2)
-                    .background(OffriiTheme.textMuted)
-                    .cornerRadius(4)
-            }
-            if let label = link.label, !label.isEmpty {
-                Text(label)
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundColor(isDisabled ? OffriiTheme.textMuted : OffriiTheme.text)
-            }
-        }
-    }
-
-    @ViewBuilder
-    private func linkCardUrl(_ link: ShareLinkResponse, isDisabled: Bool) -> some View {
-        if !isDisabled, let url = URL(string: link.displayUrl) {
-            Link(destination: url) {
-                HStack(spacing: 6) {
-                    Image(systemName: "link").font(.system(size: 11))
-                    Text(link.displayUrl).font(.system(size: 12, weight: .medium)).lineLimit(1)
-                    Spacer()
-                    Image(systemName: "arrow.up.right").font(.system(size: 10))
-                }
-                .foregroundColor(OffriiTheme.primary)
-            }
-        } else {
-            HStack(spacing: 6) {
-                Image(systemName: "link").font(.system(size: 11))
-                Text(link.displayUrl).font(.system(size: 12, weight: .medium)).lineLimit(1).strikethrough(isDisabled)
-            }
-            .foregroundColor(OffriiTheme.textMuted)
-        }
-    }
-
-    private func linkCardInfo(_ link: ShareLinkResponse) -> some View {
-        HStack(spacing: 4) {
-            Text(scopeLabel(link.scope))
-            Text("\u{00B7}")
-            Text(permissionLabel(link.permissions))
-            Text("\u{00B7}")
-            if let exp = link.expiresAt {
-                Text(exp, style: .relative)
-            } else {
-                Text(NSLocalizedString("share.ttl.never", comment: ""))
-            }
-        }
-        .font(.system(size: 10))
-        .foregroundColor(OffriiTheme.textMuted)
-    }
-
-    private func linkCardActions(_ link: ShareLinkResponse) -> some View {
-        HStack(spacing: OffriiTheme.spacingBase) {
-            Spacer()
-            Button {
-                UIPasteboard.general.string = link.displayUrl
-                OffriiHaptics.success()
-                showToast(NSLocalizedString("share.linkCopied", comment: ""))
-            } label: {
-                Label(NSLocalizedString("share.copyLink", comment: ""), systemImage: "doc.on.doc")
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundColor(OffriiTheme.primary)
-            }
-            Button {
-                shareViaSystem(url: link.displayUrl)
-            } label: {
-                Label(NSLocalizedString("share.sendDirect", comment: ""), systemImage: "square.and.arrow.up")
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundColor(OffriiTheme.primary)
-            }
-            Button {
-                Task { await deleteLink(id: link.id) }
-            } label: {
-                Label(NSLocalizedString("common.delete", comment: ""), systemImage: "trash")
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundColor(OffriiTheme.danger)
-            }
-        }
-    }
-
-    @ViewBuilder
-    private func linkContextMenu(_ link: ShareLinkResponse) -> some View {
-        Button {
-            editingLink = link
-        } label: {
-            Label(NSLocalizedString("wishlist.edit", comment: ""), systemImage: "pencil")
-        }
-        Button {
-            UIPasteboard.general.string = link.displayUrl
-            OffriiHaptics.success()
-            showToast(NSLocalizedString("share.linkCopied", comment: ""))
-        } label: {
-            Label(NSLocalizedString("share.copyLink", comment: ""), systemImage: "doc.on.doc")
-        }
-        Divider()
-        Button(role: .destructive) {
-            Task { await deleteLink(id: link.id) }
-        } label: {
-            Label(NSLocalizedString("common.delete", comment: ""), systemImage: "trash")
-        }
-    }
-
-    // MARK: - Create Link Section
-
-    private var createLinkSection: some View {
-        VStack(alignment: .leading, spacing: OffriiTheme.spacingSM) {
-            Text(NSLocalizedString("share.createLink", comment: ""))
-                .font(OffriiTypography.headline)
-                .foregroundColor(OffriiTheme.text)
-                .padding(.horizontal, OffriiTheme.spacingLG)
-
-            // Scope
-            scopeSelectionSection
-
-            // Permissions + Name + TTL
-            linkOptionsSection
-
-            // Success toast
-            if justCreatedLink != nil {
-                linkCreatedToast
-            }
-
-            // Create button
-            createLinkButton
-        }
-    }
-
-    private var scopeSelectionSection: some View {
+    private var scopeSelector: some View {
         VStack(alignment: .leading, spacing: OffriiTheme.spacingSM) {
             Text(NSLocalizedString("share.whatToShare", comment: ""))
                 .font(OffriiTypography.subheadline)
                 .foregroundColor(OffriiTheme.textMuted)
 
-            scopeOption(.all, icon: "list.bullet", label: NSLocalizedString("share.scopeAll", comment: ""))
+            // All
+            scopeRadio(.all, icon: "list.bullet", label: NSLocalizedString("share.scopeAll", comment: ""))
 
+            // Category (multi-select)
+            scopeRadio(.category, icon: "tag.fill", label: NSLocalizedString("share.scopeCategory", comment: ""))
+
+            if scope == .category && !categories.isEmpty {
+                categoryChips
+            }
+
+            // Selection
             Button {
                 withAnimation(OffriiAnimation.snappy) { scope = .selection }
                 showItemPicker = true
@@ -471,28 +181,253 @@ struct WishlistShareSheet: View {
             .buttonStyle(.plain)
 
             if scope == .selection && !pickedItemIds.isEmpty {
-                VStack(alignment: .leading, spacing: 4) {
-                    ForEach(items.filter { pickedItemIds.contains($0.id) }) { item in
-                        HStack(spacing: 6) {
-                            Image(systemName: "gift.fill")
-                                .font(.system(size: 10))
-                                .foregroundColor(OffriiTheme.primary)
-                            Text(item.name)
-                                .font(.system(size: 12))
-                                .foregroundColor(OffriiTheme.text)
-                                .lineLimit(1)
-                        }
-                    }
-                    Button { showItemPicker = true } label: {
-                        Text(NSLocalizedString("share.modifySelection", comment: ""))
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundColor(OffriiTheme.primary)
-                    }
-                }
-                .padding(.leading, OffriiTheme.spacingXXL)
+                pickedItemsPreview
             }
         }
         .padding(.horizontal, OffriiTheme.spacingLG)
+    }
+
+    private var categoryChips: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: OffriiTheme.spacingSM) {
+                ForEach(categories, id: \.id) { cat in
+                    let isSelected = selectedCategoryIds.contains(cat.id)
+                    OffriiChip(
+                        title: cat.name,
+                        isSelected: isSelected
+                    ) {
+                        if isSelected {
+                            selectedCategoryIds.remove(cat.id)
+                        } else {
+                            selectedCategoryIds.insert(cat.id)
+                        }
+                    }
+                }
+            }
+        }
+        .padding(.leading, OffriiTheme.spacingXXL)
+    }
+
+    private var pickedItemsPreview: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            ForEach(items.filter { pickedItemIds.contains($0.id) }) { item in
+                HStack(spacing: 6) {
+                    Image(systemName: "gift.fill")
+                        .font(.system(size: 10))
+                        .foregroundColor(OffriiTheme.primary)
+                    Text(item.name)
+                        .font(.system(size: 12))
+                        .foregroundColor(OffriiTheme.text)
+                        .lineLimit(1)
+                }
+            }
+            Button { showItemPicker = true } label: {
+                Text(NSLocalizedString("share.modifySelection", comment: ""))
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(OffriiTheme.primary)
+            }
+        }
+        .padding(.leading, OffriiTheme.spacingXXL)
+    }
+
+    private func scopeRadio(_ option: ShareScope, icon: String, label: String) -> some View {
+        Button {
+            withAnimation(OffriiAnimation.snappy) { scope = option }
+        } label: {
+            HStack(spacing: OffriiTheme.spacingSM) {
+                Image(systemName: scope == option ? "largecircle.fill.circle" : "circle")
+                    .font(.system(size: 18))
+                    .foregroundColor(scope == option ? OffriiTheme.primary : OffriiTheme.textMuted)
+                Image(systemName: icon)
+                    .font(.system(size: 13))
+                    .foregroundColor(OffriiTheme.textSecondary)
+                Text(label)
+                    .font(OffriiTypography.body)
+                    .foregroundColor(OffriiTheme.text)
+                Spacer()
+            }
+        }
+        .buttonStyle(.plain)
+    }
+
+    /// Resolve item IDs based on current scope.
+    private var resolvedItemIds: [UUID] {
+        switch scope {
+        case .all:
+            return items.filter { $0.isActive && !$0.isPrivate }.map(\.id)
+        case .category:
+            return items.filter { item in
+                guard let catId = item.categoryId else { return false }
+                return selectedCategoryIds.contains(catId) && !item.isPrivate
+            }.map(\.id)
+        case .selection:
+            return Array(pickedItemIds)
+        }
+    }
+
+    private var isScopeEmpty: Bool {
+        switch scope {
+        case .all: return false
+        case .category: return selectedCategoryIds.isEmpty
+        case .selection: return pickedItemIds.isEmpty
+        }
+    }
+
+    // MARK: - Onglet Proches
+
+    private var prochesContent: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: OffriiTheme.spacingLG) {
+                // Scope selector
+                scopeSelector
+
+                Divider().padding(.horizontal, OffriiTheme.spacingLG)
+
+                // Circle multi-select
+                circleSelector
+
+                // Share button
+                if !selectedCircleIds.isEmpty {
+                    shareToCirclesButton
+                }
+            }
+            .padding(.vertical, OffriiTheme.spacingBase)
+        }
+    }
+
+    private var circleSelector: some View {
+        VStack(alignment: .leading, spacing: OffriiTheme.spacingSM) {
+            Text(NSLocalizedString("share.toWhom", comment: ""))
+                .font(OffriiTypography.subheadline)
+                .foregroundColor(OffriiTheme.textMuted)
+                .padding(.horizontal, OffriiTheme.spacingLG)
+
+            if isLoadingCircles {
+                SkeletonList(count: 3)
+                    .padding(.horizontal, OffriiTheme.spacingLG)
+            } else if circles.isEmpty {
+                OffriiEmptyState(
+                    icon: "person.2.fill",
+                    title: NSLocalizedString("share.noCircles", comment: ""),
+                    subtitle: NSLocalizedString("share.noCirclesSubtitle", comment: "")
+                )
+            } else {
+                VStack(spacing: OffriiTheme.spacingXS) {
+                    ForEach(circles) { circle in
+                        circleCheckRow(circle)
+                    }
+                }
+                .padding(.horizontal, OffriiTheme.spacingLG)
+            }
+        }
+    }
+
+    private func circleCheckRow(_ circle: OffriiCircle) -> some View {
+        let isSelected = selectedCircleIds.contains(circle.id)
+        return Button {
+            withAnimation(OffriiAnimation.snappy) {
+                if isSelected {
+                    selectedCircleIds.remove(circle.id)
+                } else {
+                    selectedCircleIds.insert(circle.id)
+                }
+            }
+        } label: {
+            HStack(spacing: OffriiTheme.spacingMD) {
+                circleAvatar(circle)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(circle.name ?? NSLocalizedString("circles.unnamed", comment: ""))
+                        .font(OffriiTypography.body)
+                        .foregroundColor(OffriiTheme.text)
+                    Text(String(format: NSLocalizedString("circles.memberCount", comment: ""), circle.memberCount))
+                        .font(OffriiTypography.caption)
+                        .foregroundColor(OffriiTheme.textMuted)
+                }
+
+                Spacer()
+
+                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                    .font(.system(size: 22))
+                    .foregroundColor(isSelected ? OffriiTheme.primary : OffriiTheme.textMuted)
+            }
+            .padding(OffriiTheme.spacingBase)
+            .background(isSelected ? OffriiTheme.primary.opacity(0.05) : OffriiTheme.card)
+            .cornerRadius(OffriiTheme.cornerRadiusLG)
+        }
+        .buttonStyle(.plain)
+        .animation(OffriiAnimation.snappy, value: isSelected)
+    }
+
+    private var shareToCirclesButton: some View {
+        VStack(spacing: OffriiTheme.spacingSM) {
+            if let msg = toastMessage {
+                toastView(msg)
+            }
+
+            OffriiButton(
+                String(format: NSLocalizedString("share.shareToCount", comment: ""), selectedCircleIds.count),
+                isLoading: isSharing,
+                isDisabled: isScopeEmpty
+            ) {
+                Task { await shareToSelectedCircles() }
+            }
+            .padding(.horizontal, OffriiTheme.spacingLG)
+        }
+    }
+
+    @ViewBuilder
+    private func circleAvatar(_ circle: OffriiCircle) -> some View {
+        if let imageUrl = circle.imageUrl, let url = URL(string: imageUrl) {
+            LazyImage(url: url) { state in
+                if let image = state.image {
+                    image.resizable().aspectRatio(contentMode: .fill)
+                        .frame(width: 40, height: 40).clipShape(Circle())
+                } else {
+                    AvatarView(circle.name, size: .medium)
+                }
+            }
+        } else {
+            AvatarView(
+                circle.isDirect ? circle.memberNames.first ?? circle.name : circle.name,
+                size: .medium
+            )
+        }
+    }
+
+    // MARK: - Onglet Liens
+
+    private var liensContent: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: OffriiTheme.spacingLG) {
+                // Section 1: Create link
+                createLinkSection
+
+                Divider().padding(.horizontal, OffriiTheme.spacingLG)
+
+                // Section 2: Existing links
+                activeLinksSection
+            }
+            .padding(.vertical, OffriiTheme.spacingBase)
+        }
+    }
+
+    // MARK: - Create Link Section
+
+    private var createLinkSection: some View {
+        VStack(alignment: .leading, spacing: OffriiTheme.spacingSM) {
+            Text(NSLocalizedString("share.createLink", comment: ""))
+                .font(OffriiTypography.headline)
+                .foregroundColor(OffriiTheme.text)
+                .padding(.horizontal, OffriiTheme.spacingLG)
+
+            scopeSelector
+            linkOptionsSection
+
+            if justCreatedLink != nil { linkCreatedToast }
+
+            createLinkButton
+        }
     }
 
     private var linkOptionsSection: some View {
@@ -542,8 +477,7 @@ struct WishlistShareSheet: View {
             // Private items warning
             if privateItemCount > 0 && scope == .all {
                 HStack(spacing: 4) {
-                    Image(systemName: "lock.fill")
-                        .font(.system(size: 10))
+                    Image(systemName: "lock.fill").font(.system(size: 10))
                     Text(String(format: NSLocalizedString("share.privateExcluded", comment: ""), privateItemCount))
                         .font(OffriiTypography.caption)
                 }
@@ -555,11 +489,9 @@ struct WishlistShareSheet: View {
 
     private var linkCreatedToast: some View {
         HStack(spacing: OffriiTheme.spacingSM) {
-            Image(systemName: "checkmark.circle.fill")
-                .foregroundColor(OffriiTheme.success)
+            Image(systemName: "checkmark.circle.fill").foregroundColor(OffriiTheme.success)
             Text(NSLocalizedString("share.linkCopied", comment: ""))
-                .font(OffriiTypography.subheadline)
-                .foregroundColor(OffriiTheme.success)
+                .font(OffriiTypography.subheadline).foregroundColor(OffriiTheme.success)
         }
         .frame(maxWidth: .infinity)
         .padding(OffriiTheme.spacingSM)
@@ -586,34 +518,149 @@ struct WishlistShareSheet: View {
             .foregroundColor(.white)
             .frame(maxWidth: .infinity)
             .padding(.vertical, 14)
-            .background(isCreateDisabled ? OffriiTheme.textMuted : OffriiTheme.primary)
+            .background(isScopeEmpty ? OffriiTheme.textMuted : OffriiTheme.primary)
             .cornerRadius(OffriiTheme.cornerRadiusMD)
         }
-        .disabled(isCreateDisabled || isCreatingLink)
+        .disabled(isScopeEmpty || isCreatingLink)
         .overlay { if isCreatingLink { ProgressView().tint(.white) } }
         .padding(.horizontal, OffriiTheme.spacingLG)
     }
 
-    // MARK: - Scope Option
+    // MARK: - Active Links
 
-    private func scopeOption(_ option: ShareScope, icon: String, label: String) -> some View {
-        Button {
-            withAnimation(OffriiAnimation.snappy) { scope = option }
-        } label: {
-            HStack(spacing: OffriiTheme.spacingSM) {
-                Image(systemName: scope == option ? "largecircle.fill.circle" : "circle")
-                    .font(.system(size: 18))
-                    .foregroundColor(scope == option ? OffriiTheme.primary : OffriiTheme.textMuted)
-                Image(systemName: icon)
-                    .font(.system(size: 13))
-                    .foregroundColor(OffriiTheme.textSecondary)
-                Text(label)
-                    .font(OffriiTypography.body)
+    private var activeLinksSection: some View {
+        VStack(alignment: .leading, spacing: OffriiTheme.spacingSM) {
+            if isLoadingLinks {
+                SkeletonList(count: 2)
+                    .padding(.horizontal, OffriiTheme.spacingLG)
+            } else if shareLinks.isEmpty {
+                VStack(spacing: OffriiTheme.spacingSM) {
+                    Spacer().frame(height: 20)
+                    OffriiEmptyState(
+                        icon: "link",
+                        title: NSLocalizedString("share.noLinks", comment: ""),
+                        subtitle: NSLocalizedString("share.noLinksSubtitle", comment: "")
+                    )
+                }
+            } else {
+                Text(NSLocalizedString("share.activeLinks", comment: "") + " (\(shareLinks.count))")
+                    .font(OffriiTypography.headline)
                     .foregroundColor(OffriiTheme.text)
-                Spacer()
+                    .padding(.horizontal, OffriiTheme.spacingLG)
+
+                ForEach(shareLinks) { link in
+                    linkCard(link)
+                }
             }
         }
-        .buttonStyle(.plain)
+    }
+
+    private func linkCard(_ link: ShareLinkResponse) -> some View {
+        let isDisabled = link.isActive == false
+        return VStack(alignment: .leading, spacing: OffriiTheme.spacingSM) {
+            linkCardHeader(link, isDisabled: isDisabled)
+            linkCardUrl(link, isDisabled: isDisabled)
+            linkCardInfo(link)
+            linkCardActions(link)
+        }
+        .padding(OffriiTheme.spacingMD)
+        .background(isDisabled ? OffriiTheme.surface.opacity(0.6) : OffriiTheme.surface)
+        .cornerRadius(OffriiTheme.cornerRadiusMD)
+        .overlay(
+            RoundedRectangle(cornerRadius: OffriiTheme.cornerRadiusMD)
+                .strokeBorder(isDisabled ? OffriiTheme.border : .clear, lineWidth: 1)
+        )
+        .contextMenu { linkContextMenu(link) }
+        .padding(.horizontal, OffriiTheme.spacingLG)
+    }
+
+    @ViewBuilder
+    private func linkCardHeader(_ link: ShareLinkResponse, isDisabled: Bool) -> some View {
+        HStack(spacing: OffriiTheme.spacingSM) {
+            if isDisabled {
+                Text(NSLocalizedString("share.linkDisabled", comment: ""))
+                    .font(.system(size: 10, weight: .semibold)).foregroundColor(.white)
+                    .padding(.horizontal, 6).padding(.vertical, 2)
+                    .background(OffriiTheme.textMuted).cornerRadius(4)
+            }
+            if let label = link.label, !label.isEmpty {
+                Text(label).font(.system(size: 13, weight: .semibold))
+                    .foregroundColor(isDisabled ? OffriiTheme.textMuted : OffriiTheme.text)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func linkCardUrl(_ link: ShareLinkResponse, isDisabled: Bool) -> some View {
+        if !isDisabled, let url = URL(string: link.displayUrl) {
+            Link(destination: url) {
+                HStack(spacing: 6) {
+                    Image(systemName: "link").font(.system(size: 11))
+                    Text(link.displayUrl).font(.system(size: 12, weight: .medium)).lineLimit(1)
+                    Spacer()
+                    Image(systemName: "arrow.up.right").font(.system(size: 10))
+                }
+                .foregroundColor(OffriiTheme.primary)
+            }
+        } else {
+            HStack(spacing: 6) {
+                Image(systemName: "link").font(.system(size: 11))
+                Text(link.displayUrl).font(.system(size: 12, weight: .medium)).lineLimit(1).strikethrough(isDisabled)
+            }
+            .foregroundColor(OffriiTheme.textMuted)
+        }
+    }
+
+    private func linkCardInfo(_ link: ShareLinkResponse) -> some View {
+        HStack(spacing: 4) {
+            Text(scopeLabel(link.scope)); Text("\u{00B7}")
+            Text(permissionLabel(link.permissions)); Text("\u{00B7}")
+            if let exp = link.expiresAt {
+                Text(exp, style: .relative)
+            } else {
+                Text(NSLocalizedString("share.ttl.never", comment: ""))
+            }
+        }
+        .font(.system(size: 10)).foregroundColor(OffriiTheme.textMuted)
+    }
+
+    private func linkCardActions(_ link: ShareLinkResponse) -> some View {
+        HStack(spacing: OffriiTheme.spacingBase) {
+            Spacer()
+            Button {
+                UIPasteboard.general.string = link.displayUrl
+                OffriiHaptics.success()
+                showToast(NSLocalizedString("share.linkCopied", comment: ""))
+            } label: {
+                Label(NSLocalizedString("share.copyLink", comment: ""), systemImage: "doc.on.doc")
+                    .font(.system(size: 11, weight: .medium)).foregroundColor(OffriiTheme.primary)
+            }
+            Button { shareViaSystem(url: link.displayUrl) } label: {
+                Label(NSLocalizedString("share.sendDirect", comment: ""), systemImage: "square.and.arrow.up")
+                    .font(.system(size: 11, weight: .medium)).foregroundColor(OffriiTheme.primary)
+            }
+            Button { Task { await deleteLink(id: link.id) } } label: {
+                Label(NSLocalizedString("common.delete", comment: ""), systemImage: "trash")
+                    .font(.system(size: 11, weight: .medium)).foregroundColor(OffriiTheme.danger)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func linkContextMenu(_ link: ShareLinkResponse) -> some View {
+        Button { editingLink = link } label: {
+            Label(NSLocalizedString("wishlist.edit", comment: ""), systemImage: "pencil")
+        }
+        Button {
+            UIPasteboard.general.string = link.displayUrl; OffriiHaptics.success()
+            showToast(NSLocalizedString("share.linkCopied", comment: ""))
+        } label: {
+            Label(NSLocalizedString("share.copyLink", comment: ""), systemImage: "doc.on.doc")
+        }
+        Divider()
+        Button(role: .destructive) { Task { await deleteLink(id: link.id) } } label: {
+            Label(NSLocalizedString("common.delete", comment: ""), systemImage: "trash")
+        }
     }
 
     // MARK: - Toast
@@ -621,8 +668,7 @@ struct WishlistShareSheet: View {
     private func toastView(_ message: String) -> some View {
         HStack(spacing: 6) {
             Image(systemName: "checkmark.circle.fill")
-            Text(message)
-                .font(.system(size: 13, weight: .medium))
+            Text(message).font(.system(size: 13, weight: .medium))
         }
         .foregroundColor(OffriiTheme.success)
         .frame(maxWidth: .infinity)
@@ -639,10 +685,6 @@ struct WishlistShareSheet: View {
     }
 
     // MARK: - Helpers
-
-    private var isCreateDisabled: Bool {
-        scope == .selection && pickedItemIds.isEmpty
-    }
 
     private func scopeLabel(_ scope: String?) -> String {
         switch scope {
@@ -674,6 +716,24 @@ struct WishlistShareSheet: View {
         isLoadingLinks = false
     }
 
+    private func shareToSelectedCircles() async {
+        isSharing = true
+        let itemIds = resolvedItemIds
+
+        for circleId in selectedCircleIds {
+            for itemId in itemIds {
+                do {
+                    try await CircleService.shared.shareItem(circleId: circleId, itemId: itemId)
+                } catch {}
+            }
+        }
+
+        OffriiHaptics.success()
+        showToast(NSLocalizedString("share.sharedSuccess", comment: ""))
+        selectedCircleIds.removeAll()
+        isSharing = false
+    }
+
     private func createLink() async {
         isCreatingLink = true
 
@@ -684,6 +744,10 @@ struct WishlistShareSheet: View {
         case .all:
             scopeStr = "all"
             scopeData = nil
+        case .category:
+            let itemIds = resolvedItemIds
+            scopeStr = "selection"
+            scopeData = ScopeData(categoryId: nil, itemIds: itemIds.map { $0.uuidString })
         case .selection:
             scopeStr = "selection"
             scopeData = ScopeData(categoryId: nil, itemIds: pickedItemIds.map { $0.uuidString })
@@ -700,12 +764,10 @@ struct WishlistShareSheet: View {
 
         do {
             let response: ShareLinkResponse = try await APIClient.shared.request(.createShareLink(body))
-            let url = response.displayUrl
-
-            UIPasteboard.general.string = url
+            UIPasteboard.general.string = response.displayUrl
 
             withAnimation(OffriiAnimation.defaultSpring) {
-                justCreatedLink = url
+                justCreatedLink = response.displayUrl
                 shareLinks.insert(response, at: 0)
             }
             OffriiHaptics.success()
@@ -718,9 +780,7 @@ struct WishlistShareSheet: View {
     private func deleteLink(id: UUID) async {
         do {
             try await APIClient.shared.requestVoid(.deleteShareLink(id: id))
-            withAnimation {
-                shareLinks.removeAll { $0.id == id }
-            }
+            withAnimation { shareLinks.removeAll { $0.id == id } }
             OffriiHaptics.success()
             showToast(NSLocalizedString("share.linkDeleted", comment: ""))
         } catch {
@@ -738,8 +798,6 @@ struct WishlistShareSheet: View {
     }
 
     private func showToast(_ message: String) {
-        withAnimation(OffriiAnimation.defaultSpring) {
-            toastMessage = message
-        }
+        withAnimation(OffriiAnimation.defaultSpring) { toastMessage = message }
     }
 }

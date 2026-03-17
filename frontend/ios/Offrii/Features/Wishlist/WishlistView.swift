@@ -120,6 +120,7 @@ struct WishlistView: View {
             WishlistShareSheet(
                 items: viewModel.items,
                 selectedItemIds: viewModel.selectedItemIds,
+                categories: viewModel.categories,
                 privateItemCount: viewModel.items.filter(\.isPrivate).count
             )
             .presentationDetents([.large])

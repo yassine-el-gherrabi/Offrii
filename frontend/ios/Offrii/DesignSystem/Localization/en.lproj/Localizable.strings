@@ -493,6 +493,7 @@
 "share.noLinksSubtitle" = "Create a link to share your wishes with anyone";
 "share.sharedItemCount" = "%d wish(es) shared";
 "share.noSharedItems" = "No wishes shared";
+"share.toWhom" = "To whom?";
 "share.ttl.oneDay" = "1 day";
 
 /* Wishlist - Redesign */
