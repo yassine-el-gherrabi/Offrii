@@ -512,6 +512,8 @@
 "circles.invite.linkSubtitle" = "Share this link to invite people, even if they're not on Offrii yet.";
 "circles.invite.createLink" = "Create invite link";
 "circles.invite.friendsTitle" = "Add friends";
+"notifications.empty" = "No notifications";
+"notifications.emptySubtitle" = "Friend requests and invitations will appear here";
 "circles.invite.joined" = "You joined the circle";
 "circles.invite.joinedMessage" = "You are now a member of \"%@\".";
 "item.unshare.title" = "Remove from circle";

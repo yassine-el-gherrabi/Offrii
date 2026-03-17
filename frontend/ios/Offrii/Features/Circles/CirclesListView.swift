@@ -123,9 +123,7 @@ struct CirclesListView: View {
         .toolbar {
             ToolbarItemGroup(placement: .topBarTrailing) {
                 Button {
-                    if viewModel.pendingCount > 0 {
-                        showPendingSheet = true
-                    }
+                    showPendingSheet = true
                 } label: {
                     ZStack(alignment: .topTrailing) {
                         Image(systemName: "bell")
@@ -372,6 +370,15 @@ struct PendingInvitationsSheet: View {
         NavigationStack {
             ScrollView {
                 LazyVStack(spacing: 0) {
+                    if viewModel.pendingRequests.isEmpty && viewModel.sentRequests.isEmpty {
+                        Spacer().frame(height: 40)
+                        OffriiEmptyState(
+                            icon: "bell.slash",
+                            title: NSLocalizedString("notifications.empty", comment: ""),
+                            subtitle: NSLocalizedString("notifications.emptySubtitle", comment: "")
+                        )
+                    }
+
                     ForEach(viewModel.pendingRequests) { request in
                         HStack(spacing: OffriiTheme.spacingSM) {
                             AvatarView(
