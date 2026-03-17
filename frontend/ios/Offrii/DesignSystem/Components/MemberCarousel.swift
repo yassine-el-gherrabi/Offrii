@@ -4,16 +4,16 @@ import SwiftUI
 
 struct MemberCarousel: View {
     let members: [CircleMember]
-    @Binding var selectedMemberId: UUID?
+    @Binding var selectedMemberIds: Set<UUID>
     let currentUserId: UUID?
+
+    private var allSelected: Bool { selectedMemberIds.isEmpty }
 
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: OffriiTheme.spacingSM) {
-                // "All" button
                 allButton
 
-                // Member avatars
                 ForEach(members) { member in
                     memberButton(member)
                 }
@@ -28,7 +28,7 @@ struct MemberCarousel: View {
     private var allButton: some View {
         Button {
             OffriiHaptics.selection()
-            selectedMemberId = nil
+            selectedMemberIds.removeAll()
         } label: {
             VStack(spacing: 4) {
                 Circle()
@@ -48,14 +48,14 @@ struct MemberCarousel: View {
                     .overlay(
                         Circle()
                             .strokeBorder(
-                                selectedMemberId == nil ? OffriiTheme.primary : .clear,
+                                allSelected ? OffriiTheme.primary : .clear,
                                 lineWidth: 2.5
                             )
                     )
 
                 Text(NSLocalizedString("entraide.category.all", comment: ""))
-                    .font(.system(size: 11, weight: selectedMemberId == nil ? .semibold : .regular))
-                    .foregroundColor(selectedMemberId == nil ? OffriiTheme.primary : OffriiTheme.textMuted)
+                    .font(.system(size: 11, weight: allSelected ? .semibold : .regular))
+                    .foregroundColor(allSelected ? OffriiTheme.primary : OffriiTheme.textMuted)
                     .lineLimit(1)
             }
             .frame(width: 56)
@@ -66,7 +66,7 @@ struct MemberCarousel: View {
     // MARK: - Member Button
 
     private func memberButton(_ member: CircleMember) -> some View {
-        let isSelected = selectedMemberId == member.userId
+        let isSelected = selectedMemberIds.contains(member.userId)
         let isMe = member.userId == currentUserId
         let displayLabel = isMe
             ? NSLocalizedString("circles.detail.myWishes", comment: "")
@@ -74,7 +74,7 @@ struct MemberCarousel: View {
 
         return Button {
             OffriiHaptics.selection()
-            selectedMemberId = member.userId
+            toggleMember(member.userId)
         } label: {
             VStack(spacing: 4) {
                 AvatarView(member.displayName ?? member.username, size: .medium)
@@ -94,5 +94,25 @@ struct MemberCarousel: View {
             .frame(width: 56)
         }
         .buttonStyle(.plain)
+        .onLongPressGesture(minimumDuration: 0.5) {
+            OffriiHaptics.tap()
+            selectOnly(member.userId)
+        }
+    }
+
+    // MARK: - Logic
+
+    /// Tap: toggle member in/out of selection. If all deselected → back to "all".
+    private func toggleMember(_ id: UUID) {
+        if selectedMemberIds.contains(id) {
+            selectedMemberIds.remove(id)
+        } else {
+            selectedMemberIds.insert(id)
+        }
+    }
+
+    /// Long press: select only this member (deselect all others).
+    private func selectOnly(_ id: UUID) {
+        selectedMemberIds = [id]
     }
 }
