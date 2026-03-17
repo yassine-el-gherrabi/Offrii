@@ -19,15 +19,18 @@ pub struct PgFriendService {
     user_repo: Arc<dyn traits::UserRepo>,
     push_token_repo: Arc<dyn traits::PushTokenRepo>,
     notification_svc: Arc<dyn traits::NotificationService>,
+    notification_repo: Arc<dyn traits::NotificationRepo>,
 }
 
 impl PgFriendService {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         pool: sqlx::PgPool,
         friend_repo: Arc<dyn traits::FriendRepo>,
         user_repo: Arc<dyn traits::UserRepo>,
         push_token_repo: Arc<dyn traits::PushTokenRepo>,
         notification_svc: Arc<dyn traits::NotificationService>,
+        notification_repo: Arc<dyn traits::NotificationRepo>,
     ) -> Self {
         Self {
             pool,
@@ -35,14 +38,21 @@ impl PgFriendService {
             user_repo,
             push_token_repo,
             notification_svc,
+            notification_repo,
         }
     }
 
     fn notify_user(&self, user_id: Uuid, title: String, body: String) {
         let push_token_repo = self.push_token_repo.clone();
         let notification_svc = self.notification_svc.clone();
+        let notif_repo = self.notification_repo.clone();
 
         tokio::spawn(async move {
+            // Persist notification
+            let _ = notif_repo
+                .create(user_id, "friend_activity", &title, &body, None, None, None)
+                .await;
+
             let tokens = match push_token_repo.find_by_user(user_id).await {
                 Ok(t) => t,
                 Err(e) => {

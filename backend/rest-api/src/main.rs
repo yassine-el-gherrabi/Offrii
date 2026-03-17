@@ -168,6 +168,9 @@ async fn main() -> anyhow::Result<()> {
     let circle_invite_repo: Arc<dyn CircleInviteRepo> =
         Arc::new(PgCircleInviteRepo::new(db.clone()));
     let circle_event_repo: Arc<dyn CircleEventRepo> = Arc::new(PgCircleEventRepo::new(db.clone()));
+    let notification_repo: Arc<dyn NotificationRepo> =
+        Arc::new(PgNotificationRepo::new(db.clone()));
+
     let circle_svc: Arc<dyn CircleService> = Arc::new(PgCircleService::new(
         db.clone(),
         circle_repo,
@@ -179,6 +182,7 @@ async fn main() -> anyhow::Result<()> {
         user_repo.clone(),
         push_token_repo.clone(),
         notification_svc.clone(),
+        notification_repo.clone(),
         friend_repo.clone(),
         redis.clone(),
     ));
@@ -190,6 +194,7 @@ async fn main() -> anyhow::Result<()> {
         user_repo.clone(),
         push_token_repo.clone(),
         notification_svc.clone(),
+        notification_repo.clone(),
     ));
 
     // Community wish service
@@ -262,8 +267,7 @@ async fn main() -> anyhow::Result<()> {
         }
     };
 
-    let notification_repo: Arc<dyn NotificationRepo> =
-        Arc::new(PgNotificationRepo::new(db.clone()));
+    // notification_repo already created above
 
     let state = AppState {
         auth,

@@ -29,6 +29,7 @@ pub struct PgCircleService {
     user_repo: Arc<dyn traits::UserRepo>,
     push_token_repo: Arc<dyn traits::PushTokenRepo>,
     notification_svc: Arc<dyn traits::NotificationService>,
+    notification_repo: Arc<dyn traits::NotificationRepo>,
     friend_repo: Arc<dyn traits::FriendRepo>,
     redis: redis::Client,
 }
@@ -46,6 +47,7 @@ impl PgCircleService {
         user_repo: Arc<dyn traits::UserRepo>,
         push_token_repo: Arc<dyn traits::PushTokenRepo>,
         notification_svc: Arc<dyn traits::NotificationService>,
+        notification_repo: Arc<dyn traits::NotificationRepo>,
         friend_repo: Arc<dyn traits::FriendRepo>,
         redis: redis::Client,
     ) -> Self {
@@ -60,6 +62,7 @@ impl PgCircleService {
             user_repo,
             push_token_repo,
             notification_svc,
+            notification_repo,
             friend_repo,
             redis,
         }
@@ -122,9 +125,33 @@ impl PgCircleService {
     }
 
     fn notify_members(&self, circle_id: Uuid, exclude_user: Uuid, title: String, body: String) {
+        self.notify_members_with_context(
+            circle_id,
+            exclude_user,
+            title,
+            body,
+            Some("circle_activity"),
+            None,
+            Some(exclude_user),
+        );
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn notify_members_with_context(
+        &self,
+        circle_id: Uuid,
+        exclude_user: Uuid,
+        title: String,
+        body: String,
+        notif_type: Option<&str>,
+        item_id: Option<Uuid>,
+        actor_id: Option<Uuid>,
+    ) {
         let member_repo = self.circle_member_repo.clone();
         let push_token_repo = self.push_token_repo.clone();
         let notification_svc = self.notification_svc.clone();
+        let notif_repo = self.notification_repo.clone();
+        let persist_type = notif_type.map(|s| s.to_string());
 
         tokio::spawn(async move {
             let members = match member_repo.list_members(circle_id).await {
@@ -140,6 +167,21 @@ impl PgCircleService {
                 if member.user_id == exclude_user {
                     continue;
                 }
+                // Persist notification
+                if let Some(ref ntype) = persist_type {
+                    let _ = notif_repo
+                        .create(
+                            member.user_id,
+                            ntype,
+                            &title,
+                            &body,
+                            Some(circle_id),
+                            item_id,
+                            actor_id,
+                        )
+                        .await;
+                }
+
                 let tokens = match push_token_repo.find_by_user(member.user_id).await {
                     Ok(t) => t,
                     Err(_) => continue,
@@ -160,10 +202,41 @@ impl PgCircleService {
     }
 
     fn notify_user(&self, user_id: Uuid, title: String, body: String) {
+        self.notify_user_with_context(
+            user_id,
+            title,
+            body,
+            Some("circle_activity"),
+            None,
+            None,
+            None,
+        );
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn notify_user_with_context(
+        &self,
+        user_id: Uuid,
+        title: String,
+        body: String,
+        notif_type: Option<&str>,
+        circle_id: Option<Uuid>,
+        item_id: Option<Uuid>,
+        actor_id: Option<Uuid>,
+    ) {
         let push_token_repo = self.push_token_repo.clone();
         let notification_svc = self.notification_svc.clone();
+        let notif_repo = self.notification_repo.clone();
+        let persist_type = notif_type.map(|s| s.to_string());
 
         tokio::spawn(async move {
+            // Persist notification
+            if let Some(ref ntype) = persist_type {
+                let _ = notif_repo
+                    .create(user_id, ntype, &title, &body, circle_id, item_id, actor_id)
+                    .await;
+            }
+
             let tokens = match push_token_repo.find_by_user(user_id).await {
                 Ok(t) => t,
                 Err(e) => {
