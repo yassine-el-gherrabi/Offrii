@@ -6,6 +6,7 @@ enum CircleFilter: String, CaseIterable {
     case all
     case groups
     case friends
+    case reservations
 
     var localizedTitle: String {
         switch self {
@@ -15,6 +16,8 @@ enum CircleFilter: String, CaseIterable {
             return NSLocalizedString("circles.filter.groups", comment: "")
         case .friends:
             return NSLocalizedString("circles.filter.friends", comment: "")
+        case .reservations:
+            return NSLocalizedString("circles.filter.reservations", comment: "")
         }
     }
 }
@@ -41,6 +44,8 @@ struct CirclesListView: View {
             return searched.filter { !$0.isDirect }
         case .friends:
             return searched.filter { $0.isDirect }
+        case .reservations:
+            return [] // Not used — reservations have their own content
         }
     }
 
@@ -49,7 +54,9 @@ struct CirclesListView: View {
             VStack(spacing: 0) {
                 filterChips
 
-                if viewModel.isLoadingCircles && viewModel.circles.isEmpty {
+                if selectedFilter == .reservations {
+                    ReservationsListView()
+                } else if viewModel.isLoadingCircles && viewModel.circles.isEmpty {
                     ScrollView {
                         LazyVStack(spacing: OffriiTheme.spacingSM) {
                             ForEach(0..<5, id: \.self) { _ in
@@ -476,4 +483,5 @@ struct PendingInvitationsSheet: View {
             }
         }
     }
+
 }
