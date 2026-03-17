@@ -126,7 +126,9 @@ struct WishlistView: View {
             )
             .presentationDetents([.large])
         }
-        .sheet(item: $shareToCircleItemId) { itemId in
+        .sheet(item: $shareToCircleItemId, onDismiss: {
+            Task { await viewModel.loadItems() }
+        }) { itemId in
             let alreadyShared = Set(
                 viewModel.items.first(where: { $0.id == itemId })?.sharedCircles.map(\.id) ?? []
             )

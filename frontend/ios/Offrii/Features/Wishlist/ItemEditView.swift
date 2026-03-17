@@ -22,6 +22,7 @@ struct ItemEditView: View {
     @State private var imageRemoved = false
     @State private var existingImageUrl: URL?
     @State private var circleToUnshare: SharedCircleInfo?
+    @State private var sharedCircles: [SharedCircleInfo]
     @State private var didCancel = false
     @State private var didSave = false
 
@@ -36,6 +37,7 @@ struct ItemEditView: View {
         _categoryId = State(initialValue: item.categoryId)
         _isPrivate = State(initialValue: item.isPrivate)
         _existingImageUrl = State(initialValue: item.displayImageUrl)
+        _sharedCircles = State(initialValue: item.sharedCircles)
     }
 
     var body: some View {
@@ -147,7 +149,7 @@ struct ItemEditView: View {
                         .font(OffriiTypography.subheadline)
                         .foregroundColor(OffriiTheme.textMuted)
 
-                    ForEach(item.sharedCircles) { circle in
+                    ForEach(sharedCircles) { circle in
                         HStack(spacing: OffriiTheme.spacingSM) {
                             CircleAvatarBadge(circle: circle)
 
@@ -242,10 +244,16 @@ struct ItemEditView: View {
                 selectedId: $categoryId
             )
         }
-        .sheet(isPresented: $showShareToCircle) {
+        .sheet(isPresented: $showShareToCircle, onDismiss: {
+            Task {
+                if let updated = try? await ItemService.shared.getItem(id: item.id) {
+                    sharedCircles = updated.sharedCircles
+                }
+            }
+        }) {
             ShareToCircleSheet(
                 itemId: item.id,
-                alreadySharedCircleIds: Set(item.sharedCircles.map(\.id))
+                alreadySharedCircleIds: Set(sharedCircles.map(\.id))
             )
             .presentationDetents([.medium])
         }
@@ -278,6 +286,9 @@ struct ItemEditView: View {
                 if let circle = circleToUnshare {
                     Task {
                         try? await CircleService.shared.unshareItem(circleId: circle.id, itemId: item.id)
+                        withAnimation {
+                            sharedCircles.removeAll { $0.id == circle.id }
+                        }
                     }
                 }
                 circleToUnshare = nil
