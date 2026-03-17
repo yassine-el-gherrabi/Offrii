@@ -1,3 +1,4 @@
+import NukeUI
 import SwiftUI
 
 struct ItemEditView: View {
@@ -140,15 +141,37 @@ struct ItemEditView: View {
 
                     ForEach(item.sharedCircles) { circle in
                         HStack(spacing: OffriiTheme.spacingSM) {
-                            Text(circle.initial)
-                                .font(.system(size: 11, weight: .bold))
-                                .foregroundColor(.white)
-                                .frame(width: 24, height: 24)
-                                .background(OffriiTheme.primary)
-                                .clipShape(Circle())
+                            // Avatar with type badge
+                            ZStack {
+                                if let url = circle.imageURL {
+                                    LazyImage(url: url) { state in
+                                        if let image = state.image {
+                                            image
+                                                .resizable()
+                                                .aspectRatio(contentMode: .fill)
+                                                .frame(width: 28, height: 28)
+                                                .clipShape(Circle())
+                                        } else {
+                                            circleInitialView(circle, size: 28, fontSize: 12)
+                                        }
+                                    }
+                                } else {
+                                    circleInitialView(circle, size: 28, fontSize: 12)
+                                }
+                            }
+                            .overlay(alignment: .bottomTrailing) {
+                                Image(systemName: circle.isDirect == true ? "person.fill" : "person.2.fill")
+                                    .font(.system(size: 7, weight: .bold))
+                                    .foregroundColor(.white)
+                                    .padding(2)
+                                    .background(OffriiTheme.primary)
+                                    .clipShape(Circle())
+                                    .overlay(Circle().strokeBorder(.white, lineWidth: 1))
+                                    .offset(x: 3, y: 3)
+                            }
 
                             Text(circle.name)
-                                .font(.system(size: 13, weight: .medium))
+                                .font(.system(size: 14, weight: .medium))
                                 .foregroundColor(OffriiTheme.text)
 
                             Spacer()
@@ -159,13 +182,13 @@ struct ItemEditView: View {
                                 }
                             } label: {
                                 Image(systemName: "xmark")
-                                    .font(.system(size: 10, weight: .semibold))
+                                    .font(.system(size: 11, weight: .semibold))
                                     .foregroundColor(OffriiTheme.textMuted)
                             }
                         }
                         .padding(OffriiTheme.spacingSM)
                         .background(OffriiTheme.surface)
-                        .cornerRadius(OffriiTheme.cornerRadiusSM)
+                        .cornerRadius(OffriiTheme.cornerRadiusMD)
                     }
 
                     // Add row
@@ -174,20 +197,20 @@ struct ItemEditView: View {
                     } label: {
                         HStack(spacing: OffriiTheme.spacingSM) {
                             Image(systemName: "plus")
-                                .font(.system(size: 11, weight: .semibold))
+                                .font(.system(size: 13, weight: .semibold))
                                 .foregroundColor(.white)
-                                .frame(width: 24, height: 24)
+                                .frame(width: 28, height: 28)
                                 .background(OffriiTheme.primary)
                                 .clipShape(Circle())
 
                             Text(NSLocalizedString("share.addPeople", comment: ""))
-                                .font(.system(size: 13, weight: .medium))
+                                .font(.system(size: 14, weight: .medium))
                                 .foregroundColor(OffriiTheme.primary)
                         }
                         .padding(OffriiTheme.spacingSM)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .background(OffriiTheme.surface)
-                        .cornerRadius(OffriiTheme.cornerRadiusSM)
+                        .cornerRadius(OffriiTheme.cornerRadiusMD)
                     }
                     .buttonStyle(.plain)
                 }
@@ -300,6 +323,15 @@ struct ItemEditView: View {
             return cat.name
         }
         return NSLocalizedString("item.category", comment: "")
+    }
+
+    private func circleInitialView(_ circle: SharedCircleInfo, size: CGFloat, fontSize: CGFloat) -> some View {
+        Text(circle.initial)
+            .font(.system(size: fontSize, weight: .bold))
+            .foregroundColor(.white)
+            .frame(width: size, height: size)
+            .background(OffriiTheme.primary)
+            .clipShape(Circle())
     }
 
     private func save() async {
