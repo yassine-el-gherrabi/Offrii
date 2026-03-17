@@ -14,6 +14,11 @@ final class ItemDetailViewModel {
         CategoryStyle(icon: categoryIcon)
     }
 
+    func updateItem(_ newItem: Item) {
+        item = newItem
+        Task { await loadCategoryInfo() }
+    }
+
     func loadItem(id: UUID) async {
         isLoading = true
         do {

@@ -280,7 +280,7 @@ struct ItemDetailSheet: View {
                 if let item = viewModel.item {
                     NavigationStack {
                         ItemEditView(item: item) { updatedItem in
-                            viewModel.item = updatedItem
+                            viewModel.updateItem(updatedItem)
                         }
                     }
                 }
