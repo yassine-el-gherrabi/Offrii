@@ -291,6 +291,7 @@ async fn main() -> anyhow::Result<()> {
         .nest("/share-links", share_links::router())
         .nest("/shared", shared::router())
         .nest("/circles", circles::router())
+        .route("/join/{token}", get(circles::join_page))
         .nest("/me", friends::router())
         .nest("/users", friends::search_router())
         .nest("/community/wishes", community_wishes::router())

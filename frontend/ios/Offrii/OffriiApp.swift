@@ -46,6 +46,9 @@ struct OffriiApp: App {
             .animation(OffriiAnimation.modal, value: router.currentScreen)
             .environment(authManager)
             .environment(router)
+            .onOpenURL { url in
+                router.handleURL(url)
+            }
         }
     }
 }
@@ -74,8 +77,11 @@ struct AuthContainerView: View {
 }
 
 struct MainTabView: View {
+    @Environment(AppRouter.self) private var router
     @State private var selectedTab: TabItem = .home
     @State private var showCreateSheet = false
+    @State private var joinResult: String?
+    @State private var joinError: String?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -120,6 +126,46 @@ struct MainTabView: View {
         .sheet(isPresented: $showCreateSheet) {
             QuickCreateSheet()
                 .presentationDetents([.medium])
+        }
+        .onChange(of: router.pendingInviteToken) { _, token in
+            guard let token else { return }
+            Task {
+                do {
+                    let result = try await CircleService.shared.joinViaInvite(token: token)
+                    joinResult = result.circleName ?? NSLocalizedString("circles.unnamed", comment: "")
+                    OffriiHaptics.success()
+                } catch {
+                    joinError = error.localizedDescription
+                }
+                router.pendingInviteToken = nil
+            }
+        }
+        .alert(
+            NSLocalizedString("circles.invite.joined", comment: ""),
+            isPresented: Binding(
+                get: { joinResult != nil },
+                set: { if !$0 { joinResult = nil } }
+            )
+        ) {
+            Button(NSLocalizedString("common.ok", comment: "")) {
+                selectedTab = .cercles
+                joinResult = nil
+            }
+        } message: {
+            if let name = joinResult {
+                Text(String(format: NSLocalizedString("circles.invite.joinedMessage", comment: ""), name))
+            }
+        }
+        .alert(
+            NSLocalizedString("common.error", comment: ""),
+            isPresented: Binding(
+                get: { joinError != nil },
+                set: { if !$0 { joinError = nil } }
+            )
+        ) {
+            Button(NSLocalizedString("common.ok", comment: ""), role: .cancel) {}
+        } message: {
+            if let err = joinError { Text(err) }
         }
     }
 }

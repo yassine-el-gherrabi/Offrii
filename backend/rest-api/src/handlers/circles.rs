@@ -1,5 +1,6 @@
 use axum::extract::{Path, Query, State};
-use axum::http::StatusCode;
+use axum::http::{HeaderMap, StatusCode};
+use axum::response::{Html, IntoResponse, Response};
 use axum::routing::{delete, get, post};
 use axum::{Json, Router};
 use uuid::Uuid;
@@ -314,4 +315,126 @@ async fn list_reservations(
 ) -> Result<Json<Vec<ReservationResponse>>, AppError> {
     let reservations = state.circles.list_reservations(auth_user.user_id).await?;
     Ok(Json(reservations))
+}
+
+/// Public HTML page for circle invite links: GET /join/{token}
+pub async fn join_page(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    Path(token): Path<String>,
+) -> Response {
+    // Look up the invite to get circle info
+    let circle_name = match state.circles.get_invite_circle_name(&token).await {
+        Ok(name) => name,
+        Err(_) => {
+            return Html(render_join_error_html(&headers)).into_response();
+        }
+    };
+
+    Html(render_join_html(&token, &circle_name, &headers)).into_response()
+}
+
+fn get_lang(headers: &HeaderMap) -> &str {
+    headers
+        .get("accept-language")
+        .and_then(|v| v.to_str().ok())
+        .map(|v| if v.starts_with("en") { "en" } else { "fr" })
+        .unwrap_or("fr")
+}
+
+fn render_join_html(token: &str, circle_name: &str, headers: &HeaderMap) -> String {
+    let lang = get_lang(headers);
+    let (title, subtitle, btn, or_text, dl_text) = if lang == "en" {
+        (
+            format!("Join \"{}\"", circle_name),
+            "You've been invited to join a circle on Offrii.",
+            "Join circle",
+            "or",
+            "Download Offrii",
+        )
+    } else {
+        (
+            format!("Rejoindre \"{}\"", circle_name),
+            "Vous avez été invité à rejoindre un cercle sur Offrii.",
+            "Rejoindre le cercle",
+            "ou",
+            "Télécharger Offrii",
+        )
+    };
+
+    let escaped_name = circle_name
+        .replace('&', "&amp;")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;")
+        .replace('"', "&quot;");
+
+    format!(
+        r#"<!DOCTYPE html><html lang="{lang}"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{title} — Offrii</title>
+<meta property="og:title" content="{title}">
+<meta property="og:description" content="{subtitle}">
+<style>
+*{{margin:0;padding:0;box-sizing:border-box}}
+body{{font-family:-apple-system,system-ui,sans-serif;background:#FFFAF9;display:flex;justify-content:center;align-items:center;min-height:100vh;padding:20px}}
+.c{{max-width:400px;text-align:center}}
+.logo{{font-size:1.5rem;font-weight:800;color:#FF6B6B;letter-spacing:-0.02em;margin-bottom:24px}}
+.av{{width:72px;height:72px;border-radius:50%;background:#FF6B6B;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:1.5rem;font-weight:600;color:#fff}}
+h1{{font-size:1.3rem;font-weight:700;margin-bottom:8px;color:#1a1a1a}}
+.sub{{color:#666;margin-bottom:24px;font-size:0.95rem}}
+.btn{{display:block;background:#FF6B6B;color:#fff;text-decoration:none;padding:14px 24px;border-radius:12px;font-weight:600;font-size:1rem;margin-bottom:12px}}
+.btn:hover{{background:#e55a5a}}
+.or{{color:#999;margin:8px 0;font-size:0.9rem}}
+.dl{{color:#FF6B6B;text-decoration:none;font-weight:500}}
+</style></head><body>
+<div class="c">
+<div class="logo">offrii</div>
+<div class="av">{initials}</div>
+<h1>{title}</h1>
+<p class="sub">{subtitle}</p>
+<a class="btn" href="offrii://join/{token}">{btn}</a>
+<p class="or">{or_text}</p>
+<a class="dl" href="https://apps.apple.com/app/offrii">{dl_text}</a>
+</div></body></html>"#,
+        lang = lang,
+        title = title,
+        subtitle = subtitle,
+        btn = btn,
+        or_text = or_text,
+        dl_text = dl_text,
+        token = token,
+        initials = escaped_name.chars().next().unwrap_or('?').to_uppercase(),
+    )
+}
+
+fn render_join_error_html(headers: &HeaderMap) -> String {
+    let lang = get_lang(headers);
+    let (title, msg) = if lang == "en" {
+        (
+            "Invalid invitation",
+            "This invitation link is expired or invalid.",
+        )
+    } else {
+        (
+            "Invitation invalide",
+            "Ce lien d'invitation est expiré ou invalide.",
+        )
+    };
+    format!(
+        r#"<!DOCTYPE html><html><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{title} — Offrii</title>
+<style>
+*{{margin:0;padding:0;box-sizing:border-box}}
+body{{font-family:-apple-system,system-ui,sans-serif;background:#FFFAF9;display:flex;justify-content:center;align-items:center;min-height:100vh;padding:20px}}
+.c{{max-width:400px;text-align:center}}
+.logo{{font-size:1.5rem;font-weight:800;color:#FF6B6B;margin-bottom:24px}}
+h1{{font-size:1.2rem;color:#1a1a1a;margin-bottom:8px}}
+p{{color:#666}}
+</style></head><body>
+<div class="c"><div class="logo">offrii</div><h1>{title}</h1><p>{msg}</p></div>
+</body></html>"#,
+        title = title,
+        msg = msg
+    )
 }

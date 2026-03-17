@@ -57,4 +57,15 @@ final class AppRouter {
     func completePostAuthSetup() {
         currentScreen = .main
     }
+
+    /// Pending circle invite token from deep link (offrii://join/{token})
+    var pendingInviteToken: String?
+
+    func handleURL(_ url: URL) {
+        // offrii://join/{token}
+        guard url.scheme == "offrii", url.host == "join",
+              let token = url.pathComponents.last, !token.isEmpty, token != "/"
+        else { return }
+        pendingInviteToken = token
+    }
 }

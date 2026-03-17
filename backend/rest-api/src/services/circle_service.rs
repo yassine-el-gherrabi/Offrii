@@ -1460,6 +1460,24 @@ impl traits::CircleService for PgCircleService {
         Ok(PaginatedResponse::new(event_responses, total, page, limit))
     }
 
+    async fn get_invite_circle_name(&self, token: &str) -> Result<String, AppError> {
+        let invite = self
+            .circle_invite_repo
+            .find_by_token(token)
+            .await
+            .map_err(AppError::Internal)?
+            .ok_or_else(|| AppError::NotFound("invite not found".into()))?;
+
+        let circle = self
+            .circle_repo
+            .find_by_id(invite.circle_id)
+            .await
+            .map_err(AppError::Internal)?
+            .ok_or_else(|| AppError::NotFound("circle not found".into()))?;
+
+        Ok(circle.name.unwrap_or_default())
+    }
+
     #[tracing::instrument(skip(self))]
     async fn transfer_ownership(
         &self,

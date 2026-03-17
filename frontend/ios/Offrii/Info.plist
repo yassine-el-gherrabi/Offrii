@@ -14,6 +14,14 @@
 			<key>CFBundleURLName</key>
 			<string>Google Sign-In</string>
 		</dict>
+		<dict>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>offrii</string>
+			</array>
+			<key>CFBundleURLName</key>
+			<string>Offrii Deep Link</string>
+		</dict>
 	</array>
 	<key>NSCameraUsageDescription</key>
 	<string>Offrii utilise l'appareil photo pour prendre des photos de vos envies.</string>
