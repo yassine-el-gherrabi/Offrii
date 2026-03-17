@@ -72,28 +72,26 @@ struct MemberCarousel: View {
             ? NSLocalizedString("circles.detail.myWishes", comment: "")
             : (member.displayName ?? member.username)
 
-        return Button {
+        return VStack(spacing: 4) {
+            AvatarView(member.displayName ?? member.username, size: .medium)
+                .overlay(
+                    Circle()
+                        .strokeBorder(
+                            isSelected ? OffriiTheme.primary : .clear,
+                            lineWidth: 2.5
+                        )
+                )
+
+            Text(displayLabel)
+                .font(.system(size: 11, weight: isSelected ? .semibold : .regular))
+                .foregroundColor(isSelected ? OffriiTheme.primary : OffriiTheme.textMuted)
+                .lineLimit(1)
+        }
+        .frame(width: 56)
+        .onTapGesture {
             OffriiHaptics.selection()
             toggleMember(member.userId)
-        } label: {
-            VStack(spacing: 4) {
-                AvatarView(member.displayName ?? member.username, size: .medium)
-                    .overlay(
-                        Circle()
-                            .strokeBorder(
-                                isSelected ? OffriiTheme.primary : .clear,
-                                lineWidth: 2.5
-                            )
-                    )
-
-                Text(displayLabel)
-                    .font(.system(size: 11, weight: isSelected ? .semibold : .regular))
-                    .foregroundColor(isSelected ? OffriiTheme.primary : OffriiTheme.textMuted)
-                    .lineLimit(1)
-            }
-            .frame(width: 56)
         }
-        .buttonStyle(.plain)
         .onLongPressGesture(minimumDuration: 0.5) {
             OffriiHaptics.tap()
             selectOnly(member.userId)
