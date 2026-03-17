@@ -576,7 +576,6 @@ struct CircleDetailView: View {
         _ item: CircleItemResponse,
         showClaimButtons: Bool
     ) -> some View {
-        let itemIsOwner = item.sharedBy == currentUserId
         let style = CategoryStyle(icon: item.categoryIcon)
 
         VStack(alignment: .leading, spacing: 0) {
@@ -647,49 +646,45 @@ struct CircleDetailView: View {
             .frame(height: 130)
             .clipped()
 
-            // Text zone
-            VStack(alignment: .leading, spacing: OffriiTheme.spacingXS) {
+            // Text zone — fixed structure for uniform card height
+            VStack(alignment: .leading, spacing: 2) {
                 Text(item.name)
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundColor(OffriiTheme.text)
-                    .lineLimit(2)
-                    .multilineTextAlignment(.leading)
+                    .lineLimit(1)
 
-                if let price = item.estimatedPrice {
-                    Text(price.formatted(.currency(code: "EUR")))
-                        .font(.system(size: 12))
-                        .foregroundColor(OffriiTheme.textMuted)
-                }
+                Text(item.estimatedPrice?.formatted(.currency(code: "EUR")) ?? " ")
+                    .font(.system(size: 12))
+                    .foregroundColor(OffriiTheme.textMuted)
 
-                // Owner avatar + name
-                if !isDirect, let ownerName = item.sharedByName {
+                // Owner avatar + name (group only)
+                if !isDirect {
                     HStack(spacing: 4) {
-                        if let avatarStr = item.sharedByAvatarUrl, let url = URL(string: avatarStr) {
-                            LazyImage(url: url) { state in
-                                if let image = state.image {
-                                    image.resizable().aspectRatio(contentMode: .fill)
-                                        .frame(width: 16, height: 16).clipShape(Circle())
-                                } else {
-                                    itemOwnerInitial(ownerName)
+                        if let ownerName = item.sharedByName {
+                            if let avatarStr = item.sharedByAvatarUrl, let url = URL(string: avatarStr) {
+                                LazyImage(url: url) { state in
+                                    if let image = state.image {
+                                        image.resizable().aspectRatio(contentMode: .fill)
+                                            .frame(width: 16, height: 16).clipShape(Circle())
+                                    } else {
+                                        itemOwnerInitial(ownerName)
+                                    }
                                 }
+                            } else {
+                                itemOwnerInitial(ownerName)
                             }
-                        } else {
-                            itemOwnerInitial(ownerName)
+                            Text(ownerName)
+                                .font(.system(size: 11))
+                                .foregroundColor(OffriiTheme.textSecondary)
+                                .lineLimit(1)
                         }
-                        Text(ownerName)
-                            .font(.system(size: 11))
-                            .foregroundColor(OffriiTheme.textSecondary)
-                            .lineLimit(1)
                     }
-                }
-
-                if showClaimButtons && !itemIsOwner {
-                    claimButton(item)
-                        .padding(.top, 2)
+                    .frame(height: 16)
                 }
             }
             .padding(.horizontal, OffriiTheme.spacingSM)
             .padding(.vertical, OffriiTheme.spacingSM)
+            .frame(height: isDirect ? 48 : 64, alignment: .top)
         }
         .background(OffriiTheme.card)
         .cornerRadius(OffriiTheme.cornerRadiusLG)
