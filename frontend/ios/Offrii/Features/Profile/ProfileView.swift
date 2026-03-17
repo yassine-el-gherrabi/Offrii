@@ -277,6 +277,11 @@ struct ProfileView: View {
                     showAvatarPhotoPicker = true
                 }
             }
+            if viewModel.avatarUrl != nil || selectedAvatarImage != nil {
+                Button(NSLocalizedString("imagePicker.removePhoto", comment: ""), role: .destructive) {
+                    Task { await removeAvatar() }
+                }
+            }
         }
         .fullScreenCover(isPresented: $showAvatarCamera) {
             CameraImagePicker(image: Binding(
@@ -387,7 +392,7 @@ struct ProfileView: View {
         do {
             let url = try await APIClient.shared.uploadImage(data, type: "avatar")
             let body = UpdateProfileBody(
-                displayName: nil, username: nil, avatarUrl: url,
+                displayName: nil, username: nil, avatarUrl: .some(url),
                 reminderFreq: nil, reminderTime: nil, timezone: nil, locale: nil
             )
             _ = try await APIClient.shared.request(.updateProfile(body)) as UserProfileResponse
@@ -398,6 +403,21 @@ struct ProfileView: View {
             // Revert selection on error
             selectedAvatarImage = nil
         }
+        isUploadingAvatar = false
+    }
+
+    private func removeAvatar() async {
+        isUploadingAvatar = true
+        do {
+            let body = UpdateProfileBody(
+                displayName: nil, username: nil, avatarUrl: .some(nil),
+                reminderFreq: nil, reminderTime: nil, timezone: nil, locale: nil
+            )
+            _ = try await APIClient.shared.request(.updateProfile(body)) as UserProfileResponse
+            viewModel.avatarUrlString = nil
+            selectedAvatarImage = nil
+            try? await authManager.loadCurrentUser()
+        } catch {}
         isUploadingAvatar = false
     }
 }

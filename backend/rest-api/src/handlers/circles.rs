@@ -99,7 +99,12 @@ async fn update_circle(
     let name = req.name.as_deref().unwrap_or("");
     let response = state
         .circles
-        .update_circle(id, auth_user.user_id, name, req.image_url.as_deref())
+        .update_circle(
+            id,
+            auth_user.user_id,
+            name,
+            req.image_url.as_ref().map(|v| v.as_deref()),
+        )
         .await?;
 
     // Best-effort R2 cleanup: delete old image if replaced

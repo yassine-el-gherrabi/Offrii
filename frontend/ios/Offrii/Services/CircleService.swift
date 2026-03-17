@@ -17,7 +17,7 @@ final class CircleService: Sendable {
         try await client.request(.getCircle(id: id))
     }
 
-    func updateCircle(id: UUID, name: String, imageUrl: String? = nil) async throws -> OffriiCircle {
+    func updateCircle(id: UUID, name: String, imageUrl: String?? = nil) async throws -> OffriiCircle {
         try await client.request(.updateCircle(id: id, body: UpdateCircleBody(name: name, imageUrl: imageUrl)))
     }
 

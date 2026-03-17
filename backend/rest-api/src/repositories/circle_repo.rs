@@ -34,7 +34,7 @@ impl traits::CircleRepo for PgCircleRepo {
         &self,
         id: Uuid,
         name: &str,
-        image_url: Option<&str>,
+        image_url: Option<Option<&str>>,
     ) -> Result<Option<Circle>> {
         update(&self.pool, id, name, image_url).await
     }
@@ -85,17 +85,21 @@ pub(crate) async fn update(
     exec: impl PgExecutor<'_>,
     id: Uuid,
     name: &str,
-    image_url: Option<&str>,
+    image_url: Option<Option<&str>>,
 ) -> Result<Option<Circle>> {
-    let sql = format!(
-        "UPDATE circles SET name = $2, image_url = COALESCE($3, image_url) WHERE id = $1 RETURNING {CIRCLE_COLS}"
-    );
-    let circle = sqlx::query_as::<_, Circle>(&sql)
-        .bind(id)
-        .bind(name)
-        .bind(image_url)
-        .fetch_optional(exec)
-        .await?;
+    // None = don't touch image_url, Some(None) = clear, Some(Some(url)) = set
+    let sql = if image_url.is_some() {
+        format!(
+            "UPDATE circles SET name = $2, image_url = $3 WHERE id = $1 RETURNING {CIRCLE_COLS}"
+        )
+    } else {
+        format!("UPDATE circles SET name = $2 WHERE id = $1 RETURNING {CIRCLE_COLS}")
+    };
+    let mut q = sqlx::query_as::<_, Circle>(&sql).bind(id).bind(name);
+    if let Some(img) = image_url {
+        q = q.bind(img);
+    }
+    let circle = q.fetch_optional(exec).await?;
 
     Ok(circle)
 }

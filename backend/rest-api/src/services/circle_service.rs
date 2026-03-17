@@ -364,7 +364,7 @@ impl traits::CircleService for PgCircleService {
         circle_id: Uuid,
         user_id: Uuid,
         name: &str,
-        image_url: Option<&str>,
+        image_url: Option<Option<&str>>,
     ) -> Result<CircleResponse, AppError> {
         self.require_membership(circle_id, user_id).await?;
 

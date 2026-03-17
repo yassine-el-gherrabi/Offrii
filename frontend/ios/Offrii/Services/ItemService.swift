@@ -74,7 +74,7 @@ final class ItemService: Sendable {
         priority: Int? = nil,
         categoryId: UUID? = nil,
         status: String? = nil,
-        imageUrl: String? = nil,
+        imageUrl: String?? = nil,
         links: [String]? = nil,
         isPrivate: Bool? = nil
     ) async throws -> Item {

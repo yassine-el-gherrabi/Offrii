@@ -19,6 +19,8 @@ struct ItemEditView: View {
     @State private var isPrivate: Bool
     @State private var showShareToCircle = false
     @State private var uploadError: String?
+    @State private var imageRemoved = false
+    @State private var existingImageUrl: URL?
 
     init(item: Item, onSave: @escaping (Item) -> Void) {
         self.item = item
@@ -30,6 +32,7 @@ struct ItemEditView: View {
         _priority = State(initialValue: item.priority)
         _categoryId = State(initialValue: item.categoryId)
         _isPrivate = State(initialValue: item.isPrivate)
+        _existingImageUrl = State(initialValue: item.displayImageUrl)
     }
 
     var body: some View {
@@ -38,8 +41,11 @@ struct ItemEditView: View {
                 // Image picker
                 OffriiImagePicker(
                     selectedImage: $selectedImage,
-                    existingImageUrl: item.displayImageUrl,
-                    isUploading: isSaving
+                    existingImageUrl: imageRemoved ? nil : existingImageUrl,
+                    isUploading: isSaving,
+                    onRemoveExisting: {
+                        imageRemoved = true
+                    }
                 )
                 .padding(.horizontal, OffriiTheme.spacingLG)
 
@@ -305,12 +311,15 @@ struct ItemEditView: View {
         let price = Decimal(string: estimatedPrice.replacingOccurrences(of: ",", with: "."))
         let trimmedLinks = links.map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
 
-        // Upload image if selected
-        var imageUrl: String?
-        if let image = selectedImage {
+        // Upload image if selected, or mark as removed
+        var imageUrl: String??
+        if imageRemoved && selectedImage == nil {
+            imageUrl = .some(nil) // Explicitly set to null
+        } else if let image = selectedImage {
             if let data = image.compressForUpload() {
                 do {
-                    imageUrl = try await ItemService.shared.uploadImage(data)
+                    let url = try await ItemService.shared.uploadImage(data)
+                    imageUrl = .some(url)
                 } catch {
                     uploadError = error.localizedDescription
                     isSaving = false

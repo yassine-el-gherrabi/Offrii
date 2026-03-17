@@ -11,6 +11,7 @@ struct EditCircleSheet: View {
     @State private var selectedImage: UIImage?
     @State private var isSaving = false
     @State private var error: String?
+    @State private var imageRemoved = false
 
     init(
         circleId: UUID,
@@ -34,8 +35,11 @@ struct EditCircleSheet: View {
                     // Circle image
                     OffriiImagePicker(
                         selectedImage: $selectedImage,
-                        existingImageUrl: currentImageUrl.flatMap { URL(string: $0) },
-                        isUploading: isSaving
+                        existingImageUrl: imageRemoved ? nil : currentImageUrl.flatMap { URL(string: $0) },
+                        isUploading: isSaving,
+                        onRemoveExisting: {
+                            imageRemoved = true
+                        }
                     )
 
                     OffriiTextField(
@@ -80,12 +84,15 @@ struct EditCircleSheet: View {
         isSaving = true
         error = nil
 
-        // Upload image if selected (stored for future use)
-        var uploadedImageUrl: String?
-        if let image = selectedImage {
+        // Upload image if selected, or mark as removed
+        var imageUrlParam: String??
+        if imageRemoved && selectedImage == nil {
+            imageUrlParam = .some(nil) // Explicitly clear
+        } else if let image = selectedImage {
             if let data = image.compressForUpload() {
                 do {
-                    uploadedImageUrl = try await APIClient.shared.uploadImage(data, type: "circle")
+                    let url = try await APIClient.shared.uploadImage(data, type: "circle")
+                    imageUrlParam = .some(url)
                 } catch {
                     self.error = error.localizedDescription
                     isSaving = false
@@ -95,7 +102,7 @@ struct EditCircleSheet: View {
         }
 
         do {
-            _ = try await CircleService.shared.updateCircle(id: circleId, name: trimmed, imageUrl: uploadedImageUrl)
+            _ = try await CircleService.shared.updateCircle(id: circleId, name: trimmed, imageUrl: imageUrlParam)
             onSaved()
             dismiss()
         } catch {

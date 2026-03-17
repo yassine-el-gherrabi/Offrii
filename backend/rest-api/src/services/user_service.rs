@@ -128,7 +128,7 @@ impl traits::UserService for PgUserService {
                 req.timezone.as_deref(),
                 utc_hour,
                 req.locale.as_deref(),
-                req.avatar_url.as_deref(),
+                req.avatar_url.as_ref().map(|v| v.as_deref()),
             )
             .await
             .map_err(AppError::Internal)?

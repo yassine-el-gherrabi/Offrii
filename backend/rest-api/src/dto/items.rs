@@ -77,8 +77,8 @@ pub struct UpdateItemRequest {
     pub priority: Option<i16>,
     pub category_id: Option<Uuid>,
     pub status: Option<String>,
-    #[validate(length(max = 2048, message = "image_url must be at most 2048 characters"))]
-    pub image_url: Option<String>,
+    #[serde(default, deserialize_with = "crate::dto::nullable::deserialize")]
+    pub image_url: Option<Option<String>>,
     pub links: Option<Vec<String>>,
     pub is_private: Option<bool>,
 }

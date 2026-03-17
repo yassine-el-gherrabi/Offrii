@@ -8,6 +8,7 @@ struct OffriiImagePicker: View {
     @Binding var selectedImage: UIImage?
     var existingImageUrl: URL?
     var isUploading: Bool = false
+    var onRemoveExisting: (() -> Void)?
     @State private var pickerItem: PhotosPickerItem?
     @State private var showSourceSheet = false
     @State private var showCamera = false
@@ -70,6 +71,10 @@ struct OffriiImagePicker: View {
                         // Remove button
                         Button {
                             withAnimation(OffriiAnimation.snappy) {
+                                if selectedImage == nil {
+                                    // Removing existing server image
+                                    onRemoveExisting?()
+                                }
                                 selectedImage = nil
                                 pickerItem = nil
                             }

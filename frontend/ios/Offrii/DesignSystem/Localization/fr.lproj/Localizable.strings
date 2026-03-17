@@ -510,3 +510,4 @@
 "imagePicker.placeholder" = "Ajouter une photo (optionnel)";
 "imagePicker.takePhoto" = "Prendre une photo";
 "imagePicker.chooseFromGallery" = "Choisir dans la galerie";
+"imagePicker.removePhoto" = "Supprimer la photo";

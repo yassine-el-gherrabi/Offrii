@@ -72,7 +72,7 @@ impl traits::UserRepo for PgUserRepo {
         timezone: Option<&str>,
         utc_reminder_hour: Option<i16>,
         locale: Option<&str>,
-        avatar_url: Option<&str>,
+        avatar_url: Option<Option<&str>>,
     ) -> Result<Option<User>> {
         update_profile(
             &self.pool,
@@ -242,7 +242,7 @@ pub(crate) async fn update_profile(
     timezone: Option<&str>,
     utc_reminder_hour: Option<i16>,
     locale: Option<&str>,
-    avatar_url: Option<&str>,
+    avatar_url: Option<Option<&str>>,
 ) -> Result<Option<User>> {
     // If nothing to update, short-circuit with a SELECT instead of invalid SQL
     if display_name.is_none()
@@ -289,6 +289,7 @@ pub(crate) async fn update_profile(
         separated.push_bind_unseparated(v);
     }
     if let Some(v) = avatar_url {
+        // Some(Some("url")) = set, Some(None) = clear to NULL
         separated.push("avatar_url = ");
         separated.push_bind_unseparated(v);
     }

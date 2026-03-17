@@ -24,8 +24,8 @@ pub struct UpdateProfileRequest {
     pub timezone: Option<String>,
     #[validate(length(max = 10, message = "locale must be at most 10 characters"))]
     pub locale: Option<String>,
-    #[validate(length(max = 2048, message = "avatar_url must be at most 2048 characters"))]
-    pub avatar_url: Option<String>,
+    #[serde(default, deserialize_with = "crate::dto::nullable::deserialize")]
+    pub avatar_url: Option<Option<String>>,
 }
 
 // ── Response DTOs ────────────────────────────────────────────────────

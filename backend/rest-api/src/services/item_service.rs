@@ -376,7 +376,7 @@ impl traits::ItemService for PgItemService {
         priority: Option<i16>,
         category_id: Option<Option<Uuid>>,
         status: Option<&str>,
-        image_url: Option<&str>,
+        image_url: Option<Option<&str>>,
         links: Option<&[String]>,
         is_private: Option<bool>,
     ) -> Result<ItemResponse, AppError> {

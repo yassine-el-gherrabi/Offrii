@@ -108,7 +108,8 @@ struct UpdateItemBody: Encodable {
     let priority: Int16?
     let categoryId: UUID?
     let status: String?
-    let imageUrl: String?
+    /// `nil` = don't touch, `.some(nil)` = set to null, `.some("url")` = set value
+    let imageUrl: String??
     let links: [String]?
     let isPrivate: Bool?
 
@@ -118,6 +119,23 @@ struct UpdateItemBody: Encodable {
         case categoryId = "category_id"
         case imageUrl = "image_url"
         case isPrivate = "is_private"
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encodeIfPresent(name, forKey: .name)
+        try container.encodeIfPresent(description, forKey: .description)
+        try container.encodeIfPresent(url, forKey: .url)
+        try container.encodeIfPresent(estimatedPrice, forKey: .estimatedPrice)
+        try container.encodeIfPresent(priority, forKey: .priority)
+        try container.encodeIfPresent(categoryId, forKey: .categoryId)
+        try container.encodeIfPresent(status, forKey: .status)
+        // Double-optional: nil = skip, .some(nil) = encode null, .some(url) = encode url
+        if let imageUrl {
+            try container.encode(imageUrl, forKey: .imageUrl)
+        }
+        try container.encodeIfPresent(links, forKey: .links)
+        try container.encodeIfPresent(isPrivate, forKey: .isPrivate)
     }
 }
 
@@ -158,7 +176,8 @@ struct CreateCategoryBody: Encodable {
 struct UpdateProfileBody: Encodable {
     let displayName: String?
     let username: String?
-    let avatarUrl: String?
+    /// `nil` = don't touch, `.some(nil)` = clear, `.some("url")` = set
+    let avatarUrl: String??
     let reminderFreq: String?
     let reminderTime: String?
     let timezone: String?
@@ -172,6 +191,19 @@ struct UpdateProfileBody: Encodable {
         case reminderTime = "reminder_time"
         case timezone
         case locale
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encodeIfPresent(displayName, forKey: .displayName)
+        try container.encodeIfPresent(username, forKey: .username)
+        if let avatarUrl {
+            try container.encode(avatarUrl, forKey: .avatarUrl)
+        }
+        try container.encodeIfPresent(reminderFreq, forKey: .reminderFreq)
+        try container.encodeIfPresent(reminderTime, forKey: .reminderTime)
+        try container.encodeIfPresent(timezone, forKey: .timezone)
+        try container.encodeIfPresent(locale, forKey: .locale)
     }
 }
 
@@ -251,11 +283,20 @@ struct CreateCircleBody: Encodable {
 
 struct UpdateCircleBody: Encodable {
     let name: String
-    let imageUrl: String?
+    /// `nil` = don't touch, `.some(nil)` = clear, `.some("url")` = set
+    let imageUrl: String??
 
     enum CodingKeys: String, CodingKey {
         case name
         case imageUrl = "image_url"
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(name, forKey: .name)
+        if let imageUrl {
+            try container.encode(imageUrl, forKey: .imageUrl)
+        }
     }
 }
 

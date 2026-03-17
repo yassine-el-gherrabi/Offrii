@@ -104,7 +104,7 @@ impl traits::ItemRepo for PgItemRepo {
         priority: Option<i16>,
         category_id: Option<Option<Uuid>>,
         status: Option<&str>,
-        image_url: Option<&str>,
+        image_url: Option<Option<&str>>,
         links: Option<&[String]>,
         is_private: Option<bool>,
     ) -> Result<Option<Item>> {
@@ -335,7 +335,7 @@ pub(crate) async fn update(
     priority: Option<i16>,
     category_id: Option<Option<Uuid>>,
     status: Option<&str>,
-    image_url: Option<&str>,
+    image_url: Option<Option<&str>>,
     links: Option<&[String]>,
     is_private: Option<bool>,
 ) -> Result<Option<Item>> {
@@ -372,6 +372,7 @@ pub(crate) async fn update(
         separated.push_bind_unseparated(s);
     }
     if let Some(img) = image_url {
+        // Some(Some("url")) = set, Some(None) = clear to NULL
         separated.push("image_url = ");
         separated.push_bind_unseparated(img);
     }

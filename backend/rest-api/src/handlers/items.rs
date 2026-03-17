@@ -118,7 +118,7 @@ async fn update_item(
             req.priority,
             req.category_id.map(Some),
             req.status.as_deref(),
-            req.image_url.as_deref(),
+            req.image_url.as_ref().map(|v| v.as_deref()),
             resolved_links.as_deref(),
             req.is_private,
         )

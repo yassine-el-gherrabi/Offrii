@@ -15,7 +15,8 @@ pub struct CreateCircleRequest {
 pub struct UpdateCircleRequest {
     #[validate(length(min = 1, max = 100, message = "name must be 1-100 characters"))]
     pub name: Option<String>,
-    pub image_url: Option<String>,
+    #[serde(default, deserialize_with = "crate::dto::nullable::deserialize")]
+    pub image_url: Option<Option<String>>,
 }
 
 #[derive(Debug, Deserialize)]

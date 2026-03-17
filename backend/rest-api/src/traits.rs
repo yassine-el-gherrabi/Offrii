@@ -64,7 +64,7 @@ pub trait UserRepo: Send + Sync {
         timezone: Option<&str>,
         utc_reminder_hour: Option<i16>,
         locale: Option<&str>,
-        avatar_url: Option<&str>,
+        avatar_url: Option<Option<&str>>,
     ) -> Result<Option<User>>;
 
     async fn delete_user(&self, id: Uuid) -> Result<bool>;
@@ -177,7 +177,7 @@ pub trait ItemRepo: Send + Sync {
         priority: Option<i16>,
         category_id: Option<Option<Uuid>>,
         status: Option<&str>,
-        image_url: Option<&str>,
+        image_url: Option<Option<&str>>,
         links: Option<&[String]>,
         is_private: Option<bool>,
     ) -> Result<Option<Item>>;
@@ -324,7 +324,7 @@ pub trait ItemService: Send + Sync {
         priority: Option<i16>,
         category_id: Option<Option<Uuid>>,
         status: Option<&str>,
-        image_url: Option<&str>,
+        image_url: Option<Option<&str>>,
         links: Option<&[String]>,
         is_private: Option<bool>,
     ) -> Result<ItemResponse, AppError>;
@@ -478,8 +478,12 @@ pub trait CircleRepo: Send + Sync {
 
     async fn find_by_id(&self, id: Uuid) -> Result<Option<Circle>>;
 
-    async fn update(&self, id: Uuid, name: &str, image_url: Option<&str>)
-    -> Result<Option<Circle>>;
+    async fn update(
+        &self,
+        id: Uuid,
+        name: &str,
+        image_url: Option<Option<&str>>,
+    ) -> Result<Option<Circle>>;
 
     async fn delete(&self, id: Uuid) -> Result<bool>;
 
@@ -591,7 +595,7 @@ pub trait CircleService: Send + Sync {
         circle_id: Uuid,
         user_id: Uuid,
         name: &str,
-        image_url: Option<&str>,
+        image_url: Option<Option<&str>>,
     ) -> Result<CircleResponse, AppError>;
 
     async fn delete_circle(&self, circle_id: Uuid, user_id: Uuid) -> Result<(), AppError>;
