@@ -1,3 +1,4 @@
+import NukeUI
 import SwiftUI
 
 // MARK: - ShareToCircleSheet
@@ -51,13 +52,22 @@ struct ShareToCircleSheet: View {
                                 } label: {
                                     let isPendingUnshare = pendingUnshareIds.contains(circle.id)
                                     HStack(spacing: OffriiTheme.spacingMD) {
-                                        // Circle icon
-                                        Image(systemName: circle.isDirect ? "bubble.left.fill" : "person.2.fill")
-                                            .font(.system(size: 16))
-                                            .foregroundColor(OffriiTheme.primary)
-                                            .frame(width: 36, height: 36)
-                                            .background(OffriiTheme.primary.opacity(0.1))
-                                            .clipShape(Circle())
+                                        // Circle icon / image
+                                        if let imageUrl = circle.imageUrl, let url = URL(string: imageUrl) {
+                                            LazyImage(url: url) { state in
+                                                if let image = state.image {
+                                                    image
+                                                        .resizable()
+                                                        .aspectRatio(contentMode: .fill)
+                                                        .frame(width: 36, height: 36)
+                                                        .clipShape(Circle())
+                                                } else {
+                                                    AvatarView(circle.name, size: .small)
+                                                }
+                                            }
+                                        } else {
+                                            AvatarView(circle.name, size: .small)
+                                        }
 
                                         // Name + member count
                                         VStack(alignment: .leading, spacing: 2) {

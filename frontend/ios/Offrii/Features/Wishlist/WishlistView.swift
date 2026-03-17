@@ -164,6 +164,12 @@ struct WishlistView: View {
                 tipManager.showIfNeeded(.wishlistFirstAdd)
             }
         }
+        .onAppear {
+            // Reload when returning from another tab to pick up share changes
+            if !viewModel.items.isEmpty {
+                Task { await viewModel.loadItems() }
+            }
+        }
     }
 
     // MARK: - Category Chips

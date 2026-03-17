@@ -159,7 +159,7 @@ struct WishlistGridCard: View {
             .font(.system(size: 8, weight: .bold))
             .foregroundColor(.white)
             .frame(width: 20, height: 20)
-            .background(circle.isDirect == true ? OffriiTheme.textSecondary : OffriiTheme.primary)
+            .background(OffriiTheme.primary)
             .clipShape(Circle())
             .overlay(Circle().strokeBorder(.white, lineWidth: 1.5))
     }

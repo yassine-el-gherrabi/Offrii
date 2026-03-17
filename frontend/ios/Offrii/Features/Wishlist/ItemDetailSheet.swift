@@ -387,7 +387,7 @@ struct ItemDetailSheet: View {
                                         .font(.system(size: 12, weight: .bold))
                                         .foregroundColor(.white)
                                         .frame(width: 28, height: 28)
-                                        .background(circle.isDirect == true ? OffriiTheme.textSecondary : OffriiTheme.primary)
+                                        .background(OffriiTheme.primary)
                                         .clipShape(Circle())
                                 }
                             }
@@ -396,7 +396,7 @@ struct ItemDetailSheet: View {
                                 .font(.system(size: 12, weight: .bold))
                                 .foregroundColor(.white)
                                 .frame(width: 28, height: 28)
-                                .background(circle.isDirect == true ? OffriiTheme.textSecondary : OffriiTheme.primary)
+                                .background(OffriiTheme.primary)
                                 .clipShape(Circle())
                         }
                     }
@@ -405,7 +405,7 @@ struct ItemDetailSheet: View {
                             .font(.system(size: 7, weight: .bold))
                             .foregroundColor(.white)
                             .padding(2)
-                            .background(circle.isDirect == true ? OffriiTheme.textSecondary : OffriiTheme.primary)
+                            .background(OffriiTheme.primary)
                             .clipShape(Circle())
                             .overlay(Circle().strokeBorder(.white, lineWidth: 1))
                             .offset(x: 3, y: 3)
