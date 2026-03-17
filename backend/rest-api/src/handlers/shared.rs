@@ -282,6 +282,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Segoe UI',Ro
 .hd{text-align:center;padding:32px 0 24px}
 .hd .lg{font-size:1.1rem;font-weight:700;color:var(--primary);letter-spacing:-0.02em;margin-bottom:16px}
 .hd .av{width:56px;height:56px;border-radius:50%;background:var(--primary);display:flex;align-items:center;justify-content:center;margin:0 auto 12px;font-size:1.2rem;font-weight:600;color:#fff}
+.hd .av-img{width:56px;height:56px;border-radius:50%;object-fit:cover;margin:0 auto 12px}
 .hd h1{font-size:1.3rem;font-weight:700;letter-spacing:-0.01em}
 .st{display:flex;justify-content:center;gap:16px;margin-top:12px;font-size:.8rem;color:var(--text-muted)}
 .st strong{color:var(--text);font-weight:600}
@@ -557,7 +558,14 @@ fn render_shared_view_html(
     h.push_str("</style></head><body><div class=\"c\">");
     h.push_str("<div class=\"hd\">");
     h.push_str("<div class=\"lg\">offrii</div>");
-    h.push_str(&format!("<div class=\"av\">{ini}</div>"));
+    if let Some(ref avatar_url) = view.user_avatar_url {
+        h.push_str(&format!(
+            "<img class=\"av-img\" src=\"{}\" alt=\"\">",
+            html_escape(avatar_url)
+        ));
+    } else {
+        h.push_str(&format!("<div class=\"av\">{ini}</div>"));
+    }
     h.push_str(&format!(
         "<h1>{} @{username}</h1>",
         t(&tr, lang, "wishes_of")

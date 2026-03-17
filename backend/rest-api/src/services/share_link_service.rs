@@ -433,8 +433,8 @@ impl traits::ShareLinkService for PgShareLinkService {
             .await
             .map_err(AppError::Internal)?;
 
-        let (username, display_name) = user
-            .map(|u| (u.username, u.display_name))
+        let (username, display_name, avatar_url) = user
+            .map(|u| (u.username, u.display_name, u.avatar_url))
             .unwrap_or_default();
 
         // Get items filtered by scope, exclude private items
@@ -449,6 +449,7 @@ impl traits::ShareLinkService for PgShareLinkService {
         Ok(SharedViewResponse {
             user_username: username,
             user_display_name: display_name,
+            user_avatar_url: avatar_url,
             permissions: link.permissions,
             items,
         })

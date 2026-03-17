@@ -1,4 +1,3 @@
-import NukeUI
 import SwiftUI
 
 struct ItemEditView: View {
@@ -141,34 +140,7 @@ struct ItemEditView: View {
 
                     ForEach(item.sharedCircles) { circle in
                         HStack(spacing: OffriiTheme.spacingSM) {
-                            // Avatar with type badge
-                            ZStack {
-                                if let url = circle.imageURL {
-                                    LazyImage(url: url) { state in
-                                        if let image = state.image {
-                                            image
-                                                .resizable()
-                                                .aspectRatio(contentMode: .fill)
-                                                .frame(width: 28, height: 28)
-                                                .clipShape(Circle())
-                                        } else {
-                                            circleInitialView(circle, size: 28, fontSize: 12)
-                                        }
-                                    }
-                                } else {
-                                    circleInitialView(circle, size: 28, fontSize: 12)
-                                }
-                            }
-                            .overlay(alignment: .bottomTrailing) {
-                                Image(systemName: circle.isDirect == true ? "person.fill" : "person.2.fill")
-                                    .font(.system(size: 7, weight: .bold))
-                                    .foregroundColor(.white)
-                                    .padding(2)
-                                    .background(OffriiTheme.primary)
-                                    .clipShape(Circle())
-                                    .overlay(Circle().strokeBorder(.white, lineWidth: 1))
-                                    .offset(x: 3, y: 3)
-                            }
+                            CircleAvatarBadge(circle: circle)
 
                             Text(circle.name)
                                 .font(.system(size: 14, weight: .medium))
@@ -323,15 +295,6 @@ struct ItemEditView: View {
             return cat.name
         }
         return NSLocalizedString("item.category", comment: "")
-    }
-
-    private func circleInitialView(_ circle: SharedCircleInfo, size: CGFloat, fontSize: CGFloat) -> some View {
-        Text(circle.initial)
-            .font(.system(size: fontSize, weight: .bold))
-            .foregroundColor(.white)
-            .frame(width: size, height: size)
-            .background(OffriiTheme.primary)
-            .clipShape(Circle())
     }
 
     private func save() async {

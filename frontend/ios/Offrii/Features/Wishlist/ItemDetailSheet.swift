@@ -364,7 +364,6 @@ struct ItemDetailSheet: View {
     // MARK: - Shared With Section
 
     @ViewBuilder
-    // swiftlint:disable:next function_body_length
     private func sharedWithSection(_ item: Item) -> some View {
         VStack(alignment: .leading, spacing: OffriiTheme.spacingSM) {
             Text(NSLocalizedString("item.sharedWith", comment: ""))
@@ -373,43 +372,7 @@ struct ItemDetailSheet: View {
 
             ForEach(item.sharedCircles) { circle in
                 HStack(spacing: OffriiTheme.spacingSM) {
-                    ZStack {
-                        if let url = circle.imageURL {
-                            LazyImage(url: url) { state in
-                                if let image = state.image {
-                                    image
-                                        .resizable()
-                                        .aspectRatio(contentMode: .fill)
-                                        .frame(width: 28, height: 28)
-                                        .clipShape(Circle())
-                                } else {
-                                    Text(circle.initial)
-                                        .font(.system(size: 12, weight: .bold))
-                                        .foregroundColor(.white)
-                                        .frame(width: 28, height: 28)
-                                        .background(OffriiTheme.primary)
-                                        .clipShape(Circle())
-                                }
-                            }
-                        } else {
-                            Text(circle.initial)
-                                .font(.system(size: 12, weight: .bold))
-                                .foregroundColor(.white)
-                                .frame(width: 28, height: 28)
-                                .background(OffriiTheme.primary)
-                                .clipShape(Circle())
-                        }
-                    }
-                    .overlay(alignment: .bottomTrailing) {
-                        Image(systemName: circle.isDirect == true ? "person.fill" : "person.2.fill")
-                            .font(.system(size: 7, weight: .bold))
-                            .foregroundColor(.white)
-                            .padding(2)
-                            .background(OffriiTheme.primary)
-                            .clipShape(Circle())
-                            .overlay(Circle().strokeBorder(.white, lineWidth: 1))
-                            .offset(x: 3, y: 3)
-                    }
+                    CircleAvatarBadge(circle: circle)
 
                     Text(circle.name)
                         .font(.system(size: 14, weight: .medium))

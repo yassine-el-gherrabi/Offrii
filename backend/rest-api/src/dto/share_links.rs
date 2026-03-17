@@ -73,6 +73,7 @@ impl ShareLinkListItem {
 pub struct SharedViewResponse {
     pub user_username: String,
     pub user_display_name: Option<String>,
+    pub user_avatar_url: Option<String>,
     pub permissions: String,
     pub items: Vec<ItemResponse>,
 }
