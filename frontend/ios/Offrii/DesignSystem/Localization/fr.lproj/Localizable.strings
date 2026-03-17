@@ -493,6 +493,8 @@
 "share.noLinksSubtitle" = "Créez un lien pour partager vos envies avec n'importe qui";
 "share.sharedItemCount" = "%d envie(s) partagée(s)";
 "share.noSharedItems" = "Aucune envie partagée";
+"share.seesAllList" = "Voit toute la liste";
+"share.scopeCategories" = "Par catégories";
 "share.toWhom" = "A qui ?";
 "share.ttl.oneDay" = "1 jour";
 

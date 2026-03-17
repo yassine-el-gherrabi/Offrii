@@ -154,7 +154,7 @@ struct WishlistShareSheet: View {
             scopeRadio(.all, icon: "list.bullet", label: NSLocalizedString("share.scopeAll", comment: ""))
 
             // Category (multi-select)
-            scopeRadio(.category, icon: "tag.fill", label: NSLocalizedString("share.scopeCategory", comment: ""))
+            scopeRadio(.category, icon: "tag.fill", label: NSLocalizedString("share.scopeCategories", comment: ""))
 
             if scope == .category && !categories.isEmpty {
                 categoryChips
@@ -324,6 +324,10 @@ struct WishlistShareSheet: View {
 
     private func circleCheckRow(_ circle: OffriiCircle) -> some View {
         let isSelected = selectedCircleIds.contains(circle.id)
+        let sharedItems = items.filter { $0.sharedCircles.contains(where: { $0.id == circle.id }) }
+        let sharedCount = sharedItems.count
+        let totalActive = items.filter { $0.isActive && !$0.isPrivate }.count
+
         return Button {
             withAnimation(OffriiAnimation.snappy) {
                 if isSelected {
@@ -340,9 +344,22 @@ struct WishlistShareSheet: View {
                     Text(circle.name ?? NSLocalizedString("circles.unnamed", comment: ""))
                         .font(OffriiTypography.body)
                         .foregroundColor(OffriiTheme.text)
-                    Text(String(format: NSLocalizedString("circles.memberCount", comment: ""), circle.memberCount))
-                        .font(OffriiTypography.caption)
-                        .foregroundColor(OffriiTheme.textMuted)
+
+                    if sharedCount == 0 {
+                        Text(NSLocalizedString("share.noSharedItems", comment: ""))
+                            .font(OffriiTypography.caption)
+                            .foregroundColor(OffriiTheme.textMuted)
+                    } else if sharedCount == totalActive {
+                        Text(NSLocalizedString("share.seesAllList", comment: ""))
+                            .font(OffriiTypography.caption)
+                            .fontWeight(.medium)
+                            .foregroundColor(OffriiTheme.primary)
+                    } else {
+                        Text(String(format: NSLocalizedString("share.sharedItemCount", comment: ""), sharedCount))
+                            .font(OffriiTypography.caption)
+                            .fontWeight(.medium)
+                            .foregroundColor(OffriiTheme.primary)
+                    }
                 }
 
                 Spacer()
