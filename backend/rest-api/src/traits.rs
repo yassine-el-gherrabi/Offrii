@@ -478,7 +478,8 @@ pub trait CircleRepo: Send + Sync {
 
     async fn find_by_id(&self, id: Uuid) -> Result<Option<Circle>>;
 
-    async fn update_name(&self, id: Uuid, name: &str) -> Result<Option<Circle>>;
+    async fn update(&self, id: Uuid, name: &str, image_url: Option<&str>)
+    -> Result<Option<Circle>>;
 
     async fn delete(&self, id: Uuid) -> Result<bool>;
 
@@ -590,6 +591,7 @@ pub trait CircleService: Send + Sync {
         circle_id: Uuid,
         user_id: Uuid,
         name: &str,
+        image_url: Option<&str>,
     ) -> Result<CircleResponse, AppError>;
 
     async fn delete_circle(&self, circle_id: Uuid, user_id: Uuid) -> Result<(), AppError>;

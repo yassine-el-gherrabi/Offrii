@@ -92,6 +92,18 @@ async fn update_item(
     validate_request(&req)?;
     req.validate_links().map_err(AppError::BadRequest)?;
 
+    // Capture old image_url before update (for R2 cleanup)
+    let old_image_url = if req.image_url.is_some() {
+        state
+            .items
+            .get_item(id, auth_user.user_id)
+            .await
+            .ok()
+            .and_then(|item| item.image_url)
+    } else {
+        None
+    };
+
     let resolved_links = req.resolved_links();
 
     let response = state
@@ -111,6 +123,14 @@ async fn update_item(
             req.is_private,
         )
         .await?;
+
+    // Best-effort R2 cleanup: delete old image if replaced
+    if let Some(old_url) = &old_image_url
+        && response.image_url.as_ref() != Some(old_url)
+        && let Err(e) = state.uploads.delete_image(old_url).await
+    {
+        tracing::warn!(error = %e, "failed to delete old item image");
+    }
 
     // If status changed to "purchased", fire the received event
     if req.status.as_deref() == Some("purchased")
@@ -138,13 +158,17 @@ async fn delete_item(
     auth_user: AuthUser,
     Path(id): Path<Uuid>,
 ) -> Result<StatusCode, AppError> {
-    // Check if the item was claimed before deleting (to notify claimer)
+    // Capture image_url before deleting (for R2 cleanup)
     let item_before = state.items.get_item(id, auth_user.user_id).await.ok();
 
     state.items.delete_item(id, auth_user.user_id).await?;
 
-    // Future: notify claimer if item was claimed when deleted
-    let _ = item_before;
+    // Best-effort R2 cleanup: delete image if item had one
+    if let Some(url) = item_before.and_then(|i| i.image_url)
+        && let Err(e) = state.uploads.delete_image(&url).await
+    {
+        tracing::warn!(error = %e, "failed to delete image for deleted item");
+    }
 
     Ok(StatusCode::NO_CONTENT)
 }

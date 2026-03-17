@@ -29,6 +29,7 @@ chrono-tz.workspace = true
 dotenvy.workspace = true
 futures.workspace = true
 image.workspace = true
+kamadak-exif.workspace = true
 jsonwebtoken.workspace = true
 rand.workspace = true
 rand_core.workspace = true
@@ -51,6 +52,7 @@ tracing.workspace = true
 tracing-subscriber.workspace = true
 uuid.workspace = true
 validator.workspace = true
+webp.workspace = true
 
 [dev-dependencies]
 http-body-util = "0.1"

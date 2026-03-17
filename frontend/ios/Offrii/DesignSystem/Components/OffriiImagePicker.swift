@@ -6,10 +6,17 @@ import SwiftUI
 struct OffriiImagePicker: View {
     @Binding var selectedImage: UIImage?
     var existingImageUrl: URL?
+    var isUploading: Bool = false
     @State private var pickerItem: PhotosPickerItem?
+    @State private var showSourceSheet = false
+    @State private var showCamera = false
 
     private var hasImage: Bool {
         selectedImage != nil || existingImageUrl != nil
+    }
+
+    private var cameraAvailable: Bool {
+        UIImagePickerController.isSourceTypeAvailable(.camera)
     }
 
     var body: some View {
@@ -42,9 +49,21 @@ struct OffriiImagePicker: View {
                 placeholderView
             }
 
+            // Upload progress overlay
+            if isUploading {
+                RoundedRectangle(cornerRadius: OffriiTheme.cornerRadiusMD)
+                    .fill(.black.opacity(0.4))
+                    .frame(maxWidth: .infinity)
+                    .frame(height: hasImage ? 180 : 100)
+                    .overlay {
+                        ProgressView()
+                            .tint(.white)
+                            .scaleEffect(1.2)
+                    }
+            }
+
             // Overlay controls
-            if hasImage {
-                // Change / Remove overlay
+            if hasImage && !isUploading {
                 VStack {
                     HStack {
                         Spacer()
@@ -69,7 +88,9 @@ struct OffriiImagePicker: View {
                     Spacer()
 
                     // Change photo button
-                    PhotosPicker(selection: $pickerItem, matching: .images) {
+                    Button {
+                        showSourceSheet = true
+                    } label: {
                         HStack(spacing: 6) {
                             Image(systemName: "camera.fill")
                                 .font(.system(size: 12))
@@ -89,6 +110,29 @@ struct OffriiImagePicker: View {
         }
         .frame(maxWidth: .infinity)
         .frame(height: hasImage ? 180 : nil)
+        .confirmationDialog(
+            NSLocalizedString("imagePicker.add", comment: ""),
+            isPresented: $showSourceSheet,
+            titleVisibility: .visible
+        ) {
+            if cameraAvailable {
+                Button(NSLocalizedString("imagePicker.takePhoto", comment: "")) {
+                    showCamera = true
+                }
+            }
+            // PhotosPicker can't be triggered programmatically, so we use a hidden one
+            // and instead trigger it via pickerItem change
+            Button(NSLocalizedString("imagePicker.chooseFromGallery", comment: "")) {
+                // Small delay to let the sheet dismiss before opening picker
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                    triggerPhotoPicker = true
+                }
+            }
+        }
+        .fullScreenCover(isPresented: $showCamera) {
+            CameraImagePicker(image: $selectedImage)
+                .ignoresSafeArea()
+        }
         .onChange(of: pickerItem) { _, newItem in
             Task {
                 if let data = try? await newItem?.loadTransferable(type: Data.self),
@@ -99,11 +143,20 @@ struct OffriiImagePicker: View {
                 }
             }
         }
+        .photosPicker(
+            isPresented: $triggerPhotoPicker,
+            selection: $pickerItem,
+            matching: .images
+        )
     }
+
+    @State private var triggerPhotoPicker = false
 
     // Placeholder — only shown when no image
     private var placeholderView: some View {
-        PhotosPicker(selection: $pickerItem, matching: .images) {
+        Button {
+            showSourceSheet = true
+        } label: {
             VStack(spacing: OffriiTheme.spacingSM) {
                 Image(systemName: "camera.fill")
                     .font(.system(size: 24))

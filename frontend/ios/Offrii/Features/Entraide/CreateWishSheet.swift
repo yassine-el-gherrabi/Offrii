@@ -86,7 +86,7 @@ struct CreateWishSheet: View {
                             .font(OffriiTypography.headline)
                             .foregroundColor(OffriiTheme.text)
 
-                        OffriiImagePicker(selectedImage: $viewModel.selectedImage)
+                        OffriiImagePicker(selectedImage: $viewModel.selectedImage, isUploading: viewModel.isSubmitting)
                     }
 
                     // Links

@@ -41,7 +41,29 @@ async fn update_profile(
     Json(req): Json<UpdateProfileRequest>,
 ) -> Result<Json<UserProfileResponse>, AppError> {
     validate_request(&req)?;
+
+    // Capture old avatar_url before update (for R2 cleanup)
+    let old_avatar_url = if req.avatar_url.is_some() {
+        state
+            .users
+            .get_profile(auth_user.user_id)
+            .await
+            .ok()
+            .and_then(|p| p.avatar_url)
+    } else {
+        None
+    };
+
     let response = state.users.update_profile(auth_user.user_id, &req).await?;
+
+    // Best-effort R2 cleanup: delete old avatar if replaced
+    if let Some(old_url) = &old_avatar_url
+        && response.avatar_url.as_ref() != Some(old_url)
+        && let Err(e) = state.uploads.delete_image(old_url).await
+    {
+        tracing::warn!(error = %e, "failed to delete old avatar");
+    }
+
     Ok(Json(response))
 }
 

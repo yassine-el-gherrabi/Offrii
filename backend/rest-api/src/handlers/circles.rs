@@ -83,11 +83,33 @@ async fn update_circle(
     Json(req): Json<UpdateCircleRequest>,
 ) -> Result<Json<CircleResponse>, AppError> {
     validate_request(&req)?;
+
+    // Capture old image_url before update (for R2 cleanup)
+    let old_image_url = if req.image_url.is_some() {
+        state
+            .circles
+            .get_circle(id, auth_user.user_id)
+            .await
+            .ok()
+            .and_then(|c| c.image_url)
+    } else {
+        None
+    };
+
     let name = req.name.as_deref().unwrap_or("");
     let response = state
         .circles
-        .update_circle(id, auth_user.user_id, name)
+        .update_circle(id, auth_user.user_id, name, req.image_url.as_deref())
         .await?;
+
+    // Best-effort R2 cleanup: delete old image if replaced
+    if let Some(old_url) = &old_image_url
+        && response.image_url.as_ref() != Some(old_url)
+        && let Err(e) = state.uploads.delete_image(old_url).await
+    {
+        tracing::warn!(error = %e, "failed to delete old circle image");
+    }
+
     Ok(Json(response))
 }
 

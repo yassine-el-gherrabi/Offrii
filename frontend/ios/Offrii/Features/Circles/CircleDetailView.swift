@@ -122,13 +122,11 @@ struct CircleDetailView: View {
                 EmptyView()
             } else {
                 HStack(spacing: OffriiTheme.spacingSM) {
-                    if isOwner {
-                        Button {
-                            showEdit = true
-                        } label: {
-                            Image(systemName: "pencil")
-                                .font(.system(size: 16))
-                        }
+                    Button {
+                        showEdit = true
+                    } label: {
+                        Image(systemName: "pencil")
+                            .font(.system(size: 16))
                     }
 
                     Button {

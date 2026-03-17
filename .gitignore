@@ -60,3 +60,5 @@ coverage/
 
 # Kanban (tickets dans Jira)
 KANBAN-TICKETS.md
+apns-keys/
+AuthKey_*.p8

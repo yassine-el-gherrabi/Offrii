@@ -364,8 +364,9 @@ impl traits::CircleService for PgCircleService {
         circle_id: Uuid,
         user_id: Uuid,
         name: &str,
+        image_url: Option<&str>,
     ) -> Result<CircleResponse, AppError> {
-        self.require_owner(circle_id, user_id).await?;
+        self.require_membership(circle_id, user_id).await?;
 
         let circle = self
             .circle_repo
@@ -382,7 +383,7 @@ impl traits::CircleService for PgCircleService {
 
         let updated = self
             .circle_repo
-            .update_name(circle_id, name)
+            .update(circle_id, name, image_url)
             .await
             .map_err(AppError::Internal)?
             .ok_or_else(|| AppError::NotFound("circle not found".into()))?;

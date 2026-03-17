@@ -15,6 +15,8 @@
 			<string>Google Sign-In</string>
 		</dict>
 	</array>
+	<key>NSCameraUsageDescription</key>
+	<string>Offrii utilise l'appareil photo pour prendre des photos de vos envies.</string>
 	<key>NSContactsUsageDescription</key>
 	<string>Offrii utilise vos contacts pour vous aider à inviter vos proches.</string>
 </dict>

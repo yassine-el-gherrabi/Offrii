@@ -38,7 +38,8 @@ struct ItemEditView: View {
                 // Image picker
                 OffriiImagePicker(
                     selectedImage: $selectedImage,
-                    existingImageUrl: item.displayImageUrl
+                    existingImageUrl: item.displayImageUrl,
+                    isUploading: isSaving
                 )
                 .padding(.horizontal, OffriiTheme.spacingLG)
 

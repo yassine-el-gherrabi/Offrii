@@ -34,7 +34,8 @@ struct EditCircleSheet: View {
                     // Circle image
                     OffriiImagePicker(
                         selectedImage: $selectedImage,
-                        existingImageUrl: currentImageUrl.flatMap { URL(string: $0) }
+                        existingImageUrl: currentImageUrl.flatMap { URL(string: $0) },
+                        isUploading: isSaving
                     )
 
                     OffriiTextField(
@@ -94,8 +95,7 @@ struct EditCircleSheet: View {
         }
 
         do {
-            _ = uploadedImageUrl // TODO: pass to updateCircle when backend supports it in response
-            _ = try await CircleService.shared.updateCircle(id: circleId, name: trimmed)
+            _ = try await CircleService.shared.updateCircle(id: circleId, name: trimmed, imageUrl: uploadedImageUrl)
             onSaved()
             dismiss()
         } catch {

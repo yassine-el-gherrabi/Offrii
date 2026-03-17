@@ -145,6 +145,7 @@
 		EAABD595FD4B3882BD638113 /* ShareItemSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = D409F2C427B9090D267F9378 /* ShareItemSheet.swift */; };
 		EF76599AE8AB37282DDF6439 /* FriendService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C600B057F0DED66541E7F7BB /* FriendService.swift */; };
 		F27C9B0D6C7A7E219CAF33AF /* OffriiImagePicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9CB316F85359D88A55A099C /* OffriiImagePicker.swift */; };
+		CC00000000000000000000B1 /* CameraImagePicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000B1 /* CameraImagePicker.swift */; };
 		F4A9A7E85D68A0AF3CCCD530 /* CircleCardRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B683101570004796AF55C19 /* CircleCardRow.swift */; };
 		F54713F911121577DE32385F /* EntraideGridCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3DBCD188351CF3DBD30E7CF2 /* EntraideGridCard.swift */; };
 		F6CD535260ACFC5BF37C9137 /* CommunitySpotlightSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1772A7431B394CB8D2A8C4C7 /* CommunitySpotlightSection.swift */; };
@@ -306,6 +307,7 @@
 		C1A0908792D02CBC0E9E8344 /* FriendsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FriendsView.swift; sourceTree = "<group>"; };
 		C600B057F0DED66541E7F7BB /* FriendService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FriendService.swift; sourceTree = "<group>"; };
 		C9CB316F85359D88A55A099C /* OffriiImagePicker.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OffriiImagePicker.swift; sourceTree = "<group>"; };
+		DD00000000000000000000B1 /* CameraImagePicker.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CameraImagePicker.swift; sourceTree = "<group>"; };
 		D409F2C427B9090D267F9378 /* ShareItemSheet.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ShareItemSheet.swift; sourceTree = "<group>"; };
 		D7E917FC45488E57E7AD36D5 /* ItemPickerSheet.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ItemPickerSheet.swift; sourceTree = "<group>"; };
 		DD62B53D9E28CE73279B751F /* ReportWishSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReportWishSheet.swift; sourceTree = "<group>"; };
@@ -520,6 +522,7 @@
 				F7281077E11D157F1F2FBE53 /* AvatarStack.swift */,
 				14BF011942E99FD80ADF73B4 /* MemberCarousel.swift */,
 				C9CB316F85359D88A55A099C /* OffriiImagePicker.swift */,
+				DD00000000000000000000B1 /* CameraImagePicker.swift */,
 				219F8494CAFE618EE9E0981E /* CategoryStyle.swift */,
 			);
 			path = Components;
@@ -979,6 +982,7 @@
 				4AFAE5C6EF7FCFC90F62C36E /* MyOffersSection.swift in Sources */,
 				645301E175CAAC334C76C2AF /* WishDetailSheet.swift in Sources */,
 				F27C9B0D6C7A7E219CAF33AF /* OffriiImagePicker.swift in Sources */,
+				CC00000000000000000000B1 /* CameraImagePicker.swift in Sources */,
 				A72A4D980594FA3993E6945A /* UIImage+Compress.swift in Sources */,
 				A31119D38454629060B236B1 /* CategoryStyle.swift in Sources */,
 				171E6E467404F9AA5CD7E54E /* WishlistShareSheet.swift in Sources */,

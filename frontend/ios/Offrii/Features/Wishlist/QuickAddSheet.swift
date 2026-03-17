@@ -70,7 +70,7 @@ struct QuickAddSheet: View {
                     }
 
                     // Photo (optional)
-                    OffriiImagePicker(selectedImage: $selectedImage)
+                    OffriiImagePicker(selectedImage: $selectedImage, isUploading: isAdding)
 
                     // Link (optional, single for quick add)
                     OffriiTextField(

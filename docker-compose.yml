@@ -45,6 +45,17 @@ services:
       JWT_PRIVATE_KEY_FILE: /run/secrets/jwt_private_key
       JWT_PUBLIC_KEY_FILE: /run/secrets/jwt_public_key
       RESEND_API_KEY: ${RESEND_API_KEY:?Set RESEND_API_KEY in .env}
+      R2_ACCOUNT_ID: ${R2_ACCOUNT_ID:-}
+      R2_ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID:-}
+      R2_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY:-}
+      R2_BUCKET_NAME: ${R2_BUCKET_NAME:-offrii-media}
+      R2_PUBLIC_URL: ${R2_PUBLIC_URL:-}
+      APNS_KEY_PATH: /run/secrets/apns_key
+      APNS_KEY_ID: ${APNS_KEY_ID:-LTCYFUC4WT}
+      APNS_TEAM_ID: ${APNS_TEAM_ID:-6SMPW6NUXP}
+      APNS_BUNDLE_ID: ${APNS_BUNDLE_ID:-com.offrii.app}
+      APNS_SANDBOX: ${APNS_SANDBOX:-true}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
     depends_on:
       postgres:
         condition: service_healthy
@@ -56,6 +67,7 @@ services:
     volumes:
       - ./jwt-keys/private.pem:/run/secrets/jwt_private_key:ro
       - ./jwt-keys/public.pem:/run/secrets/jwt_public_key:ro
+      - ./apns-keys/AuthKey.p8:/run/secrets/apns_key:ro
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:3000/health/live || exit 1"]
       interval: 10s

@@ -30,8 +30,13 @@ impl traits::CircleRepo for PgCircleRepo {
         find_by_id(&self.pool, id).await
     }
 
-    async fn update_name(&self, id: Uuid, name: &str) -> Result<Option<Circle>> {
-        update_name(&self.pool, id, name).await
+    async fn update(
+        &self,
+        id: Uuid,
+        name: &str,
+        image_url: Option<&str>,
+    ) -> Result<Option<Circle>> {
+        update(&self.pool, id, name, image_url).await
     }
 
     async fn delete(&self, id: Uuid) -> Result<bool> {
@@ -76,15 +81,19 @@ pub(crate) async fn find_by_id(exec: impl PgExecutor<'_>, id: Uuid) -> Result<Op
     Ok(circle)
 }
 
-pub(crate) async fn update_name(
+pub(crate) async fn update(
     exec: impl PgExecutor<'_>,
     id: Uuid,
     name: &str,
+    image_url: Option<&str>,
 ) -> Result<Option<Circle>> {
-    let sql = format!("UPDATE circles SET name = $2 WHERE id = $1 RETURNING {CIRCLE_COLS}");
+    let sql = format!(
+        "UPDATE circles SET name = $2, image_url = COALESCE($3, image_url) WHERE id = $1 RETURNING {CIRCLE_COLS}"
+    );
     let circle = sqlx::query_as::<_, Circle>(&sql)
         .bind(id)
         .bind(name)
+        .bind(image_url)
         .fetch_optional(exec)
         .await?;
 

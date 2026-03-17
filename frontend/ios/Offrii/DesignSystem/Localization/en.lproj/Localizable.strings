@@ -508,3 +508,5 @@
 "imagePicker.add" = "Add a photo";
 "imagePicker.change" = "Change photo";
 "imagePicker.placeholder" = "Add a photo (optional)";
+"imagePicker.takePhoto" = "Take a photo";
+"imagePicker.chooseFromGallery" = "Choose from gallery";

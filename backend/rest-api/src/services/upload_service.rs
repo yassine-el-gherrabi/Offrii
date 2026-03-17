@@ -8,8 +8,8 @@ use crate::traits;
 /// Maximum upload size: 5 MB
 const MAX_UPLOAD_BYTES: usize = 5 * 1024 * 1024;
 
-/// JPEG encoding quality (0-100). 80 is the sweet spot.
-const JPEG_QUALITY: u8 = 80;
+/// WebP lossy encoding quality (0-100).
+const WEBP_QUALITY: f32 = 75.0;
 
 /// Allowed input MIME types
 const ALLOWED_TYPES: &[&str] = &[
@@ -89,7 +89,7 @@ impl traits::UploadService for R2UploadService {
             )));
         }
 
-        // Decode, resize based on type, and re-encode as JPEG
+        // Decode, apply EXIF orientation, resize based on type, and re-encode as WebP
         let processed = tokio::task::spawn_blocking({
             let data = data.to_vec();
             let upload_type = upload_type.to_string();
@@ -103,16 +103,16 @@ impl traits::UploadService for R2UploadService {
         let prefix = match upload_type {
             "avatar" => "avatars",
             "circle" => "circles",
-            _ => "uploads",
+            _ => "items",
         };
-        let key = format!("{prefix}/{}.jpg", Uuid::new_v4());
+        let key = format!("{prefix}/{}.webp", Uuid::new_v4());
 
         self.client
             .put_object()
             .bucket(&self.bucket)
             .key(&key)
             .body(ByteStream::from(processed))
-            .content_type("image/jpeg")
+            .content_type("image/webp")
             .cache_control("public, max-age=31536000, immutable")
             .send()
             .await
@@ -140,9 +140,42 @@ impl traits::UploadService for R2UploadService {
     }
 }
 
-/// Process image: decode, resize based on type, encode as JPEG.
+/// Read EXIF orientation tag from raw image bytes.
+/// Returns orientation value 1-8 (1 = normal). Falls back to 1 on any error.
+fn read_exif_orientation(data: &[u8]) -> u16 {
+    let mut cursor = std::io::Cursor::new(data);
+    let Ok(exif) = exif::Reader::new().read_from_container(&mut cursor) else {
+        return 1;
+    };
+    exif.get_field(exif::Tag::Orientation, exif::In::PRIMARY)
+        .and_then(|f| f.value.get_uint(0))
+        .map(|v| v as u16)
+        .unwrap_or(1)
+}
+
+/// Apply EXIF orientation transform to decoded image.
+fn apply_orientation(img: image::DynamicImage, orientation: u16) -> image::DynamicImage {
+    match orientation {
+        2 => img.fliph(),
+        3 => img.rotate180(),
+        4 => img.flipv(),
+        5 => img.rotate90().fliph(),
+        6 => img.rotate90(),
+        7 => img.rotate90().flipv(),
+        8 => img.rotate270(),
+        _ => img, // 1 or unknown = no transform
+    }
+}
+
+/// Process image: decode, apply EXIF orientation, resize based on type, encode as WebP.
 fn process_image(data: &[u8], upload_type: &str) -> Result<Vec<u8>, anyhow::Error> {
+    // Read EXIF orientation before decoding (decoding strips EXIF)
+    let orientation = read_exif_orientation(data);
+
     let img = image::load_from_memory(data)?;
+
+    // Apply EXIF orientation (must be before crop/resize as it changes dimensions)
+    let img = apply_orientation(img, orientation);
 
     let img = match upload_type {
         "avatar" | "circle" => {
@@ -167,12 +200,12 @@ fn process_image(data: &[u8], upload_type: &str) -> Result<Vec<u8>, anyhow::Erro
         }
     };
 
-    // Encode as JPEG
-    let mut output = Vec::new();
-    let encoder = image::codecs::jpeg::JpegEncoder::new_with_quality(&mut output, JPEG_QUALITY);
-    img.write_with_encoder(encoder)?;
+    // Encode as WebP lossy
+    let encoder = webp::Encoder::from_image(&img)
+        .map_err(|e| anyhow::anyhow!("WebP encoding failed: {e}"))?;
+    let webp_data = encoder.encode(WEBP_QUALITY);
 
-    Ok(output)
+    Ok(webp_data.to_vec())
 }
 
 // ── Noop Implementation (for dev/tests) ─────────────────────────────
@@ -190,10 +223,10 @@ impl traits::UploadService for NoopUploadService {
         let prefix = match upload_type {
             "avatar" => "avatars",
             "circle" => "circles",
-            _ => "uploads",
+            _ => "items",
         };
         Ok(format!(
-            "https://test-cdn.offrii.com/{}/{}.jpg",
+            "https://test-cdn.offrii.com/{}/{}.webp",
             prefix,
             Uuid::new_v4()
         ))

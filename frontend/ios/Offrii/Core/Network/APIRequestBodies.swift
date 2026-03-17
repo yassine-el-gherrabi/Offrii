@@ -251,6 +251,12 @@ struct CreateCircleBody: Encodable {
 
 struct UpdateCircleBody: Encodable {
     let name: String
+    let imageUrl: String?
+
+    enum CodingKeys: String, CodingKey {
+        case name
+        case imageUrl = "image_url"
+    }
 }
 
 struct AddMemberBody: Encodable {

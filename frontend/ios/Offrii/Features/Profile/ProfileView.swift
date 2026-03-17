@@ -8,6 +8,9 @@ struct ProfileView: View {
     @State private var profileProgress = ProfileProgress()
     @State private var selectedAvatarImage: UIImage?
     @State private var isUploadingAvatar = false
+    @State private var showAvatarSourceSheet = false
+    @State private var showAvatarCamera = false
+    @State private var showAvatarPhotoPicker = false
     var body: some View {
         ZStack {
             OffriiTheme.background.ignoresSafeArea()
@@ -39,17 +42,20 @@ struct ProfileView: View {
                                     )
                                 }
 
-                                PhotosPicker(
-                                    selection: Binding(
-                                        get: { nil },
-                                        set: { item in
-                                            if let item {
-                                                Task { await loadAvatarImage(item) }
-                                            }
+                                // Upload progress overlay
+                                if isUploadingAvatar {
+                                    Circle()
+                                        .fill(.black.opacity(0.4))
+                                        .frame(width: 96, height: 96)
+                                        .overlay {
+                                            ProgressView()
+                                                .tint(.white)
                                         }
-                                    ),
-                                    matching: .images
-                                ) {
+                                }
+
+                                Button {
+                                    showAvatarSourceSheet = true
+                                } label: {
                                     Image(systemName: "camera.fill")
                                         .font(.system(size: 12))
                                         .foregroundColor(.white)
@@ -60,6 +66,7 @@ struct ProfileView: View {
                                             Circle().strokeBorder(.white, lineWidth: 2)
                                         )
                                 }
+                                .disabled(isUploadingAvatar)
                             }
 
                             if !viewModel.username.isEmpty {
@@ -255,6 +262,46 @@ struct ProfileView: View {
             }
         }
         .navigationBarHidden(true)
+        .confirmationDialog(
+            NSLocalizedString("imagePicker.add", comment: ""),
+            isPresented: $showAvatarSourceSheet,
+            titleVisibility: .visible
+        ) {
+            if UIImagePickerController.isSourceTypeAvailable(.camera) {
+                Button(NSLocalizedString("imagePicker.takePhoto", comment: "")) {
+                    showAvatarCamera = true
+                }
+            }
+            Button(NSLocalizedString("imagePicker.chooseFromGallery", comment: "")) {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                    showAvatarPhotoPicker = true
+                }
+            }
+        }
+        .fullScreenCover(isPresented: $showAvatarCamera) {
+            CameraImagePicker(image: Binding(
+                get: { selectedAvatarImage },
+                set: { img in
+                    if let img {
+                        selectedAvatarImage = img
+                        Task { await uploadAvatar(img) }
+                    }
+                }
+            ))
+            .ignoresSafeArea()
+        }
+        .photosPicker(
+            isPresented: $showAvatarPhotoPicker,
+            selection: Binding(
+                get: { nil },
+                set: { item in
+                    if let item {
+                        Task { await loadAvatarImage(item) }
+                    }
+                }
+            ),
+            matching: .images
+        )
         .task {
             await viewModel.loadProfile()
             await computeProfileProgress()
