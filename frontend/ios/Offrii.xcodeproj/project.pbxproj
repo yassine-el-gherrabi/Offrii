@@ -30,6 +30,9 @@
 		66432B2DFF0B733B07FB3F8E /* WishCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53203562F473A3E6BD0ECC06 /* WishCard.swift */; };
 		69F0C2B5DDE535B06575C6CD /* CirclesListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE2967E84D0AD47134A0925A /* CirclesListView.swift */; };
 		CC00000000000000000000C2 /* ReservationsListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000C2 /* ReservationsListView.swift */; };
+		CC00000000000000000000D1 /* AppNotification.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000D1 /* AppNotification.swift */; };
+		CC00000000000000000000D2 /* NotificationCenterService.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000D2 /* NotificationCenterService.swift */; };
+		CC00000000000000000000D3 /* NotificationCenterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000D3 /* NotificationCenterView.swift */; };
 		7883478350B7C046ABEFF52E /* CircleService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DC960665D0FCEE00400F773 /* CircleService.swift */; };
 		798ABA96D107D82F3F8E6B20 /* CreateCircleSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9CB58C031CA34EDF11A6C318 /* CreateCircleSheet.swift */; };
 		821D5BB6CF94B930F802F6E1 /* ProfileProgress.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76631281854337CE0C72D6BD /* ProfileProgress.swift */; };
@@ -317,6 +320,9 @@
 		DD62B53D9E28CE73279B751F /* ReportWishSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReportWishSheet.swift; sourceTree = "<group>"; };
 		DE2967E84D0AD47134A0925A /* CirclesListView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CirclesListView.swift; sourceTree = "<group>"; };
 		DD00000000000000000000C2 /* ReservationsListView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ReservationsListView.swift; sourceTree = "<group>"; };
+		DD00000000000000000000D1 /* AppNotification.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppNotification.swift; sourceTree = "<group>"; };
+		DD00000000000000000000D2 /* NotificationCenterService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NotificationCenterService.swift; sourceTree = "<group>"; };
+		DD00000000000000000000D3 /* NotificationCenterView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NotificationCenterView.swift; sourceTree = "<group>"; };
 		E05EB879C87356D69F9489A6 /* WishDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WishDetailView.swift; sourceTree = "<group>"; };
 		F19D296A0047D817CD0475CC /* StackedAvatarsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = StackedAvatarsView.swift; sourceTree = "<group>"; };
 		F1B347536FB260D73A7FBFDF /* Friend.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Friend.swift; sourceTree = "<group>"; };
@@ -352,6 +358,7 @@
 			children = (
 				DE2967E84D0AD47134A0925A /* CirclesListView.swift */,
 				DD00000000000000000000C2 /* ReservationsListView.swift */,
+				DD00000000000000000000D3 /* NotificationCenterView.swift */,
 				A29A587E01A7D534AFC630E4 /* CirclesViewModel.swift */,
 				9EEDF827539742DBA3A5617E /* CircleDetailView.swift */,
 				6ACFAD24E9E205201275BF6E /* CircleDetailViewModel.swift */,
@@ -652,6 +659,7 @@
 				A10000000000000000000040 /* Item.swift */,
 				A10000000000000000000041 /* User.swift */,
 				1E7C15540F6DD23DE2E5AE6C /* Circle.swift */,
+				DD00000000000000000000D1 /* AppNotification.swift */,
 				2D046AFC11C42380646B6BC6 /* CircleModels.swift */,
 				F1B347536FB260D73A7FBFDF /* Friend.swift */,
 			);
@@ -668,6 +676,7 @@
 				A10000000000000000000044 /* PushTokenService.swift */,
 				A10000000000000000000045 /* UserService.swift */,
 				1DC960665D0FCEE00400F773 /* CircleService.swift */,
+				DD00000000000000000000D2 /* NotificationCenterService.swift */,
 				C600B057F0DED66541E7F7BB /* FriendService.swift */,
 			);
 			path = Services;
@@ -924,6 +933,9 @@
 				EF76599AE8AB37282DDF6439 /* FriendService.swift in Sources */,
 				69F0C2B5DDE535B06575C6CD /* CirclesListView.swift in Sources */,
 				CC00000000000000000000C2 /* ReservationsListView.swift in Sources */,
+				CC00000000000000000000D1 /* AppNotification.swift in Sources */,
+				CC00000000000000000000D2 /* NotificationCenterService.swift in Sources */,
+				CC00000000000000000000D3 /* NotificationCenterView.swift in Sources */,
 				FBC28A2C90CDB099F344CCA7 /* CirclesViewModel.swift in Sources */,
 				99AD360522789939E56AB458 /* CircleDetailView.swift in Sources */,
 				CF0E285AAF14E9E693D4F508 /* CircleDetailViewModel.swift in Sources */,

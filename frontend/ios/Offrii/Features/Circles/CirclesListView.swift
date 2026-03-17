@@ -1,3 +1,4 @@
+// swiftlint:disable file_length
 import SwiftUI
 
 // MARK: - Circle Filter
@@ -32,7 +33,8 @@ struct CirclesListView: View {
     @State private var showCreateCircle = false
     @State private var showAddFriend = false
     @State private var showInviteContacts = false
-    @State private var showPendingSheet = false
+    @State private var showNotificationCenter = false
+    @State private var unreadCount = 0
     @State private var circleToDelete: OffriiCircle?
 
     private var displayedCircles: [OffriiCircle] {
@@ -123,15 +125,15 @@ struct CirclesListView: View {
         .toolbar {
             ToolbarItemGroup(placement: .topBarTrailing) {
                 Button {
-                    showPendingSheet = true
+                    showNotificationCenter = true
                 } label: {
                     ZStack(alignment: .topTrailing) {
                         Image(systemName: "bell")
                             .font(.system(size: 18))
                             .foregroundColor(OffriiTheme.primary)
 
-                        if viewModel.pendingCount > 0 {
-                            Text("\(viewModel.pendingCount)")
+                        if unreadCount > 0 {
+                            Text("\(unreadCount)")
                                 .font(.system(size: 9, weight: .bold))
                                 .foregroundColor(.white)
                                 .padding(3)
@@ -173,16 +175,22 @@ struct CirclesListView: View {
             InviteContactsSheet()
                 .presentationDetents([.large])
         }
-        .sheet(isPresented: $showPendingSheet) {
-            PendingInvitationsSheet(viewModel: viewModel)
+        .sheet(isPresented: $showNotificationCenter, onDismiss: {
+            Task { await loadUnreadCount() }
+        }) {
+            NotificationCenterView()
                 .presentationDetents([.medium, .large])
         }
         .task {
             await viewModel.loadAll()
+            await loadUnreadCount()
             tipManager.showIfNeeded(.circlesCreate)
         }
         .onAppear {
-            Task { await viewModel.loadCircles() }
+            Task {
+                await viewModel.loadCircles()
+                await loadUnreadCount()
+            }
         }
         .refreshable {
             await viewModel.loadAll()
@@ -292,7 +300,7 @@ struct CirclesListView: View {
 
                 if viewModel.pendingRequests.count > 2 {
                     Button {
-                        showPendingSheet = true
+                        showNotificationCenter = true
                     } label: {
                         Text(NSLocalizedString("circles.invitations.viewAll", comment: ""))
                             .font(OffriiTypography.footnote)
@@ -357,6 +365,10 @@ struct CirclesListView: View {
                 }
             }
         }
+    }
+
+    private func loadUnreadCount() async {
+        unreadCount = (try? await NotificationCenterService.shared.unreadCount()) ?? 0
     }
 }
 

@@ -102,6 +102,12 @@ enum APIEndpoint {
     case revokeCircleInvite(circleId: UUID, inviteId: UUID)
     case joinCircleViaInvite(token: String)
 
+    // MARK: Notifications
+    case listNotifications(page: Int, limit: Int)
+    case markNotificationRead(id: UUID)
+    case markAllNotificationsRead
+    case unreadNotificationCount
+
     // MARK: Friends
 
     case searchUsers(query: String)
@@ -207,6 +213,10 @@ extension APIEndpoint {
         case .getCircleFeed(let circleId, _, _):        return "/circles/\(circleId)/feed"
         case .transferCircleOwnership(let circleId, _): return "/circles/\(circleId)/transfer"
         case .listReservations:                         return "/circles/my-reservations"
+        case .listNotifications:                        return "/me/notifications"
+        case .markNotificationRead(let id):             return "/me/notifications/\(id)/read"
+        case .markAllNotificationsRead:                 return "/me/notifications/read"
+        case .unreadNotificationCount:                  return "/me/notifications/unread-count"
         case .createCircleInvite(let circleId, _):      return "/circles/\(circleId)/invite"
         case .listCircleInvites(let circleId):          return "/circles/\(circleId)/invites"
         case .revokeCircleInvite(let cid, let iid):     return "/circles/\(cid)/invites/\(iid)"
@@ -311,6 +321,10 @@ extension APIEndpoint {
         case .getCircleFeed:        return .GET
         case .transferCircleOwnership: return .POST
         case .listReservations:     return .GET
+        case .listNotifications:    return .GET
+        case .markNotificationRead: return .POST
+        case .markAllNotificationsRead: return .POST
+        case .unreadNotificationCount: return .GET
         case .createCircleInvite:   return .POST
         case .listCircleInvites:    return .GET
         case .revokeCircleInvite:   return .DELETE
@@ -390,6 +404,11 @@ extension APIEndpoint {
             return [
                 URLQueryItem(name: "page", value: String(page)),
                 URLQueryItem(name: "per_page", value: String(perPage)),
+            ]
+        case .listNotifications(let page, let limit):
+            return [
+                URLQueryItem(name: "page", value: String(page)),
+                URLQueryItem(name: "limit", value: String(limit)),
             ]
         case .listCommunityWishes(let query):
             var items: [URLQueryItem] = []
