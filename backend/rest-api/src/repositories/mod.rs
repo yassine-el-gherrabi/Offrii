@@ -7,6 +7,7 @@ pub mod circle_repo;
 pub mod community_wish_repo;
 pub mod friend_repo;
 pub mod item_repo;
+pub mod notification_repo;
 pub mod push_token_repo;
 pub mod refresh_token_repo;
 pub mod share_link_repo;

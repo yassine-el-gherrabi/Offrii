@@ -16,8 +16,8 @@ use rest_api::config::app::Config;
 use rest_api::config::database::{create_pg_pool, create_redis_client};
 use rest_api::handlers::health::{health_check, health_live};
 use rest_api::handlers::{
-    admin, auth, categories, circles, community_wishes, friends, items, push_tokens, share_links,
-    shared, upload, users, wish_messages,
+    admin, auth, categories, circles, community_wishes, friends, items, notifications, push_tokens,
+    share_links, shared, upload, users, wish_messages,
 };
 use rest_api::repositories::category_repo::PgCategoryRepo;
 use rest_api::repositories::circle_event_repo::PgCircleEventRepo;
@@ -28,6 +28,7 @@ use rest_api::repositories::circle_repo::PgCircleRepo;
 use rest_api::repositories::community_wish_repo::PgCommunityWishRepo;
 use rest_api::repositories::friend_repo::PgFriendRepo;
 use rest_api::repositories::item_repo::PgItemRepo;
+use rest_api::repositories::notification_repo::PgNotificationRepo;
 use rest_api::repositories::push_token_repo::PgPushTokenRepo;
 use rest_api::repositories::refresh_token_repo::PgRefreshTokenRepo;
 use rest_api::repositories::share_link_repo::PgShareLinkRepo;
@@ -55,9 +56,9 @@ use rest_api::traits::{
     AuthService, CategoryRepo, CategoryService, CircleEventRepo, CircleInviteRepo, CircleItemRepo,
     CircleMemberRepo, CircleRepo, CircleService, CommunityWishRepo, CommunityWishService,
     EmailService, FriendRepo, FriendService, HealthCheck, ItemRepo, ItemService, ModerationService,
-    NotificationService, PushTokenRepo, PushTokenService, RefreshTokenRepo, ReminderService,
-    ShareLinkRepo, ShareLinkService, UploadService, UserRepo, UserService, WishMessageRepo,
-    WishMessageService, WishReportRepo,
+    NotificationRepo, NotificationService, PushTokenRepo, PushTokenService, RefreshTokenRepo,
+    ReminderService, ShareLinkRepo, ShareLinkService, UploadService, UserRepo, UserService,
+    WishMessageRepo, WishMessageService, WishReportRepo,
 };
 use rest_api::utils::jwt::JwtKeys;
 
@@ -261,6 +262,9 @@ async fn main() -> anyhow::Result<()> {
         }
     };
 
+    let notification_repo: Arc<dyn NotificationRepo> =
+        Arc::new(PgNotificationRepo::new(db.clone()));
+
     let state = AppState {
         auth,
         jwt,
@@ -277,6 +281,7 @@ async fn main() -> anyhow::Result<()> {
         community_wishes: community_wish_svc,
         wish_messages: wish_message_svc,
         uploads: upload_svc,
+        notifications: notification_repo,
         app_base_url: config.app_base_url,
     };
 
@@ -289,6 +294,7 @@ async fn main() -> anyhow::Result<()> {
         .nest("/categories", categories::router())
         .nest("/users", users::router())
         .nest("/push-tokens", push_tokens::router())
+        .nest("/me/notifications", notifications::router())
         .nest("/share-links", share_links::router())
         .nest("/shared", shared::router())
         .nest("/circles", circles::router())

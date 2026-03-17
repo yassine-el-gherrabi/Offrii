@@ -22,8 +22,8 @@ use crate::errors::AppError;
 use crate::models::community_wish::WishStatus;
 use crate::models::{
     Category, Circle, CircleEvent, CircleInvite, CircleItem, CircleMember, CommunityWish,
-    FriendRequest, FriendRequestStatus, FriendWithSince, Friendship, Item, PushToken, RefreshToken,
-    ShareLink, User, WishMessage, WishReport,
+    FriendRequest, FriendRequestStatus, FriendWithSince, Friendship, Item, Notification, PushToken,
+    RefreshToken, ShareLink, User, WishMessage, WishReport,
 };
 use crate::services::moderation_service::ModerationResult;
 
@@ -221,6 +221,33 @@ pub trait ItemRepo: Send + Sync {
         og_title: Option<&str>,
         og_site_name: Option<&str>,
     ) -> Result<bool>;
+}
+
+#[async_trait]
+pub trait NotificationRepo: Send + Sync {
+    #[allow(clippy::too_many_arguments)]
+    async fn create(
+        &self,
+        user_id: Uuid,
+        notif_type: &str,
+        title: &str,
+        body: &str,
+        circle_id: Option<Uuid>,
+        item_id: Option<Uuid>,
+        actor_id: Option<Uuid>,
+    ) -> Result<Notification>;
+
+    async fn list_by_user(
+        &self,
+        user_id: Uuid,
+        limit: i64,
+        offset: i64,
+    ) -> Result<Vec<Notification>>;
+
+    async fn count_unread(&self, user_id: Uuid) -> Result<i64>;
+    async fn count_total(&self, user_id: Uuid) -> Result<i64>;
+    async fn mark_read(&self, id: Uuid, user_id: Uuid) -> Result<bool>;
+    async fn mark_all_read(&self, user_id: Uuid) -> Result<i64>;
 }
 
 #[async_trait]
