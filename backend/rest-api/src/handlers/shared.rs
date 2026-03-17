@@ -552,7 +552,7 @@ fn render_shared_view_html(
     }
     h.push_str("<meta property=\"og:type\" content=\"website\"><meta name=\"theme-color\" content=\"#FF6B6B\">");
     // Favicon: gift icon matching the iOS ShinyIcon(systemName:"gift.fill")
-    h.push_str("<link rel=\"icon\" href=\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='2' y='14' width='28' height='15' rx='2' fill='%23FF6B6B'/%3E%3Crect x='14' y='14' width='4' height='15' fill='%23E55B5B'/%3E%3Crect x='1' y='10' width='30' height='6' rx='2' fill='%23FF6B6B'/%3E%3Crect x='14' y='10' width='4' height='6' fill='%23E55B5B'/%3E%3Cpath d='M16 10c-2-4-7-5-7-2s5 2 7 2Z' fill='%23FFB347'/%3E%3Cpath d='M16 10c2-4 7-5 7-2s-5 2-7 2Z' fill='%23FFB347'/%3E%3C/svg%3E\">");
+    h.push_str("<link rel=\"icon\" href=\"data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='16' fill='%23FF6B6B'/><text x='16' y='22' text-anchor='middle' fill='white' font-size='18' font-weight='bold' font-family='system-ui'>O</text></svg>\">");
     h.push_str("<style>");
     h.push_str(PAGE_CSS);
     h.push_str("</style></head><body><div class=\"c\">");

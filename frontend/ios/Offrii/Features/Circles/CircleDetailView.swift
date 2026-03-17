@@ -49,6 +49,7 @@ struct CircleDetailView: View {
             if let detail = viewModel.detail {
                 InviteFriendsSheet(
                     circleId: circleId,
+                    circleOwnerId: detail.ownerId,
                     existingMemberIds: Set(detail.members.map(\.userId)),
                     onInvited: { Task { await reload() } }
                 )

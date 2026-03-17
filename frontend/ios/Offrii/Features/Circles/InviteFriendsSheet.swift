@@ -2,7 +2,9 @@ import SwiftUI
 
 struct InviteFriendsSheet: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(AuthManager.self) private var authManager
     let circleId: UUID
+    let circleOwnerId: UUID
     let existingMemberIds: Set<UUID>
     let onInvited: () -> Void
 
@@ -202,12 +204,16 @@ struct InviteFriendsSheet: View {
                     }
                 }
 
-                Button {
-                    inviteToDelete = invite
-                } label: {
-                    Label(NSLocalizedString("common.delete", comment: ""), systemImage: "trash")
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundColor(OffriiTheme.danger)
+                let canDelete = invite.createdBy == authManager.currentUser?.id
+                    || circleOwnerId == authManager.currentUser?.id
+                if canDelete {
+                    Button {
+                        inviteToDelete = invite
+                    } label: {
+                        Label(NSLocalizedString("common.delete", comment: ""), systemImage: "trash")
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundColor(OffriiTheme.danger)
+                    }
                 }
             }
         }
