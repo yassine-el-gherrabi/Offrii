@@ -81,7 +81,11 @@ struct MemberCarousel: View {
             }
         } label: {
             VStack(spacing: 4) {
-                AvatarView(member.displayName ?? member.username, size: .medium)
+                AvatarView(
+                    member.displayName ?? member.username,
+                    size: .medium,
+                    url: member.avatarUrl.flatMap { URL(string: $0) }
+                )
                     .overlay(
                         Circle()
                             .strokeBorder(

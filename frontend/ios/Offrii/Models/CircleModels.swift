@@ -4,6 +4,7 @@ struct CircleMember: Codable, Identifiable, Equatable {
     let userId: UUID
     let username: String
     let displayName: String?
+    let avatarUrl: String?
     let role: String
     let joinedAt: Date
     var id: UUID { userId }
@@ -12,6 +13,7 @@ struct CircleMember: Codable, Identifiable, Equatable {
         case userId = "user_id"
         case username
         case displayName = "display_name"
+        case avatarUrl = "avatar_url"
         case role
         case joinedAt = "joined_at"
     }

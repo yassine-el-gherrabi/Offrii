@@ -265,7 +265,8 @@ struct CircleDetailView: View {
         VStack(spacing: OffriiTheme.spacingSM) {
             AvatarView(
                 friend?.displayName ?? friend?.username ?? detail.name,
-                size: .large
+                size: .large,
+                url: friend?.avatarUrl.flatMap { URL(string: $0) }
             )
 
             Text(friend?.displayName ?? friend?.username ?? (detail.name ?? ""))
@@ -467,7 +468,8 @@ struct CircleDetailView: View {
                     HStack(spacing: OffriiTheme.spacingSM) {
                         AvatarView(
                             member.displayName ?? member.username,
-                            size: .small
+                            size: .small,
+                            url: member.avatarUrl.flatMap { URL(string: $0) }
                         )
 
                         VStack(alignment: .leading, spacing: 2) {

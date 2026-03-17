@@ -332,19 +332,20 @@ impl traits::CircleService for PgCircleService {
             .map_err(AppError::Internal)?;
 
         let user_ids: Vec<Uuid> = members.iter().map(|m| m.user_id).collect();
-        let user_map = self.user_lookup(&user_ids).await?;
+        let user_map = self.owner_lookup(&user_ids).await?;
 
         let member_responses: Vec<CircleMemberResponse> = members
             .into_iter()
             .map(|m| {
-                let (username, display_name) = user_map
+                let (username, display_name, avatar_url) = user_map
                     .get(&m.user_id)
                     .cloned()
-                    .unwrap_or_else(|| ("unknown".to_string(), None));
+                    .unwrap_or_else(|| ("unknown".to_string(), None, None));
                 CircleMemberResponse {
                     user_id: m.user_id,
                     username,
                     display_name,
+                    avatar_url,
                     role: m.role,
                     joined_at: m.joined_at,
                 }

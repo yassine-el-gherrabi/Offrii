@@ -75,6 +75,7 @@ pub struct CircleMemberResponse {
     pub user_id: Uuid,
     pub username: String,
     pub display_name: Option<String>,
+    pub avatar_url: Option<String>,
     pub role: String,
     pub joined_at: DateTime<Utc>,
 }
