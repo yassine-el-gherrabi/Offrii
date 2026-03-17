@@ -854,10 +854,13 @@ impl traits::CircleService for PgCircleService {
                     None
                 } else {
                     item.claimed_by.and_then(|cid| {
-                        claimer_map.get(&cid).map(|(username, _)| ClaimedByInfo {
-                            user_id: cid,
-                            username: username.clone(),
-                        })
+                        claimer_map
+                            .get(&cid)
+                            .map(|(username, display_name)| ClaimedByInfo {
+                                user_id: cid,
+                                username: username.clone(),
+                                display_name: display_name.clone(),
+                            })
                     })
                 };
 
@@ -925,10 +928,13 @@ impl traits::CircleService for PgCircleService {
             None
         } else if let Some(cid) = item.claimed_by {
             let claimer_map = self.user_lookup(&[cid]).await?;
-            claimer_map.get(&cid).map(|(username, _)| ClaimedByInfo {
-                user_id: cid,
-                username: username.clone(),
-            })
+            claimer_map
+                .get(&cid)
+                .map(|(username, display_name)| ClaimedByInfo {
+                    user_id: cid,
+                    username: username.clone(),
+                    display_name: display_name.clone(),
+                })
         } else {
             None
         };

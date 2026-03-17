@@ -109,10 +109,17 @@ struct CircleItemResponse: Codable, Identifiable {
 struct ClaimedByInfo: Codable, Equatable {
     let userId: UUID
     let username: String
+    let displayName: String?
+
+    /// Display name with username fallback
+    var name: String {
+        displayName ?? username
+    }
 
     enum CodingKeys: String, CodingKey {
         case userId = "user_id"
         case username
+        case displayName = "display_name"
     }
 }
 

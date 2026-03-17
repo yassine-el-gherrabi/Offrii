@@ -9,6 +9,8 @@ final class ItemDetailViewModel {
     var error: String?
     var categoryName: String?
     var categoryIcon: String?
+    var claimedByUserId: UUID?
+    var itemOwnerId: UUID?
 
     var style: CategoryStyle {
         CategoryStyle(icon: categoryIcon)
@@ -38,6 +40,8 @@ final class ItemDetailViewModel {
                 itemId: itemId
             )
             item = Item.fromCircleItem(circleItem)
+            claimedByUserId = circleItem.claimedBy?.userId
+            itemOwnerId = circleItem.sharedBy
             // Use category_icon from the backend directly (avoids per-user category mismatch)
             categoryIcon = circleItem.categoryIcon
         } catch {

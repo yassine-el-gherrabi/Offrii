@@ -146,7 +146,7 @@ struct Item: Codable, Identifiable, Equatable {
             isPrivate: false,
             sharedCircles: [],
             claimedVia: nil,
-            claimedName: ci.claimedBy?.username
+            claimedName: ci.claimedBy?.name
         )
     }
 }

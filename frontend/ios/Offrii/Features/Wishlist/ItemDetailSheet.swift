@@ -62,8 +62,8 @@ struct ItemDetailSheet: View {
                             .padding(.horizontal, OffriiTheme.spacingLG)
                             .padding(.top, OffriiTheme.spacingSM)
 
-                            // Claimed banner
-                            if item.isClaimed {
+                            // Claimed banner (item owner only — anti-spoiler, no name)
+                            if item.isClaimed && (isOwnItem || viewModel.itemOwnerId == authManager.currentUser?.id) {
                                 if item.isWebClaim, let name = item.claimedName {
                                     // Web claim — corail, informative for the owner
                                     VStack(spacing: OffriiTheme.spacingSM) {
@@ -111,6 +111,11 @@ struct ItemDetailSheet: View {
                                     .padding(.horizontal, OffriiTheme.spacingLG)
                                     .padding(.top, OffriiTheme.spacingBase)
                                 }
+                            }
+
+                            // Circle item actions (claim/unclaim)
+                            if !isOwnItem && item.isActive {
+                                circleClaimSection(item)
                             }
 
                             // Private banner
@@ -304,6 +309,80 @@ struct ItemDetailSheet: View {
                     await viewModel.loadItem(id: itemId)
                 }
             }
+        }
+    }
+
+    // MARK: - Circle Claim Section
+
+    @ViewBuilder
+    // swiftlint:disable:next function_body_length
+    private func circleClaimSection(_ item: Item) -> some View {
+        let currentUserId = authManager.currentUser?.id
+        let isMyItem = viewModel.itemOwnerId == currentUserId
+
+        if isMyItem {
+            // Owner sees "Quelqu'un s'en occupe" (anti-spoiler) — already handled by claimed banner above
+            EmptyView()
+        } else if item.isClaimed {
+            if viewModel.claimedByUserId == currentUserId {
+                // I claimed this — show unclaim button
+                VStack(spacing: OffriiTheme.spacingSM) {
+                    HStack {
+                        Image(systemName: "checkmark.circle.fill")
+                        Text(NSLocalizedString("circles.detail.youClaimed", comment: ""))
+                            .font(OffriiTypography.subheadline)
+                            .fontWeight(.semibold)
+                    }
+                    .foregroundColor(OffriiTheme.primary)
+
+                    Button {
+                        Task {
+                            try? await CircleService.shared.unclaimItem(itemId: item.id)
+                            await viewModel.loadCircleItem(circleId: circleId!, itemId: itemId)
+                        }
+                    } label: {
+                        Text(NSLocalizedString("circles.detail.unclaim", comment: ""))
+                            .font(OffriiTypography.caption)
+                            .fontWeight(.medium)
+                            .foregroundColor(OffriiTheme.textSecondary)
+                    }
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, OffriiTheme.spacingSM)
+                .background(OffriiTheme.primary.opacity(0.08))
+                .cornerRadius(OffriiTheme.cornerRadiusSM)
+                .padding(.horizontal, OffriiTheme.spacingLG)
+                .padding(.top, OffriiTheme.spacingBase)
+            } else if let claimedName = item.claimedName {
+                // Someone else claimed — show who
+                HStack {
+                    Image(systemName: "hand.thumbsup.fill")
+                    Text(String(format: NSLocalizedString("circles.detail.claimedBy", comment: ""), claimedName))
+                        .font(OffriiTypography.subheadline)
+                        .fontWeight(.semibold)
+                }
+                .foregroundColor(OffriiTheme.primary)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, OffriiTheme.spacingSM)
+                .background(OffriiTheme.primary.opacity(0.08))
+                .cornerRadius(OffriiTheme.cornerRadiusSM)
+                .padding(.horizontal, OffriiTheme.spacingLG)
+                .padding(.top, OffriiTheme.spacingBase)
+            }
+        } else {
+            // Not claimed — show claim button
+            OffriiButton(
+                NSLocalizedString("circles.detail.claim", comment: ""),
+                variant: .primary,
+                isLoading: viewModel.isUpdating
+            ) {
+                Task {
+                    try? await CircleService.shared.claimItem(itemId: item.id)
+                    await viewModel.loadCircleItem(circleId: circleId!, itemId: itemId)
+                }
+            }
+            .padding(.horizontal, OffriiTheme.spacingLG)
+            .padding(.top, OffriiTheme.spacingBase)
         }
     }
 

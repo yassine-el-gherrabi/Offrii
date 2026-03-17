@@ -118,6 +118,7 @@ pub struct CircleItemResponse {
 pub struct ClaimedByInfo {
     pub user_id: Uuid,
     pub username: String,
+    pub display_name: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize)]

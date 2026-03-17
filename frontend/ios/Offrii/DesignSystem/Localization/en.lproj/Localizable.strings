@@ -515,6 +515,10 @@
 "reservation.in" = "in %@";
 "reservation.reserved" = "Reserved";
 "reservation.gifted" = "Gifted";
+"circles.detail.claim" = "I'll take care of it";
+"circles.detail.youClaimed" = "You're taking care of it";
+"circles.detail.unclaim" = "Cancel my reservation";
+"circles.detail.claimedBy" = "Reserved by %@";
 "reservation.empty" = "No reservations";
 "reservation.emptySubtitle" = "Reserve wishes from your close ones' circles";
 "share.toWhom" = "To whom?";

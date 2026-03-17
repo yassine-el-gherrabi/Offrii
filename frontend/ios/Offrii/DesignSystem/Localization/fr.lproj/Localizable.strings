@@ -515,6 +515,10 @@
 "reservation.in" = "dans %@";
 "reservation.reserved" = "Réservé";
 "reservation.gifted" = "Offert";
+"circles.detail.claim" = "Je m'en occupe";
+"circles.detail.youClaimed" = "Tu t'en occupes";
+"circles.detail.unclaim" = "Annuler ma réservation";
+"circles.detail.claimedBy" = "Réservé par %@";
 "reservation.empty" = "Aucune réservation";
 "reservation.emptySubtitle" = "Réservez des envies dans les cercles de vos proches";
 "share.toWhom" = "A qui ?";
