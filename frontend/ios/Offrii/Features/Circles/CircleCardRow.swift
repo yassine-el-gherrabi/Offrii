@@ -68,19 +68,27 @@ struct CircleCardRow: View {
             // Single avatar for 1:1
             AvatarView(
                 circle.memberNames.first ?? circle.name,
-                size: .medium
+                size: .medium,
+                url: circle.memberAvatars.first.flatMap { $0 }.flatMap { URL(string: $0) }
             )
         } else if circle.memberNames.isEmpty {
             AvatarView(circle.name, size: .medium)
         } else if circle.memberNames.count == 1 {
-            AvatarView(circle.memberNames[0], size: .medium)
+            AvatarView(
+                circle.memberNames[0],
+                size: .medium,
+                url: circle.memberAvatars.first.flatMap { $0 }.flatMap { URL(string: $0) }
+            )
         } else {
             ZStack {
                 ForEach(
                     Array(circle.memberNames.prefix(3).enumerated()),
                     id: \.offset
                 ) { idx, name in
-                    AvatarView(name, size: .small)
+                    let avatarUrl = idx < circle.memberAvatars.count
+                        ? circle.memberAvatars[idx].flatMap { URL(string: $0) }
+                        : nil
+                    AvatarView(name, size: .small, url: avatarUrl)
                         .overlay(
                             Circle().strokeBorder(.white, lineWidth: 1.5)
                         )

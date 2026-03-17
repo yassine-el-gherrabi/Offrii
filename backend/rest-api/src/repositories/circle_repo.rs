@@ -124,6 +124,7 @@ pub struct CircleListRow {
     pub last_activity_actor: Option<String>,
     pub last_activity_item: Option<String>,
     pub member_names: Vec<String>,
+    pub member_avatars: Vec<Option<String>>,
 }
 
 /// Returns circles the user is a member of, enriched with member counts,
@@ -178,7 +179,18 @@ pub(crate) async fn list_by_member(
                         WHERE ce2.circle_id = c.id AND ce2.actor_id = cm4.user_id
                     ) DESC NULLS LAST, cm4.joined_at ASC
                     LIMIT 3
-                ), ARRAY[]::TEXT[]) AS member_names
+                ), ARRAY[]::TEXT[]) AS member_names,
+                COALESCE(ARRAY(
+                    SELECT u.avatar_url
+                    FROM circle_members cm5
+                    JOIN users u ON u.id = cm5.user_id
+                    WHERE cm5.circle_id = c.id
+                    ORDER BY (
+                        SELECT MAX(ce3.created_at) FROM circle_events ce3
+                        WHERE ce3.circle_id = c.id AND ce3.actor_id = cm5.user_id
+                    ) DESC NULLS LAST, cm5.joined_at ASC
+                    LIMIT 3
+                ), ARRAY[]::TEXT[]) AS member_avatars
          FROM circles c
          JOIN circle_members cm ON cm.circle_id = c.id AND cm.user_id = $1
          JOIN circle_members cm2 ON cm2.circle_id = c.id
@@ -208,6 +220,7 @@ pub(crate) async fn list_by_member(
             last_activity_actor: row.get("last_activity_actor"),
             last_activity_item: row.get("last_activity_item"),
             member_names: row.get("member_names"),
+            member_avatars: row.get("member_avatars"),
         })
         .collect();
 

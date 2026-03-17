@@ -246,6 +246,7 @@ impl traits::CircleService for PgCircleService {
             last_activity: None,
             last_activity_at: None,
             member_names: vec![],
+            member_avatars: vec![],
             created_at: circle.created_at,
         })
     }
@@ -302,6 +303,7 @@ impl traits::CircleService for PgCircleService {
                     last_activity,
                     last_activity_at: row.last_activity_at,
                     member_names: row.member_names,
+                    member_avatars: row.member_avatars,
                     created_at: row.circle.created_at,
                 }
             })
@@ -423,6 +425,7 @@ impl traits::CircleService for PgCircleService {
             last_activity: None,
             last_activity_at: None,
             member_names: vec![],
+            member_avatars: vec![],
             created_at: updated.created_at,
         })
     }
@@ -507,6 +510,7 @@ impl traits::CircleService for PgCircleService {
             last_activity: None,
             last_activity_at: None,
             member_names: vec![],
+            member_avatars: vec![],
             created_at: circle.created_at,
         })
     }
