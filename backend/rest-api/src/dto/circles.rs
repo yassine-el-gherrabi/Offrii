@@ -1,4 +1,5 @@
 use chrono::{DateTime, Utc};
+use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use validator::Validate;
@@ -134,4 +135,23 @@ pub struct CircleEventResponse {
 pub struct JoinResponse {
     pub circle_id: Uuid,
     pub circle_name: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct TransferOwnershipRequest {
+    pub user_id: Uuid,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct ReservationResponse {
+    pub item_id: Uuid,
+    pub item_name: String,
+    pub item_image_url: Option<String>,
+    pub item_estimated_price: Option<Decimal>,
+    pub item_status: String,
+    pub owner_name: String,
+    pub owner_avatar_url: Option<String>,
+    pub circle_id: Uuid,
+    pub circle_name: Option<String>,
+    pub claimed_at: DateTime<Utc>,
 }

@@ -95,6 +95,8 @@ enum APIEndpoint {
     case getCircleItem(circleId: UUID, itemId: UUID)
     case unshareItem(circleId: UUID, itemId: UUID)
     case getCircleFeed(circleId: UUID, page: Int, perPage: Int)
+    case transferCircleOwnership(circleId: UUID, body: TransferOwnershipBody)
+    case listReservations
 
     // MARK: Friends
 
@@ -199,6 +201,8 @@ extension APIEndpoint {
         case .getCircleItem(let circleId, let itemId):  return "/circles/\(circleId)/items/\(itemId)"
         case .unshareItem(let circleId, let itemId):    return "/circles/\(circleId)/items/\(itemId)"
         case .getCircleFeed(let circleId, _, _):        return "/circles/\(circleId)/feed"
+        case .transferCircleOwnership(let circleId, _): return "/circles/\(circleId)/transfer"
+        case .listReservations:                         return "/circles/my-reservations"
 
         // Friends
         case .searchUsers:                              return "/users/search"
@@ -297,6 +301,8 @@ extension APIEndpoint {
         case .getCircleItem:        return .GET
         case .unshareItem:          return .DELETE
         case .getCircleFeed:        return .GET
+        case .transferCircleOwnership: return .POST
+        case .listReservations:     return .GET
 
         // Friends
         case .searchUsers:              return .GET
@@ -414,6 +420,7 @@ extension APIEndpoint {
         case .updateCircle(_, let body):    return body
         case .addMemberToCircle(_, let body): return body
         case .shareItemToCircle(_, let body): return body
+        case .transferCircleOwnership(_, let body): return body
         case .sendFriendRequest(let body):          return body
         case .createCommunityWish(let body):        return body
         case .updateCommunityWish(_, let body):     return body

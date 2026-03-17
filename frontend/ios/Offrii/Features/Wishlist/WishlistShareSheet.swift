@@ -90,6 +90,7 @@ struct WishlistShareSheet: View {
 
     // Toasts
     @State private var toastMessage: String?
+    @State private var linkToDelete: UUID?
 
     var body: some View {
         NavigationStack {
@@ -138,6 +139,25 @@ struct WishlistShareSheet: View {
                 async let circlesLoad: () = loadCircles()
                 async let linksLoad: () = loadShareLinks()
                 _ = await (circlesLoad, linksLoad)
+            }
+            .alert(
+                NSLocalizedString("share.deleteLink.title", comment: ""),
+                isPresented: Binding(
+                    get: { linkToDelete != nil },
+                    set: { if !$0 { linkToDelete = nil } }
+                )
+            ) {
+                Button(NSLocalizedString("common.delete", comment: ""), role: .destructive) {
+                    if let id = linkToDelete {
+                        Task { await deleteLink(id: id) }
+                    }
+                    linkToDelete = nil
+                }
+                Button(NSLocalizedString("common.cancel", comment: ""), role: .cancel) {
+                    linkToDelete = nil
+                }
+            } message: {
+                Text(NSLocalizedString("share.deleteLink.message", comment: ""))
             }
         }
     }
@@ -666,7 +686,7 @@ struct WishlistShareSheet: View {
                 Label(NSLocalizedString("share.sendDirect", comment: ""), systemImage: "square.and.arrow.up")
                     .font(.system(size: 11, weight: .medium)).foregroundColor(OffriiTheme.primary)
             }
-            Button { Task { await deleteLink(id: link.id) } } label: {
+            Button { linkToDelete = link.id } label: {
                 Label(NSLocalizedString("common.delete", comment: ""), systemImage: "trash")
                     .font(.system(size: 11, weight: .medium)).foregroundColor(OffriiTheme.danger)
             }
@@ -685,7 +705,7 @@ struct WishlistShareSheet: View {
             Label(NSLocalizedString("share.copyLink", comment: ""), systemImage: "doc.on.doc")
         }
         Divider()
-        Button(role: .destructive) { Task { await deleteLink(id: link.id) } } label: {
+        Button(role: .destructive) { linkToDelete = link.id } label: {
             Label(NSLocalizedString("common.delete", comment: ""), systemImage: "trash")
         }
     }

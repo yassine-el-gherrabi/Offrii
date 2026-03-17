@@ -497,6 +497,26 @@
 "share.noSharedItems" = "No wishes shared";
 "share.seesAllList" = "Sees entire list";
 "share.scopeCategories" = "By categories";
+"share.deleteLink.title" = "Delete link";
+"share.deleteLink.message" = "Anyone with this link will no longer be able to access your wishes.";
+"circles.removeMember.title" = "Remove from circle";
+"circles.removeMember.message" = "%@ will no longer see wishes shared in this circle.";
+"circles.deleteCircle.title" = "Delete circle";
+"circles.deleteCircle.message" = "All shares and history will be lost.";
+"circles.leaveCircle.title" = "Leave circle";
+"circles.leaveCircle.message" = "You will no longer see shared wishes.";
+"circles.transferOwnership.title" = "Transfer ownership";
+"circles.transferOwnership.message" = "%@ will become the owner of this circle. You will no longer be able to manage it.";
+"circles.transferOwnership.action" = "Transfer";
+"item.unshare.title" = "Remove from circle";
+"item.unshare.message" = "This wish will no longer be visible in %@.";
+"circles.filter.reservations" = "Reservations";
+"reservation.for" = "For %@";
+"reservation.in" = "in %@";
+"reservation.reserved" = "Reserved";
+"reservation.gifted" = "Gifted";
+"reservation.empty" = "No reservations";
+"reservation.emptySubtitle" = "Reserve wishes from your close ones' circles";
 "share.toWhom" = "To whom?";
 "share.ttl.oneDay" = "1 day";
 

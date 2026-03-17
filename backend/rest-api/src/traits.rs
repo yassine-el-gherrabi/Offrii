@@ -686,6 +686,18 @@ pub trait CircleService: Send + Sync {
     async fn on_item_received(&self, item_id: Uuid, owner_id: Uuid) -> Result<(), AppError>;
 
     async fn on_item_unarchived(&self, item_id: Uuid, owner_id: Uuid) -> Result<(), AppError>;
+
+    async fn transfer_ownership(
+        &self,
+        circle_id: Uuid,
+        new_owner_id: Uuid,
+        requester_id: Uuid,
+    ) -> Result<(), AppError>;
+
+    async fn list_reservations(
+        &self,
+        user_id: Uuid,
+    ) -> Result<Vec<crate::dto::circles::ReservationResponse>, AppError>;
 }
 
 // ── Share link traits ───────────────────────────────────────────────

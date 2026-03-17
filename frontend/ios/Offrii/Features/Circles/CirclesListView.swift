@@ -30,6 +30,7 @@ struct CirclesListView: View {
     @State private var showAddFriend = false
     @State private var showInviteContacts = false
     @State private var showPendingSheet = false
+    @State private var circleToDelete: OffriiCircle?
 
     private var displayedCircles: [OffriiCircle] {
         let searched = viewModel.filteredCircles
@@ -82,24 +83,17 @@ struct CirclesListView: View {
                                 }
                                 .buttonStyle(.plain)
                                 .contextMenu {
-                                    if circle.isDirect {
-                                        Button(role: .destructive) {
-                                            Task { await viewModel.deleteCircle(circle) }
-                                        } label: {
-                                            Label(
-                                                NSLocalizedString("circles.context.leave", comment: ""),
-                                                systemImage: "rectangle.portrait.and.arrow.right"
-                                            )
-                                        }
-                                    } else {
-                                        Button(role: .destructive) {
-                                            Task { await viewModel.deleteCircle(circle) }
-                                        } label: {
-                                            Label(
-                                                NSLocalizedString("circles.context.delete", comment: ""),
-                                                systemImage: "trash"
-                                            )
-                                        }
+                                    Button(role: .destructive) {
+                                        circleToDelete = circle
+                                    } label: {
+                                        Label(
+                                            NSLocalizedString(
+                                                circle.isDirect ? "circles.context.leave" : "circles.context.delete",
+                                                comment: ""
+                                            ),
+                                            systemImage: circle.isDirect
+                                                ? "rectangle.portrait.and.arrow.right" : "trash"
+                                        )
                                     }
                                 }
                             }
@@ -187,6 +181,33 @@ struct CirclesListView: View {
         }
         .refreshable {
             await viewModel.loadAll()
+        }
+        .alert(
+            NSLocalizedString(
+                circleToDelete?.isDirect == true
+                    ? "circles.leaveCircle.title" : "circles.deleteCircle.title",
+                comment: ""
+            ),
+            isPresented: Binding(
+                get: { circleToDelete != nil },
+                set: { if !$0 { circleToDelete = nil } }
+            )
+        ) {
+            Button(NSLocalizedString("common.delete", comment: ""), role: .destructive) {
+                if let circle = circleToDelete {
+                    Task { await viewModel.deleteCircle(circle) }
+                }
+                circleToDelete = nil
+            }
+            Button(NSLocalizedString("common.cancel", comment: ""), role: .cancel) {
+                circleToDelete = nil
+            }
+        } message: {
+            Text(NSLocalizedString(
+                circleToDelete?.isDirect == true
+                    ? "circles.leaveCircle.message" : "circles.deleteCircle.message",
+                comment: ""
+            ))
         }
     }
 

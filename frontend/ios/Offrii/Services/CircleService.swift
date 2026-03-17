@@ -37,6 +37,14 @@ final class CircleService: Sendable {
         try await client.requestVoid(.removeMember(circleId: circleId, userId: userId))
     }
 
+    func transferOwnership(circleId: UUID, userId: UUID) async throws {
+        try await client.requestVoid(.transferCircleOwnership(circleId: circleId, body: TransferOwnershipBody(userId: userId)))
+    }
+
+    func listReservations() async throws -> [ReservationResponse] {
+        try await client.request(.listReservations)
+    }
+
     func shareItem(circleId: UUID, itemId: UUID) async throws {
         try await client.requestVoid(.shareItemToCircle(circleId: circleId, body: ShareItemBody(itemId: itemId)))
     }

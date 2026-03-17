@@ -9,7 +9,7 @@ use uuid::Uuid;
 
 use crate::dto::circles::{
     CircleDetailResponse, CircleEventResponse, CircleItemResponse, CircleMemberResponse,
-    CircleResponse, ClaimedByInfo, InviteResponse, JoinResponse,
+    CircleResponse, ClaimedByInfo, InviteResponse, JoinResponse, ReservationResponse,
 };
 use crate::dto::pagination::PaginatedResponse;
 use crate::errors::AppError;
@@ -1413,5 +1413,117 @@ impl traits::CircleService for PgCircleService {
             .collect();
 
         Ok(PaginatedResponse::new(event_responses, total, page, limit))
+    }
+
+    #[tracing::instrument(skip(self))]
+    async fn transfer_ownership(
+        &self,
+        circle_id: Uuid,
+        new_owner_id: Uuid,
+        requester_id: Uuid,
+    ) -> Result<(), AppError> {
+        self.require_owner(circle_id, requester_id).await?;
+        self.require_membership(circle_id, new_owner_id).await?;
+
+        // Update circle owner
+        sqlx::query("UPDATE circles SET owner_id = $2 WHERE id = $1")
+            .bind(circle_id)
+            .bind(new_owner_id)
+            .execute(&self.pool)
+            .await
+            .map_err(|e| AppError::Internal(e.into()))?;
+
+        // Swap roles in circle_members
+        sqlx::query(
+            "UPDATE circle_members SET role = 'member' WHERE circle_id = $1 AND user_id = $2",
+        )
+        .bind(circle_id)
+        .bind(requester_id)
+        .execute(&self.pool)
+        .await
+        .map_err(|e| AppError::Internal(e.into()))?;
+
+        sqlx::query(
+            "UPDATE circle_members SET role = 'owner' WHERE circle_id = $1 AND user_id = $2",
+        )
+        .bind(circle_id)
+        .bind(new_owner_id)
+        .execute(&self.pool)
+        .await
+        .map_err(|e| AppError::Internal(e.into()))?;
+
+        self.bump_circle_version(circle_id);
+
+        Ok(())
+    }
+
+    #[tracing::instrument(skip(self))]
+    async fn list_reservations(&self, user_id: Uuid) -> Result<Vec<ReservationResponse>, AppError> {
+        let rows = sqlx::query_as::<
+            _,
+            (
+                Uuid,
+                String,
+                Option<String>,
+                Option<rust_decimal::Decimal>,
+                String,
+                String,
+                Option<String>,
+                Uuid,
+                Option<String>,
+                chrono::DateTime<chrono::Utc>,
+            ),
+        >(
+            "SELECT DISTINCT ON (i.id) \
+               i.id, i.name, i.image_url, i.estimated_price, i.status, \
+               COALESCE(u.display_name, u.username, '') as owner_name, u.avatar_url, \
+               c.id as circle_id, c.name as circle_name, \
+               i.claimed_at \
+             FROM items i \
+             JOIN circle_items ci ON ci.item_id = i.id \
+             JOIN circles c ON c.id = ci.circle_id \
+             JOIN circle_members cm ON cm.circle_id = c.id AND cm.user_id = $1 \
+             JOIN users u ON u.id = i.user_id \
+             WHERE i.claimed_by = $1 \
+               AND i.status IN ('active', 'purchased') \
+             ORDER BY i.id, i.claimed_at DESC",
+        )
+        .bind(user_id)
+        .fetch_all(&self.pool)
+        .await
+        .map_err(|e| AppError::Internal(e.into()))?;
+
+        let reservations = rows
+            .into_iter()
+            .map(
+                |(
+                    item_id,
+                    item_name,
+                    item_image_url,
+                    price,
+                    status,
+                    owner_name,
+                    owner_avatar,
+                    cid,
+                    cname,
+                    claimed_at,
+                )| {
+                    ReservationResponse {
+                        item_id,
+                        item_name,
+                        item_image_url,
+                        item_estimated_price: price,
+                        item_status: status,
+                        owner_name,
+                        owner_avatar_url: owner_avatar,
+                        circle_id: cid,
+                        circle_name: cname,
+                        claimed_at,
+                    }
+                },
+            )
+            .collect();
+
+        Ok(reservations)
     }
 }

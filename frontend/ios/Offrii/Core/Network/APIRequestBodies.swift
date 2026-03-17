@@ -300,6 +300,14 @@ struct UpdateCircleBody: Encodable {
     }
 }
 
+struct TransferOwnershipBody: Encodable {
+    let userId: UUID
+
+    enum CodingKeys: String, CodingKey {
+        case userId = "user_id"
+    }
+}
+
 struct AddMemberBody: Encodable {
     let userId: UUID
 

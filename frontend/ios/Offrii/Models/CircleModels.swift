@@ -142,3 +142,50 @@ struct FeedResponse: Codable {
     var total: Int { pagination.total }
     var page: Int { pagination.page }
 }
+
+struct ReservationResponse: Codable, Identifiable {
+    let itemId: UUID
+    let itemName: String
+    let itemImageUrl: String?
+    let itemEstimatedPrice: Decimal?
+    let itemStatus: String
+    let ownerName: String
+    let ownerAvatarUrl: String?
+    let circleId: UUID
+    let circleName: String?
+    let claimedAt: Date
+
+    var id: UUID { itemId }
+
+    enum CodingKeys: String, CodingKey {
+        case itemName = "item_name"
+        case itemImageUrl = "item_image_url"
+        case itemEstimatedPrice = "item_estimated_price"
+        case itemStatus = "item_status"
+        case ownerName = "owner_name"
+        case ownerAvatarUrl = "owner_avatar_url"
+        case circleId = "circle_id"
+        case circleName = "circle_name"
+        case claimedAt = "claimed_at"
+        case itemId = "item_id"
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        itemId = try container.decode(UUID.self, forKey: .itemId)
+        itemName = try container.decode(String.self, forKey: .itemName)
+        itemImageUrl = try container.decodeIfPresent(String.self, forKey: .itemImageUrl)
+        itemStatus = try container.decode(String.self, forKey: .itemStatus)
+        ownerName = try container.decode(String.self, forKey: .ownerName)
+        ownerAvatarUrl = try container.decodeIfPresent(String.self, forKey: .ownerAvatarUrl)
+        circleId = try container.decode(UUID.self, forKey: .circleId)
+        circleName = try container.decodeIfPresent(String.self, forKey: .circleName)
+        claimedAt = try container.decode(Date.self, forKey: .claimedAt)
+        // Handle price as string or number
+        if let str = try? container.decodeIfPresent(String.self, forKey: .itemEstimatedPrice) {
+            itemEstimatedPrice = Decimal(string: str)
+        } else {
+            itemEstimatedPrice = try? container.decodeIfPresent(Decimal.self, forKey: .itemEstimatedPrice)
+        }
+    }
+}

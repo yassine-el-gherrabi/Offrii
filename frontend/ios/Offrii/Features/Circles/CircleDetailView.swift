@@ -13,6 +13,8 @@ struct CircleDetailView: View {
     @State private var showEdit = false
     @State private var showLeaveAlert = false
     @State private var selectedItemId: UUID?
+    @State private var memberToRemove: CircleMember?
+    @State private var memberToTransfer: CircleMember?
 
     private var currentUserId: UUID? { authManager.currentUser?.id }
     private var isOwner: Bool { viewModel.detail?.ownerId == currentUserId }
@@ -91,6 +93,52 @@ struct CircleDetailView: View {
                 "circles.members.leaveConfirm.message",
                 comment: ""
             ))
+        }
+        .alert(
+            NSLocalizedString("circles.removeMember.title", comment: ""),
+            isPresented: Binding(
+                get: { memberToRemove != nil },
+                set: { if !$0 { memberToRemove = nil } }
+            )
+        ) {
+            Button(NSLocalizedString("friends.remove", comment: ""), role: .destructive) {
+                if let member = memberToRemove {
+                    Task {
+                        await viewModel.removeMember(circleId: circleId, userId: member.userId)
+                    }
+                }
+                memberToRemove = nil
+            }
+            Button(NSLocalizedString("common.cancel", comment: ""), role: .cancel) {
+                memberToRemove = nil
+            }
+        } message: {
+            if let member = memberToRemove {
+                Text(String(format: NSLocalizedString("circles.removeMember.message", comment: ""), member.displayName ?? ""))
+            }
+        }
+        .alert(
+            NSLocalizedString("circles.transferOwnership.title", comment: ""),
+            isPresented: Binding(
+                get: { memberToTransfer != nil },
+                set: { if !$0 { memberToTransfer = nil } }
+            )
+        ) {
+            Button(NSLocalizedString("circles.transferOwnership.action", comment: ""), role: .destructive) {
+                if let member = memberToTransfer {
+                    Task {
+                        await viewModel.transferOwnership(circleId: circleId, userId: member.userId)
+                    }
+                }
+                memberToTransfer = nil
+            }
+            Button(NSLocalizedString("common.cancel", comment: ""), role: .cancel) {
+                memberToTransfer = nil
+            }
+        } message: {
+            if let member = memberToTransfer {
+                Text(String(format: NSLocalizedString("circles.transferOwnership.message", comment: ""), member.displayName ?? ""))
+            }
         }
         .refreshable {
             await reload()
@@ -422,19 +470,36 @@ struct CircleDetailView: View {
                     }
                     .padding(.horizontal, OffriiTheme.spacingLG)
                     .padding(.vertical, OffriiTheme.spacingSM)
-                    .contextMenu {
+                    .swipeActions(edge: .trailing) {
                         if isOwner && !isSelf && member.role != "owner" {
                             Button(role: .destructive) {
-                                Task {
-                                    await viewModel.removeMember(
-                                        circleId: circleId,
-                                        userId: member.userId
-                                    )
-                                }
+                                memberToRemove = member
                             } label: {
                                 Label(
                                     NSLocalizedString("friends.remove", comment: ""),
                                     systemImage: "person.badge.minus"
+                                )
+                            }
+                        }
+                    }
+                    .contextMenu {
+                        if isOwner && !isSelf {
+                            if member.role != "owner" {
+                                Button(role: .destructive) {
+                                    memberToRemove = member
+                                } label: {
+                                    Label(
+                                        NSLocalizedString("friends.remove", comment: ""),
+                                        systemImage: "person.badge.minus"
+                                    )
+                                }
+                            }
+                            Button {
+                                memberToTransfer = member
+                            } label: {
+                                Label(
+                                    NSLocalizedString("circles.transferOwnership.action", comment: ""),
+                                    systemImage: "arrow.right.arrow.left"
                                 )
                             }
                         }

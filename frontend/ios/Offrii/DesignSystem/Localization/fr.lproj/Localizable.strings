@@ -497,6 +497,26 @@
 "share.noSharedItems" = "Aucune envie partagée";
 "share.seesAllList" = "Voit toute la liste";
 "share.scopeCategories" = "Par catégories";
+"share.deleteLink.title" = "Supprimer le lien";
+"share.deleteLink.message" = "Les personnes ayant ce lien ne pourront plus accéder à vos envies.";
+"circles.removeMember.title" = "Retirer du cercle";
+"circles.removeMember.message" = "%@ ne pourra plus voir les envies partagées dans ce cercle.";
+"circles.deleteCircle.title" = "Supprimer le cercle";
+"circles.deleteCircle.message" = "Tous les partages et l'historique seront perdus.";
+"circles.leaveCircle.title" = "Quitter le cercle";
+"circles.leaveCircle.message" = "Vous ne verrez plus les envies partagées.";
+"circles.transferOwnership.title" = "Transférer la propriété";
+"circles.transferOwnership.message" = "%@ deviendra le propriétaire de ce cercle. Vous ne pourrez plus le gérer.";
+"circles.transferOwnership.action" = "Transférer";
+"item.unshare.title" = "Retirer du cercle";
+"item.unshare.message" = "Cette envie ne sera plus visible dans %@.";
+"circles.filter.reservations" = "Réservations";
+"reservation.for" = "Pour %@";
+"reservation.in" = "dans %@";
+"reservation.reserved" = "Réservé";
+"reservation.gifted" = "Offert";
+"reservation.empty" = "Aucune réservation";
+"reservation.emptySubtitle" = "Réservez des envies dans les cercles de vos proches";
 "share.toWhom" = "A qui ?";
 "share.ttl.oneDay" = "1 jour";
 

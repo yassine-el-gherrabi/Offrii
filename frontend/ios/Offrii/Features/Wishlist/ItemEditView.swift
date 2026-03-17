@@ -21,6 +21,7 @@ struct ItemEditView: View {
     @State private var uploadError: String?
     @State private var imageRemoved = false
     @State private var existingImageUrl: URL?
+    @State private var circleToUnshare: SharedCircleInfo?
 
     init(item: Item, onSave: @escaping (Item) -> Void) {
         self.item = item
@@ -155,9 +156,7 @@ struct ItemEditView: View {
                             Spacer()
 
                             Button {
-                                Task {
-                                    try? await CircleService.shared.unshareItem(circleId: circle.id, itemId: item.id)
-                                }
+                                circleToUnshare = circle
                             } label: {
                                 Image(systemName: "xmark")
                                     .font(.system(size: 11, weight: .semibold))
@@ -246,6 +245,29 @@ struct ItemEditView: View {
         } message: {
             if let uploadError {
                 Text(uploadError)
+            }
+        }
+        .alert(
+            NSLocalizedString("item.unshare.title", comment: ""),
+            isPresented: Binding(
+                get: { circleToUnshare != nil },
+                set: { if !$0 { circleToUnshare = nil } }
+            )
+        ) {
+            Button(NSLocalizedString("friends.remove", comment: ""), role: .destructive) {
+                if let circle = circleToUnshare {
+                    Task {
+                        try? await CircleService.shared.unshareItem(circleId: circle.id, itemId: item.id)
+                    }
+                }
+                circleToUnshare = nil
+            }
+            Button(NSLocalizedString("common.cancel", comment: ""), role: .cancel) {
+                circleToUnshare = nil
+            }
+        } message: {
+            if let circle = circleToUnshare {
+                Text(String(format: NSLocalizedString("item.unshare.message", comment: ""), circle.name))
             }
         }
     }

@@ -9,7 +9,8 @@ use crate::AppState;
 use crate::dto::circles::{
     AddMemberRequest, CircleDetailResponse, CircleEventResponse, CircleItemResponse,
     CircleResponse, CreateCircleRequest, CreateInviteRequest, FeedQuery, InviteResponse,
-    JoinResponse, ShareItemRequest, UpdateCircleRequest,
+    JoinResponse, ReservationResponse, ShareItemRequest, TransferOwnershipRequest,
+    UpdateCircleRequest,
 };
 use crate::dto::pagination::{PaginatedResponse, normalize_pagination};
 use crate::errors::AppError;
@@ -40,6 +41,8 @@ pub fn router() -> Router<AppState> {
             get(get_circle_item).delete(unshare_item),
         )
         .route("/{id}/feed", get(get_feed))
+        .route("/{id}/transfer", post(transfer_ownership))
+        .route("/my-reservations", get(list_reservations))
 }
 
 #[tracing::instrument(skip(state))]
@@ -288,4 +291,27 @@ async fn get_feed(
         .get_feed(id, auth_user.user_id, page, limit, offset)
         .await?;
     Ok(Json(response))
+}
+
+#[tracing::instrument(skip(state))]
+async fn transfer_ownership(
+    State(state): State<AppState>,
+    auth_user: AuthUser,
+    Path(id): Path<Uuid>,
+    Json(req): Json<TransferOwnershipRequest>,
+) -> Result<StatusCode, AppError> {
+    state
+        .circles
+        .transfer_ownership(id, req.user_id, auth_user.user_id)
+        .await?;
+    Ok(StatusCode::NO_CONTENT)
+}
+
+#[tracing::instrument(skip(state))]
+async fn list_reservations(
+    State(state): State<AppState>,
+    auth_user: AuthUser,
+) -> Result<Json<Vec<ReservationResponse>>, AppError> {
+    let reservations = state.circles.list_reservations(auth_user.user_id).await?;
+    Ok(Json(reservations))
 }

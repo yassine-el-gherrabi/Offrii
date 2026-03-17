@@ -124,4 +124,14 @@ final class CircleDetailViewModel {
             return false
         }
     }
+
+    func transferOwnership(circleId: UUID, userId: UUID) async {
+        do {
+            try await CircleService.shared.transferOwnership(circleId: circleId, userId: userId)
+            // Reload to reflect new ownership
+            await loadCircle(id: circleId)
+        } catch {
+            self.error = error.localizedDescription
+        }
+    }
 }
