@@ -273,6 +273,12 @@ struct ShareWithFriendSheet: View {
             selectedMode = rule.shareMode
             selectedCategoryIds = Set(rule.categoryIds)
             privateCount = items.filter { $0.isPrivate }.count
+
+            // For selection mode, load already-shared items from circle
+            if rule.shareMode == "selection" {
+                let circleItems = (try? await CircleService.shared.listItems(circleId: circleId)) ?? []
+                selectedItemIds = Set(circleItems.map(\.id))
+            }
         } catch {
             currentMode = "none"
             selectedMode = "none"
