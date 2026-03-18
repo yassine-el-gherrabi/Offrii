@@ -23,9 +23,9 @@ use crate::dto::users::{UserDataExport, UserProfileResponse};
 use crate::errors::AppError;
 use crate::models::community_wish::WishStatus;
 use crate::models::{
-    Category, Circle, CircleEvent, CircleInvite, CircleItem, CircleMember, CommunityWish,
-    FriendRequest, FriendRequestStatus, FriendWithSince, Friendship, Item, Notification, PushToken,
-    RefreshToken, ShareLink, User, WishMessage, WishReport,
+    Category, Circle, CircleEvent, CircleInvite, CircleItem, CircleMember, CircleShareRule,
+    CommunityWish, FriendRequest, FriendRequestStatus, FriendWithSince, Friendship, Item,
+    Notification, PushToken, RefreshToken, ShareLink, User, WishMessage, WishReport,
 };
 use crate::services::moderation_service::ModerationResult;
 
@@ -558,6 +558,19 @@ pub trait CircleInviteRepo: Send + Sync {
     async fn list_active_by_circle(&self, circle_id: Uuid) -> Result<Vec<CircleInvite>>;
 
     async fn delete(&self, id: Uuid) -> Result<bool>;
+}
+
+#[async_trait]
+pub trait CircleShareRuleRepo: Send + Sync {
+    async fn get(&self, circle_id: Uuid, user_id: Uuid) -> Result<Option<CircleShareRule>>;
+    async fn upsert(
+        &self,
+        circle_id: Uuid,
+        user_id: Uuid,
+        share_mode: &str,
+        category_ids: &[Uuid],
+    ) -> Result<CircleShareRule>;
+    async fn delete(&self, circle_id: Uuid, user_id: Uuid) -> Result<bool>;
 }
 
 #[async_trait]

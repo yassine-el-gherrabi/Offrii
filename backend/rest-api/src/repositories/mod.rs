@@ -4,6 +4,7 @@ pub mod circle_invite_repo;
 pub mod circle_item_repo;
 pub mod circle_member_repo;
 pub mod circle_repo;
+pub mod circle_share_rule_repo;
 pub mod community_wish_repo;
 pub mod friend_repo;
 pub mod item_repo;
