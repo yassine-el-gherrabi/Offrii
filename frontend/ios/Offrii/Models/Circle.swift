@@ -11,6 +11,7 @@ struct OffriiCircle: Codable, Identifiable, Equatable {
     let lastActivity: String?
     let lastActivityAt: Date?
     let memberNames: [String]
+    let memberIds: [UUID]
     let memberAvatars: [String?]
     let createdAt: Date
 
@@ -25,6 +26,7 @@ struct OffriiCircle: Codable, Identifiable, Equatable {
         case lastActivity = "last_activity"
         case lastActivityAt = "last_activity_at"
         case memberNames = "member_names"
+        case memberIds = "member_ids"
         case memberAvatars = "member_avatars"
         case createdAt = "created_at"
     }
@@ -41,6 +43,7 @@ struct OffriiCircle: Codable, Identifiable, Equatable {
         lastActivity = try container.decodeIfPresent(String.self, forKey: .lastActivity)
         lastActivityAt = try container.decodeIfPresent(Date.self, forKey: .lastActivityAt)
         memberNames = try container.decodeIfPresent([String].self, forKey: .memberNames) ?? []
+        memberIds = try container.decodeIfPresent([UUID].self, forKey: .memberIds) ?? []
         memberAvatars = try container.decodeIfPresent([String?].self, forKey: .memberAvatars) ?? []
         createdAt = try container.decode(Date.self, forKey: .createdAt)
     }

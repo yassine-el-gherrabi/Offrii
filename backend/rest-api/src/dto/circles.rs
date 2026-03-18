@@ -61,6 +61,7 @@ pub struct CircleResponse {
     pub last_activity: Option<String>,
     pub last_activity_at: Option<DateTime<Utc>>,
     pub member_names: Vec<String>,
+    pub member_ids: Vec<Uuid>,
     pub member_avatars: Vec<Option<String>>,
     pub created_at: DateTime<Utc>,
 }

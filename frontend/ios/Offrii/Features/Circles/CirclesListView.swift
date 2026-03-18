@@ -293,12 +293,10 @@ struct CirclesListView: View {
             Button(NSLocalizedString("friends.remove", comment: ""), role: .destructive) {
                 if let circle = directCircleToRemove {
                     Task {
-                        // Try matching by circle.name (= friend's username for direct circles)
-                        // Then fallback to memberNames matching
-                        let friend = viewModel.friends.first(where: { $0.username == circle.name })
-                            ?? viewModel.friends.first(where: {
-                                circle.memberNames.contains($0.username)
-                            })
+                        // Match friend by UUID from circle.memberIds
+                        let friend = viewModel.friends.first { friend in
+                            circle.memberIds.contains(friend.userId)
+                        }
                         if let friend {
                             await viewModel.removeFriend(friend)
                         }

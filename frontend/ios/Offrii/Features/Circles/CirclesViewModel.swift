@@ -46,9 +46,9 @@ final class CirclesViewModel {
         }
     }
 
-    /// Find the direct (1:1) circle with a specific friend by matching username.
+    /// Find the direct (1:1) circle with a specific friend by matching user ID.
     func directCircle(for friend: FriendResponse) -> OffriiCircle? {
-        circles.first { $0.isDirect && $0.memberNames.contains(friend.username) }
+        circles.first { $0.isDirect && $0.memberIds.contains(friend.userId) }
     }
 
     // MARK: - Load All (Parallel)

@@ -124,6 +124,7 @@ pub struct CircleListRow {
     pub last_activity_actor: Option<String>,
     pub last_activity_item: Option<String>,
     pub member_names: Vec<String>,
+    pub member_ids: Vec<Uuid>,
     pub member_avatars: Vec<Option<String>>,
 }
 
@@ -181,6 +182,13 @@ pub(crate) async fn list_by_member(
                     LIMIT 3
                 ), ARRAY[]::TEXT[]) AS member_names,
                 COALESCE(ARRAY(
+                    SELECT cm6.user_id
+                    FROM circle_members cm6
+                    WHERE cm6.circle_id = c.id
+                    ORDER BY cm6.joined_at ASC
+                    LIMIT 3
+                ), ARRAY[]::UUID[]) AS member_ids,
+                COALESCE(ARRAY(
                     SELECT u.avatar_url
                     FROM circle_members cm5
                     JOIN users u ON u.id = cm5.user_id
@@ -220,6 +228,7 @@ pub(crate) async fn list_by_member(
             last_activity_actor: row.get("last_activity_actor"),
             last_activity_item: row.get("last_activity_item"),
             member_names: row.get("member_names"),
+            member_ids: row.get("member_ids"),
             member_avatars: row.get("member_avatars"),
         })
         .collect();
