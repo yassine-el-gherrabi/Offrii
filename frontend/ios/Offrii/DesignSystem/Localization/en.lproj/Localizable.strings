@@ -47,7 +47,7 @@
 
 /* Errors */
 "error.emailTaken" = "This email is already taken";
-"error.invalidCredentials" = "Invalid email or password";
+"error.invalidCredentials" = "Invalid credentials";
 "error.invalidCode" = "The code must be 6 digits";
 "error.invalidURL" = "Invalid URL";
 "error.serverError" = "Server error, please try again later";
