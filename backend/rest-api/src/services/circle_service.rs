@@ -987,11 +987,15 @@ impl traits::CircleService for PgCircleService {
                 .await
                 .map_err(AppError::Internal)?;
 
-            self.notify_members(
+            self.notify_members_with_context(
                 circle_id,
                 user_id,
-                "Nouvel article partagé !".to_string(),
-                format!("{} a été partagé dans le cercle", item.name),
+                "New wish shared!".to_string(),
+                format!("{} was shared", item.name),
+                Some("item_shared"),
+                Some(item_id),
+                Some(user_id),
+                vec![], // auto-resolves actor name
             );
 
             self.bump_circle_version(circle_id);
@@ -1385,16 +1389,16 @@ impl traits::CircleService for PgCircleService {
             .map_err(|e| AppError::Internal(e.into()))?;
 
         // N6: Notify the added user specifically
-        let circle_name = circle.name.as_deref().unwrap_or("un cercle");
+        let circle_name = circle.name.as_deref().unwrap_or("a circle");
         self.notify_user_with_context(
             user_id,
-            "Nouveau cercle".to_string(),
-            format!("Vous avez été ajouté au cercle {}", circle_name),
+            "New circle".to_string(),
+            format!("You were added to circle {circle_name}"),
             Some("circle_added"),
             Some(circle_id),
             None,
             Some(requester_id),
-            vec![],
+            vec![circle_name.to_string()],
         );
 
         // Notify other members that someone joined
@@ -1444,13 +1448,13 @@ impl traits::CircleService for PgCircleService {
             // N1: Notify owner (don't reveal who claimed)
             self.notify_user_with_context(
                 owner_id,
-                "Envie réservée".to_string(),
-                format!("Ton envie '{}' a été réservée", item_name),
+                "Wish reserved".to_string(),
+                format!("Your wish '{}' has been reserved", item_name),
                 Some("item_claimed"),
                 circle_ids.first().copied(),
                 Some(item_id),
                 Some(claimer_id),
-                vec![],
+                vec![item_name.clone()],
             );
 
             // N2: Notify circle members (reveal claimer, exclude owner + claimer)
@@ -1484,16 +1488,16 @@ impl traits::CircleService for PgCircleService {
                     }
                     self.notify_user_with_context(
                         member.user_id,
-                        "Envie réservée".to_string(),
+                        "Wish reserved".to_string(),
                         format!(
-                            "'{}' a été réservé par {} dans {}",
+                            "'{}' reserved by {} in {}",
                             item_name, claimer_name, circle_name
                         ),
                         Some("item_claimed"),
                         Some(*circle_id),
                         Some(item_id),
                         Some(claimer_id),
-                        vec![],
+                        vec![item_name.clone()],
                     );
                 }
             }
@@ -1542,13 +1546,13 @@ impl traits::CircleService for PgCircleService {
             // Notify owner
             self.notify_user_with_context(
                 owner_id,
-                "Envie libérée".to_string(),
-                format!("Ton envie '{}' n'est plus réservée", item_name),
+                "Wish available".to_string(),
+                format!("Your wish '{}' is available again", item_name),
                 Some("item_unclaimed"),
                 circle_ids.first().copied(),
                 Some(item_id),
                 Some(claimer_id),
-                vec![],
+                vec![item_name.clone()],
             );
 
             // Notify circle members (except owner and unclaimer)
@@ -1570,13 +1574,13 @@ impl traits::CircleService for PgCircleService {
                     }
                     self.notify_user_with_context(
                         member.user_id,
-                        "Envie libérée".to_string(),
-                        format!("'{}' n'est plus réservé dans {}", item_name, circle_name),
+                        "Wish available".to_string(),
+                        format!("'{}' is available again in {}", item_name, circle_name),
                         Some("item_unclaimed"),
                         Some(*circle_id),
                         Some(item_id),
                         Some(claimer_id),
-                        vec![],
+                        vec![item_name.clone()],
                     );
                 }
             }
@@ -1628,13 +1632,13 @@ impl traits::CircleService for PgCircleService {
 
             self.notify_user_with_context(
                 claimer_id,
-                "Cadeau reçu !".to_string(),
-                format!("{} a bien reçu {} !", owner_name, item.name),
+                "Gift received!".to_string(),
+                format!("{} received {}!", owner_name, item.name),
                 Some("item_received"),
                 circle_ids.first().copied(),
                 Some(item_id),
                 Some(owner_id),
-                vec![],
+                vec![owner_name, item.name.clone()],
             );
         }
 
@@ -1673,16 +1677,13 @@ impl traits::CircleService for PgCircleService {
 
             self.notify_user_with_context(
                 claimer_id,
-                "Envie de retour".to_string(),
-                format!(
-                    "{} est de retour dans les envies de {}",
-                    item.name, owner_name
-                ),
+                "Wish is back".to_string(),
+                format!("{} is back in {}'s wishlist", item.name, owner_name),
                 Some("item_unarchived"),
                 circle_ids.first().copied(),
                 Some(item_id),
                 Some(owner_id),
-                vec![],
+                vec![item.name.clone()],
             );
         }
 
