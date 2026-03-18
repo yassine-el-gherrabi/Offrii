@@ -15,6 +15,8 @@ struct CircleDetailView: View {
     @State private var selectedItemId: UUID?
     @State private var memberToRemove: CircleMember?
     @State private var memberToTransfer: CircleMember?
+    @State private var itemToClaim: UUID?
+    @State private var itemToUnclaim: UUID?
 
     private var currentUserId: UUID? { authManager.currentUser?.id }
     private var isOwner: Bool { viewModel.detail?.ownerId == currentUserId }
@@ -140,6 +142,52 @@ struct CircleDetailView: View {
             if let member = memberToTransfer {
                 Text(String(format: NSLocalizedString("circles.transferOwnership.message", comment: ""), member.displayName ?? ""))
             }
+        }
+        .alert(
+            NSLocalizedString("circles.detail.claimConfirm.title", comment: ""),
+            isPresented: Binding(
+                get: { itemToClaim != nil },
+                set: { if !$0 { itemToClaim = nil } }
+            )
+        ) {
+            Button(NSLocalizedString("circles.detail.handleIt", comment: "")) {
+                if let id = itemToClaim {
+                    Task {
+                        await viewModel.claimItem(itemId: id)
+                        await viewModel.loadItems(circleId: circleId)
+                        await viewModel.loadFeed(circleId: circleId)
+                    }
+                }
+                itemToClaim = nil
+            }
+            Button(NSLocalizedString("common.cancel", comment: ""), role: .cancel) {
+                itemToClaim = nil
+            }
+        } message: {
+            Text(NSLocalizedString("circles.detail.claimConfirm.message", comment: ""))
+        }
+        .alert(
+            NSLocalizedString("circles.detail.unclaimConfirm.title", comment: ""),
+            isPresented: Binding(
+                get: { itemToUnclaim != nil },
+                set: { if !$0 { itemToUnclaim = nil } }
+            )
+        ) {
+            Button(NSLocalizedString("circles.detail.unclaim", comment: ""), role: .destructive) {
+                if let id = itemToUnclaim {
+                    Task {
+                        await viewModel.unclaimItem(itemId: id)
+                        await viewModel.loadItems(circleId: circleId)
+                        await viewModel.loadFeed(circleId: circleId)
+                    }
+                }
+                itemToUnclaim = nil
+            }
+            Button(NSLocalizedString("common.cancel", comment: ""), role: .cancel) {
+                itemToUnclaim = nil
+            }
+        } message: {
+            Text(NSLocalizedString("circles.detail.unclaimConfirm.message", comment: ""))
         }
         .refreshable {
             await reload()
@@ -376,7 +424,6 @@ struct CircleDetailView: View {
     // MARK: - Shared Item Grid
 
     @ViewBuilder
-    // swiftlint:disable:next function_body_length
     private func itemGridContent(
         items: [CircleItemResponse],
         showClaimButtons: Bool
@@ -409,13 +456,7 @@ struct CircleDetailView: View {
                             if !isMyItem {
                                 if item.isClaimed {
                                     if item.claimedBy?.userId == currentUserId {
-                                        Button {
-                                            Task {
-                                                await viewModel.unclaimItem(itemId: item.id)
-                                                await viewModel.loadItems(circleId: circleId)
-                                                await viewModel.loadFeed(circleId: circleId)
-                                            }
-                                        } label: {
+                                        Button { itemToUnclaim = item.id } label: {
                                             Label(
                                                 NSLocalizedString("circles.detail.claimed", comment: ""),
                                                 systemImage: "xmark.circle"
@@ -423,13 +464,7 @@ struct CircleDetailView: View {
                                         }
                                     }
                                 } else {
-                                    Button {
-                                        Task {
-                                            await viewModel.claimItem(itemId: item.id)
-                                            await viewModel.loadItems(circleId: circleId)
-                                                await viewModel.loadFeed(circleId: circleId)
-                                        }
-                                    } label: {
+                                    Button { itemToClaim = item.id } label: {
                                         Label(
                                             NSLocalizedString("circles.detail.handleIt", comment: ""),
                                             systemImage: "gift"
@@ -769,13 +804,7 @@ struct CircleDetailView: View {
         if item.isClaimed {
             if item.claimedBy?.userId == currentUserId {
                 // State: YOU claimed this — show unclaim option
-                Button {
-                    Task {
-                        await viewModel.unclaimItem(itemId: item.id)
-                        await viewModel.loadItems(circleId: circleId)
-                        await viewModel.loadFeed(circleId: circleId)
-                    }
-                } label: {
+                Button { itemToUnclaim = item.id } label: {
                     HStack(spacing: 4) {
                         Image(systemName: "checkmark")
                             .font(.system(size: 9, weight: .bold))
@@ -807,13 +836,7 @@ struct CircleDetailView: View {
                     .foregroundColor(OffriiTheme.textMuted)
             }
         } else {
-            Button {
-                Task {
-                    await viewModel.claimItem(itemId: item.id)
-                    await viewModel.loadItems(circleId: circleId)
-                    await viewModel.loadFeed(circleId: circleId)
-                }
-            } label: {
+            Button { itemToClaim = item.id } label: {
                 Text(NSLocalizedString("circles.detail.handleIt", comment: ""))
                     .font(.system(size: 11, weight: .semibold))
                     .foregroundColor(.white)

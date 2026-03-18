@@ -527,6 +527,10 @@
 "reservation.reserved" = "Réservé";
 "reservation.gifted" = "Offert";
 "circles.detail.claim" = "Je m'en occupe";
+"circles.detail.claimConfirm.title" = "Réserver cette envie ?";
+"circles.detail.claimConfirm.message" = "Tu t'engages à offrir ce cadeau. Les autres verront qu'il est pris.";
+"circles.detail.unclaimConfirm.title" = "Annuler la réservation ?";
+"circles.detail.unclaimConfirm.message" = "Cette envie redeviendra disponible pour les autres.";
 "circles.detail.youClaimed" = "Tu t'en occupes";
 "circles.detail.unclaim" = "Annuler ma réservation";
 "circles.detail.claimedBy" = "Réservé par %@";

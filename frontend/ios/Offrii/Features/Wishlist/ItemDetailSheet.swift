@@ -16,6 +16,8 @@ struct ItemDetailSheet: View {
     @State private var showEdit = false
     @State private var showDeleteAlert = false
     @State private var showShareToCircle = false
+    @State private var showClaimConfirm = false
+    @State private var showUnclaimConfirm = false
 
     var body: some View {
         NavigationStack {
@@ -281,6 +283,38 @@ struct ItemDetailSheet: View {
             } message: {
                 Text(NSLocalizedString("wishlist.delete.message", comment: ""))
             }
+            .alert(
+                NSLocalizedString("circles.detail.claimConfirm.title", comment: ""),
+                isPresented: $showClaimConfirm
+            ) {
+                Button(NSLocalizedString("circles.detail.handleIt", comment: "")) {
+                    Task {
+                        try? await CircleService.shared.claimItem(itemId: itemId)
+                        if let cid = circleId {
+                            await viewModel.loadCircleItem(circleId: cid, itemId: itemId)
+                        }
+                    }
+                }
+                Button(NSLocalizedString("common.cancel", comment: ""), role: .cancel) {}
+            } message: {
+                Text(NSLocalizedString("circles.detail.claimConfirm.message", comment: ""))
+            }
+            .alert(
+                NSLocalizedString("circles.detail.unclaimConfirm.title", comment: ""),
+                isPresented: $showUnclaimConfirm
+            ) {
+                Button(NSLocalizedString("circles.detail.unclaim", comment: ""), role: .destructive) {
+                    Task {
+                        try? await CircleService.shared.unclaimItem(itemId: itemId)
+                        if let cid = circleId {
+                            await viewModel.loadCircleItem(circleId: cid, itemId: itemId)
+                        }
+                    }
+                }
+                Button(NSLocalizedString("common.cancel", comment: ""), role: .cancel) {}
+            } message: {
+                Text(NSLocalizedString("circles.detail.unclaimConfirm.message", comment: ""))
+            }
             .sheet(isPresented: $showEdit) {
                 if let item = viewModel.item {
                     NavigationStack {
@@ -315,7 +349,6 @@ struct ItemDetailSheet: View {
     // MARK: - Circle Claim Section
 
     @ViewBuilder
-    // swiftlint:disable:next function_body_length
     private func circleClaimSection(_ item: Item) -> some View {
         let currentUserId = authManager.currentUser?.id
         let isMyItem = viewModel.itemOwnerId == currentUserId
@@ -335,12 +368,7 @@ struct ItemDetailSheet: View {
                     }
                     .foregroundColor(OffriiTheme.primary)
 
-                    Button {
-                        Task {
-                            try? await CircleService.shared.unclaimItem(itemId: item.id)
-                            await viewModel.loadCircleItem(circleId: circleId!, itemId: itemId)
-                        }
-                    } label: {
+                    Button { showUnclaimConfirm = true } label: {
                         Text(NSLocalizedString("circles.detail.unclaim", comment: ""))
                             .font(OffriiTypography.caption)
                             .fontWeight(.medium)
@@ -376,10 +404,7 @@ struct ItemDetailSheet: View {
                 variant: .primary,
                 isLoading: viewModel.isUpdating
             ) {
-                Task {
-                    try? await CircleService.shared.claimItem(itemId: item.id)
-                    await viewModel.loadCircleItem(circleId: circleId!, itemId: itemId)
-                }
+                showClaimConfirm = true
             }
             .padding(.horizontal, OffriiTheme.spacingLG)
             .padding(.top, OffriiTheme.spacingBase)
