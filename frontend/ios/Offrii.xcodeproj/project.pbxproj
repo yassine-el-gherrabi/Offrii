@@ -13,6 +13,7 @@
 		CC00000000000000000000A5 /* EditCircleSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000A5 /* EditCircleSheet.swift */; };
 		0C40392769386148C2161636 /* AddFriendSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00A795E6C64A02C75791ABC0 /* AddFriendSheet.swift */; };
 		DD00000000000000000000F1 /* FriendsListContent.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000F2 /* FriendsListContent.swift */; };
+		DD00000000000000000000F3 /* CirclesQuickActionSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000F4 /* CirclesQuickActionSheet.swift */; };
 		0EB44304D486DC547B3D90E6 /* WishCategoryChip.swift in Sources */ = {isa = PBXBuildFile; fileRef = 692F105AB59AB2CCA6E9CE33 /* WishCategoryChip.swift */; };
 		103EEE9EB1A6E8CF566004BD /* CircleModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D046AFC11C42380646B6BC6 /* CircleModels.swift */; };
 		16ADBEF5AC5D0893411CD376 /* HomeSummaryCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7199E774F0E4246F8EBCCBF4 /* HomeSummaryCard.swift */; };
@@ -328,6 +329,7 @@
 		F1B347536FB260D73A7FBFDF /* Friend.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Friend.swift; sourceTree = "<group>"; };
 		F7281077E11D157F1F2FBE53 /* AvatarStack.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AvatarStack.swift; sourceTree = "<group>"; };
 		FCAB52FA02BBFD4399C16A7E /* CircleActivityFeed.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CircleActivityFeed.swift; sourceTree = "<group>"; };
+		DD00000000000000000000F4 /* CirclesQuickActionSheet.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CirclesQuickActionSheet.swift; sourceTree = "<group>"; };
 		FF0000000000000000000002 /* ShinyIcon.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShinyIcon.swift; sourceTree = "<group>"; };
 		FF0000000000000000000004 /* OTPField.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OTPField.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -369,6 +371,7 @@
 				DD00000000000000000000A5 /* EditCircleSheet.swift */,
 				8B683101570004796AF55C19 /* CircleCardRow.swift */,
 				FCAB52FA02BBFD4399C16A7E /* CircleActivityFeed.swift */,
+				DD00000000000000000000F4 /* CirclesQuickActionSheet.swift */,
 			);
 			path = Circles;
 			sourceTree = "<group>";
@@ -1008,6 +1011,7 @@
 				B747C7A63F234CF4323C22D4 /* ItemDetailSheet.swift in Sources */,
 				F4A9A7E85D68A0AF3CCCD530 /* CircleCardRow.swift in Sources */,
 				0638910913C06604578BE696 /* CircleActivityFeed.swift in Sources */,
+				DD00000000000000000000F3 /* CirclesQuickActionSheet.swift in Sources */,
 				ABA95ACB501F2E99EFF48E60 /* EntraideSegment.swift in Sources */,
 				F54713F911121577DE32385F /* EntraideGridCard.swift in Sources */,
 				4AFAE5C6EF7FCFC90F62C36E /* MyOffersSection.swift in Sources */,

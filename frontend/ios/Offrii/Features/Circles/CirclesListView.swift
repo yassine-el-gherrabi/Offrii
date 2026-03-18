@@ -37,6 +37,7 @@ struct CirclesListView: View {
     @State private var showNotificationCenter = false
     @State private var unreadCount = 0
     @State private var circleToDelete: OffriiCircle?
+    @State private var circleToLeave: OffriiCircle?
     @State private var friendToRemove: FriendResponse?
     @State private var directCircleToRemove: OffriiCircle?
     @State private var showAcceptToast = false
@@ -119,7 +120,7 @@ struct CirclesListView: View {
                                         }
                                     } else {
                                         Button(role: .destructive) {
-                                            circleToDelete = circle
+                                            circleToLeave = circle
                                         } label: {
                                             Label(
                                                 NSLocalizedString("circles.context.leaveCircle", comment: ""),
@@ -253,11 +254,7 @@ struct CirclesListView: View {
             router.showFriends = false
         }
         .alert(
-            NSLocalizedString(
-                circleToDelete?.isDirect == true
-                    ? "circles.leaveCircle.title" : "circles.deleteCircle.title",
-                comment: ""
-            ),
+            NSLocalizedString("circles.deleteCircle.title", comment: ""),
             isPresented: Binding(
                 get: { circleToDelete != nil },
                 set: { if !$0 { circleToDelete = nil } }
@@ -273,11 +270,33 @@ struct CirclesListView: View {
                 circleToDelete = nil
             }
         } message: {
-            Text(NSLocalizedString(
-                circleToDelete?.isDirect == true
-                    ? "circles.leaveCircle.message" : "circles.deleteCircle.message",
-                comment: ""
-            ))
+            Text(NSLocalizedString("circles.deleteCircle.message", comment: ""))
+        }
+        .alert(
+            NSLocalizedString("circles.leaveCircle.title", comment: ""),
+            isPresented: Binding(
+                get: { circleToLeave != nil },
+                set: { if !$0 { circleToLeave = nil } }
+            )
+        ) {
+            Button(NSLocalizedString("circles.context.leaveCircle", comment: ""), role: .destructive) {
+                if let circle = circleToLeave,
+                   let myId = authManager.currentUser?.id {
+                    Task {
+                        try? await CircleService.shared.removeMember(
+                            circleId: circle.id, userId: myId
+                        )
+                        await viewModel.loadCircles()
+                        OffriiHaptics.success()
+                    }
+                }
+                circleToLeave = nil
+            }
+            Button(NSLocalizedString("common.cancel", comment: ""), role: .cancel) {
+                circleToLeave = nil
+            }
+        } message: {
+            Text(NSLocalizedString("circles.leaveCircle.message", comment: ""))
         }
         .alert(
             NSLocalizedString("friends.removeConfirm.title", comment: ""),
@@ -416,83 +435,5 @@ struct CirclesListView: View {
 
     private func loadUnreadCount() async {
         unreadCount = (try? await NotificationCenterService.shared.unreadCount()) ?? 0
-    }
-}
-
-// MARK: - Quick Action Sheet (Tous filter FAB)
-
-private struct CirclesQuickActionSheet: View {
-    @Environment(\.dismiss) private var dismiss
-    let onCreateCircle: () -> Void
-    let onAddFriend: () -> Void
-
-    var body: some View {
-        VStack(spacing: OffriiTheme.spacingBase) {
-            actionRow(
-                icon: "person.2.fill",
-                iconColor: OffriiTheme.accent,
-                title: NSLocalizedString("create.createCircle", comment: ""),
-                subtitle: NSLocalizedString("create.createCircleSubtitle", comment: "")
-            ) {
-                onCreateCircle()
-            }
-
-            actionRow(
-                icon: "person.badge.plus",
-                iconColor: OffriiTheme.accent,
-                title: NSLocalizedString("create.addFriend", comment: ""),
-                subtitle: NSLocalizedString("create.addFriendSubtitle", comment: "")
-            ) {
-                onAddFriend()
-            }
-        }
-        .padding(.horizontal, OffriiTheme.spacingLG)
-        .padding(.top, OffriiTheme.spacingLG)
-    }
-
-    private func actionRow(
-        icon: String,
-        iconColor: Color,
-        title: String,
-        subtitle: String,
-        action: @escaping () -> Void
-    ) -> some View {
-        Button(action: action) {
-            HStack(spacing: OffriiTheme.spacingBase) {
-                RoundedRectangle(cornerRadius: OffriiTheme.cornerRadiusMD)
-                    .fill(iconColor.opacity(0.12))
-                    .frame(width: 48, height: 48)
-                    .overlay(
-                        Image(systemName: icon)
-                            .font(.system(size: 20))
-                            .foregroundColor(iconColor)
-                    )
-
-                VStack(alignment: .leading, spacing: OffriiTheme.spacingXXS) {
-                    Text(title)
-                        .font(OffriiTypography.headline)
-                        .foregroundColor(OffriiTheme.text)
-                    Text(subtitle)
-                        .font(OffriiTypography.subheadline)
-                        .foregroundColor(OffriiTheme.textSecondary)
-                }
-
-                Spacer()
-
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundColor(OffriiTheme.textMuted)
-            }
-            .padding(OffriiTheme.spacingBase)
-            .background(OffriiTheme.card)
-            .cornerRadius(OffriiTheme.cornerRadiusLG)
-            .shadow(
-                color: OffriiTheme.cardShadowColor,
-                radius: OffriiTheme.cardShadowRadius,
-                x: 0,
-                y: OffriiTheme.cardShadowY
-            )
-        }
-        .buttonStyle(.plain)
     }
 }
