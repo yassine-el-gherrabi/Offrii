@@ -42,6 +42,7 @@ pub fn router() -> Router<AppState> {
             "/{id}/items/{iid}",
             get(get_circle_item).delete(unshare_item),
         )
+        .route("/{id}/share-rule", get(get_share_rule).put(set_share_rule))
         .route("/{id}/feed", get(get_feed))
         .route("/{id}/transfer", post(transfer_ownership))
         .route("/my-reservations", get(list_reservations))
@@ -260,6 +261,91 @@ async fn batch_share_items(
         .circles
         .batch_share_items(id, &req.item_ids, auth_user.user_id)
         .await?;
+    Ok(StatusCode::NO_CONTENT)
+}
+
+#[tracing::instrument(skip(state))]
+async fn get_share_rule(
+    State(state): State<AppState>,
+    auth_user: AuthUser,
+    Path(id): Path<Uuid>,
+) -> Result<Json<crate::dto::circles::ShareRuleResponse>, AppError> {
+    // Membership check
+    let is_member: bool = sqlx::query_scalar(
+        "SELECT EXISTS(SELECT 1 FROM circle_members WHERE circle_id = $1 AND user_id = $2)",
+    )
+    .bind(id)
+    .bind(auth_user.user_id)
+    .fetch_one(&state.db)
+    .await
+    .map_err(|e| AppError::Internal(e.into()))?;
+
+    if !is_member {
+        return Err(AppError::Forbidden("not a member of this circle".into()));
+    }
+
+    let rule = state
+        .share_rules
+        .get(id, auth_user.user_id)
+        .await
+        .map_err(AppError::Internal)?;
+
+    match rule {
+        Some(r) => Ok(Json(crate::dto::circles::ShareRuleResponse {
+            share_mode: r.share_mode,
+            category_ids: r.category_ids,
+            updated_at: r.updated_at,
+        })),
+        None => Ok(Json(crate::dto::circles::ShareRuleResponse {
+            share_mode: "none".to_string(),
+            category_ids: vec![],
+            updated_at: chrono::Utc::now(),
+        })),
+    }
+}
+
+#[tracing::instrument(skip(state))]
+async fn set_share_rule(
+    State(state): State<AppState>,
+    auth_user: AuthUser,
+    Path(id): Path<Uuid>,
+    Json(req): Json<crate::dto::circles::SetShareRuleRequest>,
+) -> Result<StatusCode, AppError> {
+    let is_member: bool = sqlx::query_scalar(
+        "SELECT EXISTS(SELECT 1 FROM circle_members WHERE circle_id = $1 AND user_id = $2)",
+    )
+    .bind(id)
+    .bind(auth_user.user_id)
+    .fetch_one(&state.db)
+    .await
+    .map_err(|e| AppError::Internal(e.into()))?;
+
+    if !is_member {
+        return Err(AppError::Forbidden("not a member of this circle".into()));
+    }
+
+    // Validate share_mode
+    let valid_modes = ["none", "all", "categories", "selection"];
+    if !valid_modes.contains(&req.share_mode.as_str()) {
+        return Err(AppError::BadRequest(
+            "share_mode must be one of: none, all, categories, selection".into(),
+        ));
+    }
+
+    if req.share_mode == "none" {
+        state
+            .share_rules
+            .delete(id, auth_user.user_id)
+            .await
+            .map_err(AppError::Internal)?;
+    } else {
+        state
+            .share_rules
+            .upsert(id, auth_user.user_id, &req.share_mode, &req.category_ids)
+            .await
+            .map_err(AppError::Internal)?;
+    }
+
     Ok(StatusCode::NO_CONTENT)
 }
 

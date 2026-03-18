@@ -170,6 +170,9 @@ async fn main() -> anyhow::Result<()> {
     let circle_event_repo: Arc<dyn CircleEventRepo> = Arc::new(PgCircleEventRepo::new(db.clone()));
     let notification_repo: Arc<dyn NotificationRepo> =
         Arc::new(PgNotificationRepo::new(db.clone()));
+    let share_rule_repo: Arc<dyn rest_api::traits::CircleShareRuleRepo> = Arc::new(
+        rest_api::repositories::circle_share_rule_repo::PgCircleShareRuleRepo::new(db.clone()),
+    );
 
     let circle_svc: Arc<dyn CircleService> = Arc::new(PgCircleService::new(
         db.clone(),
@@ -286,6 +289,7 @@ async fn main() -> anyhow::Result<()> {
         wish_messages: wish_message_svc,
         uploads: upload_svc,
         notifications: notification_repo,
+        share_rules: share_rule_repo,
         app_base_url: config.app_base_url,
     };
 

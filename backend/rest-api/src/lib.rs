@@ -32,5 +32,6 @@ pub struct AppState {
     pub wish_messages: Arc<dyn traits::WishMessageService>,
     pub uploads: Arc<dyn traits::UploadService>,
     pub notifications: Arc<dyn traits::NotificationRepo>,
+    pub share_rules: Arc<dyn traits::CircleShareRuleRepo>,
     pub app_base_url: String,
 }

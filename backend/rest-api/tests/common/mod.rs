@@ -313,6 +313,11 @@ impl TestApp {
             wish_messages: wish_message_svc,
             uploads,
             notifications: notification_repo,
+            share_rules: Arc::new(
+                rest_api::repositories::circle_share_rule_repo::PgCircleShareRuleRepo::new(
+                    db.clone(),
+                ),
+            ),
             app_base_url: "http://localhost:3000".to_string(),
         };
 

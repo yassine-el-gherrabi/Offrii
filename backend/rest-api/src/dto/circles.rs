@@ -42,6 +42,20 @@ pub struct AddMemberRequest {
 }
 
 #[derive(Debug, Deserialize)]
+pub struct SetShareRuleRequest {
+    pub share_mode: String,
+    #[serde(default)]
+    pub category_ids: Vec<Uuid>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct ShareRuleResponse {
+    pub share_mode: String,
+    pub category_ids: Vec<Uuid>,
+    pub updated_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Deserialize)]
 pub struct FeedQuery {
     pub page: Option<i64>,
     pub limit: Option<i64>,
