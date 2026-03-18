@@ -30,17 +30,17 @@ struct FriendsListContent: View {
         } else {
             ScrollView {
                 LazyVStack(spacing: OffriiTheme.spacingSM) {
+                    if !viewModel.friends.isEmpty {
+                        searchBar
+                            .padding(.horizontal, OffriiTheme.spacingXS)
+                    }
+
                     if !viewModel.pendingRequests.isEmpty {
                         pendingSection
                     }
 
                     if !viewModel.sentRequests.isEmpty {
                         sentSection
-                    }
-
-                    if !viewModel.friends.isEmpty {
-                        searchBar
-                            .padding(.horizontal, OffriiTheme.spacingXS)
                     }
 
                     ForEach(viewModel.filteredFriends) { friend in

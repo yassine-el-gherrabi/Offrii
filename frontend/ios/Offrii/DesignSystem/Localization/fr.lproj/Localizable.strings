@@ -529,6 +529,7 @@
 "circles.detail.youClaimed" = "Tu t'en occupes";
 "circles.detail.unclaim" = "Annuler ma réservation";
 "circles.detail.claimedBy" = "Réservé par %@";
+"reservation.search" = "Rechercher une réservation...";
 "reservation.empty" = "Aucune réservation";
 "reservation.emptySubtitle" = "Réservez des envies dans les cercles de vos proches";
 "share.toWhom" = "A qui ?";

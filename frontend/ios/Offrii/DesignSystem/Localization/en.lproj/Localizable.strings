@@ -529,6 +529,7 @@
 "circles.detail.youClaimed" = "You're taking care of it";
 "circles.detail.unclaim" = "Cancel my reservation";
 "circles.detail.claimedBy" = "Reserved by %@";
+"reservation.search" = "Search reservations...";
 "reservation.empty" = "No reservations";
 "reservation.emptySubtitle" = "Reserve wishes from your close ones' circles";
 "share.toWhom" = "To whom?";

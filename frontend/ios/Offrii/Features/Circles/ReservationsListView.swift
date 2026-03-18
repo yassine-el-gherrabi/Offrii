@@ -6,6 +6,17 @@ import SwiftUI
 struct ReservationsListView: View {
     @State private var reservations: [ReservationResponse] = []
     @State private var isLoading = false
+    @State private var searchQuery = ""
+
+    private var filteredReservations: [ReservationResponse] {
+        let trimmed = searchQuery.trimmingCharacters(in: .whitespaces).lowercased()
+        guard !trimmed.isEmpty else { return reservations }
+        return reservations.filter { res in
+            res.itemName.lowercased().contains(trimmed)
+                || res.ownerName.lowercased().contains(trimmed)
+                || res.circleName?.lowercased().contains(trimmed) == true
+        }
+    }
 
     var body: some View {
         Group {
@@ -30,7 +41,10 @@ struct ReservationsListView: View {
             } else {
                 ScrollView {
                     LazyVStack(spacing: OffriiTheme.spacingSM) {
-                        ForEach(reservations) { reservation in
+                        reservationSearchBar
+                            .padding(.horizontal, OffriiTheme.spacingXS)
+
+                        ForEach(filteredReservations) { reservation in
                             ReservationCard(reservation: reservation)
                         }
                     }
@@ -40,6 +54,38 @@ struct ReservationsListView: View {
             }
         }
         .task { await load() }
+    }
+
+    @ViewBuilder
+    private var reservationSearchBar: some View {
+        HStack(spacing: OffriiTheme.spacingSM) {
+            Image(systemName: "magnifyingglass")
+                .foregroundColor(OffriiTheme.textMuted)
+
+            TextField(
+                NSLocalizedString("reservation.search", comment: ""),
+                text: $searchQuery
+            )
+            .font(OffriiTypography.body)
+            .autocapitalization(.none)
+            .autocorrectionDisabled()
+
+            if !searchQuery.isEmpty {
+                Button {
+                    searchQuery = ""
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundColor(OffriiTheme.textMuted)
+                }
+            }
+        }
+        .padding(OffriiTheme.spacingSM)
+        .background(OffriiTheme.card)
+        .cornerRadius(OffriiTheme.cornerRadiusSM)
+        .overlay(
+            RoundedRectangle(cornerRadius: OffriiTheme.cornerRadiusSM)
+                .stroke(OffriiTheme.border, lineWidth: 1)
+        )
     }
 
     private func load() async {
