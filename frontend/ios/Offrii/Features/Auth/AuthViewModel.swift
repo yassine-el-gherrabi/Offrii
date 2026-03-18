@@ -58,16 +58,18 @@ final class AuthViewModel {
 
     // MARK: - Validation
 
-    func validateEmail(_ value: String? = nil) -> Bool {
+    func validateEmail(_ value: String? = nil, allowUsername: Bool = false) -> Bool {
         let email = value ?? self.email
         if email.trimmingCharacters(in: .whitespaces).isEmpty {
             emailError = NSLocalizedString("error.emailRequired", comment: "")
             return false
         }
-        let pattern = #"^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$"#
-        if email.range(of: pattern, options: .regularExpression) == nil {
-            emailError = NSLocalizedString("error.invalidEmail", comment: "")
-            return false
+        if !allowUsername {
+            let pattern = #"^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$"#
+            if email.range(of: pattern, options: .regularExpression) == nil {
+                emailError = NSLocalizedString("error.invalidEmail", comment: "")
+                return false
+            }
         }
         emailError = nil
         return true
@@ -104,7 +106,7 @@ final class AuthViewModel {
 
     func login(authManager: AuthManager) async -> Bool {
         clearErrors()
-        let emailValid = validateEmail()
+        let emailValid = validateEmail(allowUsername: true)
         let passwordValid = validatePassword()
         guard emailValid && passwordValid else { return false }
 
