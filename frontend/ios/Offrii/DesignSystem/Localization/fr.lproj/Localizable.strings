@@ -2,7 +2,7 @@
 "tab.home" = "Accueil";
 "tab.envies" = "Envies";
 "tab.create" = "Créer";
-"tab.cercles" = "Cercles";
+"tab.cercles" = "Proches";
 "tab.profil" = "Profil";
 "tab.entraide" = "Entraide";
 
@@ -177,7 +177,7 @@
 "comingSoon.subtitle" = "Cette fonctionnalité arrive prochainement.";
 
 /* Circles */
-"circles.title" = "Cercles";
+"circles.title" = "Proches";
 "circles.create" = "Créer un cercle";
 "circles.shareTo" = "Partager avec...";
 "circles.empty" = "Pas encore de cercles.\nCréez-en un ou ajoutez un ami pour commencer.";
