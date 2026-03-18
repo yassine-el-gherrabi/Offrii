@@ -32,6 +32,7 @@ struct CirclesListView: View {
     @State private var selectedFilter: CircleFilter = .all
     @State private var showCreateCircle = false
     @State private var showAddFriend = false
+    @State private var showQuickCreate = false
     @State private var showInviteContacts = false
     @State private var showNotificationCenter = false
     @State private var unreadCount = 0
@@ -40,7 +41,6 @@ struct CirclesListView: View {
     @State private var directCircleToRemove: OffriiCircle?
     @State private var showAcceptToast = false
     @State private var acceptedName = ""
-    @State private var showFabMenu = false
 
     private var displayedCircles: [OffriiCircle] {
         let searched = viewModel.filteredCircles
@@ -143,7 +143,7 @@ struct CirclesListView: View {
                 case .groups:
                     showCreateCircle = true
                 default:
-                    showFabMenu = true
+                    showQuickCreate = true
                 }
             }
             .padding(.trailing, OffriiTheme.spacingLG)
@@ -211,17 +211,9 @@ struct CirclesListView: View {
             NotificationCenterView()
                 .presentationDetents([.medium, .large])
         }
-        .confirmationDialog("", isPresented: $showFabMenu) {
-            Button {
-                showCreateCircle = true
-            } label: {
-                Label(NSLocalizedString("circles.create", comment: ""), systemImage: "person.2.fill")
-            }
-            Button {
-                showAddFriend = true
-            } label: {
-                Label(NSLocalizedString("friends.add.title", comment: ""), systemImage: "person.badge.plus")
-            }
+        .sheet(isPresented: $showQuickCreate) {
+            QuickCreateSheet()
+                .presentationDetents([.medium])
         }
         .task {
             await viewModel.loadAll()

@@ -6,6 +6,7 @@ struct QuickCreateSheet: View {
     @Environment(\.dismiss) private var dismiss
     @State private var navigateToAddWish = false
     @State private var navigateToCreateCircle = false
+    @State private var navigateToAddFriend = false
     @State private var navigateToPublishNeed = false
 
     var body: some View {
@@ -27,6 +28,15 @@ struct QuickCreateSheet: View {
                     subtitle: NSLocalizedString("create.createCircleSubtitle", comment: "")
                 ) {
                     navigateToCreateCircle = true
+                }
+
+                createOption(
+                    icon: "person.badge.plus",
+                    iconColor: OffriiTheme.success,
+                    title: NSLocalizedString("create.addFriend", comment: ""),
+                    subtitle: NSLocalizedString("create.addFriendSubtitle", comment: "")
+                ) {
+                    navigateToAddFriend = true
                 }
 
                 createOption(
@@ -72,6 +82,9 @@ struct QuickCreateSheet: View {
         .sheet(isPresented: $navigateToCreateCircle) {
             CreateCircleSheet { _ in }
                 .presentationDetents([.medium])
+        }
+        .sheet(isPresented: $navigateToAddFriend) {
+            AddFriendSheet {}
         }
         .sheet(isPresented: $navigateToPublishNeed) {
             CreateWishSheet {}

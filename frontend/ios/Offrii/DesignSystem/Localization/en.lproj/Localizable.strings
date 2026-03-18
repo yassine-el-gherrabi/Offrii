@@ -415,6 +415,8 @@
 "create.addWishSubtitle" = "To your personal list";
 "create.createCircle" = "Create a circle";
 "create.createCircleSubtitle" = "Share with loved ones";
+"create.addFriend" = "Add a friend";
+"create.addFriendSubtitle" = "Find someone by username";
 "create.publishNeed" = "Publish a need";
 "create.publishNeedSubtitle" = "Ask the community";
 
