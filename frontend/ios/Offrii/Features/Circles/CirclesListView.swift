@@ -37,6 +37,7 @@ struct CirclesListView: View {
     @State private var unreadCount = 0
     @State private var circleToDelete: OffriiCircle?
     @State private var friendToRemove: FriendResponse?
+    @State private var directCircleToRemove: OffriiCircle?
     @State private var showAcceptToast = false
     @State private var acceptedName = ""
 
@@ -97,10 +98,7 @@ struct CirclesListView: View {
                                 .contextMenu {
                                     if circle.isDirect {
                                         Button(role: .destructive) {
-                                            // Find the friend for this direct circle
-                                            friendToRemove = viewModel.friends.first { friend in
-                                                circle.memberNames.contains(friend.username)
-                                            }
+                                            directCircleToRemove = circle
                                         } label: {
                                             Label(
                                                 NSLocalizedString("friends.removeConfirm.title", comment: ""),
@@ -282,6 +280,39 @@ struct CirclesListView: View {
                 Text(String(
                     format: NSLocalizedString("friends.removeConfirm.message", comment: ""),
                     friend.displayName ?? friend.username
+                ))
+            }
+        }
+        .alert(
+            NSLocalizedString("friends.removeConfirm.title", comment: ""),
+            isPresented: Binding(
+                get: { directCircleToRemove != nil },
+                set: { if !$0 { directCircleToRemove = nil } }
+            )
+        ) {
+            Button(NSLocalizedString("friends.remove", comment: ""), role: .destructive) {
+                if let circle = directCircleToRemove {
+                    // Find the friend by matching circle memberNames
+                    if let friend = viewModel.friends.first(where: {
+                        circle.memberNames.contains($0.username)
+                    }) {
+                        Task {
+                            await viewModel.removeFriend(friend)
+                            await viewModel.loadCircles()
+                            OffriiHaptics.success()
+                        }
+                    }
+                }
+                directCircleToRemove = nil
+            }
+            Button(NSLocalizedString("common.cancel", comment: ""), role: .cancel) {
+                directCircleToRemove = nil
+            }
+        } message: {
+            if let circle = directCircleToRemove {
+                Text(String(
+                    format: NSLocalizedString("friends.removeConfirm.message", comment: ""),
+                    circle.name ?? circle.memberNames.first ?? ""
                 ))
             }
         }
