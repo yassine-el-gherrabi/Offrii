@@ -19,7 +19,9 @@ struct OffriiApp: App {
                     WelcomeView()
 
                 case .auth:
-                    AuthContainerView { isNewUser in
+                    AuthView(
+                        initialMode: router.preferRegister ? .register : .login
+                    ) { isNewUser in
                         if isNewUser {
                             router.currentScreen = .postAuthSetup
                         } else {
@@ -52,29 +54,6 @@ struct OffriiApp: App {
             .onOpenURL { url in
                 router.handleURL(url)
             }
-        }
-    }
-}
-
-struct AuthContainerView: View {
-    @Environment(AppRouter.self) private var router
-    @State private var showLogin: Bool?
-    let onAuthenticated: (_ isNewUser: Bool) -> Void
-
-    private var isLogin: Bool { showLogin ?? !router.preferRegister }
-
-    var body: some View {
-        if isLogin {
-            LoginView(
-                isReturningUser: router.isReturningUser,
-                onAuthenticated: { isNewUser in onAuthenticated(isNewUser) },
-                onSwitchToRegister: { showLogin = false }
-            )
-        } else {
-            RegisterView(
-                onAuthenticated: { isNewUser in onAuthenticated(isNewUser) },
-                onSwitchToLogin: { showLogin = true }
-            )
         }
     }
 }

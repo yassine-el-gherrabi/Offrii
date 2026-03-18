@@ -1,23 +1,47 @@
 import SwiftUI
 
-struct RegisterView: View {
+// MARK: - Auth Mode
+
+enum AuthMode: Int, CaseIterable {
+    case login, register
+
+    var label: String {
+        switch self {
+        case .login: return NSLocalizedString("auth.signIn", comment: "")
+        case .register: return NSLocalizedString("auth.signUp", comment: "")
+        }
+    }
+}
+
+// MARK: - AuthView (unified login + register)
+
+struct AuthView: View {
     @Environment(AuthManager.self) private var authManager
-    @State private var viewModel = AuthViewModel()
 
+    let initialMode: AuthMode
     let onAuthenticated: (_ isNewUser: Bool) -> Void
-    let onSwitchToLogin: () -> Void
 
+    @State private var mode: AuthMode
+    @State private var viewModel = AuthViewModel()
     @State private var ssoService = SSOService()
-    @FocusState private var focusedField: RegisterField?
+    @State private var showForgotPassword = false
     @State private var appeared = false
+    @FocusState private var focusedField: AuthField?
 
-    private enum RegisterField: Hashable {
+    private enum AuthField: Hashable {
         case email, password
+    }
+
+    init(initialMode: AuthMode, onAuthenticated: @escaping (_ isNewUser: Bool) -> Void) {
+        self.initialMode = initialMode
+        self.onAuthenticated = onAuthenticated
+        _mode = State(initialValue: initialMode)
     }
 
     var body: some View {
         ZStack {
             OffriiTheme.background.ignoresSafeArea()
+
             BlobBackground(preset: .auth)
                 .ignoresSafeArea()
 
@@ -40,6 +64,10 @@ struct RegisterView: View {
             }
             .ignoresSafeArea(.container, edges: .bottom)
         }
+        .sheet(isPresented: $showForgotPassword) {
+            ForgotPasswordView(onDone: { showForgotPassword = false })
+                .environment(authManager)
+        }
     }
 
     // MARK: - Logo
@@ -58,23 +86,35 @@ struct RegisterView: View {
 
     private var cardSection: some View {
         VStack(alignment: .leading, spacing: OffriiTheme.spacingLG) {
-            // Title + subtitle
-            VStack(alignment: .leading, spacing: OffriiTheme.spacingXS) {
-                Text(NSLocalizedString("auth.register", comment: ""))
-                    .font(OffriiTypography.titleLarge)
-                    .foregroundColor(OffriiTheme.text)
-
-                Text(NSLocalizedString("auth.registerSubtitle", comment: ""))
-                    .font(OffriiTypography.body)
-                    .foregroundColor(OffriiTheme.textSecondary)
+            // Segmented control
+            Picker("", selection: $mode) {
+                ForEach(AuthMode.allCases, id: \.self) { authMode in
+                    Text(authMode.label).tag(authMode)
+                }
+            }
+            .pickerStyle(.segmented)
+            .onChange(of: mode) { _, _ in
+                viewModel.state = .idle
+                viewModel.emailError = nil
+                viewModel.passwordError = nil
             }
 
-            // Fields — email + password only
+            // Title + subtitle
+            VStack(alignment: .leading, spacing: OffriiTheme.spacingXS) {
+                Text(NSLocalizedString(
+                    mode == .login ? "auth.loginSubtitle" : "auth.registerSubtitle",
+                    comment: ""
+                ))
+                .font(OffriiTypography.body)
+                .foregroundColor(OffriiTheme.textSecondary)
+            }
+
+            // Fields
             VStack(spacing: OffriiTheme.spacingMD) {
                 OffriiTextField(
                     label: "",
                     text: $viewModel.email,
-                    placeholder: NSLocalizedString("auth.enterEmail", comment: ""),
+                    placeholder: NSLocalizedString("auth.email", comment: ""),
                     errorMessage: viewModel.emailError,
                     style: .filled,
                     keyboardType: .emailAddress,
@@ -88,19 +128,27 @@ struct RegisterView: View {
                 OffriiTextField(
                     label: "",
                     text: $viewModel.password,
-                    placeholder: NSLocalizedString("auth.passwordPlaceholder", comment: ""),
+                    placeholder: NSLocalizedString(
+                        mode == .login ? "auth.password" : "auth.passwordPlaceholder",
+                        comment: ""
+                    ),
                     errorMessage: viewModel.passwordError,
                     isSecure: true,
                     style: .filled,
-                    textContentType: .newPassword
+                    textContentType: mode == .login ? .password : .newPassword
                 )
                 .focused($focusedField, equals: .password)
                 .submitLabel(.go)
-                .onSubmit {
-                    Task {
-                        if await viewModel.register(authManager: authManager) {
-                            onAuthenticated(true)
+                .onSubmit { submit() }
+
+                if mode == .login {
+                    HStack {
+                        Spacer()
+                        Button(NSLocalizedString("auth.forgotPassword", comment: "")) {
+                            showForgotPassword = true
                         }
+                        .font(OffriiTypography.subheadline)
+                        .foregroundColor(OffriiTheme.textSecondary)
                     }
                 }
             }
@@ -115,15 +163,11 @@ struct RegisterView: View {
                 }
 
                 OffriiButton(
-                    NSLocalizedString("auth.register", comment: ""),
+                    NSLocalizedString(mode == .login ? "auth.login" : "auth.register", comment: ""),
                     variant: .primary,
                     isLoading: viewModel.isLoading
                 ) {
-                    Task {
-                        if await viewModel.register(authManager: authManager) {
-                            onAuthenticated(true)
-                        }
-                    }
+                    submit()
                 }
             }
 
@@ -140,7 +184,9 @@ struct RegisterView: View {
             VStack(spacing: OffriiTheme.spacingSM) {
                 SSOButton(provider: .google, isLoading: viewModel.isSSOLoading(.google)) {
                     Task {
-                        if let isNew = await viewModel.signInWithGoogle(authManager: authManager, ssoService: ssoService) {
+                        if let isNew = await viewModel.signInWithGoogle(
+                            authManager: authManager, ssoService: ssoService
+                        ) {
                             onAuthenticated(isNew)
                         }
                     }
@@ -148,27 +194,14 @@ struct RegisterView: View {
                 .disabled(viewModel.isAnyLoading)
                 SSOButton(provider: .apple, isLoading: viewModel.isSSOLoading(.apple)) {
                     Task {
-                        if let isNew = await viewModel.signInWithApple(authManager: authManager, ssoService: ssoService) {
+                        if let isNew = await viewModel.signInWithApple(
+                            authManager: authManager, ssoService: ssoService
+                        ) {
                             onAuthenticated(isNew)
                         }
                     }
                 }
                 .disabled(viewModel.isAnyLoading)
-            }
-
-            // Switch link
-            Button {
-                onSwitchToLogin()
-            } label: {
-                HStack(spacing: OffriiTheme.spacingXS) {
-                    Text(NSLocalizedString("auth.alreadyAccount", comment: ""))
-                        .foregroundColor(OffriiTheme.textSecondary)
-                    Text(NSLocalizedString("auth.signIn", comment: ""))
-                        .foregroundColor(OffriiTheme.primary)
-                        .fontWeight(.semibold)
-                }
-                .font(OffriiTypography.subheadline)
-                .frame(maxWidth: .infinity)
             }
         }
         .padding(.horizontal, OffriiTheme.spacingXL)
@@ -182,6 +215,23 @@ struct RegisterView: View {
         .onAppear {
             withAnimation(OffriiAnimation.modal.delay(0.15)) {
                 appeared = true
+            }
+        }
+    }
+
+    // MARK: - Submit
+
+    private func submit() {
+        Task {
+            switch mode {
+            case .login:
+                if await viewModel.login(authManager: authManager) {
+                    onAuthenticated(false)
+                }
+            case .register:
+                if await viewModel.register(authManager: authManager) {
+                    onAuthenticated(true)
+                }
             }
         }
     }

@@ -76,8 +76,7 @@
 		B10000000000000000000016 /* Typography.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000016 /* Typography.swift */; };
 		B10000000000000000000017 /* AuthViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000017 /* AuthViewModel.swift */; };
 		B10000000000000000000018 /* ForgotPasswordView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000018 /* ForgotPasswordView.swift */; };
-		B10000000000000000000019 /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000019 /* LoginView.swift */; };
-		B10000000000000000000020 /* RegisterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000020 /* RegisterView.swift */; };
+		DD00000000000000000000F5 /* AuthView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000F6 /* AuthView.swift */; };
 		B10000000000000000000021 /* CategoryPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000021 /* CategoryPickerView.swift */; };
 		B10000000000000000000022 /* LegalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000022 /* LegalView.swift */; };
 		B10000000000000000000025 /* ComingSoonView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000025 /* ComingSoonView.swift */; };
@@ -242,8 +241,7 @@
 		A10000000000000000000016 /* Typography.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Typography.swift; sourceTree = "<group>"; };
 		A10000000000000000000017 /* AuthViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthViewModel.swift; sourceTree = "<group>"; };
 		A10000000000000000000018 /* ForgotPasswordView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ForgotPasswordView.swift; sourceTree = "<group>"; };
-		A10000000000000000000019 /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
-		A10000000000000000000020 /* RegisterView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RegisterView.swift; sourceTree = "<group>"; };
+		DD00000000000000000000F6 /* AuthView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AuthView.swift; sourceTree = "<group>"; };
 		A10000000000000000000021 /* CategoryPickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategoryPickerView.swift; sourceTree = "<group>"; };
 		A10000000000000000000022 /* LegalView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LegalView.swift; sourceTree = "<group>"; };
 		A10000000000000000000025 /* ComingSoonView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComingSoonView.swift; sourceTree = "<group>"; };
@@ -586,10 +584,9 @@
 			isa = PBXGroup;
 			children = (
 				A10000000000000000000017 /* AuthViewModel.swift */,
+				DD00000000000000000000F6 /* AuthView.swift */,
 				A10000000000000000000018 /* ForgotPasswordView.swift */,
-				A10000000000000000000019 /* LoginView.swift */,
 				A1POSTAUTH0000000000001 /* PostAuthSetupView.swift */,
-				A10000000000000000000020 /* RegisterView.swift */,
 			);
 			path = Auth;
 			sourceTree = "<group>";
@@ -905,9 +902,8 @@
 				B10000000000000000000015 /* Theme.swift in Sources */,
 				B10000000000000000000016 /* Typography.swift in Sources */,
 				B10000000000000000000017 /* AuthViewModel.swift in Sources */,
+				DD00000000000000000000F5 /* AuthView.swift in Sources */,
 				B10000000000000000000018 /* ForgotPasswordView.swift in Sources */,
-				B10000000000000000000019 /* LoginView.swift in Sources */,
-				B10000000000000000000020 /* RegisterView.swift in Sources */,
 				B10000000000000000000021 /* CategoryPickerView.swift in Sources */,
 				B10000000000000000000022 /* LegalView.swift in Sources */,
 				B10000000000000000000025 /* ComingSoonView.swift in Sources */,
