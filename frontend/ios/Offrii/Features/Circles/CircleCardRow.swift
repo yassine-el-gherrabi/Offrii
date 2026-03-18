@@ -51,8 +51,22 @@ struct CircleCardRow: View {
 
     @ViewBuilder
     private var avatarSection: some View {
+        avatarImage
+            .overlay(alignment: .bottomTrailing) {
+                Image(systemName: circle.isDirect ? "person.fill" : "person.2.fill")
+                    .font(.system(size: 9, weight: .bold))
+                    .foregroundColor(.white)
+                    .padding(2.5)
+                    .background(OffriiTheme.primary)
+                    .clipShape(Circle())
+                    .overlay(Circle().strokeBorder(.white, lineWidth: 1))
+                    .offset(x: 3, y: 3)
+            }
+    }
+
+    @ViewBuilder
+    private var avatarImage: some View {
         if let imageUrl = circle.imageUrl, let url = URL(string: imageUrl) {
-            // Circle has a custom image
             LazyImage(url: url) { state in
                 if let image = state.image {
                     image
@@ -65,7 +79,6 @@ struct CircleCardRow: View {
                 }
             }
         } else if circle.isDirect {
-            // Single avatar for 1:1
             AvatarView(
                 circle.memberNames.first ?? circle.name,
                 size: .medium,
