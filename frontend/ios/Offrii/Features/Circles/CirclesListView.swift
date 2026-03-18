@@ -212,8 +212,21 @@ struct CirclesListView: View {
                 .presentationDetents([.medium, .large])
         }
         .sheet(isPresented: $showQuickCreate) {
-            QuickCreateSheet()
-                .presentationDetents([.medium])
+            CirclesQuickActionSheet(
+                onCreateCircle: {
+                    showQuickCreate = false
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                        showCreateCircle = true
+                    }
+                },
+                onAddFriend: {
+                    showQuickCreate = false
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                        showAddFriend = true
+                    }
+                }
+            )
+            .presentationDetents([.height(220)])
         }
         .task {
             await viewModel.loadAll()
@@ -403,5 +416,83 @@ struct CirclesListView: View {
 
     private func loadUnreadCount() async {
         unreadCount = (try? await NotificationCenterService.shared.unreadCount()) ?? 0
+    }
+}
+
+// MARK: - Quick Action Sheet (Tous filter FAB)
+
+private struct CirclesQuickActionSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    let onCreateCircle: () -> Void
+    let onAddFriend: () -> Void
+
+    var body: some View {
+        VStack(spacing: OffriiTheme.spacingBase) {
+            actionRow(
+                icon: "person.2.fill",
+                iconColor: OffriiTheme.secondary,
+                title: NSLocalizedString("create.createCircle", comment: ""),
+                subtitle: NSLocalizedString("create.createCircleSubtitle", comment: "")
+            ) {
+                onCreateCircle()
+            }
+
+            actionRow(
+                icon: "person.badge.plus",
+                iconColor: OffriiTheme.success,
+                title: NSLocalizedString("create.addFriend", comment: ""),
+                subtitle: NSLocalizedString("create.addFriendSubtitle", comment: "")
+            ) {
+                onAddFriend()
+            }
+        }
+        .padding(.horizontal, OffriiTheme.spacingLG)
+        .padding(.top, OffriiTheme.spacingLG)
+    }
+
+    private func actionRow(
+        icon: String,
+        iconColor: Color,
+        title: String,
+        subtitle: String,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            HStack(spacing: OffriiTheme.spacingBase) {
+                RoundedRectangle(cornerRadius: OffriiTheme.cornerRadiusMD)
+                    .fill(iconColor.opacity(0.12))
+                    .frame(width: 48, height: 48)
+                    .overlay(
+                        Image(systemName: icon)
+                            .font(.system(size: 20))
+                            .foregroundColor(iconColor)
+                    )
+
+                VStack(alignment: .leading, spacing: OffriiTheme.spacingXXS) {
+                    Text(title)
+                        .font(OffriiTypography.headline)
+                        .foregroundColor(OffriiTheme.text)
+                    Text(subtitle)
+                        .font(OffriiTypography.subheadline)
+                        .foregroundColor(OffriiTheme.textSecondary)
+                }
+
+                Spacer()
+
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundColor(OffriiTheme.textMuted)
+            }
+            .padding(OffriiTheme.spacingBase)
+            .background(OffriiTheme.card)
+            .cornerRadius(OffriiTheme.cornerRadiusLG)
+            .shadow(
+                color: OffriiTheme.cardShadowColor,
+                radius: OffriiTheme.cardShadowRadius,
+                x: 0,
+                y: OffriiTheme.cardShadowY
+            )
+        }
+        .buttonStyle(.plain)
     }
 }
