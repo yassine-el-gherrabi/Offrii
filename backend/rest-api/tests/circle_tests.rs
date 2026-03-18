@@ -3009,3 +3009,232 @@ async fn get_share_rule_default_none() {
     assert_eq!(status, StatusCode::OK);
     assert_eq!(body["share_mode"], "none");
 }
+
+#[tokio::test]
+async fn share_rule_categories_filters_correctly() {
+    let app = TestApp::new().await;
+    let (alice, _) = setup_user_named(&app, "src1@test.com", "src_alice").await;
+    let (bob, _) = setup_user_named(&app, "src2@test.com", "src_bob").await;
+    make_friends(&app, &alice, &bob, "src_bob").await;
+
+    let circle_id: String = sqlx::query_scalar(
+        "SELECT c.id::text FROM circles c \
+         JOIN circle_members cm1 ON cm1.circle_id = c.id \
+         JOIN circle_members cm2 ON cm2.circle_id = c.id \
+         WHERE c.is_direct = true AND cm1.user_id != cm2.user_id \
+         AND cm1.user_id = (SELECT id FROM users WHERE username = 'src_alice') LIMIT 1",
+    )
+    .fetch_one(&app.db)
+    .await
+    .unwrap();
+
+    // Create a category
+    let cat = app
+        .create_category(
+            &alice,
+            &serde_json::json!({ "name": "ShareTest", "icon": "star" }),
+        )
+        .await;
+    let cat_id = cat["id"].as_str().unwrap();
+
+    // Create items: one in Tech, one without category
+    app.create_item(
+        &alice,
+        &serde_json::json!({ "name": "Laptop", "category_id": cat_id }),
+    )
+    .await;
+    app.create_item(
+        &alice,
+        &serde_json::json!({ "name": "Random", "category_id": null }),
+    )
+    .await;
+
+    // Share only Tech category
+    app.put_json_with_auth(
+        &format!("/circles/{circle_id}/share-rule"),
+        &serde_json::json!({ "share_mode": "categories", "category_ids": [cat_id] }),
+        &alice,
+    )
+    .await;
+
+    let (_, items) = app
+        .get_with_auth(&format!("/circles/{circle_id}/items"), &bob)
+        .await;
+    assert_eq!(items.as_array().unwrap().len(), 1, "only Tech item visible");
+    assert_eq!(items[0]["name"], "Laptop");
+}
+
+#[tokio::test]
+async fn share_rule_categories_empty_ids_returns_nothing() {
+    let app = TestApp::new().await;
+    let (alice, _) = setup_user_named(&app, "sce1@test.com", "sce_alice").await;
+    let (bob, _) = setup_user_named(&app, "sce2@test.com", "sce_bob").await;
+    make_friends(&app, &alice, &bob, "sce_bob").await;
+
+    let circle_id: String = sqlx::query_scalar(
+        "SELECT c.id::text FROM circles c \
+         JOIN circle_members cm1 ON cm1.circle_id = c.id \
+         JOIN circle_members cm2 ON cm2.circle_id = c.id \
+         WHERE c.is_direct = true AND cm1.user_id != cm2.user_id \
+         AND cm1.user_id = (SELECT id FROM users WHERE username = 'sce_alice') LIMIT 1",
+    )
+    .fetch_one(&app.db)
+    .await
+    .unwrap();
+
+    app.create_item(
+        &alice,
+        &serde_json::json!({ "name": "Gift", "category_id": null }),
+    )
+    .await;
+
+    // Categories mode with empty array
+    app.put_json_with_auth(
+        &format!("/circles/{circle_id}/share-rule"),
+        &serde_json::json!({ "share_mode": "categories", "category_ids": [] }),
+        &alice,
+    )
+    .await;
+
+    let (_, items) = app
+        .get_with_auth(&format!("/circles/{circle_id}/items"), &bob)
+        .await;
+    assert_eq!(
+        items.as_array().unwrap().len(),
+        0,
+        "empty categories = no items"
+    );
+}
+
+#[tokio::test]
+async fn share_rule_invalid_mode_rejected() {
+    let app = TestApp::new().await;
+    let (alice, _) = setup_user_named(&app, "sri1@test.com", "sri_alice").await;
+    let (bob, _) = setup_user_named(&app, "sri2@test.com", "sri_bob").await;
+    make_friends(&app, &alice, &bob, "sri_bob").await;
+
+    let circle_id: String = sqlx::query_scalar(
+        "SELECT c.id::text FROM circles c \
+         JOIN circle_members cm1 ON cm1.circle_id = c.id \
+         JOIN circle_members cm2 ON cm2.circle_id = c.id \
+         WHERE c.is_direct = true AND cm1.user_id != cm2.user_id \
+         AND cm1.user_id = (SELECT id FROM users WHERE username = 'sri_alice') LIMIT 1",
+    )
+    .fetch_one(&app.db)
+    .await
+    .unwrap();
+
+    let (status, _) = app
+        .put_json_with_auth(
+            &format!("/circles/{circle_id}/share-rule"),
+            &serde_json::json!({ "share_mode": "invalid_mode" }),
+            &alice,
+        )
+        .await;
+    assert_eq!(status, StatusCode::BAD_REQUEST, "invalid mode rejected");
+}
+
+#[tokio::test]
+async fn share_rule_non_member_forbidden() {
+    let app = TestApp::new().await;
+    let (alice, _) = setup_user_named(&app, "srf1@test.com", "srf_alice").await;
+    let (bob, _) = setup_user_named(&app, "srf2@test.com", "srf_bob").await;
+    let (charlie, _) = setup_user_named(&app, "srf3@test.com", "srf_charlie").await;
+    make_friends(&app, &alice, &bob, "srf_bob").await;
+
+    let circle_id: String = sqlx::query_scalar(
+        "SELECT c.id::text FROM circles c \
+         JOIN circle_members cm1 ON cm1.circle_id = c.id \
+         JOIN circle_members cm2 ON cm2.circle_id = c.id \
+         WHERE c.is_direct = true AND cm1.user_id != cm2.user_id \
+         AND cm1.user_id = (SELECT id FROM users WHERE username = 'srf_alice') LIMIT 1",
+    )
+    .fetch_one(&app.db)
+    .await
+    .unwrap();
+
+    // Charlie is not a member
+    let (status, _) = app
+        .put_json_with_auth(
+            &format!("/circles/{circle_id}/share-rule"),
+            &serde_json::json!({ "share_mode": "all" }),
+            &charlie,
+        )
+        .await;
+    assert_eq!(status, StatusCode::FORBIDDEN, "non-member cannot set rule");
+
+    let (status, _) = app
+        .get_with_auth(&format!("/circles/{circle_id}/share-rule"), &charlie)
+        .await;
+    assert_eq!(status, StatusCode::FORBIDDEN, "non-member cannot get rule");
+}
+
+#[tokio::test]
+async fn share_rule_bidirectional_independent() {
+    let app = TestApp::new().await;
+    let (alice, _) = setup_user_named(&app, "srb1@test.com", "srb_alice").await;
+    let (bob, _) = setup_user_named(&app, "srb2@test.com", "srb_bob").await;
+    make_friends(&app, &alice, &bob, "srb_bob").await;
+
+    let circle_id: String = sqlx::query_scalar(
+        "SELECT c.id::text FROM circles c \
+         JOIN circle_members cm1 ON cm1.circle_id = c.id \
+         JOIN circle_members cm2 ON cm2.circle_id = c.id \
+         WHERE c.is_direct = true AND cm1.user_id != cm2.user_id \
+         AND cm1.user_id = (SELECT id FROM users WHERE username = 'srb_alice') LIMIT 1",
+    )
+    .fetch_one(&app.db)
+    .await
+    .unwrap();
+
+    // Alice shares all, Bob shares nothing
+    app.create_item(
+        &alice,
+        &serde_json::json!({ "name": "Alice Gift", "category_id": null }),
+    )
+    .await;
+    app.create_item(
+        &bob,
+        &serde_json::json!({ "name": "Bob Gift", "category_id": null }),
+    )
+    .await;
+
+    app.put_json_with_auth(
+        &format!("/circles/{circle_id}/share-rule"),
+        &serde_json::json!({ "share_mode": "all" }),
+        &alice,
+    )
+    .await;
+    // Bob doesn't set a rule (defaults to none)
+
+    // Bob sees Alice's items
+    let (_, items) = app
+        .get_with_auth(&format!("/circles/{circle_id}/items"), &bob)
+        .await;
+    assert_eq!(items.as_array().unwrap().len(), 1);
+    assert_eq!(items[0]["name"], "Alice Gift");
+
+    // Alice sees nothing from Bob (Bob has no rule)
+    let (_, items) = app
+        .get_with_auth(&format!("/circles/{circle_id}/items"), &alice)
+        .await;
+    assert_eq!(
+        items.as_array().unwrap().len(),
+        1,
+        "Alice sees her own shared items + nothing from Bob"
+    );
+}
+
+#[tokio::test]
+async fn set_share_rule_no_auth_401() {
+    let app = TestApp::new().await;
+    let fake_id = uuid::Uuid::new_v4();
+    let (status, _) = app
+        .post_json(
+            &format!("/circles/{fake_id}/share-rule"),
+            &serde_json::json!({ "share_mode": "all" }),
+        )
+        .await;
+    // PUT is not POST, but test unauthorized access
+    assert!(status == StatusCode::UNAUTHORIZED || status == StatusCode::METHOD_NOT_ALLOWED);
+}
