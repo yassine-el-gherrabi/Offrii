@@ -1,3 +1,4 @@
+// swiftlint:disable file_length
 import Foundation
 
 // MARK: - HTTP Method
@@ -95,6 +96,8 @@ enum APIEndpoint {
     case listCircleItems(circleId: UUID)
     case getCircleItem(circleId: UUID, itemId: UUID)
     case unshareItem(circleId: UUID, itemId: UUID)
+    case getShareRule(circleId: UUID)
+    case setShareRule(circleId: UUID, body: SetShareRuleBody)
     case getCircleFeed(circleId: UUID, page: Int, perPage: Int)
     case transferCircleOwnership(circleId: UUID, body: TransferOwnershipBody)
     case listReservations
@@ -212,6 +215,8 @@ extension APIEndpoint {
         case .listCircleItems(let circleId):            return "/circles/\(circleId)/items"
         case .getCircleItem(let circleId, let itemId):  return "/circles/\(circleId)/items/\(itemId)"
         case .unshareItem(let circleId, let itemId):    return "/circles/\(circleId)/items/\(itemId)"
+        case .getShareRule(let circleId):                return "/circles/\(circleId)/share-rule"
+        case .setShareRule(let circleId, _):              return "/circles/\(circleId)/share-rule"
         case .getCircleFeed(let circleId, _, _):        return "/circles/\(circleId)/feed"
         case .transferCircleOwnership(let circleId, _): return "/circles/\(circleId)/transfer"
         case .listReservations:                         return "/circles/my-reservations"
@@ -321,6 +326,8 @@ extension APIEndpoint {
         case .listCircleItems:      return .GET
         case .getCircleItem:        return .GET
         case .unshareItem:          return .DELETE
+        case .getShareRule:         return .GET
+        case .setShareRule:         return .PUT
         case .getCircleFeed:        return .GET
         case .transferCircleOwnership: return .POST
         case .listReservations:     return .GET
@@ -455,6 +462,7 @@ extension APIEndpoint {
         case .addMemberToCircle(_, let body): return body
         case .shareItemToCircle(_, let body): return body
         case .batchShareItems(_, let body): return body
+        case .setShareRule(_, let body): return body
         case .transferCircleOwnership(_, let body): return body
         case .createCircleInvite(_, let body):      return body
         case .sendFriendRequest(let body):          return body

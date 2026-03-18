@@ -238,3 +238,15 @@ struct ReservationResponse: Codable, Identifiable {
         }
     }
 }
+
+struct ShareRuleResponse: Codable {
+    let shareMode: String
+    let categoryIds: [UUID]
+    let updatedAt: Date
+
+    enum CodingKeys: String, CodingKey {
+        case shareMode = "share_mode"
+        case categoryIds = "category_ids"
+        case updatedAt = "updated_at"
+    }
+}

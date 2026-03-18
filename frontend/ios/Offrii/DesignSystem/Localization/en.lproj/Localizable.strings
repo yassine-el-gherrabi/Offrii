@@ -573,6 +573,19 @@
 "circles.context.leaveCircle" = "Leave circle";
 "circles.context.deleteCircle" = "Delete circle";
 
+/* Share rules */
+"shareRule.title" = "Share with %@";
+"shareRule.all.title" = "My entire list";
+"shareRule.all.subtitle" = "%d wishes (updates automatically)";
+"shareRule.categories.title" = "By categories";
+"shareRule.categories.subtitle" = "Choose which categories to share";
+"shareRule.none.title" = "Don't share";
+"shareRule.none.subtitle" = "Nothing will be visible";
+"shareRule.privateWarning" = "%d private wish(es) excluded";
+"shareRule.selectCategories" = "Select categories";
+"shareRule.noCategories" = "No categories yet";
+"shareRule.dynamicHint" = "Updates automatically when you add or remove wishes";
+
 /* Push notification localized strings (APNs loc-key) */
 "push.friend_request.title" = "Friend request";
 "push.friend_request.body" = "%@ wants to add you as a friend";

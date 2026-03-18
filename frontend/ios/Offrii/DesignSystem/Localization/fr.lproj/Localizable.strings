@@ -573,6 +573,19 @@
 "circles.context.leaveCircle" = "Quitter le cercle";
 "circles.context.deleteCircle" = "Supprimer le cercle";
 
+/* Règles de partage */
+"shareRule.title" = "Partager avec %@";
+"shareRule.all.title" = "Toute ma liste";
+"shareRule.all.subtitle" = "%d envies (se met à jour automatiquement)";
+"shareRule.categories.title" = "Par catégories";
+"shareRule.categories.subtitle" = "Choisir les catégories à partager";
+"shareRule.none.title" = "Ne rien partager";
+"shareRule.none.subtitle" = "Rien ne sera visible";
+"shareRule.privateWarning" = "%d envie(s) privée(s) exclue(s)";
+"shareRule.selectCategories" = "Sélectionner les catégories";
+"shareRule.noCategories" = "Aucune catégorie";
+"shareRule.dynamicHint" = "Se met à jour automatiquement quand vous ajoutez ou retirez des envies";
+
 /* Push notification localized strings (APNs loc-key) */
 "push.friend_request.title" = "Demande d'ami";
 "push.friend_request.body" = "%@ veut vous ajouter en ami";

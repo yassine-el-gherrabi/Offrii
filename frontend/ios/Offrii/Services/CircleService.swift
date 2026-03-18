@@ -83,6 +83,17 @@ final class CircleService: Sendable {
         try await client.requestVoid(.unshareItem(circleId: circleId, itemId: itemId))
     }
 
+    func getShareRule(circleId: UUID) async throws -> ShareRuleResponse {
+        try await client.request(.getShareRule(circleId: circleId))
+    }
+
+    func setShareRule(circleId: UUID, mode: String, categoryIds: [UUID] = []) async throws {
+        try await client.requestVoid(.setShareRule(
+            circleId: circleId,
+            body: SetShareRuleBody(shareMode: mode, categoryIds: categoryIds)
+        ))
+    }
+
     func getFeed(circleId: UUID, page: Int = 1, perPage: Int = 20) async throws -> FeedResponse {
         try await client.request(.getCircleFeed(circleId: circleId, page: page, perPage: perPage))
     }

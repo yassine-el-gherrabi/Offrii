@@ -17,6 +17,7 @@ struct CircleDetailView: View {
     @State private var memberToTransfer: CircleMember?
     @State private var itemToClaim: UUID?
     @State private var itemToUnclaim: UUID?
+    @State private var showShareRule = false
 
     private var currentUserId: UUID? { authManager.currentUser?.id }
     private var isOwner: Bool { viewModel.detail?.ownerId == currentUserId }
@@ -68,6 +69,15 @@ struct CircleDetailView: View {
                 }
                 .presentationDetents([.medium])
             }
+        }
+        .sheet(isPresented: $showShareRule, onDismiss: {
+            Task { await reload() }
+        }) {
+            ShareWithFriendSheet(
+                circleId: circleId,
+                friendName: viewModel.detail?.name ?? ""
+            )
+            .presentationDetents([.large])
         }
         .sheet(item: $selectedItemId, onDismiss: {
             Task { await reload() }
@@ -217,7 +227,12 @@ struct CircleDetailView: View {
     private var toolbarContent: some ToolbarContent {
         ToolbarItem(placement: .primaryAction) {
             if isDirect {
-                EmptyView()
+                Button {
+                    showShareRule = true
+                } label: {
+                    Image(systemName: "square.and.arrow.up")
+                        .font(.system(size: 16))
+                }
             } else {
                 HStack(spacing: OffriiTheme.spacingSM) {
                     Button {
