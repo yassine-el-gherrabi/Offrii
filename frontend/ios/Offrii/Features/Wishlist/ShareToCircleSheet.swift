@@ -52,42 +52,7 @@ struct ShareToCircleSheet: View {
                                 } label: {
                                     let isPendingUnshare = pendingUnshareIds.contains(circle.id)
                                     HStack(spacing: OffriiTheme.spacingMD) {
-                                        // Circle icon / image
-                                        ZStack(alignment: .bottomTrailing) {
-                                            if let imageUrl = circle.imageUrl, let url = URL(string: imageUrl) {
-                                                LazyImage(url: url) { state in
-                                                    if let image = state.image {
-                                                        image
-                                                            .resizable()
-                                                            .aspectRatio(contentMode: .fill)
-                                                            .frame(width: 36, height: 36)
-                                                            .clipShape(Circle())
-                                                    } else {
-                                                        AvatarView(circle.name, size: .small)
-                                                    }
-                                                }
-                                            } else {
-                                                AvatarView(circle.name, size: .small)
-                                            }
-
-                                            if circle.isDirect {
-                                                Image(systemName: "person.fill")
-                                                    .font(.system(size: 8))
-                                                    .foregroundColor(.white)
-                                                    .padding(3)
-                                                    .background(OffriiTheme.accent)
-                                                    .clipShape(Circle())
-                                                    .offset(x: 2, y: 2)
-                                            } else {
-                                                Image(systemName: "person.2.fill")
-                                                    .font(.system(size: 7))
-                                                    .foregroundColor(.white)
-                                                    .padding(3)
-                                                    .background(OffriiTheme.primary)
-                                                    .clipShape(Circle())
-                                                    .offset(x: 2, y: 2)
-                                            }
-                                        }
+                                        CircleAvatarBadge(from: circle, size: 36, fontSize: 14)
 
                                         // Name + subtitle
                                         VStack(alignment: .leading, spacing: 2) {

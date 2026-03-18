@@ -4,13 +4,31 @@ import SwiftUI
 /// Reusable circle avatar with type badge (person/person.2) overlay.
 /// Used in ItemDetailSheet, ItemEditView, and anywhere shared circles are displayed.
 struct CircleAvatarBadge: View {
-    let circle: SharedCircleInfo
+    let name: String
+    let isDirect: Bool
+    let imageURL: URL?
     var size: CGFloat = 28
     var fontSize: CGFloat = 12
 
+    init(circle: SharedCircleInfo, size: CGFloat = 28, fontSize: CGFloat = 12) {
+        self.name = circle.name
+        self.isDirect = circle.isDirect ?? false
+        self.imageURL = circle.imageURL
+        self.size = size
+        self.fontSize = fontSize
+    }
+
+    init(from circle: OffriiCircle, size: CGFloat = 28, fontSize: CGFloat = 12) {
+        self.name = circle.name ?? ""
+        self.isDirect = circle.isDirect
+        self.imageURL = circle.imageUrl.flatMap { URL(string: $0) }
+        self.size = size
+        self.fontSize = fontSize
+    }
+
     var body: some View {
         ZStack {
-            if let url = circle.imageURL {
+            if let url = imageURL {
                 LazyImage(url: url) { state in
                     if let image = state.image {
                         image
@@ -27,7 +45,7 @@ struct CircleAvatarBadge: View {
             }
         }
         .overlay(alignment: .bottomTrailing) {
-            Image(systemName: circle.isDirect == true ? "person.fill" : "person.2.fill")
+            Image(systemName: isDirect ? "person.fill" : "person.2.fill")
                 .font(.system(size: size * 0.25, weight: .bold))
                 .foregroundColor(.white)
                 .padding(2)
@@ -39,7 +57,7 @@ struct CircleAvatarBadge: View {
     }
 
     private var initialsView: some View {
-        Text(circle.initial)
+        Text(String(name.prefix(1)).uppercased())
             .font(.system(size: fontSize, weight: .bold))
             .foregroundColor(.white)
             .frame(width: size, height: size)
