@@ -2596,3 +2596,180 @@ async fn batch_share_no_auth_returns_401() {
         .await;
     assert_eq!(status, StatusCode::UNAUTHORIZED);
 }
+
+// ═══════════════════════════════════════════════════════════════════
+// Leave Circle — Items Cleanup
+// ═══════════════════════════════════════════════════════════════════
+
+#[tokio::test]
+async fn leaving_circle_removes_members_shared_items() {
+    let app = TestApp::new().await;
+    let (alice, _) = setup_user_named(&app, "lci1@test.com", "lci_alice").await;
+    let (bob, bob_id) = setup_user_named(&app, "lci2@test.com", "lci_bob").await;
+    make_friends(&app, &alice, &bob, "lci_bob").await;
+    let circle_id = create_circle(&app, &alice, "LeaveItemsCircle").await;
+    app.post_json_with_auth(
+        &format!("/circles/{circle_id}/members"),
+        &serde_json::json!({ "user_id": bob_id }),
+        &alice,
+    )
+    .await;
+    let item = app
+        .create_item(
+            &bob,
+            &serde_json::json!({ "name": "Bob Gift", "category_id": null }),
+        )
+        .await;
+    let item_id = item["id"].as_str().unwrap();
+    app.post_json_with_auth(
+        &format!("/circles/{circle_id}/items"),
+        &serde_json::json!({ "item_id": item_id }),
+        &bob,
+    )
+    .await;
+    let (_, items) = app
+        .get_with_auth(&format!("/circles/{circle_id}/items"), &alice)
+        .await;
+    assert_eq!(
+        items.as_array().unwrap().len(),
+        1,
+        "precondition: item in circle"
+    );
+    let (status, _) = app
+        .delete_with_auth(&format!("/circles/{circle_id}/members/{bob_id}"), &bob)
+        .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+    let (_, items) = app
+        .get_with_auth(&format!("/circles/{circle_id}/items"), &alice)
+        .await;
+    assert_eq!(
+        items.as_array().unwrap().len(),
+        0,
+        "departing member's items removed"
+    );
+}
+
+#[tokio::test]
+async fn leaving_circle_keeps_other_members_items() {
+    let app = TestApp::new().await;
+    let (alice, _) = setup_user_named(&app, "lco1@test.com", "lco_alice").await;
+    let (bob, bob_id) = setup_user_named(&app, "lco2@test.com", "lco_bob").await;
+    make_friends(&app, &alice, &bob, "lco_bob").await;
+    let circle_id = create_circle(&app, &alice, "KeepOthersCircle").await;
+    app.post_json_with_auth(
+        &format!("/circles/{circle_id}/members"),
+        &serde_json::json!({ "user_id": bob_id }),
+        &alice,
+    )
+    .await;
+    let a_item = app
+        .create_item(
+            &alice,
+            &serde_json::json!({ "name": "Alice Gift", "category_id": null }),
+        )
+        .await;
+    app.post_json_with_auth(
+        &format!("/circles/{circle_id}/items"),
+        &serde_json::json!({ "item_id": a_item["id"].as_str().unwrap() }),
+        &alice,
+    )
+    .await;
+    let b_item = app
+        .create_item(
+            &bob,
+            &serde_json::json!({ "name": "Bob Gift", "category_id": null }),
+        )
+        .await;
+    app.post_json_with_auth(
+        &format!("/circles/{circle_id}/items"),
+        &serde_json::json!({ "item_id": b_item["id"].as_str().unwrap() }),
+        &bob,
+    )
+    .await;
+    let (_, items) = app
+        .get_with_auth(&format!("/circles/{circle_id}/items"), &alice)
+        .await;
+    assert_eq!(items.as_array().unwrap().len(), 2);
+    app.delete_with_auth(&format!("/circles/{circle_id}/members/{bob_id}"), &bob)
+        .await;
+    let (_, items) = app
+        .get_with_auth(&format!("/circles/{circle_id}/items"), &alice)
+        .await;
+    assert_eq!(
+        items.as_array().unwrap().len(),
+        1,
+        "only remaining member's items stay"
+    );
+}
+
+#[tokio::test]
+async fn owner_removing_member_cleans_their_items() {
+    let app = TestApp::new().await;
+    let (alice, _) = setup_user_named(&app, "orm1@test.com", "orm_alice").await;
+    let (bob, bob_id) = setup_user_named(&app, "orm2@test.com", "orm_bob").await;
+    make_friends(&app, &alice, &bob, "orm_bob").await;
+    let circle_id = create_circle(&app, &alice, "OwnerRemoveCircle").await;
+    app.post_json_with_auth(
+        &format!("/circles/{circle_id}/members"),
+        &serde_json::json!({ "user_id": bob_id }),
+        &alice,
+    )
+    .await;
+    let item = app
+        .create_item(
+            &bob,
+            &serde_json::json!({ "name": "Bob Item", "category_id": null }),
+        )
+        .await;
+    app.post_json_with_auth(
+        &format!("/circles/{circle_id}/items"),
+        &serde_json::json!({ "item_id": item["id"].as_str().unwrap() }),
+        &bob,
+    )
+    .await;
+    let (status, _) = app
+        .delete_with_auth(&format!("/circles/{circle_id}/members/{bob_id}"), &alice)
+        .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+    let (_, items) = app
+        .get_with_auth(&format!("/circles/{circle_id}/items"), &alice)
+        .await;
+    assert_eq!(
+        items.as_array().unwrap().len(),
+        0,
+        "removed member's items cleaned"
+    );
+}
+
+#[tokio::test]
+async fn leaving_circle_item_still_in_wishlist() {
+    let app = TestApp::new().await;
+    let (alice, _) = setup_user_named(&app, "lie1@test.com", "lie_alice").await;
+    let (bob, bob_id) = setup_user_named(&app, "lie2@test.com", "lie_bob").await;
+    make_friends(&app, &alice, &bob, "lie_bob").await;
+    let circle_id = create_circle(&app, &alice, "SurvivesCircle").await;
+    app.post_json_with_auth(
+        &format!("/circles/{circle_id}/members"),
+        &serde_json::json!({ "user_id": bob_id }),
+        &alice,
+    )
+    .await;
+    let item = app
+        .create_item(
+            &bob,
+            &serde_json::json!({ "name": "Survives", "category_id": null }),
+        )
+        .await;
+    let item_id = item["id"].as_str().unwrap();
+    app.post_json_with_auth(
+        &format!("/circles/{circle_id}/items"),
+        &serde_json::json!({ "item_id": item_id }),
+        &bob,
+    )
+    .await;
+    app.delete_with_auth(&format!("/circles/{circle_id}/members/{bob_id}"), &bob)
+        .await;
+    let (status, body) = app.get_with_auth(&format!("/items/{item_id}"), &bob).await;
+    assert_eq!(status, StatusCode::OK, "item still exists for owner");
+    assert_eq!(body["name"], "Survives");
+}

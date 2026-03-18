@@ -869,6 +869,14 @@ impl traits::CircleService for PgCircleService {
             return Err(AppError::NotFound("member not found".into()));
         }
 
+        // Remove items shared by the departing member
+        sqlx::query("DELETE FROM circle_items WHERE circle_id = $1 AND shared_by = $2")
+            .bind(circle_id)
+            .bind(target_user_id)
+            .execute(&self.pool)
+            .await
+            .map_err(|e| AppError::Internal(e.into()))?;
+
         // Log event
         self.circle_event_repo
             .insert(circle_id, target_user_id, "member_left", None, None)
