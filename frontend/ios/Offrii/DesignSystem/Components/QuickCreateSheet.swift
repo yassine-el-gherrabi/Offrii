@@ -41,7 +41,7 @@ struct QuickCreateSheet: View {
 
                 createOption(
                     icon: "hand.raised.fill",
-                    iconColor: OffriiTheme.accent,
+                    iconColor: OffriiTheme.warning,
                     title: NSLocalizedString("create.publishNeed", comment: ""),
                     subtitle: NSLocalizedString("create.publishNeedSubtitle", comment: "")
                 ) {
