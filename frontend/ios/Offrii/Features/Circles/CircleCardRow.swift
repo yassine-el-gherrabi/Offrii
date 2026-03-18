@@ -111,8 +111,14 @@ struct CircleCardRow: View {
             .font(OffriiTypography.caption)
             .fontWeight(.medium)
             .foregroundColor(OffriiTheme.primary)
-        } else {
+        } else if circle.lastActivity != nil {
+            // Has activity = has items, but all reserved
             Text(NSLocalizedString("circles.noUnreserved", comment: ""))
+                .font(OffriiTypography.caption)
+                .foregroundColor(OffriiTheme.textMuted)
+        } else {
+            // No activity = no items shared yet
+            Text(NSLocalizedString("circles.noSharedItems", comment: ""))
                 .font(OffriiTypography.caption)
                 .foregroundColor(OffriiTheme.textMuted)
         }

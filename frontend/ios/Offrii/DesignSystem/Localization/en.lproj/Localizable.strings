@@ -224,6 +224,7 @@
 "circles.tab.myFriends" = "My Friends";
 "circles.unreservedCount" = "%d available";
 "circles.noUnreserved" = "All reserved!";
+"circles.noSharedItems" = "No wishes shared yet";
 "circles.lastActivity.none" = "No activity";
 "circles.swipe.leave" = "Leave";
 "circles.context.edit" = "Edit";
