@@ -100,6 +100,7 @@ enum APIEndpoint {
     case getCircleFeed(circleId: UUID, page: Int, perPage: Int)
     case transferCircleOwnership(circleId: UUID, body: TransferOwnershipBody)
     case listReservations
+    case listMyShareRules
     case createCircleInvite(circleId: UUID, body: CreateCircleInviteBody?)
     case listCircleInvites(circleId: UUID)
     case revokeCircleInvite(circleId: UUID, inviteId: UUID)
@@ -219,6 +220,7 @@ extension APIEndpoint {
         case .getCircleFeed(let circleId, _, _):        return "/circles/\(circleId)/feed"
         case .transferCircleOwnership(let circleId, _): return "/circles/\(circleId)/transfer"
         case .listReservations:                         return "/circles/my-reservations"
+        case .listMyShareRules:                         return "/circles/my-share-rules"
         case .listNotifications:                        return "/me/notifications"
         case .markNotificationRead(let id):             return "/me/notifications/\(id)/read"
         case .markAllNotificationsRead:                 return "/me/notifications/read"
@@ -330,6 +332,7 @@ extension APIEndpoint {
         case .getCircleFeed:        return .GET
         case .transferCircleOwnership: return .POST
         case .listReservations:     return .GET
+        case .listMyShareRules:     return .GET
         case .listNotifications:    return .GET
         case .markNotificationRead: return .POST
         case .markAllNotificationsRead: return .POST

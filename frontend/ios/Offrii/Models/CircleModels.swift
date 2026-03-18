@@ -250,3 +250,16 @@ struct ShareRuleResponse: Codable {
         case updatedAt = "updated_at"
     }
 }
+
+struct CircleShareRuleSummary: Codable, Identifiable {
+    let circleId: UUID
+    let shareMode: String
+    let categoryCount: Int
+    var id: UUID { circleId }
+
+    enum CodingKeys: String, CodingKey {
+        case circleId = "circle_id"
+        case shareMode = "share_mode"
+        case categoryCount = "category_count"
+    }
+}

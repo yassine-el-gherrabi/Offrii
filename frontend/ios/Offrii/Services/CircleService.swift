@@ -83,6 +83,10 @@ final class CircleService: Sendable {
         try await client.requestVoid(.unshareItem(circleId: circleId, itemId: itemId))
     }
 
+    func listMyShareRules() async throws -> [CircleShareRuleSummary] {
+        try await client.request(.listMyShareRules)
+    }
+
     func getShareRule(circleId: UUID) async throws -> ShareRuleResponse {
         try await client.request(.getShareRule(circleId: circleId))
     }

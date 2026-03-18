@@ -1,10 +1,10 @@
 import SwiftUI
 
-// MARK: - Share With Friend Sheet
+// MARK: - Circle Share Rule Sheet
 
-struct ShareWithFriendSheet: View {
+struct CircleShareRuleSheet: View {
     let circleId: UUID
-    let friendName: String
+    let circleName: String
 
     @Environment(\.dismiss) private var dismiss
     @State private var currentMode = "none"
@@ -38,7 +38,7 @@ struct ShareWithFriendSheet: View {
             }
             .navigationTitle(String(
                 format: NSLocalizedString("shareRule.title", comment: ""),
-                friendName
+                circleName
             ))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

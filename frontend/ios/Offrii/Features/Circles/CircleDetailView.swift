@@ -73,9 +73,9 @@ struct CircleDetailView: View {
         .sheet(isPresented: $showShareRule, onDismiss: {
             Task { await reload() }
         }) {
-            ShareWithFriendSheet(
+            CircleShareRuleSheet(
                 circleId: circleId,
-                friendName: viewModel.detail?.name ?? ""
+                circleName: viewModel.detail?.name ?? ""
             )
             .presentationDetents([.large])
         }
@@ -235,6 +235,13 @@ struct CircleDetailView: View {
                 }
             } else {
                 HStack(spacing: OffriiTheme.spacingSM) {
+                    Button {
+                        showShareRule = true
+                    } label: {
+                        Image(systemName: "square.and.arrow.up")
+                            .font(.system(size: 16))
+                    }
+
                     Button {
                         showEdit = true
                     } label: {

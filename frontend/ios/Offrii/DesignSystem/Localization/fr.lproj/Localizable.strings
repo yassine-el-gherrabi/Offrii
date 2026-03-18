@@ -502,6 +502,8 @@
 "share.sharedItemPlural" = "%d envies partagées";
 "share.noSharedItems" = "Aucune envie partagée";
 "share.seesAllList" = "Voit toute la liste";
+"share.ruleAll" = "Toute la liste partagée";
+"share.ruleCategories" = "%d catégories partagées";
 "share.scopeCategories" = "Par catégories";
 "share.deleteLink.title" = "Supprimer le lien";
 "share.deleteLink.message" = "Les personnes ayant ce lien ne pourront plus accéder à vos envies.";

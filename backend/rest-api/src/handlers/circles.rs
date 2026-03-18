@@ -46,6 +46,7 @@ pub fn router() -> Router<AppState> {
         .route("/{id}/feed", get(get_feed))
         .route("/{id}/transfer", post(transfer_ownership))
         .route("/my-reservations", get(list_reservations))
+        .route("/my-share-rules", get(list_my_share_rules))
 }
 
 #[tracing::instrument(skip(state))]
@@ -435,6 +436,32 @@ async fn list_reservations(
 ) -> Result<Json<Vec<ReservationResponse>>, AppError> {
     let reservations = state.circles.list_reservations(auth_user.user_id).await?;
     Ok(Json(reservations))
+}
+
+async fn list_my_share_rules(
+    State(state): State<AppState>,
+    auth_user: AuthUser,
+) -> Result<Json<Vec<crate::dto::circles::CircleShareRuleSummary>>, AppError> {
+    let rules: Vec<(Uuid, String, Vec<Uuid>)> = sqlx::query_as(
+        "SELECT circle_id, share_mode, category_ids FROM circle_share_rules WHERE user_id = $1",
+    )
+    .bind(auth_user.user_id)
+    .fetch_all(&state.db)
+    .await
+    .map_err(|e| AppError::Internal(e.into()))?;
+
+    Ok(Json(
+        rules
+            .into_iter()
+            .map(|(circle_id, share_mode, category_ids)| {
+                crate::dto::circles::CircleShareRuleSummary {
+                    circle_id,
+                    share_mode,
+                    category_count: category_ids.len(),
+                }
+            })
+            .collect(),
+    ))
 }
 
 /// Public HTML page for circle invite links: GET /join/{token}

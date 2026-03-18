@@ -502,6 +502,8 @@
 "share.sharedItemPlural" = "%d wishes shared";
 "share.noSharedItems" = "No wishes shared";
 "share.seesAllList" = "Sees entire list";
+"share.ruleAll" = "Sharing entire list";
+"share.ruleCategories" = "Sharing %d categories";
 "share.scopeCategories" = "By categories";
 "share.deleteLink.title" = "Delete link";
 "share.deleteLink.message" = "Anyone with this link will no longer be able to access your wishes.";

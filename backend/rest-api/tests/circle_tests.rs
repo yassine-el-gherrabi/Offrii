@@ -3241,3 +3241,621 @@ async fn set_share_rule_no_auth_401() {
     // PUT is not POST, but test unauthorized access
     assert!(status == StatusCode::UNAUTHORIZED || status == StatusCode::METHOD_NOT_ALLOWED);
 }
+
+// ── Share rules on GROUP circles ─────────────────────────────────────
+
+#[tokio::test]
+async fn share_rule_group_circle_all_works() {
+    let app = TestApp::new().await;
+    let (alice, _) = setup_user_named(&app, "grp_a@test.com", "grp_alice").await;
+    let (bob, bob_id) = setup_user_named(&app, "grp_b@test.com", "grp_bob").await;
+    let (carol, carol_id) = setup_user_named(&app, "grp_c@test.com", "grp_carol").await;
+
+    // Alice creates a group circle
+    make_friends(&app, &alice, &bob, "grp_bob").await;
+    make_friends(&app, &alice, &carol, "grp_carol").await;
+    let circle_id = create_circle(&app, &alice, "Group Share Test").await;
+    let body = serde_json::json!({ "user_id": bob_id });
+    app.post_json_with_auth(&format!("/circles/{circle_id}/members"), &body, &alice)
+        .await;
+    let body = serde_json::json!({ "user_id": carol_id });
+    app.post_json_with_auth(&format!("/circles/{circle_id}/members"), &body, &alice)
+        .await;
+
+    // Alice creates items
+    app.create_item(&alice, &serde_json::json!({ "name": "Alice Item 1" }))
+        .await;
+    app.create_item(&alice, &serde_json::json!({ "name": "Alice Item 2" }))
+        .await;
+
+    // Alice sets share rule "all" on the group
+    app.put_json_with_auth(
+        &format!("/circles/{circle_id}/share-rule"),
+        &serde_json::json!({ "share_mode": "all" }),
+        &alice,
+    )
+    .await;
+
+    // Bob should see Alice's items
+    let (status, items) = app
+        .get_with_auth(&format!("/circles/{circle_id}/items"), &bob)
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(items.as_array().unwrap().len(), 2);
+
+    // Carol should also see them
+    let (_, items) = app
+        .get_with_auth(&format!("/circles/{circle_id}/items"), &carol)
+        .await;
+    assert_eq!(items.as_array().unwrap().len(), 2);
+}
+
+#[tokio::test]
+async fn share_rule_group_backward_compat() {
+    let app = TestApp::new().await;
+    let (alice, _) = setup_user_named(&app, "bkc_a@test.com", "bkc_alice").await;
+    let (bob, bob_id) = setup_user_named(&app, "bkc_b@test.com", "bkc_bob").await;
+
+    make_friends(&app, &alice, &bob, "bkc_bob").await;
+    let circle_id = create_circle(&app, &alice, "Backward Compat Circle").await;
+    let body = serde_json::json!({ "user_id": bob_id });
+    app.post_json_with_auth(&format!("/circles/{circle_id}/members"), &body, &alice)
+        .await;
+
+    // Alice shares items via batch (no share rule set — old way)
+    let item = app
+        .create_item(&alice, &serde_json::json!({ "name": "Legacy Item" }))
+        .await;
+    let item_id = item["id"].as_str().unwrap();
+    app.post_json_with_auth(
+        &format!("/circles/{circle_id}/items/batch"),
+        &serde_json::json!({ "item_ids": [item_id] }),
+        &alice,
+    )
+    .await;
+
+    // Bob should still see the item (backward compat fallback)
+    let (status, items) = app
+        .get_with_auth(&format!("/circles/{circle_id}/items"), &bob)
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(
+        items.as_array().unwrap().len(),
+        1,
+        "legacy circle_items should still be visible without share rule"
+    );
+    assert_eq!(items[0]["name"], "Legacy Item");
+}
+
+#[tokio::test]
+async fn share_rule_group_mixed_rules() {
+    let app = TestApp::new().await;
+    let (alice, _) = setup_user_named(&app, "mix_a@test.com", "mix_alice").await;
+    let (bob, bob_id) = setup_user_named(&app, "mix_b@test.com", "mix_bob").await;
+    let (carol, carol_id) = setup_user_named(&app, "mix_c@test.com", "mix_carol").await;
+
+    make_friends(&app, &alice, &bob, "mix_bob").await;
+    make_friends(&app, &alice, &carol, "mix_carol").await;
+    make_friends(&app, &bob, &carol, "mix_carol").await;
+    let circle_id = create_circle(&app, &alice, "Mixed Rules Circle").await;
+    app.post_json_with_auth(
+        &format!("/circles/{circle_id}/members"),
+        &serde_json::json!({ "user_id": bob_id }),
+        &alice,
+    )
+    .await;
+    app.post_json_with_auth(
+        &format!("/circles/{circle_id}/members"),
+        &serde_json::json!({ "user_id": carol_id }),
+        &alice,
+    )
+    .await;
+
+    // Alice: share rule "all" (2 items)
+    app.create_item(&alice, &serde_json::json!({ "name": "Alice All 1" }))
+        .await;
+    app.create_item(&alice, &serde_json::json!({ "name": "Alice All 2" }))
+        .await;
+    app.put_json_with_auth(
+        &format!("/circles/{circle_id}/share-rule"),
+        &serde_json::json!({ "share_mode": "all" }),
+        &alice,
+    )
+    .await;
+
+    // Bob: legacy circle_items (1 item, no rule)
+    let bob_item = app
+        .create_item(&bob, &serde_json::json!({ "name": "Bob Legacy" }))
+        .await;
+    let bob_item_id = bob_item["id"].as_str().unwrap();
+    app.post_json_with_auth(
+        &format!("/circles/{circle_id}/items/batch"),
+        &serde_json::json!({ "item_ids": [bob_item_id] }),
+        &bob,
+    )
+    .await;
+
+    // Carol: no rule, no items → contributes nothing
+
+    // Alice sees Bob's legacy item + Carol's nothing = 1
+    // (Alice doesn't see her own items)
+    // Actually Alice sees all members' items including her own
+    let (_, items) = app
+        .get_with_auth(&format!("/circles/{circle_id}/items"), &carol)
+        .await;
+    let names: Vec<&str> = items
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|i| i["name"].as_str().unwrap())
+        .collect();
+    assert!(
+        names.contains(&"Alice All 1"),
+        "Alice's items via rule 'all'"
+    );
+    assert!(
+        names.contains(&"Alice All 2"),
+        "Alice's items via rule 'all'"
+    );
+    assert!(
+        names.contains(&"Bob Legacy"),
+        "Bob's items via legacy circle_items"
+    );
+    assert_eq!(names.len(), 3, "total: 2 from Alice + 1 from Bob");
+}
+
+#[tokio::test]
+async fn share_rule_group_set_rule_clears_circle_items() {
+    let app = TestApp::new().await;
+    let (alice, _) = setup_user_named(&app, "clr_a@test.com", "clr_alice").await;
+    let (bob, bob_id) = setup_user_named(&app, "clr_b@test.com", "clr_bob").await;
+
+    make_friends(&app, &alice, &bob, "clr_bob").await;
+    let circle_id = create_circle(&app, &alice, "Clear Items Circle").await;
+    app.post_json_with_auth(
+        &format!("/circles/{circle_id}/members"),
+        &serde_json::json!({ "user_id": bob_id }),
+        &alice,
+    )
+    .await;
+
+    // Alice shares an item via batch (legacy)
+    let item = app
+        .create_item(&alice, &serde_json::json!({ "name": "To Be Cleared" }))
+        .await;
+    let item_id = item["id"].as_str().unwrap();
+    app.post_json_with_auth(
+        &format!("/circles/{circle_id}/items/batch"),
+        &serde_json::json!({ "item_ids": [item_id] }),
+        &alice,
+    )
+    .await;
+
+    // Now Alice switches to "all" mode — circle_items should be cleaned up
+    let (status, _) = app
+        .put_json_with_auth(
+            &format!("/circles/{circle_id}/share-rule"),
+            &serde_json::json!({ "share_mode": "all" }),
+            &alice,
+        )
+        .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+
+    // Bob still sees Alice's items (now via dynamic "all" rule, not circle_items)
+    let (_, items) = app
+        .get_with_auth(&format!("/circles/{circle_id}/items"), &bob)
+        .await;
+    assert!(
+        !items.as_array().unwrap().is_empty(),
+        "items should be visible via 'all' rule"
+    );
+}
+
+// ── My share rules endpoint ──────────────────────────────────────────
+
+#[tokio::test]
+async fn list_my_share_rules_returns_active_rules() {
+    let app = TestApp::new().await;
+    let (alice, _) = setup_user_named(&app, "msr_a@test.com", "msr_alice").await;
+    let (bob, _) = setup_user_named(&app, "msr_b@test.com", "msr_bob").await;
+
+    make_friends(&app, &alice, &bob, "msr_bob").await;
+
+    // Get Alice's direct circle with Bob
+    let circle_id: String = sqlx::query_scalar(
+        "SELECT c.id::text FROM circles c \
+         JOIN circle_members cm1 ON cm1.circle_id = c.id \
+         JOIN circle_members cm2 ON cm2.circle_id = c.id \
+         WHERE c.is_direct = true AND cm1.user_id != cm2.user_id \
+         AND cm1.user_id = (SELECT id FROM users WHERE username = 'msr_alice') LIMIT 1",
+    )
+    .fetch_one(&app.db)
+    .await
+    .unwrap();
+
+    // Set a share rule
+    app.put_json_with_auth(
+        &format!("/circles/{circle_id}/share-rule"),
+        &serde_json::json!({ "share_mode": "all" }),
+        &alice,
+    )
+    .await;
+
+    // Fetch my-share-rules
+    let (status, body) = app.get_with_auth("/circles/my-share-rules", &alice).await;
+    assert_eq!(status, StatusCode::OK);
+    let rules = body.as_array().unwrap();
+    assert_eq!(rules.len(), 1);
+    assert_eq!(rules[0]["share_mode"], "all");
+    assert_eq!(rules[0]["circle_id"], circle_id);
+}
+
+#[tokio::test]
+async fn list_my_share_rules_empty_when_no_rules() {
+    let app = TestApp::new().await;
+    let (token, _) = setup_user_named(&app, "msr_empty@test.com", "msr_empty").await;
+
+    let (status, body) = app.get_with_auth("/circles/my-share-rules", &token).await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(body.as_array().unwrap().len(), 0);
+}
+
+#[tokio::test]
+async fn list_my_share_rules_no_auth_401() {
+    let app = TestApp::new().await;
+    let (status, _) = app.get_no_auth("/circles/my-share-rules").await;
+    assert_eq!(status, StatusCode::UNAUTHORIZED);
+}
+
+#[tokio::test]
+async fn list_my_share_rules_does_not_leak_other_users() {
+    let app = TestApp::new().await;
+    let (alice, _) = setup_user_named(&app, "leak_a@test.com", "leak_alice").await;
+    let (bob, _) = setup_user_named(&app, "leak_b@test.com", "leak_bob").await;
+
+    make_friends(&app, &alice, &bob, "leak_bob").await;
+
+    // Get Alice's direct circle
+    let circle_id: String = sqlx::query_scalar(
+        "SELECT c.id::text FROM circles c \
+         JOIN circle_members cm1 ON cm1.circle_id = c.id \
+         JOIN circle_members cm2 ON cm2.circle_id = c.id \
+         WHERE c.is_direct = true AND cm1.user_id != cm2.user_id \
+         AND cm1.user_id = (SELECT id FROM users WHERE username = 'leak_alice') LIMIT 1",
+    )
+    .fetch_one(&app.db)
+    .await
+    .unwrap();
+
+    // Alice sets a rule
+    app.put_json_with_auth(
+        &format!("/circles/{circle_id}/share-rule"),
+        &serde_json::json!({ "share_mode": "all" }),
+        &alice,
+    )
+    .await;
+
+    // Bob should NOT see Alice's rule in his my-share-rules
+    let (_, body) = app.get_with_auth("/circles/my-share-rules", &bob).await;
+    assert_eq!(
+        body.as_array().unwrap().len(),
+        0,
+        "Bob should not see Alice's share rules"
+    );
+}
+
+// ── Group circle: categories mode ────────────────────────────────────
+
+#[tokio::test]
+async fn share_rule_group_categories_works() {
+    let app = TestApp::new().await;
+    let (alice, _) = setup_user_named(&app, "gcat_a@test.com", "gcat_alice").await;
+    let (bob, bob_id) = setup_user_named(&app, "gcat_b@test.com", "gcat_bob").await;
+
+    make_friends(&app, &alice, &bob, "gcat_bob").await;
+    let circle_id = create_circle(&app, &alice, "Group Cat Circle").await;
+    app.post_json_with_auth(
+        &format!("/circles/{circle_id}/members"),
+        &serde_json::json!({ "user_id": bob_id }),
+        &alice,
+    )
+    .await;
+
+    // Get a category
+    let (_, cats) = app.get_with_auth("/categories", &alice).await;
+    let tech_id = cats
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|c| c["name"].as_str().unwrap() == "Tech")
+        .unwrap()["id"]
+        .as_str()
+        .unwrap()
+        .to_string();
+
+    // Alice creates items: one Tech, one without category
+    app.create_item(
+        &alice,
+        &serde_json::json!({ "name": "MacBook", "category_id": tech_id }),
+    )
+    .await;
+    app.create_item(&alice, &serde_json::json!({ "name": "Random Thing" }))
+        .await;
+
+    // Set categories mode with Tech only
+    app.put_json_with_auth(
+        &format!("/circles/{circle_id}/share-rule"),
+        &serde_json::json!({ "share_mode": "categories", "category_ids": [tech_id] }),
+        &alice,
+    )
+    .await;
+
+    // Bob should see only the Tech item
+    let (_, items) = app
+        .get_with_auth(&format!("/circles/{circle_id}/items"), &bob)
+        .await;
+    assert_eq!(items.as_array().unwrap().len(), 1);
+    assert_eq!(items[0]["name"], "MacBook");
+}
+
+// ── Group circle: selection mode ─────────────────────────────────────
+
+#[tokio::test]
+async fn share_rule_group_selection_works() {
+    let app = TestApp::new().await;
+    let (alice, _) = setup_user_named(&app, "gsel_a@test.com", "gsel_alice").await;
+    let (bob, bob_id) = setup_user_named(&app, "gsel_b@test.com", "gsel_bob").await;
+
+    make_friends(&app, &alice, &bob, "gsel_bob").await;
+    let circle_id = create_circle(&app, &alice, "Group Sel Circle").await;
+    app.post_json_with_auth(
+        &format!("/circles/{circle_id}/members"),
+        &serde_json::json!({ "user_id": bob_id }),
+        &alice,
+    )
+    .await;
+
+    // Alice creates 2 items
+    let item1 = app
+        .create_item(&alice, &serde_json::json!({ "name": "Sel Item 1" }))
+        .await;
+    let item1_id = item1["id"].as_str().unwrap();
+    app.create_item(&alice, &serde_json::json!({ "name": "Sel Item 2" }))
+        .await;
+
+    // Set selection mode and share only item1
+    app.put_json_with_auth(
+        &format!("/circles/{circle_id}/share-rule"),
+        &serde_json::json!({ "share_mode": "selection" }),
+        &alice,
+    )
+    .await;
+    app.post_json_with_auth(
+        &format!("/circles/{circle_id}/items/batch"),
+        &serde_json::json!({ "item_ids": [item1_id] }),
+        &alice,
+    )
+    .await;
+
+    // Bob sees only item1
+    let (_, items) = app
+        .get_with_auth(&format!("/circles/{circle_id}/items"), &bob)
+        .await;
+    assert_eq!(items.as_array().unwrap().len(), 1);
+    assert_eq!(items[0]["name"], "Sel Item 1");
+}
+
+// ── Group circle: none mode hides everything ─────────────────────────
+
+#[tokio::test]
+async fn share_rule_group_none_hides_items() {
+    let app = TestApp::new().await;
+    let (alice, _) = setup_user_named(&app, "gnon_a@test.com", "gnon_alice").await;
+    let (bob, bob_id) = setup_user_named(&app, "gnon_b@test.com", "gnon_bob").await;
+
+    make_friends(&app, &alice, &bob, "gnon_bob").await;
+    let circle_id = create_circle(&app, &alice, "Group None Circle").await;
+    app.post_json_with_auth(
+        &format!("/circles/{circle_id}/members"),
+        &serde_json::json!({ "user_id": bob_id }),
+        &alice,
+    )
+    .await;
+
+    app.create_item(&alice, &serde_json::json!({ "name": "Hidden Item" }))
+        .await;
+
+    // Set "all" first so items are visible
+    app.put_json_with_auth(
+        &format!("/circles/{circle_id}/share-rule"),
+        &serde_json::json!({ "share_mode": "all" }),
+        &alice,
+    )
+    .await;
+    let (_, items) = app
+        .get_with_auth(&format!("/circles/{circle_id}/items"), &bob)
+        .await;
+    assert!(
+        !items.as_array().unwrap().is_empty(),
+        "precondition: visible"
+    );
+
+    // Switch to "none"
+    app.put_json_with_auth(
+        &format!("/circles/{circle_id}/share-rule"),
+        &serde_json::json!({ "share_mode": "none" }),
+        &alice,
+    )
+    .await;
+    let (_, items) = app
+        .get_with_auth(&format!("/circles/{circle_id}/items"), &bob)
+        .await;
+    assert_eq!(
+        items.as_array().unwrap().len(),
+        0,
+        "none mode should hide all items"
+    );
+}
+
+// ── Group circle: private items excluded in all mode ─────────────────
+
+#[tokio::test]
+async fn share_rule_group_all_excludes_private() {
+    let app = TestApp::new().await;
+    let (alice, _) = setup_user_named(&app, "gpriv_a@test.com", "gpriv_alice").await;
+    let (bob, bob_id) = setup_user_named(&app, "gpriv_b@test.com", "gpriv_bob").await;
+
+    make_friends(&app, &alice, &bob, "gpriv_bob").await;
+    let circle_id = create_circle(&app, &alice, "Group Private Circle").await;
+    app.post_json_with_auth(
+        &format!("/circles/{circle_id}/members"),
+        &serde_json::json!({ "user_id": bob_id }),
+        &alice,
+    )
+    .await;
+
+    // Alice creates a public and a private item
+    app.create_item(&alice, &serde_json::json!({ "name": "Public Item" }))
+        .await;
+    app.create_item(
+        &alice,
+        &serde_json::json!({ "name": "Secret Item", "is_private": true }),
+    )
+    .await;
+
+    app.put_json_with_auth(
+        &format!("/circles/{circle_id}/share-rule"),
+        &serde_json::json!({ "share_mode": "all" }),
+        &alice,
+    )
+    .await;
+
+    let (_, items) = app
+        .get_with_auth(&format!("/circles/{circle_id}/items"), &bob)
+        .await;
+    let names: Vec<&str> = items
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|i| i["name"].as_str().unwrap())
+        .collect();
+    assert!(names.contains(&"Public Item"));
+    assert!(
+        !names.contains(&"Secret Item"),
+        "private items must be excluded"
+    );
+}
+
+// ── Group circle: non-member cannot set rule ─────────────────────────
+
+#[tokio::test]
+async fn share_rule_group_non_member_forbidden() {
+    let app = TestApp::new().await;
+    let (alice, _) = setup_user_named(&app, "gnm_a@test.com", "gnm_alice").await;
+    let (carol, _) = setup_user_named(&app, "gnm_c@test.com", "gnm_carol").await;
+
+    let circle_id = create_circle(&app, &alice, "Group NM Circle").await;
+
+    // Carol (not a member) tries to set a rule
+    let (status, body) = app
+        .put_json_with_auth(
+            &format!("/circles/{circle_id}/share-rule"),
+            &serde_json::json!({ "share_mode": "all" }),
+            &carol,
+        )
+        .await;
+    assert_eq!(status, StatusCode::FORBIDDEN);
+    assert_error(&body, "FORBIDDEN");
+}
+
+// ── Group circle: dynamic — new item appears automatically ───────────
+
+#[tokio::test]
+async fn share_rule_group_all_dynamic() {
+    let app = TestApp::new().await;
+    let (alice, _) = setup_user_named(&app, "gdyn_a@test.com", "gdyn_alice").await;
+    let (bob, bob_id) = setup_user_named(&app, "gdyn_b@test.com", "gdyn_bob").await;
+
+    make_friends(&app, &alice, &bob, "gdyn_bob").await;
+    let circle_id = create_circle(&app, &alice, "Group Dynamic Circle").await;
+    app.post_json_with_auth(
+        &format!("/circles/{circle_id}/members"),
+        &serde_json::json!({ "user_id": bob_id }),
+        &alice,
+    )
+    .await;
+
+    // Set rule before creating items
+    app.put_json_with_auth(
+        &format!("/circles/{circle_id}/share-rule"),
+        &serde_json::json!({ "share_mode": "all" }),
+        &alice,
+    )
+    .await;
+
+    // Create item AFTER setting rule
+    app.create_item(&alice, &serde_json::json!({ "name": "Late Addition" }))
+        .await;
+
+    let (_, items) = app
+        .get_with_auth(&format!("/circles/{circle_id}/items"), &bob)
+        .await;
+    assert_eq!(items.as_array().unwrap().len(), 1);
+    assert_eq!(items[0]["name"], "Late Addition");
+}
+
+// ── Backward compat: batch share then set rule transitions cleanly ───
+
+#[tokio::test]
+async fn share_rule_group_transition_from_legacy_to_all() {
+    let app = TestApp::new().await;
+    let (alice, _) = setup_user_named(&app, "gtrans_a@test.com", "gtrans_alice").await;
+    let (bob, bob_id) = setup_user_named(&app, "gtrans_b@test.com", "gtrans_bob").await;
+
+    make_friends(&app, &alice, &bob, "gtrans_bob").await;
+    let circle_id = create_circle(&app, &alice, "Group Transition Circle").await;
+    app.post_json_with_auth(
+        &format!("/circles/{circle_id}/members"),
+        &serde_json::json!({ "user_id": bob_id }),
+        &alice,
+    )
+    .await;
+
+    // Alice creates 2 items, shares only 1 via legacy batch
+    let item1 = app
+        .create_item(&alice, &serde_json::json!({ "name": "Legacy Shared" }))
+        .await;
+    let item1_id = item1["id"].as_str().unwrap();
+    app.create_item(&alice, &serde_json::json!({ "name": "Not Yet Shared" }))
+        .await;
+
+    app.post_json_with_auth(
+        &format!("/circles/{circle_id}/items/batch"),
+        &serde_json::json!({ "item_ids": [item1_id] }),
+        &alice,
+    )
+    .await;
+
+    // Bob sees 1 item (legacy)
+    let (_, items) = app
+        .get_with_auth(&format!("/circles/{circle_id}/items"), &bob)
+        .await;
+    assert_eq!(items.as_array().unwrap().len(), 1);
+
+    // Alice switches to "all" mode — should now see both
+    app.put_json_with_auth(
+        &format!("/circles/{circle_id}/share-rule"),
+        &serde_json::json!({ "share_mode": "all" }),
+        &alice,
+    )
+    .await;
+
+    let (_, items) = app
+        .get_with_auth(&format!("/circles/{circle_id}/items"), &bob)
+        .await;
+    assert_eq!(
+        items.as_array().unwrap().len(),
+        2,
+        "switching to 'all' should reveal all items"
+    );
+}

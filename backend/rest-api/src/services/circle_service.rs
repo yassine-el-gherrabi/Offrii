@@ -352,8 +352,9 @@ impl PgCircleService {
             .collect())
     }
 
-    /// For direct circles: resolve items dynamically via share rules.
-    async fn list_direct_circle_items(
+    /// Resolve items for any circle via share rules (direct + group).
+    /// Members with no rule but existing circle_items are treated as implicit selection.
+    async fn list_circle_items_via_rules(
         &self,
         circle_id: Uuid,
         viewer_id: Uuid,
@@ -406,6 +407,28 @@ impl PgCircleService {
                     }
                 }
                 Some("selection") => {
+                    let ci: Vec<crate::models::CircleItem> = sqlx::query_as(
+                        "SELECT * FROM circle_items WHERE circle_id = $1 AND shared_by = $2",
+                    )
+                    .bind(circle_id)
+                    .bind(member.user_id)
+                    .fetch_all(&self.pool)
+                    .await
+                    .map_err(|e| AppError::Internal(e.into()))?;
+
+                    let ids: Vec<Uuid> = ci.iter().map(|c| c.item_id).collect();
+                    if ids.is_empty() {
+                        vec![]
+                    } else {
+                        self.item_repo
+                            .find_by_ids_any_user(&ids)
+                            .await
+                            .map_err(AppError::Internal)?
+                    }
+                }
+                Some("none") => vec![],
+                None => {
+                    // Backward compat: no rule but existing circle_items → implicit selection
                     let ci: Vec<crate::models::CircleItem> = sqlx::query_as(
                         "SELECT * FROM circle_items WHERE circle_id = $1 AND shared_by = $2",
                     )
@@ -1258,119 +1281,8 @@ impl traits::CircleService for PgCircleService {
     ) -> Result<Vec<CircleItemResponse>, AppError> {
         self.require_membership(circle_id, user_id).await?;
 
-        // Direct circles use dynamic share rules
-        let circle = self
-            .circle_repo
-            .find_by_id(circle_id)
-            .await
-            .map_err(AppError::Internal)?
-            .ok_or_else(|| AppError::NotFound("circle not found".into()))?;
-
-        if circle.is_direct {
-            return self.list_direct_circle_items(circle_id, user_id).await;
-        }
-
-        // Group circles use circle_items (existing behavior)
-        let circle_items = self
-            .circle_item_repo
-            .list_by_circle(circle_id)
-            .await
-            .map_err(AppError::Internal)?;
-
-        if circle_items.is_empty() {
-            return Ok(vec![]);
-        }
-
-        let item_ids: Vec<Uuid> = circle_items.iter().map(|ci| ci.item_id).collect();
-        let items = self
-            .item_repo
-            .find_by_ids_any_user(&item_ids)
-            .await
-            .map_err(AppError::Internal)?;
-
-        let items_map: HashMap<Uuid, _> = items.into_iter().map(|i| (i.id, i)).collect();
-
-        // Build claimer username map for items that are claimed
-        let claimer_ids: Vec<Uuid> = items_map.values().filter_map(|i| i.claimed_by).collect();
-        let claimer_map = self.user_lookup(&claimer_ids).await?;
-
-        // Build owner info map (shared_by users)
-        let owner_ids: Vec<Uuid> = circle_items.iter().map(|ci| ci.shared_by).collect();
-        let owner_info = self.owner_lookup(&owner_ids).await?;
-
-        // Build category icon map
-        let cat_ids: Vec<Uuid> = items_map.values().filter_map(|i| i.category_id).collect();
-        let cat_icon_map: HashMap<Uuid, String> = if !cat_ids.is_empty() {
-            sqlx::query("SELECT id, icon FROM categories WHERE id = ANY($1)")
-                .bind(&cat_ids)
-                .fetch_all(&self.pool)
-                .await
-                .map_err(|e| AppError::Internal(e.into()))?
-                .into_iter()
-                .map(|row| {
-                    use sqlx::Row;
-                    let id: Uuid = row.get("id");
-                    let icon: String = row.get("icon");
-                    (id, icon)
-                })
-                .collect()
-        } else {
-            HashMap::new()
-        };
-
-        let responses = circle_items
-            .into_iter()
-            .filter_map(|ci| {
-                let item = items_map.get(&ci.item_id)?;
-                let is_claimed = item.claimed_by.is_some();
-
-                // Anti-spoiler: item owner can't see who claimed their item
-                let claimed_by = if user_id == item.user_id {
-                    None
-                } else {
-                    item.claimed_by.and_then(|cid| {
-                        claimer_map
-                            .get(&cid)
-                            .map(|(username, display_name)| ClaimedByInfo {
-                                user_id: cid,
-                                username: username.clone(),
-                                display_name: display_name.clone(),
-                            })
-                    })
-                };
-
-                Some(CircleItemResponse {
-                    id: item.id,
-                    name: item.name.clone(),
-                    description: item.description.clone(),
-                    url: item.url.clone(),
-                    estimated_price: item.estimated_price,
-                    priority: item.priority,
-                    category_id: item.category_id,
-                    category_icon: item
-                        .category_id
-                        .and_then(|cid| cat_icon_map.get(&cid).cloned()),
-                    status: item.status.clone(),
-                    is_claimed,
-                    claimed_by,
-                    image_url: item.image_url.clone(),
-                    links: item.links.clone(),
-                    og_image_url: item.og_image_url.clone(),
-                    og_title: item.og_title.clone(),
-                    og_site_name: item.og_site_name.clone(),
-                    shared_at: ci.shared_at,
-                    shared_by: ci.shared_by,
-                    shared_by_name: owner_info
-                        .get(&ci.shared_by)
-                        .and_then(|(_, display_name, _)| display_name.clone()),
-                    shared_by_avatar_url: owner_info
-                        .get(&ci.shared_by)
-                        .and_then(|(_, _, avatar)| avatar.clone()),
-                })
-            })
-            .collect();
-
-        Ok(responses)
+        // All circles (direct + group) use share rules with backward-compat fallback
+        self.list_circle_items_via_rules(circle_id, user_id).await
     }
 
     #[tracing::instrument(skip(self))]

@@ -77,6 +77,7 @@ struct WishlistShareSheet: View {
     @State private var isLoadingCircles = false
     @State private var selectedCircleIds: Set<UUID> = []
     @State private var isSharing = false
+    @State private var shareRules: [UUID: CircleShareRuleSummary] = [:]
 
     // Links
     @State private var shareLinks: [ShareLinkResponse] = []
@@ -342,11 +343,43 @@ struct WishlistShareSheet: View {
         }
     }
 
+    @ViewBuilder
+    private func circleShareStatus(_ circle: OffriiCircle) -> some View {
+        let sharedCount = items.filter { $0.sharedCircles.contains(where: { $0.id == circle.id }) }.count
+        let totalActive = items.filter { $0.isActive && !$0.isPrivate }.count
+        let ruleMode = shareRules[circle.id]?.shareMode
+
+        if ruleMode == "all" {
+            Label(NSLocalizedString("share.ruleAll", comment: ""), systemImage: "checkmark.seal.fill")
+                .font(OffriiTypography.caption)
+                .foregroundColor(OffriiTheme.success)
+        } else if ruleMode == "categories", let catCount = shareRules[circle.id]?.categoryCount {
+            Label(
+                String(format: NSLocalizedString("share.ruleCategories", comment: ""), catCount),
+                systemImage: "folder.fill"
+            )
+            .font(OffriiTypography.caption)
+            .foregroundColor(OffriiTheme.primary)
+        } else if sharedCount == 0 {
+            Text(NSLocalizedString("share.noSharedItems", comment: ""))
+                .font(OffriiTypography.caption)
+                .foregroundColor(OffriiTheme.textMuted)
+        } else if sharedCount == totalActive {
+            Text(NSLocalizedString("share.seesAllList", comment: ""))
+                .font(OffriiTypography.caption).fontWeight(.medium)
+                .foregroundColor(OffriiTheme.primary)
+        } else {
+            Text(sharedCount == 1
+                ? NSLocalizedString("share.sharedItemSingular", comment: "")
+                : String(format: NSLocalizedString("share.sharedItemPlural", comment: ""), sharedCount))
+                .font(OffriiTypography.caption).fontWeight(.medium)
+                .foregroundColor(OffriiTheme.primary)
+        }
+    }
+
     private func circleCheckRow(_ circle: OffriiCircle) -> some View {
         let isSelected = selectedCircleIds.contains(circle.id)
-        let sharedItems = items.filter { $0.sharedCircles.contains(where: { $0.id == circle.id }) }
-        let sharedCount = sharedItems.count
-        let totalActive = items.filter { $0.isActive && !$0.isPrivate }.count
+        let isRuleAll = shareRules[circle.id]?.shareMode == "all"
 
         return Button {
             withAnimation(OffriiAnimation.snappy) {
@@ -365,44 +398,28 @@ struct WishlistShareSheet: View {
                         .font(OffriiTypography.body)
                         .foregroundColor(OffriiTheme.text)
 
-                    if sharedCount == 0 {
-                        Text(NSLocalizedString("share.noSharedItems", comment: ""))
-                            .font(OffriiTypography.caption)
-                            .foregroundColor(OffriiTheme.textMuted)
-                    } else if sharedCount == totalActive {
-                        Text(NSLocalizedString("share.seesAllList", comment: ""))
-                            .font(OffriiTypography.caption)
-                            .fontWeight(.medium)
-                            .foregroundColor(OffriiTheme.primary)
-                    } else {
-                        Text(sharedCount == 1
-                            ? NSLocalizedString("share.sharedItemSingular", comment: "")
-                            : String(format: NSLocalizedString("share.sharedItemPlural", comment: ""), sharedCount))
-                            .font(OffriiTypography.caption)
-                            .fontWeight(.medium)
-                            .foregroundColor(OffriiTheme.primary)
-                    }
-
-                    // Detail: item names
-                    if sharedCount > 0 && sharedCount < totalActive {
-                        Text(sharedItems.map(\.name).joined(separator: ", "))
-                            .font(.system(size: 11))
-                            .foregroundColor(OffriiTheme.textSecondary)
-                            .lineLimit(2)
-                    }
+                    circleShareStatus(circle)
                 }
 
                 Spacer()
 
-                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                    .font(.system(size: 22))
-                    .foregroundColor(isSelected ? OffriiTheme.primary : OffriiTheme.textMuted)
+                if isRuleAll {
+                    Image(systemName: "checkmark.seal.fill")
+                        .font(.system(size: 22))
+                        .foregroundColor(OffriiTheme.success)
+                } else {
+                    Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                        .font(.system(size: 22))
+                        .foregroundColor(isSelected ? OffriiTheme.primary : OffriiTheme.textMuted)
+                }
             }
             .padding(OffriiTheme.spacingBase)
             .background(isSelected ? OffriiTheme.primary.opacity(0.05) : OffriiTheme.card)
             .cornerRadius(OffriiTheme.cornerRadiusLG)
+            .opacity(isRuleAll ? 0.7 : 1.0)
         }
         .buttonStyle(.plain)
+        .disabled(isRuleAll)
         .animation(OffriiAnimation.snappy, value: isSelected)
     }
 
@@ -755,7 +772,13 @@ struct WishlistShareSheet: View {
 
     private func loadCircles() async {
         isLoadingCircles = true
-        do { circles = try await CircleService.shared.listCircles() } catch {}
+        do {
+            async let circlesTask = CircleService.shared.listCircles()
+            async let rulesTask = CircleService.shared.listMyShareRules()
+            circles = try await circlesTask
+            let rules = try await rulesTask
+            shareRules = Dictionary(uniqueKeysWithValues: rules.map { ($0.circleId, $0) })
+        } catch {}
         isLoadingCircles = false
     }
 
@@ -767,12 +790,36 @@ struct WishlistShareSheet: View {
 
     private func shareToSelectedCircles() async {
         isSharing = true
-        let itemIds = resolvedItemIds
 
         for circleId in selectedCircleIds {
             do {
-                try await CircleService.shared.batchShareItems(circleId: circleId, itemIds: Array(itemIds))
+                switch scope {
+                case .all:
+                    try await CircleService.shared.setShareRule(
+                        circleId: circleId, mode: "all"
+                    )
+                case .category:
+                    try await CircleService.shared.setShareRule(
+                        circleId: circleId, mode: "categories",
+                        categoryIds: Array(selectedCategoryIds)
+                    )
+                case .selection:
+                    try await CircleService.shared.setShareRule(
+                        circleId: circleId, mode: "selection"
+                    )
+                    let itemIds = Array(pickedItemIds)
+                    if !itemIds.isEmpty {
+                        try await CircleService.shared.batchShareItems(
+                            circleId: circleId, itemIds: itemIds
+                        )
+                    }
+                }
             } catch {}
+        }
+
+        // Refresh share rules state
+        if let rules = try? await CircleService.shared.listMyShareRules() {
+            shareRules = Dictionary(uniqueKeysWithValues: rules.map { ($0.circleId, $0) })
         }
 
         OffriiHaptics.success()

@@ -55,6 +55,13 @@ pub struct ShareRuleResponse {
     pub updated_at: DateTime<Utc>,
 }
 
+#[derive(Debug, Clone, Serialize)]
+pub struct CircleShareRuleSummary {
+    pub circle_id: Uuid,
+    pub share_mode: String,
+    pub category_count: usize,
+}
+
 #[derive(Debug, Deserialize)]
 pub struct FeedQuery {
     pub page: Option<i64>,
