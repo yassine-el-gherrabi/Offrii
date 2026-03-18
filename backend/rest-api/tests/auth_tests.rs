@@ -1669,3 +1669,68 @@ async fn login_by_nonexistent_username_401() {
         .await;
     assert_eq!(status, StatusCode::UNAUTHORIZED);
 }
+
+#[tokio::test]
+async fn register_rejects_reserved_username_admin() {
+    let app = TestApp::new().await;
+    let (status, body) = app
+        .register_user_with_username("reserved1@test.com", TEST_PASSWORD, "admin")
+        .await;
+    assert_eq!(
+        status,
+        StatusCode::BAD_REQUEST,
+        "admin should be reserved: {body}"
+    );
+}
+
+#[tokio::test]
+async fn register_rejects_reserved_username_offrii() {
+    let app = TestApp::new().await;
+    let (status, body) = app
+        .register_user_with_username("reserved2@test.com", TEST_PASSWORD, "offrii")
+        .await;
+    assert_eq!(
+        status,
+        StatusCode::BAD_REQUEST,
+        "offrii should be reserved: {body}"
+    );
+}
+
+#[tokio::test]
+async fn register_rejects_reserved_username_support() {
+    let app = TestApp::new().await;
+    let (status, body) = app
+        .register_user_with_username("reserved3@test.com", TEST_PASSWORD, "support")
+        .await;
+    assert_eq!(
+        status,
+        StatusCode::BAD_REQUEST,
+        "support should be reserved: {body}"
+    );
+}
+
+#[tokio::test]
+async fn register_rejects_reserved_username_test() {
+    let app = TestApp::new().await;
+    let (status, body) = app
+        .register_user_with_username("reserved4@test.com", TEST_PASSWORD, "test")
+        .await;
+    assert_eq!(
+        status,
+        StatusCode::BAD_REQUEST,
+        "test should be reserved: {body}"
+    );
+}
+
+#[tokio::test]
+async fn register_allows_normal_username() {
+    let app = TestApp::new().await;
+    let (status, _) = app
+        .register_user_with_username("normal@test.com", TEST_PASSWORD, "alice_normal")
+        .await;
+    assert_eq!(
+        status,
+        StatusCode::CREATED,
+        "normal username should be allowed"
+    );
+}

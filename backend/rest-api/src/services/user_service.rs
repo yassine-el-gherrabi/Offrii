@@ -10,7 +10,7 @@ use crate::dto::items::ItemResponse;
 use crate::dto::users::{UpdateProfileRequest, UserDataExport, UserProfileResponse};
 use crate::errors::AppError;
 use crate::traits;
-use crate::utils::username::is_valid_username;
+use crate::utils::username::{is_reserved_username, is_valid_username};
 
 // ── Concrete implementation ──────────────────────────────────────────
 
@@ -70,6 +70,9 @@ impl traits::UserService for PgUserService {
                 return Err(AppError::BadRequest(
                     "username must be 3-30 characters, start with a letter, and contain only lowercase letters, digits, and underscores".into(),
                 ));
+            }
+            if is_reserved_username(username) {
+                return Err(AppError::BadRequest("this username is reserved".into()));
             }
 
             let taken = self

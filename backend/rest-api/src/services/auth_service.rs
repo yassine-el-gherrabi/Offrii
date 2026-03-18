@@ -17,7 +17,7 @@ use crate::utils::hash;
 use crate::utils::jwt::{ACCESS_TOKEN_TTL_SECS, JwtKeys, REFRESH_TOKEN_TTL_SECS};
 use crate::utils::password_policy::{self, PasswordPolicyViolation};
 use crate::utils::token_hash::sha256_hex;
-use crate::utils::username::is_valid_username;
+use crate::utils::username::{is_reserved_username, is_valid_username};
 
 /// Maximum number of active refresh tokens kept per user.
 const MAX_REFRESH_TOKENS_PER_USER: i64 = 5;
@@ -129,6 +129,9 @@ impl traits::AuthService for PgAuthService {
                 return Err(AppError::BadRequest(
                     "username must be 3-30 characters, start with a letter, and contain only lowercase letters, digits, and underscores".into(),
                 ));
+            }
+            if is_reserved_username(uname) {
+                return Err(AppError::BadRequest("this username is reserved".into()));
             }
             let taken: bool =
                 sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM users WHERE username = $1)")
