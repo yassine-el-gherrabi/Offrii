@@ -15,7 +15,7 @@ struct RegisterBody: Encodable {
 }
 
 struct LoginBody: Encodable {
-    let email: String
+    let identifier: String
     let password: String
 }
 

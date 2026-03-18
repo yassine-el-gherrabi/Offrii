@@ -283,7 +283,7 @@ pub trait AuthService: Send + Sync {
         username: Option<&str>,
     ) -> Result<AuthResponse, AppError>;
 
-    async fn login(&self, email: &str, password: &str) -> Result<AuthResponse, AppError>;
+    async fn login(&self, identifier: &str, password: &str) -> Result<AuthResponse, AppError>;
 
     async fn refresh(&self, raw_refresh_token: &str) -> Result<RefreshResponse, AppError>;
 

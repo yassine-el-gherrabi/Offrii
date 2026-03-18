@@ -143,7 +143,7 @@ async fn register_with_username_and_display_name() {
     let app = TestApp::new().await;
 
     let body = serde_json::json!({
-        "email": TEST_EMAIL,
+        "identifier": TEST_EMAIL,
         "password": TEST_PASSWORD,
         "display_name": "Alice",
         "username": "custom_user"
@@ -275,7 +275,7 @@ async fn login_success_200() {
     app.setup_user(TEST_EMAIL, TEST_PASSWORD).await;
 
     let body = serde_json::json!({
-        "email": TEST_EMAIL,
+        "identifier": TEST_EMAIL,
         "password": TEST_PASSWORD,
     });
     let (status, resp) = app.post_json("/auth/login", &body).await;
@@ -311,7 +311,7 @@ async fn login_nonexistent_email_401() {
     let app = TestApp::new().await;
 
     let body = serde_json::json!({
-        "email": "nobody@example.com",
+        "identifier": "nobody@example.com",
         "password": TEST_PASSWORD,
     });
     let (status, body) = app.post_json("/auth/login", &body).await;
@@ -461,7 +461,7 @@ async fn multiple_sessions_logout_revokes_all() {
 
     // Login creates session 2 (also get refresh_1 from a fresh login)
     let login_body = serde_json::json!({
-        "email": TEST_EMAIL,
+        "identifier": TEST_EMAIL,
         "password": TEST_PASSWORD,
     });
 
@@ -513,7 +513,7 @@ async fn logout_then_refresh_each_session_401() {
     app.setup_user(TEST_EMAIL, TEST_PASSWORD).await;
 
     let login_body = serde_json::json!({
-        "email": TEST_EMAIL,
+        "identifier": TEST_EMAIL,
         "password": TEST_PASSWORD,
     });
 
@@ -600,7 +600,7 @@ async fn login_enforces_max_refresh_tokens() {
     app.setup_user(TEST_EMAIL, TEST_PASSWORD).await;
 
     let login_body = serde_json::json!({
-        "email": TEST_EMAIL,
+        "identifier": TEST_EMAIL,
         "password": TEST_PASSWORD,
     });
 
@@ -641,7 +641,7 @@ async fn register_normalizes_email() {
 
     // Login with normalized email should work
     let body = serde_json::json!({
-        "email": "alice@example.com",
+        "identifier": "alice@example.com",
         "password": TEST_PASSWORD,
     });
     let (status, _) = app.post_json("/auth/login", &body).await;
@@ -724,7 +724,7 @@ async fn logout_only_blacklists_own_token() {
     app.setup_user(TEST_EMAIL, TEST_PASSWORD).await;
 
     let login_body = serde_json::json!({
-        "email": TEST_EMAIL,
+        "identifier": TEST_EMAIL,
         "password": TEST_PASSWORD,
     });
 
@@ -865,7 +865,7 @@ async fn new_login_after_version_bump_succeeds() {
 
     // New login should succeed and issue tokens with new version
     let login_body = serde_json::json!({
-        "email": TEST_EMAIL,
+        "identifier": TEST_EMAIL,
         "password": TEST_PASSWORD,
     });
     let (status, resp) = app.post_json("/auth/login", &login_body).await;
@@ -1033,7 +1033,7 @@ async fn change_password_invalidates_tokens_and_allows_new_login() {
 
     // Old password should no longer work
     let login_body = serde_json::json!({
-        "email": TEST_EMAIL,
+        "identifier": TEST_EMAIL,
         "password": TEST_PASSWORD,
     });
     let (status, _) = app.post_json("/auth/login", &login_body).await;
@@ -1041,7 +1041,7 @@ async fn change_password_invalidates_tokens_and_allows_new_login() {
 
     // New password should work
     let login_body = serde_json::json!({
-        "email": TEST_EMAIL,
+        "identifier": TEST_EMAIL,
         "password": NEW_PASSWORD,
     });
     let (status, resp) = app.post_json("/auth/login", &login_body).await;
@@ -1074,7 +1074,7 @@ async fn forgot_password_nonexistent_email_200() {
     let app = TestApp::new().await;
 
     // No user registered — should still return 200 (no email enumeration)
-    let body = serde_json::json!({ "email": "nobody@example.com" });
+    let body = serde_json::json!({ "identifier": "nobody@example.com" });
     let (status, _) = app.post_json("/auth/forgot-password", &body).await;
 
     assert_eq!(status, StatusCode::OK);
@@ -1241,7 +1241,7 @@ async fn reset_password_allows_login_with_new_password() {
 
     // Old password should fail
     let login_body = serde_json::json!({
-        "email": TEST_EMAIL,
+        "identifier": TEST_EMAIL,
         "password": TEST_PASSWORD,
     });
     let (status, _) = app.post_json("/auth/login", &login_body).await;
@@ -1249,7 +1249,7 @@ async fn reset_password_allows_login_with_new_password() {
 
     // New password should work
     let login_body = serde_json::json!({
-        "email": TEST_EMAIL,
+        "identifier": TEST_EMAIL,
         "password": NEW_PASSWORD,
     });
     let (status, resp) = app.post_json("/auth/login", &login_body).await;
@@ -1346,7 +1346,7 @@ async fn register_sends_welcome_email() {
     let app = TestApp::new().await;
 
     let body = serde_json::json!({
-        "email": TEST_EMAIL,
+        "identifier": TEST_EMAIL,
         "password": TEST_PASSWORD,
     });
     let (status, _) = app.post_json("/auth/register", &body).await;
@@ -1365,7 +1365,7 @@ async fn register_sends_welcome_email_with_display_name() {
     let app = TestApp::new().await;
 
     let body = serde_json::json!({
-        "email": TEST_EMAIL,
+        "identifier": TEST_EMAIL,
         "password": TEST_PASSWORD,
         "display_name": "Marie",
     });
@@ -1601,7 +1601,7 @@ async fn login_response_contains_is_new_user_false() {
         .post_json(
             "/auth/login",
             &serde_json::json!({
-                "email": TEST_EMAIL,
+                "identifier": TEST_EMAIL,
                 "password": TEST_PASSWORD,
             }),
         )
@@ -1609,4 +1609,63 @@ async fn login_response_contains_is_new_user_false() {
 
     assert_eq!(status, StatusCode::OK);
     assert_eq!(body["is_new_user"], false);
+}
+
+#[tokio::test]
+async fn login_by_username_succeeds() {
+    let app = TestApp::new().await;
+    let (status, _reg_body) = app
+        .register_user_with_username("loginuser@test.com", TEST_PASSWORD, "loginbyname")
+        .await;
+    assert_eq!(status, StatusCode::CREATED);
+
+    let (status, body) = app
+        .post_json(
+            "/auth/login",
+            &serde_json::json!({
+                "identifier": "loginbyname",
+                "password": TEST_PASSWORD,
+            }),
+        )
+        .await;
+    assert_eq!(
+        status,
+        StatusCode::OK,
+        "login by username should work: {body}"
+    );
+    assert!(body["tokens"]["access_token"].is_string());
+}
+
+#[tokio::test]
+async fn login_by_username_wrong_password_401() {
+    let app = TestApp::new().await;
+    app.register_user_with_username("loginwrong@test.com", TEST_PASSWORD, "wrongpassuser")
+        .await;
+
+    let (status, _) = app
+        .post_json(
+            "/auth/login",
+            &serde_json::json!({
+                "identifier": "wrongpassuser",
+                "password": "WrongPassword123!",
+            }),
+        )
+        .await;
+    assert_eq!(status, StatusCode::UNAUTHORIZED);
+}
+
+#[tokio::test]
+async fn login_by_nonexistent_username_401() {
+    let app = TestApp::new().await;
+
+    let (status, _) = app
+        .post_json(
+            "/auth/login",
+            &serde_json::json!({
+                "identifier": "doesnotexist",
+                "password": TEST_PASSWORD,
+            }),
+        )
+        .await;
+    assert_eq!(status, StatusCode::UNAUTHORIZED);
 }

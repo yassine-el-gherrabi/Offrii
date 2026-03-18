@@ -220,15 +220,23 @@ impl traits::AuthService for PgAuthService {
     }
 
     #[tracing::instrument(skip(self, password))]
-    async fn login(&self, email: &str, password: &str) -> Result<AuthResponse, AppError> {
-        let email = email.trim().to_lowercase();
-        let invalid_credentials = || AppError::Unauthorized("invalid email or password".into());
+    async fn login(&self, identifier: &str, password: &str) -> Result<AuthResponse, AppError> {
+        let identifier = identifier.trim().to_lowercase();
+        let invalid_credentials =
+            || AppError::Unauthorized("invalid email/username or password".into());
 
-        let user: Option<User> = self
-            .user_repo
-            .find_by_email(&email)
-            .await
-            .map_err(AppError::Internal)?;
+        // Try email first, then username
+        let user: Option<User> = if identifier.contains('@') {
+            self.user_repo
+                .find_by_email(&identifier)
+                .await
+                .map_err(AppError::Internal)?
+        } else {
+            self.user_repo
+                .find_by_username(&identifier)
+                .await
+                .map_err(AppError::Internal)?
+        };
 
         // Always run Argon2 verify — even when user doesn't exist — to prevent
         // timing side-channel attacks that reveal whether an email is registered.

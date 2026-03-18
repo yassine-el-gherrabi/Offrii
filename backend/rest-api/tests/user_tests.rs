@@ -107,7 +107,7 @@ async fn delete_account_cascades() {
 
     // Login should fail
     let login_body = serde_json::json!({
-        "email": "user@example.com",
+        "identifier": "user@example.com",
         "password": TEST_PASSWORD,
     });
     let (status, _) = app.post_json("/auth/login", &login_body).await;
@@ -624,7 +624,7 @@ async fn profile_survives_password_change() {
 
     // Re-login
     let login = serde_json::json!({
-        "email": "user@example.com",
+        "identifier": "user@example.com",
         "password": NEW_PASSWORD,
     });
     let (status, login_body) = app.post_json("/auth/login", &login).await;

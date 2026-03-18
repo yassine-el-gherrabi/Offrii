@@ -29,8 +29,8 @@ pub struct RegisterRequest {
 
 #[derive(Debug, Deserialize, Validate)]
 pub struct LoginRequest {
-    #[validate(email(message = "invalid email address"))]
-    pub email: String,
+    #[validate(length(min = 1, message = "email or username is required"))]
+    pub identifier: String,
     #[validate(length(min = 1, message = "password is required"))]
     pub password: String,
 }

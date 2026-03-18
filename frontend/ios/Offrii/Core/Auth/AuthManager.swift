@@ -43,9 +43,9 @@ final class AuthManager {
 
     // MARK: - Login
 
-    /// Authenticates with email and password, stores the returned tokens.
-    func login(email: String, password: String) async throws {
-        let body = LoginBody(email: email, password: password)
+    /// Authenticates with email/username and password, stores the returned tokens.
+    func login(identifier: String, password: String) async throws {
+        let body = LoginBody(identifier: identifier, password: password)
 
         let response: AuthResponse = try await client.request(.login(body))
         storeTokens(response.tokens)

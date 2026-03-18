@@ -78,7 +78,7 @@ struct AuthView: View {
 
             Text("Offrii")
                 .font(OffriiTypography.titleLarge)
-                .foregroundColor(OffriiTheme.text)
+                .foregroundColor(OffriiTheme.primary)
         }
     }
 
@@ -102,6 +102,13 @@ struct AuthView: View {
             // Title + subtitle
             VStack(alignment: .leading, spacing: OffriiTheme.spacingXS) {
                 Text(NSLocalizedString(
+                    mode == .login ? "auth.welcomeBack" : "auth.welcomeNew",
+                    comment: ""
+                ))
+                .font(OffriiTypography.titleLarge)
+                .foregroundColor(OffriiTheme.text)
+
+                Text(NSLocalizedString(
                     mode == .login ? "auth.loginSubtitle" : "auth.registerSubtitle",
                     comment: ""
                 ))
@@ -114,32 +121,41 @@ struct AuthView: View {
                 OffriiTextField(
                     label: "",
                     text: $viewModel.email,
-                    placeholder: NSLocalizedString("auth.email", comment: ""),
+                    placeholder: NSLocalizedString(
+                        mode == .login ? "auth.emailOrUsername" : "auth.email",
+                        comment: ""
+                    ),
                     errorMessage: viewModel.emailError,
                     style: .filled,
-                    keyboardType: .emailAddress,
-                    textContentType: .emailAddress,
+                    keyboardType: mode == .login ? .default : .emailAddress,
+                    textContentType: mode == .login ? .username : .emailAddress,
                     autocapitalization: .never
                 )
                 .focused($focusedField, equals: .email)
                 .submitLabel(.next)
                 .onSubmit { focusedField = .password }
 
-                OffriiTextField(
-                    label: "",
-                    text: $viewModel.password,
-                    placeholder: NSLocalizedString(
-                        mode == .login ? "auth.password" : "auth.passwordPlaceholder",
-                        comment: ""
-                    ),
-                    errorMessage: viewModel.passwordError,
-                    isSecure: true,
-                    style: .filled,
-                    textContentType: mode == .login ? .password : .newPassword
-                )
-                .focused($focusedField, equals: .password)
-                .submitLabel(.go)
-                .onSubmit { submit() }
+                VStack(alignment: .leading, spacing: OffriiTheme.spacingXXS) {
+                    OffriiTextField(
+                        label: "",
+                        text: $viewModel.password,
+                        placeholder: NSLocalizedString("auth.password", comment: ""),
+                        errorMessage: viewModel.passwordError,
+                        isSecure: true,
+                        style: .filled,
+                        textContentType: mode == .login ? .password : .newPassword
+                    )
+                    .focused($focusedField, equals: .password)
+                    .submitLabel(.go)
+                    .onSubmit { submit() }
+
+                    if mode == .register {
+                        Text(NSLocalizedString("auth.passwordHint", comment: ""))
+                            .font(OffriiTypography.caption)
+                            .foregroundColor(OffriiTheme.textMuted)
+                            .padding(.leading, OffriiTheme.spacingXS)
+                    }
+                }
 
                 if mode == .login {
                     HStack {

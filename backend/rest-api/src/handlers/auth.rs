@@ -59,7 +59,7 @@ async fn login(
 ) -> Result<Json<AuthResponse>, AppError> {
     validate_request(&req)?;
 
-    let response = state.auth.login(&req.email, &req.password).await?;
+    let response = state.auth.login(&req.identifier, &req.password).await?;
 
     Ok(Json(response))
 }
@@ -255,18 +255,27 @@ mod tests {
     }
 
     #[test]
-    fn login_rejects_invalid_email() {
+    fn login_rejects_empty_identifier() {
         let req = LoginRequest {
-            email: "bad-email".into(),
+            identifier: "".into(),
             password: "a".into(),
         };
         assert!(req.validate().is_err());
     }
 
     #[test]
-    fn login_accepts_valid_input() {
+    fn login_accepts_email() {
         let req = LoginRequest {
-            email: "user@example.com".into(),
+            identifier: "user@example.com".into(),
+            password: "a".into(),
+        };
+        assert!(req.validate().is_ok());
+    }
+
+    #[test]
+    fn login_accepts_username() {
+        let req = LoginRequest {
+            identifier: "myusername".into(),
             password: "a".into(),
         };
         assert!(req.validate().is_ok());

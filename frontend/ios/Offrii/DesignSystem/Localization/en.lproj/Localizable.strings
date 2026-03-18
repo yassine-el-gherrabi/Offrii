@@ -41,6 +41,9 @@
 "auth.continueWithApple" = "Continue with Apple";
 "auth.or" = "or";
 "auth.welcomeBack" = "Welcome back!";
+"auth.welcomeNew" = "Welcome!";
+"auth.emailOrUsername" = "Email or username";
+"auth.passwordHint" = "At least 8 characters";
 
 /* Errors */
 "error.emailTaken" = "This email is already taken";

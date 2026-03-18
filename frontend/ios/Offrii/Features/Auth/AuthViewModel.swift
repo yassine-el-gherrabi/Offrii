@@ -110,7 +110,7 @@ final class AuthViewModel {
 
         state = .loading
         do {
-            try await authManager.login(email: email.trimmingCharacters(in: .whitespaces), password: password)
+            try await authManager.login(identifier: email.trimmingCharacters(in: .whitespaces), password: password)
             state = .idle
             return true
         } catch {
