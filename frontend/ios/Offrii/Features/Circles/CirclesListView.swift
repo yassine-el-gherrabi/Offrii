@@ -79,7 +79,9 @@ struct CirclesListView: View {
                     OffriiEmptyState(
                         icon: "person.2.fill",
                         title: NSLocalizedString("circles.empty", comment: ""),
-                        subtitle: NSLocalizedString("circles.emptySubtitle", comment: "")
+                        subtitle: NSLocalizedString("circles.emptySubtitle", comment: ""),
+                        ctaTitle: NSLocalizedString("circles.create", comment: ""),
+                        ctaAction: { showCreateCircle = true }
                     )
                     Spacer()
                 } else {
