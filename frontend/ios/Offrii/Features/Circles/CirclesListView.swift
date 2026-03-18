@@ -40,6 +40,7 @@ struct CirclesListView: View {
     @State private var directCircleToRemove: OffriiCircle?
     @State private var showAcceptToast = false
     @State private var acceptedName = ""
+    @State private var showFabMenu = false
 
     private var displayedCircles: [OffriiCircle] {
         let searched = viewModel.filteredCircles
@@ -136,10 +137,13 @@ struct CirclesListView: View {
             }
 
             OffriiFloatingActionButton(icon: selectedFilter == .friends ? "person.badge.plus" : "plus") {
-                if selectedFilter == .friends {
+                switch selectedFilter {
+                case .friends:
                     showAddFriend = true
-                } else {
+                case .groups:
                     showCreateCircle = true
+                default:
+                    showFabMenu = true
                 }
             }
             .padding(.trailing, OffriiTheme.spacingLG)
@@ -206,6 +210,18 @@ struct CirclesListView: View {
         }) {
             NotificationCenterView()
                 .presentationDetents([.medium, .large])
+        }
+        .confirmationDialog("", isPresented: $showFabMenu) {
+            Button {
+                showCreateCircle = true
+            } label: {
+                Label(NSLocalizedString("circles.create", comment: ""), systemImage: "person.2.fill")
+            }
+            Button {
+                showAddFriend = true
+            } label: {
+                Label(NSLocalizedString("friends.add.title", comment: ""), systemImage: "person.badge.plus")
+            }
         }
         .task {
             await viewModel.loadAll()
