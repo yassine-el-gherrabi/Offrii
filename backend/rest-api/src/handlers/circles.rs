@@ -332,6 +332,17 @@ async fn set_share_rule(
         ));
     }
 
+    // Clean up circle_items when switching away from selection mode
+    // (or stopping sharing entirely)
+    if req.share_mode != "selection" {
+        sqlx::query("DELETE FROM circle_items WHERE circle_id = $1 AND shared_by = $2")
+            .bind(id)
+            .bind(auth_user.user_id)
+            .execute(&state.db)
+            .await
+            .map_err(|e| AppError::Internal(e.into()))?;
+    }
+
     if req.share_mode == "none" {
         state
             .share_rules
