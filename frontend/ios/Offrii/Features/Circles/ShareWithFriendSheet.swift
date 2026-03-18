@@ -12,6 +12,7 @@ struct ShareWithFriendSheet: View {
     @State private var categories: [CategoryResponse] = []
     @State private var selectedCategoryIds: Set<UUID> = []
     @State private var items: [Item] = []
+    @State private var selectedItemIds: Set<UUID> = []
     @State private var isLoading = true
     @State private var isSaving = false
     @State private var privateCount = 0
@@ -78,11 +79,25 @@ struct ShareWithFriendSheet: View {
             )
 
             modeOption(
-                mode: "none",
-                icon: "eye.slash",
-                title: NSLocalizedString("shareRule.none.title", comment: ""),
-                subtitle: NSLocalizedString("shareRule.none.subtitle", comment: "")
+                mode: "selection",
+                icon: "hand.tap",
+                title: NSLocalizedString("shareRule.selection.title", comment: ""),
+                subtitle: NSLocalizedString("shareRule.selection.subtitle", comment: "")
             )
+
+            // Stop sharing button (only when a rule is active)
+            if currentMode != "none" {
+                Button {
+                    selectedMode = "none"
+                    Task { await save() }
+                } label: {
+                    Text(NSLocalizedString("shareRule.stopSharing", comment: ""))
+                        .font(OffriiTypography.footnote)
+                        .foregroundColor(OffriiTheme.danger)
+                        .frame(maxWidth: .infinity)
+                        .padding(.top, OffriiTheme.spacingSM)
+                }
+            }
         }
     }
 
@@ -199,6 +214,45 @@ struct ShareWithFriendSheet: View {
                 .foregroundColor(OffriiTheme.primary)
                 .italic()
         }
+
+        if selectedMode == "selection" {
+            let shareable = items.filter { !$0.isPrivate && $0.isActive }
+            if shareable.isEmpty {
+                Text(NSLocalizedString("shareRule.noItems", comment: ""))
+                    .font(OffriiTypography.body)
+                    .foregroundColor(OffriiTheme.textMuted)
+            } else {
+                VStack(alignment: .leading, spacing: OffriiTheme.spacingSM) {
+                    Text(NSLocalizedString("shareRule.selectItems", comment: ""))
+                        .font(OffriiTypography.footnote)
+                        .fontWeight(.semibold)
+                        .foregroundColor(OffriiTheme.textSecondary)
+                        .textCase(.uppercase)
+
+                    ForEach(shareable) { item in
+                        let isSelected = selectedItemIds.contains(item.id)
+                        Button {
+                            if isSelected {
+                                selectedItemIds.remove(item.id)
+                            } else {
+                                selectedItemIds.insert(item.id)
+                            }
+                        } label: {
+                            HStack(spacing: OffriiTheme.spacingSM) {
+                                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                                    .foregroundColor(isSelected ? OffriiTheme.primary : OffriiTheme.textMuted)
+                                Text(item.name)
+                                    .font(OffriiTypography.body)
+                                    .foregroundColor(OffriiTheme.text)
+                                Spacer()
+                            }
+                            .padding(.vertical, OffriiTheme.spacingXS)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
+        }
     }
 
     // MARK: - Data
@@ -232,8 +286,17 @@ struct ShareWithFriendSheet: View {
             try await CircleService.shared.setShareRule(
                 circleId: circleId,
                 mode: selectedMode,
-                categoryIds: Array(selectedCategoryIds)
+                categoryIds: selectedMode == "categories" ? Array(selectedCategoryIds) : []
             )
+
+            // For selection mode, also batch share the selected items
+            if selectedMode == "selection" && !selectedItemIds.isEmpty {
+                try await CircleService.shared.batchShareItems(
+                    circleId: circleId,
+                    itemIds: Array(selectedItemIds)
+                )
+            }
+
             OffriiHaptics.success()
             dismiss()
         } catch {}

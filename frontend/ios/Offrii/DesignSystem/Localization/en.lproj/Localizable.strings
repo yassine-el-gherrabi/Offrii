@@ -584,6 +584,11 @@
 "shareRule.privateWarning" = "%d private wish(es) excluded";
 "shareRule.selectCategories" = "Select categories";
 "shareRule.noCategories" = "No categories yet";
+"shareRule.selection.title" = "Manual selection";
+"shareRule.selection.subtitle" = "Pick specific wishes to share";
+"shareRule.selectItems" = "Select wishes";
+"shareRule.noItems" = "No wishes to share";
+"shareRule.stopSharing" = "Stop sharing";
 "shareRule.dynamicHint" = "Updates automatically when you add or remove wishes";
 
 /* Push notification localized strings (APNs loc-key) */

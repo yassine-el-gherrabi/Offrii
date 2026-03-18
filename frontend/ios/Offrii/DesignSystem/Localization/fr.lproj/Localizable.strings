@@ -584,6 +584,11 @@
 "shareRule.privateWarning" = "%d envie(s) privée(s) exclue(s)";
 "shareRule.selectCategories" = "Sélectionner les catégories";
 "shareRule.noCategories" = "Aucune catégorie";
+"shareRule.selection.title" = "Sélection manuelle";
+"shareRule.selection.subtitle" = "Choisir les envies à partager";
+"shareRule.selectItems" = "Sélectionner les envies";
+"shareRule.noItems" = "Aucune envie à partager";
+"shareRule.stopSharing" = "Arrêter le partage";
 "shareRule.dynamicHint" = "Se met à jour automatiquement quand vous ajoutez ou retirez des envies";
 
 /* Push notification localized strings (APNs loc-key) */
