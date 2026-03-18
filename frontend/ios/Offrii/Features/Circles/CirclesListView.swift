@@ -430,7 +430,7 @@ private struct CirclesQuickActionSheet: View {
         VStack(spacing: OffriiTheme.spacingBase) {
             actionRow(
                 icon: "person.2.fill",
-                iconColor: OffriiTheme.secondary,
+                iconColor: OffriiTheme.accent,
                 title: NSLocalizedString("create.createCircle", comment: ""),
                 subtitle: NSLocalizedString("create.createCircleSubtitle", comment: "")
             ) {
@@ -439,7 +439,7 @@ private struct CirclesQuickActionSheet: View {
 
             actionRow(
                 icon: "person.badge.plus",
-                iconColor: OffriiTheme.success,
+                iconColor: OffriiTheme.accent,
                 title: NSLocalizedString("create.addFriend", comment: ""),
                 subtitle: NSLocalizedString("create.addFriendSubtitle", comment: "")
             ) {

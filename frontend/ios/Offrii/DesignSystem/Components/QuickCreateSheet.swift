@@ -23,7 +23,7 @@ struct QuickCreateSheet: View {
 
                 createOption(
                     icon: "person.2.fill",
-                    iconColor: OffriiTheme.secondary,
+                    iconColor: OffriiTheme.accent,
                     title: NSLocalizedString("create.createCircle", comment: ""),
                     subtitle: NSLocalizedString("create.createCircleSubtitle", comment: "")
                 ) {
@@ -32,7 +32,7 @@ struct QuickCreateSheet: View {
 
                 createOption(
                     icon: "person.badge.plus",
-                    iconColor: OffriiTheme.success,
+                    iconColor: OffriiTheme.accent,
                     title: NSLocalizedString("create.addFriend", comment: ""),
                     subtitle: NSLocalizedString("create.addFriendSubtitle", comment: "")
                 ) {
