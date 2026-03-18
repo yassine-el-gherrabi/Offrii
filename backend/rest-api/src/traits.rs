@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use anyhow::Result;
 use async_trait::async_trait;
 use chrono::{DateTime, NaiveTime, Utc};
@@ -452,10 +454,11 @@ pub trait FriendRepo: Send + Sync {
         to_user_id: Uuid,
     ) -> Result<Option<FriendRequest>>;
 
-    async fn count_active_items_per_user(
+    async fn count_shared_items_per_user(
         &self,
-        user_ids: &[Uuid],
-    ) -> Result<std::collections::HashMap<Uuid, i64>>;
+        friend_ids: &[Uuid],
+        viewer_id: Uuid,
+    ) -> Result<HashMap<Uuid, i64>>;
 }
 
 #[async_trait]
@@ -671,6 +674,13 @@ pub trait CircleService: Send + Sync {
         user_id: Uuid,
     ) -> Result<(), AppError>;
 
+    async fn batch_share_items(
+        &self,
+        circle_id: Uuid,
+        item_ids: &[Uuid],
+        user_id: Uuid,
+    ) -> Result<(), AppError>;
+
     async fn list_circle_items(
         &self,
         circle_id: Uuid,
@@ -834,11 +844,19 @@ pub enum NotificationOutcome {
     Error(String),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct NotificationRequest {
     pub device_token: String,
     pub title: String,
     pub body: String,
+    /// Extra key-value pairs added to the APNs payload under "custom_data".
+    pub custom_data: HashMap<String, String>,
+    /// APNs localization: key for the body (resolved by iOS against Localizable.strings)
+    pub loc_key: Option<String>,
+    /// APNs localization: arguments for the loc_key format string
+    pub loc_args: Vec<String>,
+    /// APNs localization: key for the title
+    pub title_loc_key: Option<String>,
 }
 
 #[async_trait]

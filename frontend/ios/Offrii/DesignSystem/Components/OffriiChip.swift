@@ -7,6 +7,7 @@ struct OffriiChip: View {
     let isSelected: Bool
     var backgroundColor: Color?
     var textColor: Color?
+    var badgeCount: Int = 0
     let action: () -> Void
 
     @State private var isPressed = false
@@ -16,14 +17,26 @@ struct OffriiChip: View {
             OffriiHaptics.selection()
             action()
         }) {
-            Text(title)
-                .font(OffriiTypography.footnote)
-                .fontWeight(isSelected ? .semibold : .regular)
-                .foregroundColor(chipTextColor)
-                .padding(.horizontal, OffriiTheme.spacingMD)
-                .padding(.vertical, OffriiTheme.spacingSM)
-                .background(chipBackground)
-                .cornerRadius(OffriiTheme.cornerRadiusSM)
+            HStack(spacing: 4) {
+                Text(title)
+                    .font(OffriiTypography.footnote)
+                    .fontWeight(isSelected ? .semibold : .regular)
+                    .foregroundColor(chipTextColor)
+
+                if badgeCount > 0 {
+                    Text("\(badgeCount)")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 5)
+                        .padding(.vertical, 1)
+                        .background(OffriiTheme.danger)
+                        .clipShape(Capsule())
+                }
+            }
+            .padding(.horizontal, OffriiTheme.spacingMD)
+            .padding(.vertical, OffriiTheme.spacingSM)
+            .background(chipBackground)
+            .cornerRadius(OffriiTheme.cornerRadiusSM)
         }
         .buttonStyle(.plain)
         .scaleEffect(isPressed ? 1.05 : 1.0)

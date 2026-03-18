@@ -1,4 +1,3 @@
-// swiftlint:disable file_length
 import SwiftUI
 
 // MARK: - Circle Filter
@@ -27,6 +26,7 @@ enum CircleFilter: String, CaseIterable {
 
 struct CirclesListView: View {
     @Environment(AuthManager.self) private var authManager
+    @Environment(AppRouter.self) private var router
     @Environment(OnboardingTipManager.self) private var tipManager
     @State private var viewModel = CirclesViewModel()
     @State private var selectedFilter: CircleFilter = .all
@@ -36,6 +36,9 @@ struct CirclesListView: View {
     @State private var showNotificationCenter = false
     @State private var unreadCount = 0
     @State private var circleToDelete: OffriiCircle?
+    @State private var friendToRemove: FriendResponse?
+    @State private var showAcceptToast = false
+    @State private var acceptedName = ""
 
     private var displayedCircles: [OffriiCircle] {
         let searched = viewModel.filteredCircles
@@ -58,6 +61,8 @@ struct CirclesListView: View {
 
                 if selectedFilter == .reservations {
                     ReservationsListView()
+                } else if selectedFilter == .friends {
+                    friendsContent
                 } else if viewModel.isLoadingCircles && viewModel.circles.isEmpty {
                     ScrollView {
                         LazyVStack(spacing: OffriiTheme.spacingSM) {
@@ -68,7 +73,7 @@ struct CirclesListView: View {
                         .padding(.horizontal, OffriiTheme.spacingBase)
                         .padding(.top, OffriiTheme.spacingBase)
                     }
-                } else if viewModel.circles.isEmpty {
+                } else if viewModel.circles.isEmpty && viewModel.pendingCount == 0 {
                     Spacer()
                     OffriiEmptyState(
                         icon: "person.2.fill",
@@ -79,11 +84,9 @@ struct CirclesListView: View {
                 } else {
                     ScrollView {
                         LazyVStack(spacing: OffriiTheme.spacingSM) {
-                            searchBar
-                                .padding(.horizontal, OffriiTheme.spacingXS)
-
-                            if viewModel.pendingCount > 0 {
-                                pendingSection
+                            if !viewModel.circles.isEmpty {
+                                searchBar
+                                    .padding(.horizontal, OffriiTheme.spacingXS)
                             }
 
                             ForEach(displayedCircles) { circle in
@@ -92,17 +95,24 @@ struct CirclesListView: View {
                                 }
                                 .buttonStyle(.plain)
                                 .contextMenu {
-                                    Button(role: .destructive) {
-                                        circleToDelete = circle
-                                    } label: {
-                                        Label(
-                                            NSLocalizedString(
-                                                circle.isDirect ? "circles.context.leave" : "circles.context.delete",
-                                                comment: ""
-                                            ),
-                                            systemImage: circle.isDirect
-                                                ? "rectangle.portrait.and.arrow.right" : "trash"
-                                        )
+                                    if circle.ownerId == authManager.currentUser?.id {
+                                        Button(role: .destructive) {
+                                            circleToDelete = circle
+                                        } label: {
+                                            Label(
+                                                NSLocalizedString("circles.context.deleteCircle", comment: ""),
+                                                systemImage: "trash"
+                                            )
+                                        }
+                                    } else if !circle.isDirect {
+                                        Button(role: .destructive) {
+                                            circleToDelete = circle
+                                        } label: {
+                                            Label(
+                                                NSLocalizedString("circles.context.leaveCircle", comment: ""),
+                                                systemImage: "rectangle.portrait.and.arrow.right"
+                                            )
+                                        }
                                     }
                                 }
                             }
@@ -113,8 +123,12 @@ struct CirclesListView: View {
                 }
             }
 
-            OffriiFloatingActionButton(icon: "plus") {
-                showCreateCircle = true
+            OffriiFloatingActionButton(icon: selectedFilter == .friends ? "person.badge.plus" : "plus") {
+                if selectedFilter == .friends {
+                    showAddFriend = true
+                } else {
+                    showCreateCircle = true
+                }
             }
             .padding(.trailing, OffriiTheme.spacingLG)
             .padding(.bottom, OffriiTheme.spacingLG)
@@ -187,6 +201,11 @@ struct CirclesListView: View {
             tipManager.showIfNeeded(.circlesCreate)
         }
         .onAppear {
+            // Handle pending navigation from push notification or notification center
+            if router.showFriends {
+                selectedFilter = .friends
+                router.showFriends = false
+            }
             Task {
                 await viewModel.loadCircles()
                 await loadUnreadCount()
@@ -194,6 +213,11 @@ struct CirclesListView: View {
         }
         .refreshable {
             await viewModel.loadAll()
+        }
+        .onChange(of: router.showFriends) { _, show in
+            guard show else { return }
+            selectedFilter = .friends
+            router.showFriends = false
         }
         .alert(
             NSLocalizedString(
@@ -222,6 +246,38 @@ struct CirclesListView: View {
                 comment: ""
             ))
         }
+        .alert(
+            NSLocalizedString("friends.removeConfirm.title", comment: ""),
+            isPresented: Binding(
+                get: { friendToRemove != nil },
+                set: { if !$0 { friendToRemove = nil } }
+            )
+        ) {
+            Button(NSLocalizedString("friends.remove", comment: ""), role: .destructive) {
+                if let friend = friendToRemove {
+                    Task {
+                        await viewModel.removeFriend(friend)
+                        OffriiHaptics.success()
+                    }
+                }
+                friendToRemove = nil
+            }
+            Button(NSLocalizedString("common.cancel", comment: ""), role: .cancel) {
+                friendToRemove = nil
+            }
+        } message: {
+            if let friend = friendToRemove {
+                Text(String(
+                    format: NSLocalizedString("friends.removeConfirm.message", comment: ""),
+                    friend.displayName ?? friend.username
+                ))
+            }
+        }
+        .offriiToast(
+            isPresented: $showAcceptToast,
+            message: String(format: NSLocalizedString("friends.accepted.toast", comment: ""), acceptedName),
+            style: .success
+        )
     }
 
     // MARK: - Filter Chips
@@ -234,6 +290,7 @@ struct CirclesListView: View {
                     OffriiChip(
                         title: filter.localizedTitle,
                         isSelected: selectedFilter == filter,
+                        badgeCount: filter == .friends ? viewModel.pendingCount : 0,
                         action: { selectedFilter = filter }
                     )
                 }
@@ -277,230 +334,20 @@ struct CirclesListView: View {
         )
     }
 
-    // MARK: - Pending Invitations Section
+    // MARK: - Friends Content (Amis filter) — extracted to FriendsListContent.swift
 
     @ViewBuilder
-    private var pendingSection: some View {
-        VStack(alignment: .leading, spacing: OffriiTheme.spacingSM) {
-            HStack {
-                Text(NSLocalizedString("circles.invitations", comment: ""))
-                    .font(OffriiTypography.headline)
-                    .foregroundColor(OffriiTheme.text)
-
-                Text("\(viewModel.pendingCount)")
-                    .font(OffriiTypography.caption)
-                    .fontWeight(.bold)
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 2)
-                    .background(OffriiTheme.danger)
-                    .clipShape(Capsule())
-
-                Spacer()
-
-                if viewModel.pendingRequests.count > 2 {
-                    Button {
-                        showNotificationCenter = true
-                    } label: {
-                        Text(NSLocalizedString("circles.invitations.viewAll", comment: ""))
-                            .font(OffriiTypography.footnote)
-                            .foregroundColor(OffriiTheme.primary)
-                    }
-                }
-            }
-
-            ForEach(Array(viewModel.pendingRequests.prefix(2))) { request in
-                pendingRequestRow(request)
-            }
-        }
-        .padding(OffriiTheme.spacingBase)
-        .background(OffriiTheme.card)
-        .cornerRadius(OffriiTheme.cornerRadiusLG)
-        .shadow(color: OffriiTheme.cardShadowColor, radius: 6, x: 0, y: 2)
-    }
-
-    @ViewBuilder
-    private func pendingRequestRow(_ request: FriendRequestResponse) -> some View {
-        HStack(spacing: OffriiTheme.spacingSM) {
-            AvatarView(
-                request.fromDisplayName ?? request.fromUsername,
-                size: .small
-            )
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text(request.fromDisplayName ?? request.fromUsername)
-                    .font(OffriiTypography.body)
-                    .foregroundColor(OffriiTheme.text)
-                Text("@\(request.fromUsername)")
-                    .font(OffriiTypography.caption)
-                    .foregroundColor(OffriiTheme.textMuted)
-            }
-
-            Spacer()
-
-            HStack(spacing: OffriiTheme.spacingSM) {
-                Button {
-                    Task { await viewModel.acceptRequest(request) }
-                } label: {
-                    Text(NSLocalizedString("friends.accept", comment: ""))
-                        .font(OffriiTypography.footnote)
-                        .fontWeight(.semibold)
-                        .foregroundColor(.white)
-                        .padding(.horizontal, OffriiTheme.spacingSM)
-                        .padding(.vertical, OffriiTheme.spacingXS)
-                        .background(OffriiTheme.primary)
-                        .cornerRadius(OffriiTheme.cornerRadiusXL)
-                }
-
-                Button {
-                    Task { await viewModel.declineRequest(request) }
-                } label: {
-                    Text(NSLocalizedString("friends.decline", comment: ""))
-                        .font(OffriiTypography.footnote)
-                        .foregroundColor(OffriiTheme.textSecondary)
-                        .padding(.horizontal, OffriiTheme.spacingSM)
-                        .padding(.vertical, OffriiTheme.spacingXS)
-                        .background(OffriiTheme.textMuted.opacity(0.15))
-                        .cornerRadius(OffriiTheme.cornerRadiusXL)
-                }
-            }
-        }
+    private var friendsContent: some View {
+        FriendsListContent(
+            viewModel: viewModel,
+            showAddFriend: $showAddFriend,
+            friendToRemove: $friendToRemove,
+            showAcceptToast: $showAcceptToast,
+            acceptedName: $acceptedName
+        )
     }
 
     private func loadUnreadCount() async {
         unreadCount = (try? await NotificationCenterService.shared.unreadCount()) ?? 0
     }
-}
-
-// MARK: - Pending Invitations Sheet
-
-struct PendingInvitationsSheet: View {
-    var viewModel: CirclesViewModel
-    @Environment(\.dismiss) private var dismiss
-
-    var body: some View {
-        NavigationStack {
-            ScrollView {
-                LazyVStack(spacing: 0) {
-                    if viewModel.pendingRequests.isEmpty && viewModel.sentRequests.isEmpty {
-                        Spacer().frame(height: 40)
-                        OffriiEmptyState(
-                            icon: "bell.slash",
-                            title: NSLocalizedString("notifications.empty", comment: ""),
-                            subtitle: NSLocalizedString("notifications.emptySubtitle", comment: "")
-                        )
-                    }
-
-                    ForEach(viewModel.pendingRequests) { request in
-                        HStack(spacing: OffriiTheme.spacingSM) {
-                            AvatarView(
-                                request.fromDisplayName ?? request.fromUsername,
-                                size: .small
-                            )
-
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(request.fromDisplayName ?? request.fromUsername)
-                                    .font(OffriiTypography.body)
-                                    .foregroundColor(OffriiTheme.text)
-                                Text("@\(request.fromUsername)")
-                                    .font(OffriiTypography.caption)
-                                    .foregroundColor(OffriiTheme.textMuted)
-                            }
-
-                            Spacer()
-
-                            HStack(spacing: OffriiTheme.spacingSM) {
-                                Button {
-                                    Task { await viewModel.acceptRequest(request) }
-                                } label: {
-                                    Text(NSLocalizedString("friends.accept", comment: ""))
-                                        .font(OffriiTypography.footnote)
-                                        .fontWeight(.semibold)
-                                        .foregroundColor(.white)
-                                        .padding(.horizontal, OffriiTheme.spacingSM)
-                                        .padding(.vertical, OffriiTheme.spacingXS)
-                                        .background(OffriiTheme.primary)
-                                        .cornerRadius(OffriiTheme.cornerRadiusXL)
-                                }
-
-                                Button {
-                                    Task { await viewModel.declineRequest(request) }
-                                } label: {
-                                    Text(NSLocalizedString("friends.decline", comment: ""))
-                                        .font(OffriiTypography.footnote)
-                                        .foregroundColor(OffriiTheme.textSecondary)
-                                        .padding(.horizontal, OffriiTheme.spacingSM)
-                                        .padding(.vertical, OffriiTheme.spacingXS)
-                                        .background(OffriiTheme.textMuted.opacity(0.15))
-                                        .cornerRadius(OffriiTheme.cornerRadiusXL)
-                                }
-                            }
-                        }
-                        .padding(.horizontal, OffriiTheme.spacingLG)
-                        .padding(.vertical, OffriiTheme.spacingSM)
-
-                        Divider()
-                            .padding(.leading, 56)
-                            .padding(.horizontal, OffriiTheme.spacingLG)
-                    }
-
-                    if viewModel.sentRequests.isEmpty == false {
-                        Text(NSLocalizedString("friends.sent", comment: ""))
-                            .font(OffriiTypography.headline)
-                            .foregroundColor(OffriiTheme.text)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.horizontal, OffriiTheme.spacingLG)
-                            .padding(.top, OffriiTheme.spacingLG)
-                            .padding(.bottom, OffriiTheme.spacingSM)
-
-                        ForEach(viewModel.sentRequests) { request in
-                            HStack(spacing: OffriiTheme.spacingSM) {
-                                AvatarView(
-                                    request.toDisplayName ?? request.toUsername,
-                                    size: .small
-                                )
-
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(request.toDisplayName ?? request.toUsername)
-                                        .font(OffriiTypography.body)
-                                        .foregroundColor(OffriiTheme.text)
-                                    Text("@\(request.toUsername)")
-                                        .font(OffriiTypography.caption)
-                                        .foregroundColor(OffriiTheme.textMuted)
-                                }
-
-                                Spacer()
-
-                                Button {
-                                    Task { await viewModel.cancelRequest(request) }
-                                } label: {
-                                    Text(NSLocalizedString("friends.cancel", comment: ""))
-                                        .font(OffriiTypography.footnote)
-                                        .foregroundColor(OffriiTheme.danger)
-                                        .padding(.horizontal, OffriiTheme.spacingSM)
-                                        .padding(.vertical, OffriiTheme.spacingXS)
-                                        .background(OffriiTheme.danger.opacity(0.1))
-                                        .cornerRadius(OffriiTheme.cornerRadiusXL)
-                                }
-                            }
-                            .padding(.horizontal, OffriiTheme.spacingLG)
-                            .padding(.vertical, OffriiTheme.spacingXS)
-                        }
-                    }
-                }
-                .padding(.top, OffriiTheme.spacingSM)
-            }
-            .background(OffriiTheme.background.ignoresSafeArea())
-            .navigationTitle(NSLocalizedString("circles.invitations", comment: ""))
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button(NSLocalizedString("common.ok", comment: "")) {
-                        dismiss()
-                    }
-                }
-            }
-        }
-    }
-
 }

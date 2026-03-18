@@ -74,11 +74,12 @@ impl traits::FriendRepo for PgFriendRepo {
         find_pending_between(&self.pool, from_user_id, to_user_id).await
     }
 
-    async fn count_active_items_per_user(
+    async fn count_shared_items_per_user(
         &self,
-        user_ids: &[Uuid],
+        friend_ids: &[Uuid],
+        viewer_id: Uuid,
     ) -> Result<std::collections::HashMap<Uuid, i64>> {
-        count_active_items_per_user(&self.pool, user_ids).await
+        count_shared_items_per_user(&self.pool, friend_ids, viewer_id).await
     }
 }
 
@@ -282,21 +283,30 @@ pub(crate) async fn find_pending_between(
     Ok(req)
 }
 
-/// Count active items per user (for friend list badges).
-pub(crate) async fn count_active_items_per_user(
+/// Count items shared via direct (1:1) circles between each friend and the viewer.
+/// Only counts items in the direct circle between the two specific users.
+pub(crate) async fn count_shared_items_per_user(
     exec: impl PgExecutor<'_>,
-    user_ids: &[Uuid],
+    friend_ids: &[Uuid],
+    viewer_id: Uuid,
 ) -> Result<HashMap<Uuid, i64>> {
-    if user_ids.is_empty() {
+    if friend_ids.is_empty() {
         return Ok(HashMap::new());
     }
     let rows = sqlx::query(
-        "SELECT user_id, COUNT(*) AS cnt \
-         FROM items \
-         WHERE user_id = ANY($1) AND status = 'active' \
-         GROUP BY user_id",
+        "SELECT i.user_id, COUNT(DISTINCT i.id) AS cnt \
+         FROM items i \
+         JOIN circle_items ci ON ci.item_id = i.id \
+         JOIN circles c ON c.id = ci.circle_id \
+         JOIN circle_members cm ON cm.circle_id = ci.circle_id \
+         WHERE i.user_id = ANY($1) \
+           AND i.status = 'active' \
+           AND cm.user_id = $2 \
+           AND c.is_direct = true \
+         GROUP BY i.user_id",
     )
-    .bind(user_ids)
+    .bind(friend_ids)
+    .bind(viewer_id)
     .fetch_all(exec)
     .await?;
 

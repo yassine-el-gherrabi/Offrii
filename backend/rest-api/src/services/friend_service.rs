@@ -42,15 +42,24 @@ impl PgFriendService {
         }
     }
 
-    fn notify_user(&self, user_id: Uuid, title: String, body: String) {
+    fn notify_user(
+        &self,
+        user_id: Uuid,
+        notif_type: &str,
+        title: String,
+        body: String,
+        actor_id: Option<Uuid>,
+        loc_args: Vec<String>,
+    ) {
         let push_token_repo = self.push_token_repo.clone();
         let notification_svc = self.notification_svc.clone();
         let notif_repo = self.notification_repo.clone();
+        let notif_type = notif_type.to_string();
 
         tokio::spawn(async move {
-            // Persist notification
+            // Persist in-app notification
             let _ = notif_repo
-                .create(user_id, "friend_activity", &title, &body, None, None, None)
+                .create(user_id, &notif_type, &title, &body, None, None, actor_id)
                 .await;
 
             let tokens = match push_token_repo.find_by_user(user_id).await {
@@ -61,12 +70,21 @@ impl PgFriendService {
                 }
             };
 
+            let push_loc_key = Some(format!("push.{notif_type}.body"));
+            let push_title_loc_key = Some(format!("push.{notif_type}.title"));
+            let mut custom_data = std::collections::HashMap::new();
+            custom_data.insert("type".to_string(), notif_type.clone());
+
             let requests: Vec<NotificationRequest> = tokens
                 .into_iter()
                 .map(|pt| NotificationRequest {
                     device_token: pt.token,
                     title: title.clone(),
                     body: body.clone(),
+                    custom_data: custom_data.clone(),
+                    loc_key: push_loc_key.clone(),
+                    loc_args: loc_args.clone(),
+                    title_loc_key: push_title_loc_key.clone(),
                 })
                 .collect();
 
@@ -205,10 +223,14 @@ impl traits::FriendService for PgFriendService {
             .ok_or_else(|| AppError::Internal(anyhow::anyhow!("sender not found")))?;
 
         // Notify the target user
+        let sender_name = sender.display_name.as_deref().unwrap_or(&sender.username);
         self.notify_user(
             target.id,
-            "Demande d'ami".to_string(),
-            format!("{} veut vous ajouter en ami", sender.username),
+            "friend_request",
+            "Friend request".to_string(),
+            format!("{sender_name} wants to add you as a friend"),
+            Some(from_user_id),
+            vec![sender_name.to_string()],
         );
 
         Ok(FriendRequestResponse {
@@ -295,7 +317,7 @@ impl traits::FriendService for PgFriendService {
             ));
         }
 
-        // Transaction: update status + create friendship
+        // Transaction: update status + create friendship + create direct circle
         let mut tx = self
             .pool
             .begin()
@@ -317,6 +339,40 @@ impl traits::FriendService for PgFriendService {
             .await
             .map_err(AppError::Internal)?;
 
+        // Auto-create direct circle if none exists
+        let existing_direct: Option<Uuid> = sqlx::query_scalar(
+            "SELECT c.id FROM circles c \
+             JOIN circle_members cm1 ON cm1.circle_id = c.id AND cm1.user_id = $1 \
+             JOIN circle_members cm2 ON cm2.circle_id = c.id AND cm2.user_id = $2 \
+             WHERE c.is_direct = true \
+             LIMIT 1",
+        )
+        .bind(req.from_user_id)
+        .bind(user_id)
+        .fetch_optional(&mut *tx)
+        .await
+        .map_err(|e| AppError::Internal(e.into()))?;
+
+        if existing_direct.is_none() {
+            let circle: crate::models::Circle = sqlx::query_as(
+                "INSERT INTO circles (owner_id, is_direct) VALUES ($1, true) RETURNING *",
+            )
+            .bind(user_id)
+            .fetch_one(&mut *tx)
+            .await
+            .map_err(|e| AppError::Internal(e.into()))?;
+
+            // The DB trigger adds owner (user_id) as member. Add the other user.
+            sqlx::query(
+                "INSERT INTO circle_members (circle_id, user_id, role) VALUES ($1, $2, 'member')",
+            )
+            .bind(circle.id)
+            .bind(req.from_user_id)
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| AppError::Internal(e.into()))?;
+        }
+
         tx.commit()
             .await
             .map_err(|e| AppError::Internal(e.into()))?;
@@ -336,10 +392,17 @@ impl traits::FriendService for PgFriendService {
             .await
             .map_err(AppError::Internal)?
         {
+            let acceptor_name = acceptor
+                .display_name
+                .as_deref()
+                .unwrap_or(&acceptor.username);
             self.notify_user(
                 req.from_user_id,
-                "Demande acceptée !".to_string(),
-                format!("{} a accepté votre demande", acceptor.username),
+                "friend_accepted",
+                "Request accepted!".to_string(),
+                format!("{acceptor_name} accepted your friend request"),
+                Some(user_id),
+                vec![acceptor_name.to_string()],
             );
         }
 
@@ -378,6 +441,8 @@ impl traits::FriendService for PgFriendService {
             .await
             .map_err(AppError::Internal)?;
 
+        // No notification to sender on decline (Instagram/LinkedIn pattern — silent decline)
+
         Ok(())
     }
 
@@ -389,11 +454,11 @@ impl traits::FriendService for PgFriendService {
             .await
             .map_err(AppError::Internal)?;
 
-        // Count active items per friend (shared via common circles)
+        // Count items shared via direct circles only
         let friend_ids: Vec<Uuid> = friends.iter().map(|f| f.user_id).collect();
         let item_counts = self
             .friend_repo
-            .count_active_items_per_user(&friend_ids)
+            .count_shared_items_per_user(&friend_ids, user_id)
             .await
             .unwrap_or_default();
 
@@ -486,14 +551,30 @@ impl traits::FriendService for PgFriendService {
             .await
             .map_err(AppError::Internal)?;
 
+        // Clean up the in-app notification sent to the recipient
+        let _ = sqlx::query(
+            "DELETE FROM notifications \
+             WHERE user_id = $1 AND type = 'friend_request' AND actor_id = $2",
+        )
+        .bind(req.to_user_id)
+        .bind(user_id)
+        .execute(&self.pool)
+        .await;
+
         Ok(())
     }
 
     #[tracing::instrument(skip(self))]
     async fn remove_friend(&self, user_id: Uuid, friend_id: Uuid) -> Result<(), AppError> {
-        let removed = self
-            .friend_repo
-            .delete_friendship(user_id, friend_id)
+        // Single transaction: delete friendship + requests + direct circle + notifications
+        let mut tx = self
+            .pool
+            .begin()
+            .await
+            .map_err(|e| AppError::Internal(e.into()))?;
+
+        // 1. Delete friendship
+        let removed = friend_repo::delete_friendship(&mut *tx, user_id, friend_id)
             .await
             .map_err(AppError::Internal)?;
 
@@ -501,7 +582,7 @@ impl traits::FriendService for PgFriendService {
             return Err(AppError::NotFound("friendship not found".into()));
         }
 
-        // Clean up any friend_requests between the two users
+        // 2. Clean up friend_requests between the two users
         sqlx::query(
             "DELETE FROM friend_requests \
              WHERE (from_user_id = $1 AND to_user_id = $2) \
@@ -509,9 +590,40 @@ impl traits::FriendService for PgFriendService {
         )
         .bind(user_id)
         .bind(friend_id)
-        .execute(&self.pool)
+        .execute(&mut *tx)
         .await
         .map_err(|e| AppError::Internal(e.into()))?;
+
+        // 3. Delete the direct circle (CASCADE deletes circle_items, circle_events, circle_members)
+        sqlx::query(
+            "DELETE FROM circles WHERE id IN (\
+                SELECT c.id FROM circles c \
+                JOIN circle_members cm1 ON cm1.circle_id = c.id AND cm1.user_id = $1 \
+                JOIN circle_members cm2 ON cm2.circle_id = c.id AND cm2.user_id = $2 \
+                WHERE c.is_direct = true\
+             )",
+        )
+        .bind(user_id)
+        .bind(friend_id)
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| AppError::Internal(e.into()))?;
+
+        // 4. Clean up friend-related notifications between the two users
+        sqlx::query(
+            "DELETE FROM notifications \
+             WHERE type IN ('friend_request', 'friend_accepted', 'friend_activity') \
+               AND ((user_id = $1 AND actor_id = $2) OR (user_id = $2 AND actor_id = $1))",
+        )
+        .bind(user_id)
+        .bind(friend_id)
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| AppError::Internal(e.into()))?;
+
+        tx.commit()
+            .await
+            .map_err(|e| AppError::Internal(e.into()))?;
 
         Ok(())
     }

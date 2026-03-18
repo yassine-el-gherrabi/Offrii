@@ -37,6 +37,7 @@ pub fn router() -> Router<AppState> {
         .route("/{id}/invites", get(list_invites))
         .route("/{id}/invites/{iid}", delete(revoke_invite))
         .route("/{id}/items", post(share_item).get(list_circle_items))
+        .route("/{id}/items/batch", post(batch_share_items))
         .route(
             "/{id}/items/{iid}",
             get(get_circle_item).delete(unshare_item),
@@ -244,6 +245,20 @@ async fn share_item(
     state
         .circles
         .share_item(id, req.item_id, auth_user.user_id)
+        .await?;
+    Ok(StatusCode::NO_CONTENT)
+}
+
+#[tracing::instrument(skip(state))]
+async fn batch_share_items(
+    State(state): State<AppState>,
+    auth_user: AuthUser,
+    Path(id): Path<Uuid>,
+    Json(req): Json<crate::dto::circles::BatchShareRequest>,
+) -> Result<StatusCode, AppError> {
+    state
+        .circles
+        .batch_share_items(id, &req.item_ids, auth_user.user_id)
         .await?;
     Ok(StatusCode::NO_CONTENT)
 }

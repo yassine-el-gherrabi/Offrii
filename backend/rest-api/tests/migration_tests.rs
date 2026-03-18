@@ -380,7 +380,7 @@ async fn migration_005_creates_circles_and_members() {
 
     // circles
     assert!(mdb.table_exists("circles").await);
-    assert_eq!(mdb.column_count("circles").await, 5);
+    assert_eq!(mdb.column_count("circles").await, 6);
     mdb.assert_not_null("circles", "id").await;
     // name is nullable (NULL for direct circles)
     mdb.assert_not_null("circles", "owner_id").await;

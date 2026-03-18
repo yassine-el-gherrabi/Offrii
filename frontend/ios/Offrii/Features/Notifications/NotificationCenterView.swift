@@ -2,6 +2,7 @@ import SwiftUI
 
 struct NotificationCenterView: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(AppRouter.self) private var router
     @State private var notifications: [AppNotification] = []
     @State private var isLoading = false
     @State private var hasMore = true
@@ -55,7 +56,7 @@ struct NotificationCenterView: View {
                         Button {
                             Task { await markAllRead() }
                         } label: {
-                            Image(systemName: "checkmark.circle")
+                            Image(systemName: "envelope.open")
                                 .font(.system(size: 16))
                                 .foregroundColor(OffriiTheme.primary)
                         }
@@ -74,15 +75,22 @@ struct NotificationCenterView: View {
                 if !notif.read {
                     try? await NotificationCenterService.shared.markRead(id: notif.id)
                     if let idx = notifications.firstIndex(where: { $0.id == notif.id }) {
-                        // Reload to get updated read state
                         notifications[idx] = AppNotification(
                             id: notif.id, type: notif.type, title: notif.title,
                             body: notif.body, read: true, circleId: notif.circleId,
-                            itemId: notif.itemId, actorId: notif.actorId, createdAt: notif.createdAt
+                            itemId: notif.itemId, actorId: notif.actorId,
+                            actorName: notif.actorName, createdAt: notif.createdAt
                         )
                     }
                 }
-                // TODO: Navigate to context (circle/item) based on notif type
+                // Navigate based on notification type
+                if notif.type.hasPrefix("friend_") {
+                    router.showFriends = true
+                    dismiss()
+                } else if let circleId = notif.circleId {
+                    router.navigateToCircle(circleId)
+                    dismiss()
+                }
             }
         } label: {
             HStack(spacing: OffriiTheme.spacingSM) {
@@ -95,12 +103,12 @@ struct NotificationCenterView: View {
                     .clipShape(Circle())
 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(notif.title)
+                    Text(notif.localizedTitle)
                         .font(OffriiTypography.body)
                         .fontWeight(notif.read ? .regular : .semibold)
                         .foregroundColor(OffriiTheme.text)
 
-                    Text(notif.body)
+                    Text(notif.localizedBody)
                         .font(OffriiTypography.caption)
                         .foregroundColor(OffriiTheme.textSecondary)
                         .lineLimit(2)
@@ -153,7 +161,8 @@ struct NotificationCenterView: View {
                 AppNotification(
                     id: notif.id, type: notif.type, title: notif.title,
                     body: notif.body, read: true, circleId: notif.circleId,
-                    itemId: notif.itemId, actorId: notif.actorId, createdAt: notif.createdAt
+                    itemId: notif.itemId, actorId: notif.actorId,
+                    actorName: notif.actorName, createdAt: notif.createdAt
                 )
             }
             OffriiHaptics.success()

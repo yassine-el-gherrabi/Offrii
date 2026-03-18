@@ -770,11 +770,9 @@ struct WishlistShareSheet: View {
         let itemIds = resolvedItemIds
 
         for circleId in selectedCircleIds {
-            for itemId in itemIds {
-                do {
-                    try await CircleService.shared.shareItem(circleId: circleId, itemId: itemId)
-                } catch {}
-            }
+            do {
+                try await CircleService.shared.batchShareItems(circleId: circleId, itemIds: Array(itemIds))
+            } catch {}
         }
 
         OffriiHaptics.success()

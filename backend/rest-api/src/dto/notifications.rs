@@ -15,11 +15,12 @@ pub struct NotificationResponse {
     pub circle_id: Option<Uuid>,
     pub item_id: Option<Uuid>,
     pub actor_id: Option<Uuid>,
+    pub actor_name: Option<String>,
     pub created_at: DateTime<Utc>,
 }
 
-impl From<Notification> for NotificationResponse {
-    fn from(n: Notification) -> Self {
+impl NotificationResponse {
+    pub fn from_notification(n: Notification, actor_name: Option<String>) -> Self {
         Self {
             id: n.id,
             notif_type: n.r#type,
@@ -29,6 +30,7 @@ impl From<Notification> for NotificationResponse {
             circle_id: n.circle_id,
             item_id: n.item_id,
             actor_id: n.actor_id,
+            actor_name,
             created_at: n.created_at,
         }
     }

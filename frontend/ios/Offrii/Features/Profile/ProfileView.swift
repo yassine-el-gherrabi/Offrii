@@ -1,6 +1,8 @@
 import PhotosUI
 import SwiftUI
+import UserNotifications
 
+// swiftlint:disable:next type_body_length
 struct ProfileView: View {
     @Environment(AuthManager.self) private var authManager
     @Environment(OnboardingTipManager.self) private var tipManager
@@ -11,6 +13,7 @@ struct ProfileView: View {
     @State private var showAvatarSourceSheet = false
     @State private var showAvatarCamera = false
     @State private var showAvatarPhotoPicker = false
+    @State private var pushEnabled = false
     var body: some View {
         ZStack {
             OffriiTheme.background.ignoresSafeArea()
@@ -133,20 +136,56 @@ struct ProfileView: View {
                             }
                         }
 
-                        // Friends section
+                        // Notifications section
                         profileSection(
-                            title: NSLocalizedString("profile.friends", comment: ""),
-                            icon: "person.2.fill"
+                            title: NSLocalizedString("profile.notifications", comment: ""),
+                            icon: "bell.fill"
                         ) {
-                            NavigationLink {
-                                FriendsView()
-                                    .environment(authManager)
+                            Button {
+                                if pushEnabled {
+                                    // Already enabled — open settings to manage
+                                    if let url = URL(string: UIApplication.openSettingsURLString) {
+                                        UIApplication.shared.open(url)
+                                    }
+                                } else {
+                                    // Try to request permission
+                                    Task {
+                                        let center = UNUserNotificationCenter.current()
+                                        let settings = await center.notificationSettings()
+                                        if settings.authorizationStatus == .notDetermined {
+                                            let granted = (try? await center.requestAuthorization(
+                                                options: [.alert, .badge, .sound]
+                                            )) ?? false
+                                            pushEnabled = granted
+                                            if granted {
+                                                await MainActor.run {
+                                                    UIApplication.shared.registerForRemoteNotifications()
+                                                }
+                                            }
+                                        } else {
+                                            // Denied — must go to Settings
+                                            if let url = URL(string: UIApplication.openSettingsURLString) {
+                                                await MainActor.run {
+                                                    UIApplication.shared.open(url)
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
                             } label: {
                                 profileRow(
-                                    title: NSLocalizedString("friends.title", comment: ""),
+                                    title: pushEnabled
+                                        ? NSLocalizedString("profile.notifications.enabled", comment: "")
+                                        : NSLocalizedString("profile.notifications.openSettings", comment: ""),
                                     value: nil
                                 )
                             }
+                        }
+                        .task {
+                            await refreshPushStatus()
+                        }
+                        .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
+                            Task { await refreshPushStatus() }
                         }
 
                         // Community wishes section
@@ -419,5 +458,18 @@ struct ProfileView: View {
             try? await authManager.loadCurrentUser()
         } catch {}
         isUploadingAvatar = false
+    }
+
+    private func refreshPushStatus() async {
+        let center = UNUserNotificationCenter.current()
+        let settings = await center.notificationSettings()
+        let wasEnabled = pushEnabled
+        pushEnabled = settings.authorizationStatus == .authorized
+        // If just became enabled (e.g. returning from iOS Settings), register for push
+        if pushEnabled && !wasEnabled {
+            await MainActor.run {
+                UIApplication.shared.registerForRemoteNotifications()
+            }
+        }
     }
 }

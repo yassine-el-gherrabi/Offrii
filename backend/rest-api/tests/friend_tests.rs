@@ -1541,3 +1541,730 @@ async fn friend_request_status_transitions_persisted() {
         .unwrap();
     assert_eq!(status.0, "accepted");
 }
+
+// ═══════════════════════════════════════════════════════════════════════
+// Direct Circle Auto-Creation on Accept
+// ═══════════════════════════════════════════════════════════════════════
+
+#[tokio::test]
+async fn accept_request_creates_direct_circle() {
+    let app = TestApp::new().await;
+    let (alice_token, alice_id) = setup_named_user(&app, "dc1@test.com", "dc_alice").await;
+    let (_bob_token, bob_id) = setup_named_user(&app, "dc2@test.com", "dc_bob").await;
+
+    // Before: no direct circle
+    let count: (i64,) = sqlx::query_as(
+        "SELECT COUNT(*) FROM circles c \
+         JOIN circle_members cm1 ON cm1.circle_id = c.id AND cm1.user_id = $1 \
+         JOIN circle_members cm2 ON cm2.circle_id = c.id AND cm2.user_id = $2 \
+         WHERE c.is_direct = true",
+    )
+    .bind(alice_id)
+    .bind(bob_id)
+    .fetch_one(&app.db)
+    .await
+    .unwrap();
+    assert_eq!(count.0, 0, "no direct circle before friendship");
+
+    // Accept
+    let req_id = send_request(&app, &alice_token, "dc_bob").await;
+    accept_request(&app, &_bob_token, req_id).await;
+
+    // After: exactly one direct circle
+    let count: (i64,) = sqlx::query_as(
+        "SELECT COUNT(*) FROM circles c \
+         JOIN circle_members cm1 ON cm1.circle_id = c.id AND cm1.user_id = $1 \
+         JOIN circle_members cm2 ON cm2.circle_id = c.id AND cm2.user_id = $2 \
+         WHERE c.is_direct = true",
+    )
+    .bind(alice_id)
+    .bind(bob_id)
+    .fetch_one(&app.db)
+    .await
+    .unwrap();
+    assert_eq!(count.0, 1, "direct circle auto-created on accept");
+}
+
+#[tokio::test]
+async fn accept_request_does_not_duplicate_direct_circle() {
+    let app = TestApp::new().await;
+    let (alice_token, alice_id) = setup_named_user(&app, "dd1@test.com", "dd_alice").await;
+    let (bob_token, bob_id) = setup_named_user(&app, "dd2@test.com", "dd_bob").await;
+
+    // Pre-create a direct circle via SQL (simulates legacy data or race condition)
+    let circle_id: uuid::Uuid = sqlx::query_scalar(
+        "INSERT INTO circles (owner_id, is_direct) VALUES ($1, true) RETURNING id",
+    )
+    .bind(alice_id)
+    .fetch_one(&app.db)
+    .await
+    .unwrap();
+    sqlx::query("INSERT INTO circle_members (circle_id, user_id, role) VALUES ($1, $2, 'member')")
+        .bind(circle_id)
+        .bind(bob_id)
+        .execute(&app.db)
+        .await
+        .unwrap();
+
+    // Now become friends
+    let req_id = send_request(&app, &alice_token, "dd_bob").await;
+    accept_request(&app, &bob_token, req_id).await;
+
+    // Should still be exactly one direct circle (not duplicated)
+    let count: (i64,) = sqlx::query_as(
+        "SELECT COUNT(*) FROM circles c \
+         JOIN circle_members cm1 ON cm1.circle_id = c.id AND cm1.user_id = $1 \
+         JOIN circle_members cm2 ON cm2.circle_id = c.id AND cm2.user_id = $2 \
+         WHERE c.is_direct = true",
+    )
+    .bind(alice_id)
+    .bind(bob_id)
+    .fetch_one(&app.db)
+    .await
+    .unwrap();
+    assert_eq!(count.0, 1, "should not duplicate direct circle");
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// Remove Friend — Direct Circle Cascade
+// ═══════════════════════════════════════════════════════════════════════
+
+#[tokio::test]
+async fn remove_friend_deletes_direct_circle() {
+    let app = TestApp::new().await;
+    let (alice_token, alice_id) = setup_named_user(&app, "rf1@test.com", "rf_alice").await;
+    let (bob_token, bob_id) = setup_named_user(&app, "rf2@test.com", "rf_bob").await;
+
+    // Become friends (auto-creates direct circle)
+    let req_id = send_request(&app, &alice_token, "rf_bob").await;
+    accept_request(&app, &bob_token, req_id).await;
+
+    // Verify direct circle exists
+    let count: (i64,) = sqlx::query_as(
+        "SELECT COUNT(*) FROM circles c \
+         JOIN circle_members cm1 ON cm1.circle_id = c.id AND cm1.user_id = $1 \
+         JOIN circle_members cm2 ON cm2.circle_id = c.id AND cm2.user_id = $2 \
+         WHERE c.is_direct = true",
+    )
+    .bind(alice_id)
+    .bind(bob_id)
+    .fetch_one(&app.db)
+    .await
+    .unwrap();
+    assert_eq!(count.0, 1, "precondition: direct circle exists");
+
+    // Remove friend
+    let (status, _) = app
+        .delete_with_auth(&format!("/me/friends/{bob_id}"), &alice_token)
+        .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+
+    // Direct circle should be deleted
+    let count: (i64,) = sqlx::query_as(
+        "SELECT COUNT(*) FROM circles c \
+         JOIN circle_members cm1 ON cm1.circle_id = c.id AND cm1.user_id = $1 \
+         JOIN circle_members cm2 ON cm2.circle_id = c.id AND cm2.user_id = $2 \
+         WHERE c.is_direct = true",
+    )
+    .bind(alice_id)
+    .bind(bob_id)
+    .fetch_one(&app.db)
+    .await
+    .unwrap();
+    assert_eq!(count.0, 0, "direct circle deleted on friend removal");
+}
+
+#[tokio::test]
+async fn remove_friend_does_not_delete_group_circles() {
+    let app = TestApp::new().await;
+    let (alice_token, _) = setup_named_user(&app, "rg1@test.com", "rg_alice").await;
+    let (bob_token, bob_id) = setup_named_user(&app, "rg2@test.com", "rg_bob").await;
+
+    // Become friends
+    let req_id = send_request(&app, &alice_token, "rg_bob").await;
+    accept_request(&app, &bob_token, req_id).await;
+
+    // Create a group circle and add Bob
+    let body = json!({ "name": "Test Group" });
+    let (_, circle_body) = app
+        .post_json_with_auth("/circles", &body, &alice_token)
+        .await;
+    let circle_id = circle_body["id"].as_str().unwrap();
+
+    let body = json!({ "user_id": bob_id });
+    app.post_json_with_auth(
+        &format!("/circles/{circle_id}/members"),
+        &body,
+        &alice_token,
+    )
+    .await;
+
+    // Remove friend
+    let (status, _) = app
+        .delete_with_auth(&format!("/me/friends/{bob_id}"), &alice_token)
+        .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+
+    // Group circle should still exist
+    let count: (i64,) =
+        sqlx::query_as("SELECT COUNT(*) FROM circles WHERE id = $1::uuid AND is_direct = false")
+            .bind(circle_id)
+            .fetch_one(&app.db)
+            .await
+            .unwrap();
+    assert_eq!(count.0, 1, "group circle must survive friend removal");
+}
+
+#[tokio::test]
+async fn remove_friend_cleans_friend_requests() {
+    let app = TestApp::new().await;
+    let (alice_token, alice_id) = setup_named_user(&app, "rc1@test.com", "rc_alice").await;
+    let (bob_token, bob_id) = setup_named_user(&app, "rc2@test.com", "rc_bob").await;
+
+    // Become friends
+    let req_id = send_request(&app, &alice_token, "rc_bob").await;
+    accept_request(&app, &bob_token, req_id).await;
+
+    // Friend requests should exist (status=accepted)
+    let count: (i64,) = sqlx::query_as(
+        "SELECT COUNT(*) FROM friend_requests \
+         WHERE (from_user_id = $1 AND to_user_id = $2) \
+            OR (from_user_id = $2 AND to_user_id = $1)",
+    )
+    .bind(alice_id)
+    .bind(bob_id)
+    .fetch_one(&app.db)
+    .await
+    .unwrap();
+    assert!(count.0 >= 1, "precondition: friend request exists");
+
+    // Remove friend
+    app.delete_with_auth(&format!("/me/friends/{bob_id}"), &alice_token)
+        .await;
+
+    // Friend requests should be cleaned up
+    let count: (i64,) = sqlx::query_as(
+        "SELECT COUNT(*) FROM friend_requests \
+         WHERE (from_user_id = $1 AND to_user_id = $2) \
+            OR (from_user_id = $2 AND to_user_id = $1)",
+    )
+    .bind(alice_id)
+    .bind(bob_id)
+    .fetch_one(&app.db)
+    .await
+    .unwrap();
+    assert_eq!(count.0, 0, "friend requests cleaned up on removal");
+}
+
+#[tokio::test]
+async fn remove_friend_is_transactional() {
+    let app = TestApp::new().await;
+    let (alice_token, _) = setup_named_user(&app, "tx1@test.com", "tx_alice").await;
+    let (bob_token, bob_id) = setup_named_user(&app, "tx2@test.com", "tx_bob").await;
+
+    // Become friends
+    let req_id = send_request(&app, &alice_token, "tx_bob").await;
+    accept_request(&app, &bob_token, req_id).await;
+
+    // Remove friend
+    let (status, _) = app
+        .delete_with_auth(&format!("/me/friends/{bob_id}"), &alice_token)
+        .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+
+    // Verify all state is consistent: no friendship, no requests, no direct circle
+    // Verify not friends anymore via API
+    let (status, body) = app.get_with_auth("/me/friends", &alice_token).await;
+    assert_eq!(status, StatusCode::OK);
+    let friends = body.as_array().unwrap();
+    assert!(friends.is_empty(), "no friends after removal");
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// Cancel Request — Notification Cleanup
+// ═══════════════════════════════════════════════════════════════════════
+
+#[tokio::test]
+async fn cancel_request_cleans_recipient_notification() {
+    let app = TestApp::new().await;
+    let (alice_token, alice_id) = setup_named_user(&app, "cn1@test.com", "cn_alice").await;
+    let (_bob_token, bob_id) = setup_named_user(&app, "cn2@test.com", "cn_bob").await;
+
+    // Send request (creates notification for Bob)
+    let req_id = send_request(&app, &alice_token, "cn_bob").await;
+
+    // Wait for async notification to persist
+    tokio::time::sleep(std::time::Duration::from_millis(500)).await;
+
+    // Verify notification exists for Bob
+    let count: (i64,) = sqlx::query_as(
+        "SELECT COUNT(*) FROM notifications \
+         WHERE user_id = $1 AND type = 'friend_request' AND actor_id = $2",
+    )
+    .bind(bob_id)
+    .bind(alice_id)
+    .fetch_one(&app.db)
+    .await
+    .unwrap();
+    assert_eq!(count.0, 1, "precondition: notification exists for Bob");
+
+    // Cancel the request
+    cancel_sent_request(&app, &alice_token, req_id).await;
+
+    // Notification should be cleaned up
+    let count: (i64,) = sqlx::query_as(
+        "SELECT COUNT(*) FROM notifications \
+         WHERE user_id = $1 AND type = 'friend_request' AND actor_id = $2",
+    )
+    .bind(bob_id)
+    .bind(alice_id)
+    .fetch_one(&app.db)
+    .await
+    .unwrap();
+    assert_eq!(
+        count.0, 0,
+        "notification should be deleted when request is cancelled"
+    );
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// Accept — Notification Created for Sender
+// ═══════════════════════════════════════════════════════════════════════
+
+#[tokio::test]
+async fn accept_request_notifies_sender() {
+    let app = TestApp::new().await;
+    let (alice_token, alice_id) = setup_named_user(&app, "an1@test.com", "an_alice").await;
+    let (bob_token, _bob_id) = setup_named_user(&app, "an2@test.com", "an_bob").await;
+
+    let req_id = send_request(&app, &alice_token, "an_bob").await;
+    accept_request(&app, &bob_token, req_id).await;
+
+    // Wait for async notification
+    tokio::time::sleep(std::time::Duration::from_millis(500)).await;
+
+    // Alice should have a "friend_accepted" notification
+    let count: (i64,) = sqlx::query_as(
+        "SELECT COUNT(*) FROM notifications \
+         WHERE user_id = $1 AND type = 'friend_accepted'",
+    )
+    .bind(alice_id)
+    .fetch_one(&app.db)
+    .await
+    .unwrap();
+    assert_eq!(
+        count.0, 1,
+        "sender should receive friend_accepted notification"
+    );
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// Shared Item Count Security
+// ═══════════════════════════════════════════════════════════════════════
+
+#[tokio::test]
+async fn shared_item_count_zero_when_no_items_shared() {
+    let app = TestApp::new().await;
+    let (alice_token, _) = setup_named_user(&app, "sc1@test.com", "sc_alice").await;
+    let (bob_token, _) = setup_named_user(&app, "sc2@test.com", "sc_bob").await;
+
+    // Become friends
+    let req_id = send_request(&app, &alice_token, "sc_bob").await;
+    accept_request(&app, &bob_token, req_id).await;
+
+    // Bob creates items (but doesn't share them)
+    let item_body = json!({
+        "name": "Secret Item",
+        "category_id": null,
+    });
+    app.create_item(&bob_token, &item_body).await;
+
+    // Alice lists friends — Bob's shared_item_count should be 0
+    let (status, body) = app.get_with_auth("/me/friends", &alice_token).await;
+    assert_eq!(status, StatusCode::OK);
+
+    let friends = body.as_array().unwrap();
+    assert_eq!(friends.len(), 1);
+    assert_eq!(
+        friends[0]["shared_item_count"].as_i64().unwrap(),
+        0,
+        "shared_item_count must be 0 when nothing is shared in direct circle"
+    );
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// Remove Friend — Notifications Cleanup
+// ═══════════════════════════════════════════════════════════════════════
+
+#[tokio::test]
+async fn remove_friend_cleans_notifications() {
+    let app = TestApp::new().await;
+    let (alice_token, alice_id) = setup_named_user(&app, "rn1@test.com", "rn_alice").await;
+    let (bob_token, bob_id) = setup_named_user(&app, "rn2@test.com", "rn_bob").await;
+
+    // Become friends (generates notifications)
+    let req_id = send_request(&app, &alice_token, "rn_bob").await;
+    accept_request(&app, &bob_token, req_id).await;
+
+    // Wait for async notifications
+    tokio::time::sleep(std::time::Duration::from_millis(500)).await;
+
+    // Verify notifications exist
+    let count: (i64,) = sqlx::query_as(
+        "SELECT COUNT(*) FROM notifications \
+         WHERE type IN ('friend_request', 'friend_accepted') \
+           AND ((user_id = $1 AND actor_id = $2) OR (user_id = $2 AND actor_id = $1))",
+    )
+    .bind(alice_id)
+    .bind(bob_id)
+    .fetch_one(&app.db)
+    .await
+    .unwrap();
+    assert!(count.0 >= 1, "precondition: friend notifications exist");
+
+    // Remove friend
+    app.delete_with_auth(&format!("/me/friends/{bob_id}"), &alice_token)
+        .await;
+
+    // Notifications should be cleaned up
+    let count: (i64,) = sqlx::query_as(
+        "SELECT COUNT(*) FROM notifications \
+         WHERE type IN ('friend_request', 'friend_accepted', 'friend_activity') \
+           AND ((user_id = $1 AND actor_id = $2) OR (user_id = $2 AND actor_id = $1))",
+    )
+    .bind(alice_id)
+    .bind(bob_id)
+    .fetch_one(&app.db)
+    .await
+    .unwrap();
+    assert_eq!(
+        count.0, 0,
+        "friend notifications should be cleaned up on removal"
+    );
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// Full Lifecycle: Request → Accept → Circle → Remove → Clean
+// ═══════════════════════════════════════════════════════════════════════
+
+#[tokio::test]
+async fn full_friend_lifecycle_with_circle_and_cleanup() {
+    let app = TestApp::new().await;
+    let (alice_token, alice_id) = setup_named_user(&app, "fl1@test.com", "fl_alice").await;
+    let (bob_token, bob_id) = setup_named_user(&app, "fl2@test.com", "fl_bob").await;
+
+    // 1. Send request
+    let req_id = send_request(&app, &alice_token, "fl_bob").await;
+
+    // 2. Bob has pending request
+    let (_, body) = app.get_with_auth("/me/friend-requests", &bob_token).await;
+    assert_eq!(body.as_array().unwrap().len(), 1);
+
+    // 3. Accept — creates friendship + direct circle
+    accept_request(&app, &bob_token, req_id).await;
+
+    // 4. Both are friends
+    let (_, body) = app.get_with_auth("/me/friends", &alice_token).await;
+    assert_eq!(body.as_array().unwrap().len(), 1);
+    let (_, body) = app.get_with_auth("/me/friends", &bob_token).await;
+    assert_eq!(body.as_array().unwrap().len(), 1);
+
+    // 5. Direct circle exists
+    let circle_id: Option<(Uuid,)> = sqlx::query_as(
+        "SELECT c.id FROM circles c \
+         JOIN circle_members cm1 ON cm1.circle_id = c.id AND cm1.user_id = $1 \
+         JOIN circle_members cm2 ON cm2.circle_id = c.id AND cm2.user_id = $2 \
+         WHERE c.is_direct = true",
+    )
+    .bind(alice_id)
+    .bind(bob_id)
+    .fetch_optional(&app.db)
+    .await
+    .unwrap();
+    assert!(circle_id.is_some(), "direct circle should exist");
+
+    // 6. Shared item count is 0 (nothing shared yet)
+    let (_, body) = app.get_with_auth("/me/friends", &alice_token).await;
+    assert_eq!(body[0]["shared_item_count"].as_i64().unwrap(), 0);
+
+    // 7. Remove friend — everything cleaned up
+    let (status, _) = app
+        .delete_with_auth(&format!("/me/friends/{bob_id}"), &alice_token)
+        .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+
+    // 8. No longer friends
+    let (_, body) = app.get_with_auth("/me/friends", &alice_token).await;
+    assert!(body.as_array().unwrap().is_empty());
+
+    // 9. Direct circle deleted
+    let count: (i64,) = sqlx::query_as(
+        "SELECT COUNT(*) FROM circles c \
+         JOIN circle_members cm1 ON cm1.circle_id = c.id AND cm1.user_id = $1 \
+         JOIN circle_members cm2 ON cm2.circle_id = c.id AND cm2.user_id = $2 \
+         WHERE c.is_direct = true",
+    )
+    .bind(alice_id)
+    .bind(bob_id)
+    .fetch_one(&app.db)
+    .await
+    .unwrap();
+    assert_eq!(count.0, 0, "direct circle cleaned up");
+
+    // 10. Can re-request after removal
+    let new_req_id = send_request(&app, &alice_token, "fl_bob").await;
+    assert_ne!(new_req_id, req_id, "new request has different ID");
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// Direct Circle Protection
+// ═══════════════════════════════════════════════════════════════════════
+
+#[tokio::test]
+async fn cannot_delete_direct_circle_via_api() {
+    let app = TestApp::new().await;
+    let (alice_token, alice_id) = setup_named_user(&app, "cd1@test.com", "cd_alice").await;
+    let (bob_token, bob_id) = setup_named_user(&app, "cd2@test.com", "cd_bob").await;
+
+    // Become friends (auto-creates direct circle)
+    let req_id = send_request(&app, &alice_token, "cd_bob").await;
+    accept_request(&app, &bob_token, req_id).await;
+
+    // Find the direct circle
+    let circle_id: (Uuid,) = sqlx::query_as(
+        "SELECT c.id FROM circles c \
+         JOIN circle_members cm1 ON cm1.circle_id = c.id AND cm1.user_id = $1 \
+         JOIN circle_members cm2 ON cm2.circle_id = c.id AND cm2.user_id = $2 \
+         WHERE c.is_direct = true",
+    )
+    .bind(alice_id)
+    .bind(bob_id)
+    .fetch_one(&app.db)
+    .await
+    .unwrap();
+
+    // Bob is the owner (acceptor). Try to delete — should fail with 400
+    let (status, body) = app
+        .delete_with_auth(&format!("/circles/{}", circle_id.0), &bob_token)
+        .await;
+    assert_eq!(
+        status,
+        StatusCode::BAD_REQUEST,
+        "deleting a direct circle should be blocked: {body}"
+    );
+
+    // Circle should still exist
+    let count: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM circles WHERE id = $1")
+        .bind(circle_id.0)
+        .fetch_one(&app.db)
+        .await
+        .unwrap();
+    assert_eq!(count.0, 1, "direct circle must survive delete attempt");
+}
+
+#[tokio::test]
+async fn cannot_leave_direct_circle_via_remove_member() {
+    let app = TestApp::new().await;
+    let (alice_token, alice_id) = setup_named_user(&app, "lv1@test.com", "lv_alice").await;
+    let (bob_token, bob_id) = setup_named_user(&app, "lv2@test.com", "lv_bob").await;
+
+    // Become friends
+    let req_id = send_request(&app, &alice_token, "lv_bob").await;
+    accept_request(&app, &bob_token, req_id).await;
+
+    // Find the direct circle
+    let circle_id: (Uuid,) = sqlx::query_as(
+        "SELECT c.id FROM circles c \
+         JOIN circle_members cm1 ON cm1.circle_id = c.id AND cm1.user_id = $1 \
+         JOIN circle_members cm2 ON cm2.circle_id = c.id AND cm2.user_id = $2 \
+         WHERE c.is_direct = true",
+    )
+    .bind(alice_id)
+    .bind(bob_id)
+    .fetch_one(&app.db)
+    .await
+    .unwrap();
+
+    // Bob tries to self-remove from direct circle — should fail
+    let (status, body) = app
+        .delete_with_auth(
+            &format!("/circles/{}/members/{}", circle_id.0, bob_id),
+            &bob_token,
+        )
+        .await;
+    assert_eq!(
+        status,
+        StatusCode::BAD_REQUEST,
+        "leaving a direct circle should be blocked: {body}"
+    );
+
+    // Both members should still be in the circle
+    let count: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM circle_members WHERE circle_id = $1")
+        .bind(circle_id.0)
+        .fetch_one(&app.db)
+        .await
+        .unwrap();
+    assert_eq!(count.0, 2, "both members must remain in direct circle");
+}
+
+#[tokio::test]
+async fn create_direct_circle_requires_friendship() {
+    let app = TestApp::new().await;
+    let (alice_token, _) = setup_named_user(&app, "df1@test.com", "df_alice").await;
+    let (_, bob_id) = setup_named_user(&app, "df2@test.com", "df_bob").await;
+
+    // Not friends — try to create direct circle
+    let body = json!({});
+    let (status, resp) = app
+        .post_json_with_auth(&format!("/circles/direct/{bob_id}"), &body, &alice_token)
+        .await;
+    assert_eq!(
+        status,
+        StatusCode::FORBIDDEN,
+        "creating direct circle without friendship should be forbidden: {resp}"
+    );
+}
+
+#[tokio::test]
+async fn create_direct_circle_works_when_friends() {
+    let app = TestApp::new().await;
+    let (alice_token, _) = setup_named_user(&app, "dw1@test.com", "dw_alice").await;
+    let (bob_token, bob_id) = setup_named_user(&app, "dw2@test.com", "dw_bob").await;
+
+    // Become friends
+    let req_id = send_request(&app, &alice_token, "dw_bob").await;
+    accept_request(&app, &bob_token, req_id).await;
+
+    // Accept already creates a direct circle, so creating another should 409
+    let body = json!({});
+    let (status, _) = app
+        .post_json_with_auth(&format!("/circles/direct/{bob_id}"), &body, &alice_token)
+        .await;
+    assert_eq!(
+        status,
+        StatusCode::CONFLICT,
+        "direct circle already auto-created on accept"
+    );
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// Shared Item Count — E2E with actual sharing
+// ═══════════════════════════════════════════════════════════════════════
+
+#[tokio::test]
+async fn shared_item_count_updates_after_sharing_in_direct_circle() {
+    let app = TestApp::new().await;
+    let (alice_token, alice_id) = setup_named_user(&app, "si1@test.com", "si_alice").await;
+    let (bob_token, bob_id) = setup_named_user(&app, "si2@test.com", "si_bob").await;
+
+    // Become friends
+    let req_id = send_request(&app, &alice_token, "si_bob").await;
+    accept_request(&app, &bob_token, req_id).await;
+
+    // Find the direct circle
+    let circle_id: (Uuid,) = sqlx::query_as(
+        "SELECT c.id FROM circles c \
+         JOIN circle_members cm1 ON cm1.circle_id = c.id AND cm1.user_id = $1 \
+         JOIN circle_members cm2 ON cm2.circle_id = c.id AND cm2.user_id = $2 \
+         WHERE c.is_direct = true",
+    )
+    .bind(alice_id)
+    .bind(bob_id)
+    .fetch_one(&app.db)
+    .await
+    .unwrap();
+
+    // Alice creates an item
+    let item = app
+        .create_item(
+            &alice_token,
+            &json!({ "name": "Test Gift", "category_id": null }),
+        )
+        .await;
+    let item_id = item["id"].as_str().unwrap();
+
+    // Before sharing: Bob sees 0
+    let (_, body) = app.get_with_auth("/me/friends", &bob_token).await;
+    let friends = body.as_array().unwrap();
+    assert_eq!(friends.len(), 1);
+    assert_eq!(
+        friends[0]["shared_item_count"].as_i64().unwrap(),
+        0,
+        "count should be 0 before sharing"
+    );
+
+    // Share item to direct circle via POST /circles/{id}/items
+    let share_body = json!({ "item_id": item_id });
+    let (status, resp) = app
+        .post_json_with_auth(
+            &format!("/circles/{}/items", circle_id.0),
+            &share_body,
+            &alice_token,
+        )
+        .await;
+    assert_eq!(
+        status,
+        StatusCode::NO_CONTENT,
+        "sharing should succeed: {resp}"
+    );
+
+    // After sharing: Bob sees 1
+    let (_, body) = app.get_with_auth("/me/friends", &bob_token).await;
+    let friends = body.as_array().unwrap();
+    assert_eq!(
+        friends[0]["shared_item_count"].as_i64().unwrap(),
+        1,
+        "count should be 1 after sharing one item"
+    );
+}
+
+#[tokio::test]
+async fn shared_item_count_excludes_group_circle_items() {
+    let app = TestApp::new().await;
+    let (alice_token, _) = setup_named_user(&app, "sg1@test.com", "sg_alice").await;
+    let (bob_token, bob_id) = setup_named_user(&app, "sg2@test.com", "sg_bob").await;
+
+    // Become friends
+    let req_id = send_request(&app, &alice_token, "sg_bob").await;
+    accept_request(&app, &bob_token, req_id).await;
+
+    // Create a GROUP circle and add Bob
+    let (_, circle_body) = app
+        .post_json_with_auth("/circles", &json!({ "name": "Group" }), &alice_token)
+        .await;
+    let group_id = circle_body["id"].as_str().unwrap();
+
+    app.post_json_with_auth(
+        &format!("/circles/{group_id}/members"),
+        &json!({ "user_id": bob_id }),
+        &alice_token,
+    )
+    .await;
+
+    // Alice creates an item and shares it to the GROUP circle only
+    let item = app
+        .create_item(
+            &alice_token,
+            &json!({ "name": "Group Only Item", "category_id": null }),
+        )
+        .await;
+    let item_id = item["id"].as_str().unwrap();
+
+    let (status, _) = app
+        .post_json_with_auth(
+            &format!("/circles/{group_id}/items"),
+            &json!({ "item_id": item_id }),
+            &alice_token,
+        )
+        .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+
+    // Bob's friend list should show 0 for Alice (item is in group, not direct circle)
+    let (_, body) = app.get_with_auth("/me/friends", &bob_token).await;
+    let friends = body.as_array().unwrap();
+    assert_eq!(
+        friends[0]["shared_item_count"].as_i64().unwrap(),
+        0,
+        "items in group circles must NOT count in friend's shared_item_count"
+    );
+}

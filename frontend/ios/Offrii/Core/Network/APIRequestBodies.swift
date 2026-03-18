@@ -334,6 +334,14 @@ struct ShareItemBody: Encodable {
     }
 }
 
+struct BatchShareBody: Encodable {
+    let itemIds: [UUID]
+
+    enum CodingKeys: String, CodingKey {
+        case itemIds = "item_ids"
+    }
+}
+
 // MARK: - Friend Body Types
 
 struct SendFriendRequestBody: Encodable {

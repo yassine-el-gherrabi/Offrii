@@ -32,6 +32,11 @@ pub struct ShareItemRequest {
 }
 
 #[derive(Debug, Deserialize)]
+pub struct BatchShareRequest {
+    pub item_ids: Vec<Uuid>,
+}
+
+#[derive(Debug, Deserialize)]
 pub struct AddMemberRequest {
     pub user_id: Uuid,
 }

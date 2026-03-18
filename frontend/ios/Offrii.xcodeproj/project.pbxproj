@@ -12,6 +12,7 @@
 		CC00000000000000000000A4 /* InviteContactsSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000A4 /* InviteContactsSheet.swift */; };
 		CC00000000000000000000A5 /* EditCircleSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000A5 /* EditCircleSheet.swift */; };
 		0C40392769386148C2161636 /* AddFriendSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00A795E6C64A02C75791ABC0 /* AddFriendSheet.swift */; };
+		DD00000000000000000000F1 /* FriendsListContent.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000F2 /* FriendsListContent.swift */; };
 		0EB44304D486DC547B3D90E6 /* WishCategoryChip.swift in Sources */ = {isa = PBXBuildFile; fileRef = 692F105AB59AB2CCA6E9CE33 /* WishCategoryChip.swift */; };
 		103EEE9EB1A6E8CF566004BD /* CircleModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D046AFC11C42380646B6BC6 /* CircleModels.swift */; };
 		16ADBEF5AC5D0893411CD376 /* HomeSummaryCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7199E774F0E4246F8EBCCBF4 /* HomeSummaryCard.swift */; };
@@ -145,7 +146,6 @@
 		D1DD2941D8F328C95D2F6D98 /* CreateWishViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01DC52B5F972089F4E983F51 /* CreateWishViewModel.swift */; };
 		D650FB03CE091B982E86B409 /* Friend.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1B347536FB260D73A7FBFDF /* Friend.swift */; };
 		DCDE694A3072FA09B565E7F8 /* ItemPickerSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7E917FC45488E57E7AD36D5 /* ItemPickerSheet.swift */; };
-		E4649986E80031FD18F2016D /* FriendsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1A0908792D02CBC0E9E8344 /* FriendsView.swift */; };
 		E821CC665B486A06DF8BD00B /* ShareToCircleSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03A39F274A017FFE24AC4AEF /* ShareToCircleSheet.swift */; };
 		EAABD595FD4B3882BD638113 /* ShareItemSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = D409F2C427B9090D267F9378 /* ShareItemSheet.swift */; };
 		EF76599AE8AB37282DDF6439 /* FriendService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C600B057F0DED66541E7F7BB /* FriendService.swift */; };
@@ -176,6 +176,7 @@
 
 /* Begin PBXFileReference section */
 		00A795E6C64A02C75791ABC0 /* AddFriendSheet.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AddFriendSheet.swift; sourceTree = "<group>"; };
+		DD00000000000000000000F2 /* FriendsListContent.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FriendsListContent.swift; sourceTree = "<group>"; };
 
 		01DC52B5F972089F4E983F51 /* CreateWishViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateWishViewModel.swift; sourceTree = "<group>"; };
 		03A39F274A017FFE24AC4AEF /* ShareToCircleSheet.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ShareToCircleSheet.swift; sourceTree = "<group>"; };
@@ -310,7 +311,6 @@
 		DD00000000000000000000A4 /* InviteContactsSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InviteContactsSheet.swift; sourceTree = "<group>"; };
 		DD00000000000000000000A5 /* EditCircleSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditCircleSheet.swift; sourceTree = "<group>"; };
 		B6DE51F114489FF7F830B2B0 /* QuickCreateSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickCreateSheet.swift; sourceTree = "<group>"; };
-		C1A0908792D02CBC0E9E8344 /* FriendsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FriendsView.swift; sourceTree = "<group>"; };
 		C600B057F0DED66541E7F7BB /* FriendService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FriendService.swift; sourceTree = "<group>"; };
 		C9CB316F85359D88A55A099C /* OffriiImagePicker.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OffriiImagePicker.swift; sourceTree = "<group>"; };
 		DD00000000000000000000B1 /* CameraImagePicker.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CameraImagePicker.swift; sourceTree = "<group>"; };
@@ -358,7 +358,6 @@
 			children = (
 				DE2967E84D0AD47134A0925A /* CirclesListView.swift */,
 				DD00000000000000000000C2 /* ReservationsListView.swift */,
-				DD00000000000000000000D3 /* NotificationCenterView.swift */,
 				A29A587E01A7D534AFC630E4 /* CirclesViewModel.swift */,
 				9EEDF827539742DBA3A5617E /* CircleDetailView.swift */,
 				6ACFAD24E9E205201275BF6E /* CircleDetailViewModel.swift */,
@@ -374,11 +373,19 @@
 			path = Circles;
 			sourceTree = "<group>";
 		};
+		DD00000000000000000000E0 /* Notifications */ = {
+			isa = PBXGroup;
+			children = (
+				DD00000000000000000000D3 /* NotificationCenterView.swift */,
+			);
+			path = Notifications;
+			sourceTree = "<group>";
+		};
 		4C50F0D971CD9FDC3A0D259D /* Friends */ = {
 			isa = PBXGroup;
 			children = (
-				C1A0908792D02CBC0E9E8344 /* FriendsView.swift */,
 				00A795E6C64A02C75791ABC0 /* AddFriendSheet.swift */,
+				DD00000000000000000000F2 /* FriendsListContent.swift */,
 			);
 			path = Friends;
 			sourceTree = "<group>";
@@ -567,6 +574,7 @@
 				2D9A45C1267D0295E8D3E9D7 /* Circles */,
 				4C50F0D971CD9FDC3A0D259D /* Friends */,
 				75248489B823996A95273006 /* Home */,
+				DD00000000000000000000E0 /* Notifications */,
 			);
 			path = Features;
 			sourceTree = "<group>";
@@ -945,8 +953,8 @@
 				CC00000000000000000000A3 /* ContactPickerRepresentable.swift in Sources */,
 				CC00000000000000000000A4 /* InviteContactsSheet.swift in Sources */,
 				CC00000000000000000000A5 /* EditCircleSheet.swift in Sources */,
-				E4649986E80031FD18F2016D /* FriendsView.swift in Sources */,
 				0C40392769386148C2161636 /* AddFriendSheet.swift in Sources */,
+				DD00000000000000000000F1 /* FriendsListContent.swift in Sources */,
 				249F82836FB8810148FEA28A /* AvatarView.swift in Sources */,
 				9819CC8EE7964F14CDE7D48F /* StackedAvatarsView.swift in Sources */,
 				9E5A06B3602ED34AAE5C175B /* CommunityWish.swift in Sources */,

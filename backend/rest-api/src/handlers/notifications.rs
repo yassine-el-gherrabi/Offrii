@@ -50,7 +50,30 @@ async fn list_notifications(
         },
     )?;
 
-    let responses: Vec<NotificationResponse> = notifs.into_iter().map(Into::into).collect();
+    // Look up actor names for display
+    let actor_ids: Vec<Uuid> = notifs.iter().filter_map(|n| n.actor_id).collect();
+    let actor_map: std::collections::HashMap<Uuid, String> = if actor_ids.is_empty() {
+        std::collections::HashMap::new()
+    } else {
+        let rows: Vec<(Uuid, String, Option<String>)> =
+            sqlx::query_as("SELECT id, username, display_name FROM users WHERE id = ANY($1)")
+                .bind(&actor_ids)
+                .fetch_all(&state.db)
+                .await
+                .map_err(|e| AppError::Internal(e.into()))?;
+
+        rows.into_iter()
+            .map(|(id, username, display_name)| (id, display_name.unwrap_or(username)))
+            .collect()
+    };
+
+    let responses: Vec<NotificationResponse> = notifs
+        .into_iter()
+        .map(|n| {
+            let actor_name = n.actor_id.and_then(|id| actor_map.get(&id).cloned());
+            NotificationResponse::from_notification(n, actor_name)
+        })
+        .collect();
 
     Ok(Json(PaginatedResponse::new(responses, total, page, limit)))
 }

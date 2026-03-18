@@ -548,6 +548,60 @@
 "item.sharedWith" = "Partagé avec";
 "item.links" = "Liens";
 
+/* Centre de notifications */
+"notifications.title" = "Notifications";
+
+/* Supprimer un ami */
+"friends.removeConfirm.title" = "Retirer un ami";
+"friends.removeConfirm.message" = "Retirer %@ de vos amis ?";
+
+/* Amis toast & context */
+"friends.accepted.toast" = "%@ ajouté(e)";
+"friends.declined.toast" = "Demande refusée";
+"friends.viewWishes" = "Voir les envies";
+"circles.context.leaveCircle" = "Quitter le cercle";
+"circles.context.deleteCircle" = "Supprimer le cercle";
+
+/* Push notification localized strings (APNs loc-key) */
+"push.friend_request.title" = "Demande d'ami";
+"push.friend_request.body" = "%@ veut vous ajouter en ami";
+"push.friend_accepted.title" = "Demande acceptée !";
+"push.friend_accepted.body" = "%@ a accepté votre demande";
+"push.circle_added.title" = "Nouveau cercle";
+"push.circle_added.body" = "Vous avez été ajouté au cercle %@";
+"push.circle_member_joined.title" = "Nouveau membre !";
+"push.circle_member_joined.body" = "%@ a rejoint le cercle";
+"push.circle_activity.title" = "Nouveau membre !";
+"push.circle_activity.body" = "%@ a rejoint le cercle";
+"push.item_shared.title" = "Nouvelles envies !";
+"push.item_shared.body" = "%@ a partagé des envies avec vous";
+"push.item_claimed.title" = "Envie réservée";
+"push.item_claimed.body" = "Ton envie '%@' a été réservée";
+"push.item_unclaimed.title" = "Envie libérée";
+"push.item_unclaimed.body" = "Ton envie '%@' n'est plus réservée";
+"push.item_received.title" = "Cadeau reçu !";
+"push.item_received.body" = "%@ a bien reçu %@ !";
+"push.item_unarchived.title" = "Envie de retour";
+"push.item_unarchived.body" = "%@ est de retour dans les envies";
+
+/* Centre de notifications in-app (rendu côté client depuis le type) */
+"notif.friend_request" = "%@ veut vous ajouter en ami";
+"notif.friend_accepted" = "%@ a accepté votre demande";
+"notif.circle_added" = "Vous avez été ajouté à un cercle";
+"notif.circle_member_joined" = "%@ a rejoint le cercle";
+"notif.circle_activity" = "%@ a rejoint le cercle";
+"notif.item_shared" = "%@ a partagé des envies avec vous";
+"notif.item_claimed" = "Ton envie a été réservée";
+"notif.item_unclaimed" = "Ton envie n'est plus réservée";
+"notif.item_received" = "Cadeau reçu !";
+"notif.item_unarchived" = "Une envie est de retour";
+
+/* Réglage notifications push */
+"profile.notifications" = "Notifications";
+"profile.notifications.enabled" = "Activées";
+"profile.notifications.disabled" = "Désactivées";
+"profile.notifications.openSettings" = "Activer dans Réglages";
+
 /* Image Picker */
 "imagePicker.add" = "Ajouter une photo";
 "imagePicker.change" = "Changer la photo";

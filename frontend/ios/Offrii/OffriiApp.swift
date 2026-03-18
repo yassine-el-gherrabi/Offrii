@@ -46,6 +46,9 @@ struct OffriiApp: App {
             .animation(OffriiAnimation.modal, value: router.currentScreen)
             .environment(authManager)
             .environment(router)
+            .onAppear {
+                appDelegate.router = router
+            }
             .onOpenURL { url in
                 router.handleURL(url)
             }
@@ -82,6 +85,7 @@ struct MainTabView: View {
     @State private var showCreateSheet = false
     @State private var joinResult: String?
     @State private var joinError: String?
+    @State private var circlesPath = NavigationPath()
 
     var body: some View {
         VStack(spacing: 0) {
@@ -98,7 +102,7 @@ struct MainTabView: View {
                 case .create:
                     EmptyView()
                 case .cercles:
-                    NavigationStack {
+                    NavigationStack(path: $circlesPath) {
                         CirclesListView()
                     }
                 case .entraide:
@@ -114,6 +118,17 @@ struct MainTabView: View {
             })
         }
         .ignoresSafeArea(.keyboard)
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
+            Task {
+                let center = UNUserNotificationCenter.current()
+                let settings = await center.notificationSettings()
+                if settings.authorizationStatus == .authorized {
+                    await MainActor.run {
+                        UIApplication.shared.registerForRemoteNotifications()
+                    }
+                }
+            }
+        }
         .task {
             let center = UNUserNotificationCenter.current()
             let settings = await center.notificationSettings()
@@ -126,6 +141,15 @@ struct MainTabView: View {
         .sheet(isPresented: $showCreateSheet) {
             QuickCreateSheet()
                 .presentationDetents([.medium])
+        }
+        .onChange(of: router.pendingCircleId) { _, circleId in
+            guard let circleId else { return }
+            selectedTab = .cercles
+            // Small delay to ensure tab switch completes before pushing
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                circlesPath.append(circleId)
+                router.pendingCircleId = nil
+            }
         }
         .onChange(of: router.pendingInviteToken) { _, token in
             guard let token else { return }
@@ -166,6 +190,11 @@ struct MainTabView: View {
             Button(NSLocalizedString("common.ok", comment: ""), role: .cancel) {}
         } message: {
             if let err = joinError { Text(err) }
+        }
+        .onChange(of: router.showFriends) { _, show in
+            guard show else { return }
+            selectedTab = .cercles
+            // Don't reset here — CirclesListView will consume it and switch to friends filter
         }
     }
 }

@@ -29,8 +29,8 @@ use rest_api::config::database::{create_pg_pool, create_redis_client};
 use rest_api::errors::AppError;
 use rest_api::handlers::health::health_check;
 use rest_api::handlers::{
-    admin, auth, categories, circles, community_wishes, friends, items, push_tokens, share_links,
-    shared, upload, users, wish_messages,
+    admin, auth, categories, circles, community_wishes, friends, items, notifications, push_tokens,
+    share_links, shared, upload, users, wish_messages,
 };
 use rest_api::repositories::category_repo::PgCategoryRepo;
 use rest_api::repositories::circle_event_repo::PgCircleEventRepo;
@@ -41,6 +41,7 @@ use rest_api::repositories::circle_repo::PgCircleRepo;
 use rest_api::repositories::community_wish_repo::PgCommunityWishRepo;
 use rest_api::repositories::friend_repo::PgFriendRepo;
 use rest_api::repositories::item_repo::PgItemRepo;
+use rest_api::repositories::notification_repo::PgNotificationRepo;
 use rest_api::repositories::push_token_repo::PgPushTokenRepo;
 use rest_api::repositories::refresh_token_repo::PgRefreshTokenRepo;
 use rest_api::repositories::share_link_repo::PgShareLinkRepo;
@@ -65,9 +66,9 @@ use rest_api::traits::{
     AuthService, CategoryRepo, CategoryService, CircleEventRepo, CircleInviteRepo, CircleItemRepo,
     CircleMemberRepo, CircleRepo, CircleService, CommunityWishRepo, CommunityWishService,
     EmailService, FriendRepo, FriendService, HealthCheck, ItemRepo, ItemService, ModerationService,
-    NotificationOutcome, NotificationRequest, NotificationService, PushTokenRepo, PushTokenService,
-    RefreshTokenRepo, ShareLinkRepo, ShareLinkService, UploadService, UserRepo, UserService,
-    WishMessageRepo, WishMessageService, WishReportRepo,
+    NotificationOutcome, NotificationRepo, NotificationRequest, NotificationService, PushTokenRepo,
+    PushTokenService, RefreshTokenRepo, ShareLinkRepo, ShareLinkService, UploadService, UserRepo,
+    UserService, WishMessageRepo, WishMessageService, WishReportRepo,
 };
 use rest_api::utils::jwt::JwtKeys;
 
@@ -216,6 +217,10 @@ impl TestApp {
         let notification_svc: Arc<dyn NotificationService> =
             Arc::new(SpyNotificationService::new());
 
+        // Notification repo
+        let notification_repo: Arc<dyn NotificationRepo> =
+            Arc::new(PgNotificationRepo::new(db.clone()));
+
         // Friend repo
         let friend_repo: Arc<dyn FriendRepo> = Arc::new(PgFriendRepo::new(db.clone()));
 
@@ -239,6 +244,7 @@ impl TestApp {
             user_repo.clone(),
             push_token_repo.clone(),
             notification_svc.clone(),
+            notification_repo.clone(),
             friend_repo.clone(),
             redis.clone(),
         ));
@@ -250,6 +256,7 @@ impl TestApp {
             user_repo.clone(),
             push_token_repo.clone(),
             notification_svc.clone(),
+            notification_repo.clone(),
         ));
 
         let user_svc: Arc<dyn UserService> = Arc::new(PgUserService::new(
@@ -305,6 +312,8 @@ impl TestApp {
             community_wishes: community_wish_svc,
             wish_messages: wish_message_svc,
             uploads,
+            notifications: notification_repo,
+            app_base_url: "http://localhost:3000".to_string(),
         };
 
         let router = Router::new()
@@ -318,6 +327,7 @@ impl TestApp {
             .nest("/shared", shared::router())
             .nest("/circles", circles::router())
             .nest("/me", friends::router())
+            .nest("/me/notifications", notifications::router())
             .nest("/users", friends::search_router())
             .nest("/community/wishes", community_wishes::router())
             .merge(wish_messages::router())

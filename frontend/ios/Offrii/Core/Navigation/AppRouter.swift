@@ -61,11 +61,21 @@ final class AppRouter {
     /// Pending circle invite token from deep link (offrii://join/{token})
     var pendingInviteToken: String?
 
+    /// Pending circle navigation from push notification tap or notification center
+    var pendingCircleId: UUID?
+
+    /// Triggers switching to the friends filter in Circles tab
+    var showFriends = false
+
     func handleURL(_ url: URL) {
         // offrii://join/{token}
         guard url.scheme == "offrii", url.host == "join",
               let token = url.pathComponents.last, !token.isEmpty, token != "/"
         else { return }
         pendingInviteToken = token
+    }
+
+    func navigateToCircle(_ circleId: UUID) {
+        pendingCircleId = circleId
     }
 }

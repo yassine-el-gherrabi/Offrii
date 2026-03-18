@@ -2,6 +2,15 @@ import UIKit
 import UserNotifications
 
 final class AppDelegate: NSObject, UIApplicationDelegate {
+    /// Shared router reference, set from OffriiApp on launch
+    weak var router: AppRouter? {
+        didSet { deliverPendingNavigation() }
+    }
+
+    /// Pending navigation stored when didReceive fires before router is connected
+    private var pendingShowFriends = false
+    private var pendingCircleId: UUID?
+
     func application(
         _ application: UIApplication,
         didFinishLaunchingWithOptions _: [UIApplication.LaunchOptionsKey: Any]? = nil
@@ -26,11 +35,24 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
     ) {
         print("Push registration failed: \(error.localizedDescription)")
     }
+
+    /// Deliver any navigation that was queued before the router was available
+    private func deliverPendingNavigation() {
+        guard let router else { return }
+        if pendingShowFriends {
+            router.showFriends = true
+            pendingShowFriends = false
+        }
+        if let circleId = pendingCircleId {
+            router.navigateToCircle(circleId)
+            pendingCircleId = nil
+        }
+    }
 }
 
 // MARK: - Push Notification Handling
 
-extension AppDelegate: UNUserNotificationCenterDelegate {
+extension AppDelegate: @preconcurrency UNUserNotificationCenterDelegate {
     /// Show push notification as banner when app is in foreground
     func userNotificationCenter(
         _: UNUserNotificationCenter,
@@ -40,14 +62,30 @@ extension AppDelegate: UNUserNotificationCenterDelegate {
         completionHandler([.banner, .sound, .badge])
     }
 
-    /// Handle tap on push notification
+    /// Handle tap on push notification — navigate to circle/item
     func userNotificationCenter(
         _: UNUserNotificationCenter,
         didReceive response: UNNotificationResponse,
         withCompletionHandler completionHandler: @escaping () -> Void
     ) {
-        // TODO: Parse payload and navigate to context (circle/item)
-        // For now, just open the app
+        let userInfo = response.notification.request.content.userInfo
+        let notifType = userInfo["type"] as? String ?? ""
+
+        if notifType.hasPrefix("friend_") {
+            if let router {
+                Task { @MainActor in router.showFriends = true }
+            } else {
+                pendingShowFriends = true
+            }
+        } else if let circleIdString = userInfo["circle_id"] as? String,
+                  let circleId = UUID(uuidString: circleIdString) {
+            if let router {
+                Task { @MainActor in router.navigateToCircle(circleId) }
+            } else {
+                pendingCircleId = circleId
+            }
+        }
+
         completionHandler()
     }
 }

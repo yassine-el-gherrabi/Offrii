@@ -44,17 +44,33 @@ impl ApnsNotificationService {
     }
 
     async fn send_one(&self, msg: &NotificationRequest) -> NotificationOutcome {
-        let builder = DefaultNotificationBuilder::new()
+        let mut builder = DefaultNotificationBuilder::new()
             .set_title(&msg.title)
             .set_body(&msg.body)
             .set_sound("default");
+
+        // Use APNs localization if loc_key is set (iOS resolves against Localizable.strings)
+        if let Some(ref loc_key) = msg.loc_key {
+            builder = builder.set_loc_key(loc_key);
+            if !msg.loc_args.is_empty() {
+                builder = builder.set_loc_args(&msg.loc_args);
+            }
+        }
+        if let Some(ref title_key) = msg.title_loc_key {
+            builder = builder.set_title_loc_key(title_key);
+        }
 
         let options = NotificationOptions {
             apns_topic: Some(&self.bundle_id),
             ..Default::default()
         };
 
-        let payload = builder.build(&msg.device_token, options);
+        let mut payload = builder.build(&msg.device_token, options);
+
+        // Attach custom data (circle_id, item_id, type) for deep link on tap
+        for (key, value) in &msg.custom_data {
+            let _ = payload.add_custom_data(key, value);
+        }
 
         match self.client.send(payload).await {
             Ok(resp) if resp.code == 200 => NotificationOutcome::Sent,

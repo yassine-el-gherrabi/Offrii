@@ -156,6 +156,8 @@ impl PgReminderService {
                 device_token: pt.token.clone(),
                 title: title.clone(),
                 body: body.clone(),
+                custom_data: std::collections::HashMap::new(),
+                ..Default::default()
             })
             .collect();
 

@@ -548,6 +548,60 @@
 "item.sharedWith" = "Shared with";
 "item.links" = "Links";
 
+/* Notification Center */
+"notifications.title" = "Notifications";
+
+/* Friend removal */
+"friends.removeConfirm.title" = "Remove friend";
+"friends.removeConfirm.message" = "Remove %@ from your friends?";
+
+/* Friends toast & context */
+"friends.accepted.toast" = "%@ added to friends";
+"friends.declined.toast" = "Request declined";
+"friends.viewWishes" = "View wishes";
+"circles.context.leaveCircle" = "Leave circle";
+"circles.context.deleteCircle" = "Delete circle";
+
+/* Push notification localized strings (APNs loc-key) */
+"push.friend_request.title" = "Friend request";
+"push.friend_request.body" = "%@ wants to add you as a friend";
+"push.friend_accepted.title" = "Request accepted!";
+"push.friend_accepted.body" = "%@ accepted your friend request";
+"push.circle_added.title" = "New circle";
+"push.circle_added.body" = "You were added to circle %@";
+"push.circle_member_joined.title" = "New member!";
+"push.circle_member_joined.body" = "%@ joined the circle";
+"push.circle_activity.title" = "New member!";
+"push.circle_activity.body" = "%@ joined the circle";
+"push.item_shared.title" = "New wishes!";
+"push.item_shared.body" = "%@ shared wishes with you";
+"push.item_claimed.title" = "Wish reserved";
+"push.item_claimed.body" = "Your wish '%@' has been reserved";
+"push.item_unclaimed.title" = "Wish available";
+"push.item_unclaimed.body" = "Your wish '%@' is available again";
+"push.item_received.title" = "Gift received!";
+"push.item_received.body" = "%@ received %@!";
+"push.item_unarchived.title" = "Wish is back";
+"push.item_unarchived.body" = "%@ is back in the wishlist";
+
+/* In-app notification center (rendered client-side from type) */
+"notif.friend_request" = "%@ wants to add you as a friend";
+"notif.friend_accepted" = "%@ accepted your friend request";
+"notif.circle_added" = "You were added to a circle";
+"notif.circle_member_joined" = "%@ joined the circle";
+"notif.circle_activity" = "%@ joined the circle";
+"notif.item_shared" = "%@ shared wishes with you";
+"notif.item_claimed" = "Your wish has been reserved";
+"notif.item_unclaimed" = "Your wish is available again";
+"notif.item_received" = "Gift received!";
+"notif.item_unarchived" = "A wish is back in the wishlist";
+
+/* Push notifications setting */
+"profile.notifications" = "Notifications";
+"profile.notifications.enabled" = "Enabled";
+"profile.notifications.disabled" = "Disabled";
+"profile.notifications.openSettings" = "Enable in Settings";
+
 /* Image Picker */
 "imagePicker.add" = "Add a photo";
 "imagePicker.change" = "Change photo";

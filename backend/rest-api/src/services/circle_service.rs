@@ -133,6 +133,7 @@ impl PgCircleService {
             Some("circle_activity"),
             None,
             Some(exclude_user),
+            vec![],
         );
     }
 
@@ -146,11 +147,13 @@ impl PgCircleService {
         notif_type: Option<&str>,
         item_id: Option<Uuid>,
         actor_id: Option<Uuid>,
+        loc_args: Vec<String>,
     ) {
         let member_repo = self.circle_member_repo.clone();
         let push_token_repo = self.push_token_repo.clone();
         let notification_svc = self.notification_svc.clone();
         let notif_repo = self.notification_repo.clone();
+        let user_repo = self.user_repo.clone();
         let persist_type = notif_type.map(|s| s.to_string());
 
         tokio::spawn(async move {
@@ -161,6 +164,35 @@ impl PgCircleService {
                     return;
                 }
             };
+
+            // Resolve actor name for loc_args if not provided
+            let loc_args = if loc_args.is_empty() {
+                if let Some(aid) = actor_id {
+                    if let Ok(Some(user)) = user_repo.find_by_id(aid).await {
+                        vec![user.display_name.unwrap_or(user.username)]
+                    } else {
+                        vec![]
+                    }
+                } else {
+                    vec![]
+                }
+            } else {
+                loc_args
+            };
+
+            // Build custom payload for deep link on notification tap
+            let mut custom_data = std::collections::HashMap::new();
+            custom_data.insert("circle_id".to_string(), circle_id.to_string());
+            if let Some(ref ntype) = persist_type {
+                custom_data.insert("type".to_string(), ntype.clone());
+            }
+            if let Some(iid) = item_id {
+                custom_data.insert("item_id".to_string(), iid.to_string());
+            }
+
+            // APNs loc-key for client-side localization
+            let loc_key = persist_type.as_deref().map(|t| format!("push.{t}.body"));
+            let title_loc_key = persist_type.as_deref().map(|t| format!("push.{t}.title"));
 
             let mut requests = Vec::new();
             for member in &members {
@@ -191,6 +223,10 @@ impl PgCircleService {
                         device_token: pt.token,
                         title: title.clone(),
                         body: body.clone(),
+                        custom_data: custom_data.clone(),
+                        loc_key: loc_key.clone(),
+                        loc_args: loc_args.clone(),
+                        title_loc_key: title_loc_key.clone(),
                     });
                 }
             }
@@ -199,18 +235,6 @@ impl PgCircleService {
                 notification_svc.send_batch(&requests).await;
             }
         });
-    }
-
-    fn notify_user(&self, user_id: Uuid, title: String, body: String) {
-        self.notify_user_with_context(
-            user_id,
-            title,
-            body,
-            Some("circle_activity"),
-            None,
-            None,
-            None,
-        );
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -223,10 +247,12 @@ impl PgCircleService {
         circle_id: Option<Uuid>,
         item_id: Option<Uuid>,
         actor_id: Option<Uuid>,
+        loc_args: Vec<String>,
     ) {
         let push_token_repo = self.push_token_repo.clone();
         let notification_svc = self.notification_svc.clone();
         let notif_repo = self.notification_repo.clone();
+        let user_repo_clone = self.user_repo.clone();
         let persist_type = notif_type.map(|s| s.to_string());
 
         tokio::spawn(async move {
@@ -236,6 +262,37 @@ impl PgCircleService {
                     .create(user_id, ntype, &title, &body, circle_id, item_id, actor_id)
                     .await;
             }
+
+            // Resolve actor name for loc_args if not provided
+            let loc_args = if loc_args.is_empty() {
+                if let Some(aid) = actor_id {
+                    if let Ok(Some(user)) = user_repo_clone.find_by_id(aid).await {
+                        vec![user.display_name.unwrap_or(user.username)]
+                    } else {
+                        vec![]
+                    }
+                } else {
+                    vec![]
+                }
+            } else {
+                loc_args
+            };
+
+            // Build custom payload for deep link on notification tap
+            let mut custom_data = std::collections::HashMap::new();
+            if let Some(ref ntype) = persist_type {
+                custom_data.insert("type".to_string(), ntype.clone());
+            }
+            if let Some(cid) = circle_id {
+                custom_data.insert("circle_id".to_string(), cid.to_string());
+            }
+            if let Some(iid) = item_id {
+                custom_data.insert("item_id".to_string(), iid.to_string());
+            }
+
+            // APNs loc-key for client-side localization
+            let loc_key = persist_type.as_deref().map(|t| format!("push.{t}.body"));
+            let title_loc_key = persist_type.as_deref().map(|t| format!("push.{t}.title"));
 
             let tokens = match push_token_repo.find_by_user(user_id).await {
                 Ok(t) => t,
@@ -251,6 +308,10 @@ impl PgCircleService {
                     device_token: pt.token,
                     title: title.clone(),
                     body: body.clone(),
+                    custom_data: custom_data.clone(),
+                    loc_key: loc_key.clone(),
+                    loc_args: loc_args.clone(),
+                    title_loc_key: title_loc_key.clone(),
                 })
                 .collect();
 
@@ -507,6 +568,20 @@ impl traits::CircleService for PgCircleService {
     async fn delete_circle(&self, circle_id: Uuid, user_id: Uuid) -> Result<(), AppError> {
         self.require_owner(circle_id, user_id).await?;
 
+        // Direct circles are managed via the friend system — cannot be deleted directly
+        let circle = self
+            .circle_repo
+            .find_by_id(circle_id)
+            .await
+            .map_err(AppError::Internal)?
+            .ok_or_else(|| AppError::NotFound("circle not found".into()))?;
+
+        if circle.is_direct {
+            return Err(AppError::BadRequest(
+                "direct circles cannot be deleted; remove the friend instead".into(),
+            ));
+        }
+
         self.circle_repo
             .delete(circle_id)
             .await
@@ -533,6 +608,19 @@ impl traits::CircleService for PgCircleService {
             .await
             .map_err(AppError::Internal)?
             .ok_or_else(|| AppError::NotFound("user not found".into()))?;
+
+        // Require friendship
+        let are_friends = self
+            .friend_repo
+            .are_friends(owner_id, other_user_id)
+            .await
+            .map_err(AppError::Internal)?;
+
+        if !are_friends {
+            return Err(AppError::Forbidden(
+                "you must be friends to create a direct circle".into(),
+            ));
+        }
 
         // Check no existing direct circle
         let existing = self
@@ -742,18 +830,24 @@ impl traits::CircleService for PgCircleService {
     ) -> Result<(), AppError> {
         self.require_membership(circle_id, requester_id).await?;
 
-        // Self-removal is always allowed; otherwise require owner
-        if target_user_id != requester_id {
-            self.require_owner(circle_id, requester_id).await?;
-        }
-
-        // Cannot remove the owner
+        // Direct circles are managed via the friend system
         let circle = self
             .circle_repo
             .find_by_id(circle_id)
             .await
             .map_err(AppError::Internal)?
             .ok_or_else(|| AppError::NotFound("circle not found".into()))?;
+
+        if circle.is_direct {
+            return Err(AppError::BadRequest(
+                "cannot leave a direct circle; remove the friend instead".into(),
+            ));
+        }
+
+        // Self-removal is always allowed; otherwise require owner
+        if target_user_id != requester_id {
+            self.require_owner(circle_id, requester_id).await?;
+        }
 
         if target_user_id == circle.owner_id && target_user_id != requester_id {
             return Err(AppError::BadRequest(
@@ -894,6 +988,83 @@ impl traits::CircleService for PgCircleService {
                 user_id,
                 "Nouvel article partagé !".to_string(),
                 format!("{} a été partagé dans le cercle", item.name),
+            );
+
+            self.bump_circle_version(circle_id);
+            self.bump_item_list_version(user_id);
+        }
+
+        Ok(())
+    }
+
+    #[tracing::instrument(skip(self))]
+    async fn batch_share_items(
+        &self,
+        circle_id: Uuid,
+        item_ids: &[Uuid],
+        user_id: Uuid,
+    ) -> Result<(), AppError> {
+        if item_ids.is_empty() {
+            return Ok(());
+        }
+
+        self.require_membership(circle_id, user_id).await?;
+
+        let mut shared_count = 0u32;
+
+        for &item_id in item_ids {
+            // Verify ownership
+            let item = self
+                .item_repo
+                .find_by_id(item_id, user_id)
+                .await
+                .map_err(AppError::Internal)?;
+
+            let Some(_item) = item else { continue };
+
+            let inserted = self
+                .circle_item_repo
+                .share_item(circle_id, item_id, user_id)
+                .await
+                .map_err(AppError::Internal)?;
+
+            if inserted.is_some() {
+                let _ = self
+                    .circle_event_repo
+                    .insert(circle_id, user_id, "item_shared", Some(item_id), None)
+                    .await;
+
+                shared_count += 1;
+            }
+        }
+
+        // Send ONE notification for all items
+        if shared_count > 0 {
+            let user = self
+                .user_repo
+                .find_by_id(user_id)
+                .await
+                .map_err(AppError::Internal)?;
+            let username = user
+                .as_ref()
+                .and_then(|u| u.display_name.clone())
+                .unwrap_or_else(|| {
+                    user.as_ref()
+                        .map(|u| u.username.clone())
+                        .unwrap_or_default()
+                });
+
+            let body = format!("{username} shared {shared_count} wish(es)");
+
+            self.notify_members_with_context(
+                circle_id,
+                user_id,
+                "New wishes!".to_string(),
+                body,
+                Some("item_shared"),
+                None,
+                Some(user_id),
+                vec![username],
             );
 
             self.bump_circle_version(circle_id);
@@ -1211,10 +1382,15 @@ impl traits::CircleService for PgCircleService {
 
         // N6: Notify the added user specifically
         let circle_name = circle.name.as_deref().unwrap_or("un cercle");
-        self.notify_user(
+        self.notify_user_with_context(
             user_id,
             "Nouveau cercle".to_string(),
             format!("Vous avez été ajouté au cercle {}", circle_name),
+            Some("circle_added"),
+            Some(circle_id),
+            None,
+            Some(requester_id),
+            vec![],
         );
 
         // Notify other members that someone joined
@@ -1262,10 +1438,15 @@ impl traits::CircleService for PgCircleService {
             let owner_id = item.user_id;
 
             // N1: Notify owner (don't reveal who claimed)
-            self.notify_user(
+            self.notify_user_with_context(
                 owner_id,
                 "Envie réservée".to_string(),
                 format!("Ton envie '{}' a été réservée", item_name),
+                Some("item_claimed"),
+                circle_ids.first().copied(),
+                Some(item_id),
+                Some(claimer_id),
+                vec![],
             );
 
             // N2: Notify circle members (reveal claimer, exclude owner + claimer)
@@ -1297,13 +1478,18 @@ impl traits::CircleService for PgCircleService {
                     if member.user_id == owner_id || member.user_id == claimer_id {
                         continue;
                     }
-                    self.notify_user(
+                    self.notify_user_with_context(
                         member.user_id,
                         "Envie réservée".to_string(),
                         format!(
                             "'{}' a été réservé par {} dans {}",
                             item_name, claimer_name, circle_name
                         ),
+                        Some("item_claimed"),
+                        Some(*circle_id),
+                        Some(item_id),
+                        Some(claimer_id),
+                        vec![],
                     );
                 }
             }
@@ -1350,10 +1536,15 @@ impl traits::CircleService for PgCircleService {
             let owner_id = item.user_id;
 
             // Notify owner
-            self.notify_user(
+            self.notify_user_with_context(
                 owner_id,
                 "Envie libérée".to_string(),
                 format!("Ton envie '{}' n'est plus réservée", item_name),
+                Some("item_unclaimed"),
+                circle_ids.first().copied(),
+                Some(item_id),
+                Some(claimer_id),
+                vec![],
             );
 
             // Notify circle members (except owner and unclaimer)
@@ -1373,10 +1564,15 @@ impl traits::CircleService for PgCircleService {
                     if member.user_id == owner_id || member.user_id == claimer_id {
                         continue;
                     }
-                    self.notify_user(
+                    self.notify_user_with_context(
                         member.user_id,
                         "Envie libérée".to_string(),
                         format!("'{}' n'est plus réservé dans {}", item_name, circle_name),
+                        Some("item_unclaimed"),
+                        Some(*circle_id),
+                        Some(item_id),
+                        Some(claimer_id),
+                        vec![],
                     );
                 }
             }
@@ -1426,10 +1622,15 @@ impl traits::CircleService for PgCircleService {
                         .unwrap_or_default()
                 });
 
-            self.notify_user(
+            self.notify_user_with_context(
                 claimer_id,
                 "Cadeau reçu !".to_string(),
                 format!("{} a bien reçu {} !", owner_name, item.name),
+                Some("item_received"),
+                circle_ids.first().copied(),
+                Some(item_id),
+                Some(owner_id),
+                vec![],
             );
         }
 
@@ -1438,6 +1639,13 @@ impl traits::CircleService for PgCircleService {
 
     #[tracing::instrument(skip(self))]
     async fn on_item_unarchived(&self, item_id: Uuid, owner_id: Uuid) -> Result<(), AppError> {
+        // Fetch circle_ids first (needed for both notification context and version bump)
+        let circle_ids = self
+            .circle_item_repo
+            .list_circles_for_item(item_id)
+            .await
+            .map_err(AppError::Internal)?;
+
         // Notify the claimer that the item is back in the wishlist
         let item = self
             .item_repo
@@ -1459,22 +1667,22 @@ impl traits::CircleService for PgCircleService {
                         .unwrap_or_default()
                 });
 
-            self.notify_user(
+            self.notify_user_with_context(
                 claimer_id,
                 "Envie de retour".to_string(),
                 format!(
                     "{} est de retour dans les envies de {}",
                     item.name, owner_name
                 ),
+                Some("item_unarchived"),
+                circle_ids.first().copied(),
+                Some(item_id),
+                Some(owner_id),
+                vec![],
             );
         }
 
-        // Bump circle versions for all circles this item is shared in
-        let circle_ids = self
-            .circle_item_repo
-            .list_circles_for_item(item_id)
-            .await
-            .map_err(AppError::Internal)?;
+        // Bump circle versions
         for circle_id in &circle_ids {
             self.bump_circle_version(*circle_id);
         }
@@ -1541,7 +1749,9 @@ impl traits::CircleService for PgCircleService {
                     return None;
                 }
 
-                let username = user_map.get(&e.actor_id).map(|(u, _)| u.clone());
+                let username = user_map
+                    .get(&e.actor_id)
+                    .map(|(u, dn)| dn.as_deref().unwrap_or(u).to_string());
 
                 let target_item_name = e
                     .target_item_id
@@ -1551,7 +1761,7 @@ impl traits::CircleService for PgCircleService {
                 let target_username = e
                     .target_user_id
                     .and_then(|uid| user_map.get(&uid))
-                    .map(|(u, _)| u.clone());
+                    .map(|(u, dn)| dn.as_deref().unwrap_or(u).to_string());
 
                 Some(CircleEventResponse {
                     id: e.id,

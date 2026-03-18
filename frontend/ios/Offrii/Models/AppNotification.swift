@@ -1,6 +1,6 @@
 import Foundation
 
-struct AppNotification: Codable, Identifiable {
+struct AppNotification: Codable, Identifiable, Equatable {
     let id: UUID
     let type: String
     let title: String
@@ -9,6 +9,7 @@ struct AppNotification: Codable, Identifiable {
     let circleId: UUID?
     let itemId: UUID?
     let actorId: UUID?
+    let actorName: String?
     let createdAt: Date
 
     enum CodingKeys: String, CodingKey {
@@ -16,7 +17,28 @@ struct AppNotification: Codable, Identifiable {
         case circleId = "circle_id"
         case itemId = "item_id"
         case actorId = "actor_id"
+        case actorName = "actor_name"
         case createdAt = "created_at"
+    }
+
+    /// Client-side localized title (uses push.{type}.title key, fallback to stored title)
+    var localizedTitle: String {
+        let key = "push.\(type).title"
+        let localized = NSLocalizedString(key, comment: "")
+        return localized != key ? localized : title
+    }
+
+    /// Client-side localized body (uses notif.{type} key with actor name, fallback to stored body)
+    var localizedBody: String {
+        let key = "notif.\(type)"
+        let localized = NSLocalizedString(key, comment: "")
+        if localized == key {
+            return body
+        }
+        if let name = actorName {
+            return String(format: localized, name)
+        }
+        return localized.replacingOccurrences(of: "%@", with: "")
     }
 
     var icon: String {

@@ -80,6 +80,8 @@ impl PgCommunityWishService {
                     device_token: pt.token,
                     title: title.clone(),
                     body: body.clone(),
+                    custom_data: std::collections::HashMap::new(),
+                    ..Default::default()
                 })
                 .collect();
 
@@ -343,6 +345,8 @@ impl traits::CommunityWishService for PgCommunityWishService {
                     device_token: pt.token,
                     title: notif_title.clone(),
                     body: notif_body.clone(),
+                    custom_data: std::collections::HashMap::new(),
+                    ..Default::default()
                 })
                 .collect();
             if !requests.is_empty() {

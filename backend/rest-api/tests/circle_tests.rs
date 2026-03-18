@@ -9,12 +9,37 @@ const ALICE_EMAIL: &str = "alice-circle@example.com";
 const BOB_EMAIL: &str = "bob-circle@example.com";
 const CHARLIE_EMAIL: &str = "charlie-circle@example.com";
 
-/// Register a user, return (access_token, user_id).
+/// Register a user, return (access_token, user_id, username).
 async fn setup_user_with_id(app: &TestApp, email: &str) -> (String, String) {
     let body = app.setup_user(email, TEST_PASSWORD).await;
     let token = body["tokens"]["access_token"].as_str().unwrap().to_string();
     let user_id = body["user"]["id"].as_str().unwrap().to_string();
     (token, user_id)
+}
+
+/// Register a user with explicit username, return (access_token, user_id, username).
+async fn setup_user_named(app: &TestApp, email: &str, username: &str) -> (String, String) {
+    let (status, body) = app
+        .register_user_with_username(email, TEST_PASSWORD, username)
+        .await;
+    assert_eq!(status, StatusCode::CREATED);
+    let token = body["tokens"]["access_token"].as_str().unwrap().to_string();
+    let user_id = body["user"]["id"].as_str().unwrap().to_string();
+    (token, user_id)
+}
+
+/// Make two users friends. Requires their tokens and one username.
+async fn make_friends(app: &TestApp, a_token: &str, b_token: &str, b_username: &str) {
+    let body = serde_json::json!({ "username": b_username });
+    let (status, resp) = app
+        .post_json_with_auth("/me/friend-requests", &body, a_token)
+        .await;
+    assert_eq!(status, StatusCode::CREATED, "send friend request: {resp}");
+    let req_id = resp["id"].as_str().unwrap();
+    let (status, _) = app
+        .post_with_auth(&format!("/me/friend-requests/{req_id}/accept"), b_token)
+        .await;
+    assert_eq!(status, StatusCode::OK, "accept friend request");
 }
 
 /// Create a circle and return its id.
@@ -378,33 +403,47 @@ async fn delete_circle_by_non_owner_returns_403() {
 #[tokio::test]
 async fn create_direct_circle_returns_201() {
     let app = TestApp::new().await;
-    let (alice_token, _alice_id) = setup_user_with_id(&app, ALICE_EMAIL).await;
-    let (_bob_token, bob_id) = setup_user_with_id(&app, BOB_EMAIL).await;
+    let (alice_token, _) = setup_user_named(&app, "dc-a@test.com", "dc_alice").await;
+    let (bob_token, bob_id) = setup_user_named(&app, "dc-b@test.com", "dc_bob").await;
 
+    // Must be friends first
+    make_friends(&app, &alice_token, &bob_token, "dc_bob").await;
+
+    // Accept already creates a direct circle, so creating another returns 409
+    let (status, _) = app
+        .post_with_auth(&format!("/circles/direct/{bob_id}"), &alice_token)
+        .await;
+    assert_eq!(
+        status,
+        StatusCode::CONFLICT,
+        "direct circle auto-created on accept"
+    );
+}
+
+#[tokio::test]
+async fn create_direct_circle_requires_friendship() {
+    let app = TestApp::new().await;
+    let (alice_token, _) = setup_user_with_id(&app, ALICE_EMAIL).await;
+    let (_, bob_id) = setup_user_with_id(&app, BOB_EMAIL).await;
+
+    // Not friends — should be forbidden
     let (status, resp) = app
         .post_with_auth(&format!("/circles/direct/{bob_id}"), &alice_token)
         .await;
-
-    assert_eq!(status, StatusCode::CREATED);
-    assert_eq!(resp["is_direct"], true);
-    assert_eq!(resp["member_count"], 2);
-    // Direct circles have null name in response (computed per-viewer in list)
-    assert!(resp["name"].is_null());
+    assert_eq!(status, StatusCode::FORBIDDEN);
+    assert_error(&resp, "FORBIDDEN");
 }
 
 #[tokio::test]
 async fn create_direct_circle_prevents_duplicate() {
     let app = TestApp::new().await;
-    let (alice_token, _) = setup_user_with_id(&app, ALICE_EMAIL).await;
-    let (_, bob_id) = setup_user_with_id(&app, BOB_EMAIL).await;
+    let (alice_token, _) = setup_user_named(&app, "dcd-a@test.com", "dcd_alice").await;
+    let (bob_token, bob_id) = setup_user_named(&app, "dcd-b@test.com", "dcd_bob").await;
 
-    // First time succeeds
-    let (status, _) = app
-        .post_with_auth(&format!("/circles/direct/{bob_id}"), &alice_token)
-        .await;
-    assert_eq!(status, StatusCode::CREATED);
+    // Become friends (auto-creates direct circle)
+    make_friends(&app, &alice_token, &bob_token, "dcd_bob").await;
 
-    // Second attempt fails
+    // Explicit creation attempt fails (already exists)
     let (status, resp) = app
         .post_with_auth(&format!("/circles/direct/{bob_id}"), &alice_token)
         .await;
@@ -415,22 +454,18 @@ async fn create_direct_circle_prevents_duplicate() {
 #[tokio::test]
 async fn create_direct_circle_reverse_also_duplicate() {
     let app = TestApp::new().await;
-    let (alice_token, _) = setup_user_with_id(&app, ALICE_EMAIL).await;
-    let (bob_token, bob_id) = setup_user_with_id(&app, BOB_EMAIL).await;
-    let alice_id: String = {
-        let id: uuid::Uuid = sqlx::query_scalar("SELECT id FROM users WHERE email = $1")
-            .bind(ALICE_EMAIL)
-            .fetch_one(&app.db)
-            .await
-            .unwrap();
-        id.to_string()
-    };
+    let (alice_token, alice_id) = setup_user_named(&app, "dcr-a@test.com", "dcr_alice").await;
+    let (bob_token, bob_id) = setup_user_named(&app, "dcr-b@test.com", "dcr_bob").await;
 
-    // Alice → Bob
-    app.post_with_auth(&format!("/circles/direct/{bob_id}"), &alice_token)
+    // Become friends (auto-creates circle)
+    make_friends(&app, &alice_token, &bob_token, "dcr_bob").await;
+
+    // Both directions should fail (circle already exists from accept)
+    let (status, _) = app
+        .post_with_auth(&format!("/circles/direct/{bob_id}"), &alice_token)
         .await;
+    assert_eq!(status, StatusCode::CONFLICT);
 
-    // Bob → Alice should also fail (reverse direction)
     let (status, resp) = app
         .post_with_auth(&format!("/circles/direct/{alice_id}"), &bob_token)
         .await;
@@ -466,13 +501,23 @@ async fn create_direct_circle_nonexistent_user_returns_404() {
 #[tokio::test]
 async fn direct_circle_cannot_be_renamed() {
     let app = TestApp::new().await;
-    let (alice_token, _) = setup_user_with_id(&app, ALICE_EMAIL).await;
-    let (_, bob_id) = setup_user_with_id(&app, BOB_EMAIL).await;
+    let (alice_token, alice_id) = setup_user_named(&app, "dcn-a@test.com", "dcn_alice").await;
+    let (bob_token, bob_id) = setup_user_named(&app, "dcn-b@test.com", "dcn_bob").await;
 
-    let (_, circle) = app
-        .post_with_auth(&format!("/circles/direct/{bob_id}"), &alice_token)
-        .await;
-    let circle_id = circle["id"].as_str().unwrap();
+    make_friends(&app, &alice_token, &bob_token, "dcn_bob").await;
+
+    // Find the auto-created direct circle
+    let circle_id: String = sqlx::query_scalar(
+        "SELECT c.id::text FROM circles c \
+         JOIN circle_members cm1 ON cm1.circle_id = c.id AND cm1.user_id = $1::uuid \
+         JOIN circle_members cm2 ON cm2.circle_id = c.id AND cm2.user_id = $2::uuid \
+         WHERE c.is_direct = true",
+    )
+    .bind(&alice_id)
+    .bind(&bob_id)
+    .fetch_one(&app.db)
+    .await
+    .unwrap();
 
     let update = serde_json::json!({ "name": "Custom" });
     let (status, resp) = app
@@ -485,18 +530,10 @@ async fn direct_circle_cannot_be_renamed() {
 #[tokio::test]
 async fn direct_circle_shows_other_username_as_name() {
     let app = TestApp::new().await;
-    let (alice_token, _) = setup_user_with_id(&app, ALICE_EMAIL).await;
-    let (bob_token, bob_id) = setup_user_with_id(&app, BOB_EMAIL).await;
+    let (alice_token, _) = setup_user_named(&app, "dcs-a@test.com", "dcs_alice").await;
+    let (bob_token, _) = setup_user_named(&app, "dcs-b@test.com", "dcs_bob").await;
 
-    // Get Bob's actual username from DB
-    let bob_username: String = sqlx::query_scalar("SELECT username FROM users WHERE id = $1::uuid")
-        .bind(&bob_id)
-        .fetch_one(&app.db)
-        .await
-        .unwrap();
-
-    app.post_with_auth(&format!("/circles/direct/{bob_id}"), &alice_token)
-        .await;
+    make_friends(&app, &alice_token, &bob_token, "dcs_bob").await;
 
     // Alice's list: direct circle shows Bob's username as name
     let (status, circles) = app.get_with_auth("/circles", &alice_token).await;
@@ -504,19 +541,13 @@ async fn direct_circle_shows_other_username_as_name() {
 
     let arr = circles.as_array().unwrap();
     let direct = arr.iter().find(|c| c["is_direct"] == true).unwrap();
-    assert_eq!(direct["name"].as_str().unwrap(), bob_username);
+    assert_eq!(direct["name"].as_str().unwrap(), "dcs_bob");
 
     // Bob's list: direct circle shows Alice's username as name
-    let alice_username: String = sqlx::query_scalar("SELECT username FROM users WHERE email = $1")
-        .bind(ALICE_EMAIL)
-        .fetch_one(&app.db)
-        .await
-        .unwrap();
-
     let (_, bob_circles) = app.get_with_auth("/circles", &bob_token).await;
     let bob_arr = bob_circles.as_array().unwrap();
     let bob_direct = bob_arr.iter().find(|c| c["is_direct"] == true).unwrap();
-    assert_eq!(bob_direct["name"].as_str().unwrap(), alice_username);
+    assert_eq!(bob_direct["name"].as_str().unwrap(), "dcs_alice");
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -2301,4 +2332,267 @@ async fn unarchive_item_returns_to_active() {
         .await;
     assert_eq!(status, StatusCode::OK);
     assert_eq!(resp["status"], "active");
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// Batch Share Items
+// ═══════════════════════════════════════════════════════════════════
+
+#[tokio::test]
+async fn batch_share_returns_204() {
+    let app = TestApp::new().await;
+    let (alice, _) = setup_user_named(&app, "bs1@test.com", "bs_alice").await;
+    let circle_id = create_circle(&app, &alice, "BatchCircle").await;
+
+    let item1 = app
+        .create_item(
+            &alice,
+            &serde_json::json!({ "name": "Item A", "category_id": null }),
+        )
+        .await;
+    let item2 = app
+        .create_item(
+            &alice,
+            &serde_json::json!({ "name": "Item B", "category_id": null }),
+        )
+        .await;
+
+    let body = serde_json::json!({
+        "item_ids": [item1["id"].as_str().unwrap(), item2["id"].as_str().unwrap()]
+    });
+    let (status, _) = app
+        .post_json_with_auth(&format!("/circles/{circle_id}/items/batch"), &body, &alice)
+        .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+}
+
+#[tokio::test]
+async fn batch_share_adds_all_items_to_circle() {
+    let app = TestApp::new().await;
+    let (alice, _) = setup_user_named(&app, "ba1@test.com", "ba_alice").await;
+    let circle_id = create_circle(&app, &alice, "BatchAddCircle").await;
+
+    let item1 = app
+        .create_item(
+            &alice,
+            &serde_json::json!({ "name": "Gift 1", "category_id": null }),
+        )
+        .await;
+    let item2 = app
+        .create_item(
+            &alice,
+            &serde_json::json!({ "name": "Gift 2", "category_id": null }),
+        )
+        .await;
+    let item3 = app
+        .create_item(
+            &alice,
+            &serde_json::json!({ "name": "Gift 3", "category_id": null }),
+        )
+        .await;
+
+    let body = serde_json::json!({
+        "item_ids": [
+            item1["id"].as_str().unwrap(),
+            item2["id"].as_str().unwrap(),
+            item3["id"].as_str().unwrap()
+        ]
+    });
+    app.post_json_with_auth(&format!("/circles/{circle_id}/items/batch"), &body, &alice)
+        .await;
+
+    // Verify all 3 items are in the circle
+    let (status, items) = app
+        .get_with_auth(&format!("/circles/{circle_id}/items"), &alice)
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(
+        items.as_array().unwrap().len(),
+        3,
+        "all 3 items should be in circle"
+    );
+}
+
+#[tokio::test]
+async fn batch_share_sends_single_notification() {
+    let app = TestApp::new().await;
+    let (alice, _) = setup_user_named(&app, "bn1@test.com", "bn_alice").await;
+    let (bob, bob_id) = setup_user_named(&app, "bn2@test.com", "bn_bob").await;
+
+    // Make friends and get direct circle
+    make_friends(&app, &alice, &bob, "bn_bob").await;
+    let circle_id = create_circle(&app, &alice, "NotifCircle").await;
+    let body = serde_json::json!({ "user_id": bob_id });
+    app.post_json_with_auth(&format!("/circles/{circle_id}/members"), &body, &alice)
+        .await;
+
+    // Share 5 items in batch
+    let mut item_ids = Vec::new();
+    for i in 0..5 {
+        let item = app
+            .create_item(
+                &alice,
+                &serde_json::json!({ "name": format!("Item {i}"), "category_id": null }),
+            )
+            .await;
+        item_ids.push(item["id"].as_str().unwrap().to_string());
+    }
+
+    let body = serde_json::json!({ "item_ids": item_ids });
+    app.post_json_with_auth(&format!("/circles/{circle_id}/items/batch"), &body, &alice)
+        .await;
+
+    // Wait for async notification
+    tokio::time::sleep(std::time::Duration::from_millis(500)).await;
+
+    // Bob should have exactly ONE notification of type item_shared (not 5)
+    let count: (i64,) = sqlx::query_as(
+        "SELECT COUNT(*) FROM notifications \
+         WHERE user_id = $1 AND type = 'item_shared'",
+    )
+    .bind(bob_id.parse::<uuid::Uuid>().unwrap())
+    .fetch_one(&app.db)
+    .await
+    .unwrap();
+    assert_eq!(
+        count.0, 1,
+        "batch share should produce exactly 1 notification, not 1 per item"
+    );
+}
+
+#[tokio::test]
+async fn batch_share_empty_list_returns_204() {
+    let app = TestApp::new().await;
+    let (alice, _) = setup_user_named(&app, "be1@test.com", "be_alice").await;
+    let circle_id = create_circle(&app, &alice, "EmptyBatch").await;
+
+    let body = serde_json::json!({ "item_ids": [] });
+    let (status, _) = app
+        .post_json_with_auth(&format!("/circles/{circle_id}/items/batch"), &body, &alice)
+        .await;
+    assert_eq!(
+        status,
+        StatusCode::NO_CONTENT,
+        "empty batch should succeed silently"
+    );
+}
+
+#[tokio::test]
+async fn batch_share_skips_items_not_owned() {
+    let app = TestApp::new().await;
+    let (alice, _) = setup_user_named(&app, "bo1@test.com", "bo_alice").await;
+    let (bob, bob_id) = setup_user_named(&app, "bo2@test.com", "bo_bob").await;
+
+    make_friends(&app, &alice, &bob, "bo_bob").await;
+    let circle_id = create_circle(&app, &alice, "OwnerCheck").await;
+    app.post_json_with_auth(
+        &format!("/circles/{circle_id}/members"),
+        &serde_json::json!({ "user_id": bob_id }),
+        &alice,
+    )
+    .await;
+
+    // Alice creates 1 item, Bob creates 1 item
+    let alice_item = app
+        .create_item(
+            &alice,
+            &serde_json::json!({ "name": "Alice Gift", "category_id": null }),
+        )
+        .await;
+    let bob_item = app
+        .create_item(
+            &bob,
+            &serde_json::json!({ "name": "Bob Gift", "category_id": null }),
+        )
+        .await;
+
+    // Alice tries to batch-share both (but she doesn't own Bob's item)
+    let body = serde_json::json!({
+        "item_ids": [alice_item["id"].as_str().unwrap(), bob_item["id"].as_str().unwrap()]
+    });
+    let (status, _) = app
+        .post_json_with_auth(&format!("/circles/{circle_id}/items/batch"), &body, &alice)
+        .await;
+    assert_eq!(
+        status,
+        StatusCode::NO_CONTENT,
+        "should succeed silently, skipping non-owned"
+    );
+
+    // Only Alice's item should be in the circle
+    let (_, items) = app
+        .get_with_auth(&format!("/circles/{circle_id}/items"), &alice)
+        .await;
+    assert_eq!(
+        items.as_array().unwrap().len(),
+        1,
+        "only owned items should be shared"
+    );
+}
+
+#[tokio::test]
+async fn batch_share_idempotent() {
+    let app = TestApp::new().await;
+    let (alice, _) = setup_user_named(&app, "bi1@test.com", "bi_alice").await;
+    let circle_id = create_circle(&app, &alice, "IdempotentBatch").await;
+
+    let item = app
+        .create_item(
+            &alice,
+            &serde_json::json!({ "name": "Repeat Item", "category_id": null }),
+        )
+        .await;
+    let item_id = item["id"].as_str().unwrap();
+
+    // Share same item twice in batch
+    let body = serde_json::json!({ "item_ids": [item_id, item_id] });
+    let (status, _) = app
+        .post_json_with_auth(&format!("/circles/{circle_id}/items/batch"), &body, &alice)
+        .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+
+    // Item should appear only once
+    let (_, items) = app
+        .get_with_auth(&format!("/circles/{circle_id}/items"), &alice)
+        .await;
+    assert_eq!(items.as_array().unwrap().len(), 1, "no duplicates");
+}
+
+#[tokio::test]
+async fn batch_share_requires_membership() {
+    let app = TestApp::new().await;
+    let (alice, _) = setup_user_named(&app, "bm1@test.com", "bm_alice").await;
+    let (bob, _) = setup_user_named(&app, "bm2@test.com", "bm_bob").await;
+
+    let circle_id = create_circle(&app, &alice, "PrivateCircle").await;
+    let item = app
+        .create_item(
+            &bob,
+            &serde_json::json!({ "name": "Bob Item", "category_id": null }),
+        )
+        .await;
+
+    // Bob is NOT a member — should fail
+    let body = serde_json::json!({ "item_ids": [item["id"].as_str().unwrap()] });
+    let (status, _) = app
+        .post_json_with_auth(&format!("/circles/{circle_id}/items/batch"), &body, &bob)
+        .await;
+    assert_eq!(
+        status,
+        StatusCode::FORBIDDEN,
+        "non-member cannot batch share"
+    );
+}
+
+#[tokio::test]
+async fn batch_share_no_auth_returns_401() {
+    let app = TestApp::new().await;
+    let body = serde_json::json!({ "item_ids": [] });
+    let (status, _) = app
+        .post_json(
+            &format!("/circles/{}/items/batch", uuid::Uuid::new_v4()),
+            &body,
+        )
+        .await;
+    assert_eq!(status, StatusCode::UNAUTHORIZED);
 }

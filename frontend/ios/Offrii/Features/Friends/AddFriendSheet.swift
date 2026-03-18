@@ -134,7 +134,7 @@ struct AddFriendSheet: View {
 
     private func search(query: String) async {
         let trimmed = query.trimmingCharacters(in: .whitespaces)
-        guard trimmed.count >= 2 else {
+        guard trimmed.count >= 1 else {
             results = []
             return
         }

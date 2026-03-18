@@ -55,6 +55,8 @@ impl PgWishMessageService {
                     device_token: pt.token,
                     title: title.clone(),
                     body: body.clone(),
+                    custom_data: std::collections::HashMap::new(),
+                    ..Default::default()
                 })
                 .collect();
 

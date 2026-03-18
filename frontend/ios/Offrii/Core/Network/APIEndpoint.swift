@@ -91,6 +91,7 @@ enum APIEndpoint {
     case addMemberToCircle(circleId: UUID, body: AddMemberBody)
     case removeMember(circleId: UUID, userId: UUID)
     case shareItemToCircle(circleId: UUID, body: ShareItemBody)
+    case batchShareItems(circleId: UUID, body: BatchShareBody)
     case listCircleItems(circleId: UUID)
     case getCircleItem(circleId: UUID, itemId: UUID)
     case unshareItem(circleId: UUID, itemId: UUID)
@@ -207,6 +208,7 @@ extension APIEndpoint {
         case .addMemberToCircle(let circleId, _):       return "/circles/\(circleId)/members"
         case .removeMember(let circleId, let userId):   return "/circles/\(circleId)/members/\(userId)"
         case .shareItemToCircle(let circleId, _):       return "/circles/\(circleId)/items"
+        case .batchShareItems(let circleId, _):        return "/circles/\(circleId)/items/batch"
         case .listCircleItems(let circleId):            return "/circles/\(circleId)/items"
         case .getCircleItem(let circleId, let itemId):  return "/circles/\(circleId)/items/\(itemId)"
         case .unshareItem(let circleId, let itemId):    return "/circles/\(circleId)/items/\(itemId)"
@@ -315,6 +317,7 @@ extension APIEndpoint {
         case .addMemberToCircle:    return .POST
         case .removeMember:         return .DELETE
         case .shareItemToCircle:    return .POST
+        case .batchShareItems:      return .POST
         case .listCircleItems:      return .GET
         case .getCircleItem:        return .GET
         case .unshareItem:          return .DELETE
@@ -451,6 +454,7 @@ extension APIEndpoint {
         case .updateCircle(_, let body):    return body
         case .addMemberToCircle(_, let body): return body
         case .shareItemToCircle(_, let body): return body
+        case .batchShareItems(_, let body): return body
         case .transferCircleOwnership(_, let body): return body
         case .createCircleInvite(_, let body):      return body
         case .sendFriendRequest(let body):          return body

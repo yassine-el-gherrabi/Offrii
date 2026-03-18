@@ -7,6 +7,8 @@ fn msg(token: &str, title: &str, body: &str) -> NotificationRequest {
         device_token: token.to_string(),
         title: title.to_string(),
         body: body.to_string(),
+        custom_data: std::collections::HashMap::new(),
+        ..Default::default()
     }
 }
 
