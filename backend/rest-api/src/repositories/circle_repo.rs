@@ -184,8 +184,12 @@ pub(crate) async fn list_by_member(
                 COALESCE(ARRAY(
                     SELECT cm6.user_id
                     FROM circle_members cm6
+                    LEFT JOIN (
+                        SELECT actor_id, MAX(created_at) AS last_act
+                        FROM circle_events WHERE circle_id = c.id GROUP BY actor_id
+                    ) ce6 ON ce6.actor_id = cm6.user_id
                     WHERE cm6.circle_id = c.id
-                    ORDER BY cm6.joined_at ASC
+                    ORDER BY ce6.last_act DESC NULLS LAST, cm6.joined_at ASC
                     LIMIT 3
                 ), ARRAY[]::UUID[]) AS member_ids,
                 COALESCE(ARRAY(

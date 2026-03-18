@@ -5,6 +5,16 @@ import SwiftUI
 
 struct CircleCardRow: View {
     let circle: OffriiCircle
+    @Environment(AuthManager.self) private var authManager
+
+    /// For direct circles, index of the OTHER member (not the current user).
+    private var otherMemberIndex: Int? {
+        guard circle.isDirect, let myId = authManager.currentUser?.id else { return nil }
+        if let idx = circle.memberIds.firstIndex(where: { $0 != myId }) {
+            return idx
+        }
+        return nil
+    }
 
     var body: some View {
         HStack(spacing: OffriiTheme.spacingMD) {
@@ -80,9 +90,12 @@ struct CircleCardRow: View {
             }
         } else if circle.isDirect {
             AvatarView(
-                circle.memberNames.first ?? circle.name,
+                otherMemberIndex.flatMap { circle.memberNames.indices.contains($0) ? circle.memberNames[$0] : nil }
+                    ?? circle.name,
                 size: .medium,
-                url: circle.memberAvatars.first.flatMap { $0 }.flatMap { URL(string: $0) }
+                url: otherMemberIndex
+                    .flatMap { circle.memberAvatars.indices.contains($0) ? circle.memberAvatars[$0] : nil }?
+                    .flatMap { URL(string: $0) }
             )
         } else if circle.memberNames.isEmpty {
             AvatarView(circle.name, size: .medium)
