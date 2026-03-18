@@ -213,7 +213,7 @@
 "circles.members.leaveConfirm.message" = "Vous ne verrez plus les envies partagées dans ce cercle.";
 "circles.search.placeholder" = "Rechercher...";
 "circles.filter.all" = "Tous";
-"circles.filter.groups" = "Groupes";
+"circles.filter.groups" = "Cercles";
 "circles.filter.friends" = "Amis";
 "circles.detail.theirWishes" = "Ses envies";
 "circles.detail.friendSince" = "Amis depuis %@";
