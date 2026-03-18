@@ -518,7 +518,7 @@
 "circles.invite.joinedMessage" = "You are now a member of \"%@\".";
 "item.unshare.title" = "Remove from circle";
 "item.unshare.message" = "This wish will no longer be visible in %@.";
-"circles.filter.reservations" = "Reservations";
+"circles.filter.reservations" = "Reserved";
 "reservation.for" = "For %@";
 "reservation.in" = "in %@";
 "reservation.reserved" = "Reserved";
