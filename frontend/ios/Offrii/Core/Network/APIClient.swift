@@ -19,6 +19,9 @@ final class APIClient: Sendable {
     private let encoder: JSONEncoder
     private let logger = Logger(subsystem: "com.offrii", category: "APIClient")
 
+    /// Serializes concurrent refresh attempts so only one runs at a time.
+    private let refreshCoordinator = RefreshCoordinator()
+
     private init(session: URLSession = .shared) {
         self.session = session
 
@@ -242,6 +245,12 @@ final class APIClient: Sendable {
     // MARK: - Token Refresh
 
     private func refreshTokens() async throws {
+        try await refreshCoordinator.refresh {
+            try await self.performRefresh()
+        }
+    }
+
+    private func performRefresh() async throws {
         guard let refreshToken = KeychainService.shared.refreshToken else {
             throw APIError.unauthorized("No refresh token available")
         }
@@ -300,3 +309,31 @@ private struct AnyEncodable: Encodable {
 
 /// Placeholder type for endpoints that return no body (204 No Content).
 struct EmptyResponse: Decodable {}
+
+// MARK: - Refresh Coordinator
+
+/// Actor that deduplicates concurrent token refresh calls.
+/// If a refresh is in-flight, subsequent callers await the same result.
+private actor RefreshCoordinator {
+    private var activeTask: Task<Void, Error>?
+
+    func refresh(_ perform: @Sendable @escaping () async throws -> Void) async throws {
+        if let existing = activeTask {
+            try await existing.value
+            return
+        }
+
+        let task = Task<Void, Error> {
+            try await perform()
+        }
+        activeTask = task
+
+        do {
+            try await task.value
+            activeTask = nil
+        } catch {
+            activeTask = nil
+            throw error
+        }
+    }
+}
