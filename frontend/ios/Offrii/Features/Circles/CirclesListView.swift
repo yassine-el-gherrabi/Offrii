@@ -167,7 +167,7 @@ struct CirclesListView: View {
                                 .font(.system(size: 9, weight: .bold))
                                 .foregroundColor(.white)
                                 .padding(3)
-                                .background(OffriiTheme.danger)
+                                .background(OffriiTheme.primary)
                                 .clipShape(Circle())
                                 .offset(x: 6, y: -6)
                         }

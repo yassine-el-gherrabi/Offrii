@@ -72,7 +72,7 @@ struct FriendsListContent: View {
                     .foregroundColor(.white)
                     .padding(.horizontal, 6)
                     .padding(.vertical, 2)
-                    .background(OffriiTheme.danger)
+                    .background(OffriiTheme.primary)
                     .clipShape(Capsule())
 
                 Spacer()

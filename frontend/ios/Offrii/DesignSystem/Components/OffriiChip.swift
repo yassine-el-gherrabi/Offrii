@@ -29,7 +29,7 @@ struct OffriiChip: View {
                         .foregroundColor(.white)
                         .padding(.horizontal, 5)
                         .padding(.vertical, 1)
-                        .background(OffriiTheme.danger)
+                        .background(OffriiTheme.primary)
                         .clipShape(Capsule())
                 }
             }
