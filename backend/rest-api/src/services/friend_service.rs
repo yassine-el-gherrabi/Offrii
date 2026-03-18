@@ -59,7 +59,16 @@ impl PgFriendService {
         tokio::spawn(async move {
             // Persist in-app notification
             let _ = notif_repo
-                .create(user_id, &notif_type, &title, &body, None, None, actor_id)
+                .create(
+                    user_id,
+                    &notif_type,
+                    &title,
+                    &body,
+                    None,
+                    None,
+                    None,
+                    actor_id,
+                )
                 .await;
 
             let tokens = match push_token_repo.find_by_user(user_id).await {

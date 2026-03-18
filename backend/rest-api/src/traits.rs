@@ -219,6 +219,7 @@ pub trait NotificationRepo: Send + Sync {
         body: &str,
         circle_id: Option<Uuid>,
         item_id: Option<Uuid>,
+        wish_id: Option<Uuid>,
         actor_id: Option<Uuid>,
     ) -> Result<Notification>;
 

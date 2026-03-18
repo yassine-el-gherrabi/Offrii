@@ -221,6 +221,7 @@ async fn main() -> anyhow::Result<()> {
         user_repo.clone(),
         push_token_repo.clone(),
         notification_svc.clone(),
+        notification_repo.clone(),
         moderation_svc,
         redis.clone(),
     ));

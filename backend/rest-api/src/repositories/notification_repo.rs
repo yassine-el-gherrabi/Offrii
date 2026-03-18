@@ -26,12 +26,13 @@ impl traits::NotificationRepo for PgNotificationRepo {
         body: &str,
         circle_id: Option<Uuid>,
         item_id: Option<Uuid>,
+        wish_id: Option<Uuid>,
         actor_id: Option<Uuid>,
     ) -> Result<Notification> {
         let notif = sqlx::query_as::<_, Notification>(
-            "INSERT INTO notifications (user_id, type, title, body, circle_id, item_id, actor_id) \
-             VALUES ($1, $2, $3, $4, $5, $6, $7) \
-             RETURNING id, user_id, type, title, body, read, circle_id, item_id, actor_id, created_at",
+            "INSERT INTO notifications (user_id, type, title, body, circle_id, item_id, wish_id, actor_id) \
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8) \
+             RETURNING id, user_id, type, title, body, read, circle_id, item_id, wish_id, actor_id, created_at",
         )
         .bind(user_id)
         .bind(notif_type)
@@ -39,6 +40,7 @@ impl traits::NotificationRepo for PgNotificationRepo {
         .bind(body)
         .bind(circle_id)
         .bind(item_id)
+        .bind(wish_id)
         .bind(actor_id)
         .fetch_one(&self.pool)
         .await?;
@@ -53,7 +55,7 @@ impl traits::NotificationRepo for PgNotificationRepo {
         offset: i64,
     ) -> Result<Vec<Notification>> {
         let notifs = sqlx::query_as::<_, Notification>(
-            "SELECT id, user_id, type, title, body, read, circle_id, item_id, actor_id, created_at \
+            "SELECT id, user_id, type, title, body, read, circle_id, item_id, wish_id, actor_id, created_at \
              FROM notifications WHERE user_id = $1 \
              ORDER BY created_at DESC LIMIT $2 OFFSET $3",
         )

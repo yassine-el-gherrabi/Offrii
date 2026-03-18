@@ -2720,3 +2720,136 @@ async fn get_wish_rejected_not_visible_to_stranger_404() {
         .await;
     assert_eq!(status, StatusCode::NOT_FOUND);
 }
+
+// ── Notification center integration ──────────────────────────────────
+
+#[tokio::test]
+async fn wish_offer_creates_notification_for_owner() {
+    let app = TestApp::new().await;
+    let owner = setup_aged_user_with_name(&app, "notif_own@test.com", "Owner").await;
+    let donor = setup_aged_user(&app, "notif_don@test.com").await;
+
+    let wish_id = create_open_wish(&app, &owner).await;
+
+    app.post_with_auth(&format!("/community/wishes/{wish_id}/offer"), &donor)
+        .await;
+
+    tokio::time::sleep(std::time::Duration::from_millis(300)).await;
+
+    let (_, body) = app.get_with_auth("/me/notifications", &owner).await;
+    let notifs = body["data"].as_array().unwrap();
+    assert!(
+        notifs
+            .iter()
+            .any(|n| n["type"].as_str().unwrap() == "wish_offer"),
+        "owner should have a wish_offer notification"
+    );
+}
+
+#[tokio::test]
+async fn wish_confirm_creates_notification_for_donor() {
+    let app = TestApp::new().await;
+    let owner = setup_aged_user_with_name(&app, "nc_own@test.com", "Owner").await;
+    let donor = setup_aged_user(&app, "nc_don@test.com").await;
+
+    let wish_id = create_open_wish(&app, &owner).await;
+    app.post_with_auth(&format!("/community/wishes/{wish_id}/offer"), &donor)
+        .await;
+
+    app.post_with_auth(&format!("/community/wishes/{wish_id}/confirm"), &owner)
+        .await;
+
+    tokio::time::sleep(std::time::Duration::from_millis(300)).await;
+
+    let (_, body) = app.get_with_auth("/me/notifications", &donor).await;
+    let notifs = body["data"].as_array().unwrap();
+    assert!(
+        notifs
+            .iter()
+            .any(|n| n["type"].as_str().unwrap() == "wish_confirmed"),
+        "donor should have a wish_confirmed notification"
+    );
+}
+
+#[tokio::test]
+async fn wish_reject_creates_notification_for_donor() {
+    let app = TestApp::new().await;
+    let owner = setup_aged_user_with_name(&app, "nr_own@test.com", "Owner").await;
+    let donor = setup_aged_user(&app, "nr_don@test.com").await;
+
+    let wish_id = create_open_wish(&app, &owner).await;
+    app.post_with_auth(&format!("/community/wishes/{wish_id}/offer"), &donor)
+        .await;
+
+    app.post_with_auth(&format!("/community/wishes/{wish_id}/reject"), &owner)
+        .await;
+
+    tokio::time::sleep(std::time::Duration::from_millis(300)).await;
+
+    let (_, body) = app.get_with_auth("/me/notifications", &donor).await;
+    let notifs = body["data"].as_array().unwrap();
+    assert!(
+        notifs
+            .iter()
+            .any(|n| n["type"].as_str().unwrap() == "wish_offer_rejected"),
+        "donor should have a wish_offer_rejected notification"
+    );
+}
+
+#[tokio::test]
+async fn wish_close_when_matched_creates_notification_for_donor() {
+    let app = TestApp::new().await;
+    let owner = setup_aged_user_with_name(&app, "ncl_own@test.com", "Owner").await;
+    let donor = setup_aged_user(&app, "ncl_don@test.com").await;
+
+    let wish_id = create_open_wish(&app, &owner).await;
+    app.post_with_auth(&format!("/community/wishes/{wish_id}/offer"), &donor)
+        .await;
+
+    app.post_with_auth(&format!("/community/wishes/{wish_id}/close"), &owner)
+        .await;
+
+    tokio::time::sleep(std::time::Duration::from_millis(300)).await;
+
+    let (_, body) = app.get_with_auth("/me/notifications", &donor).await;
+    let notifs = body["data"].as_array().unwrap();
+    assert!(
+        notifs
+            .iter()
+            .any(|n| n["type"].as_str().unwrap() == "wish_closed"),
+        "donor should have a wish_closed notification"
+    );
+}
+
+#[tokio::test]
+async fn wish_moderation_creates_notification_for_owner() {
+    let app = TestApp::new().await;
+    let owner = setup_aged_user_with_name(&app, "nmod@test.com", "Owner").await;
+
+    let body = json!({
+        "title": "Need help",
+        "category": "education",
+        "is_anonymous": true,
+    });
+    let (status, resp) = app
+        .post_json_with_auth("/community/wishes", &body, &owner)
+        .await;
+    assert_eq!(status, StatusCode::CREATED);
+    let wish_id = Uuid::parse_str(resp["id"].as_str().unwrap()).unwrap();
+    wait_for_wish_status(&app, wish_id, "open").await;
+
+    tokio::time::sleep(std::time::Duration::from_millis(300)).await;
+
+    let (_, notifs_body) = app.get_with_auth("/me/notifications", &owner).await;
+    let notifs = notifs_body["data"].as_array().unwrap();
+    assert!(
+        notifs
+            .iter()
+            .any(|n| n["type"].as_str().unwrap().starts_with("wish_moderation")),
+        "owner should have a moderation notification, got: {:?}",
+        notifs
+            .iter()
+            .map(|n| n["type"].as_str())
+            .collect::<Vec<_>>()
+    );
+}

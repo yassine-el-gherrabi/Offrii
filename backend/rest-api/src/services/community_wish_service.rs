@@ -33,6 +33,7 @@ pub struct PgCommunityWishService {
     user_repo: Arc<dyn traits::UserRepo>,
     push_token_repo: Arc<dyn traits::PushTokenRepo>,
     notification_svc: Arc<dyn traits::NotificationService>,
+    notification_repo: Arc<dyn traits::NotificationRepo>,
     moderation_svc: Arc<dyn traits::ModerationService>,
     redis: redis::Client,
 }
@@ -46,6 +47,7 @@ impl PgCommunityWishService {
         user_repo: Arc<dyn traits::UserRepo>,
         push_token_repo: Arc<dyn traits::PushTokenRepo>,
         notification_svc: Arc<dyn traits::NotificationService>,
+        notification_repo: Arc<dyn traits::NotificationRepo>,
         moderation_svc: Arc<dyn traits::ModerationService>,
         redis: redis::Client,
     ) -> Self {
@@ -56,16 +58,42 @@ impl PgCommunityWishService {
             user_repo,
             push_token_repo,
             notification_svc,
+            notification_repo,
             moderation_svc,
             redis,
         }
     }
 
-    fn notify_user(&self, user_id: Uuid, title: String, body: String) {
+    fn notify_user(
+        &self,
+        user_id: Uuid,
+        title: String,
+        body: String,
+        notif_type: &str,
+        wish_id: Option<Uuid>,
+        actor_id: Option<Uuid>,
+    ) {
         let push_token_repo = self.push_token_repo.clone();
         let notification_svc = self.notification_svc.clone();
+        let notification_repo = self.notification_repo.clone();
+        let notif_type = notif_type.to_string();
 
         tokio::spawn(async move {
+            // Persist to notification center
+            let _ = notification_repo
+                .create(
+                    user_id,
+                    &notif_type,
+                    &title,
+                    &body,
+                    None,    // circle_id
+                    None,    // item_id
+                    wish_id, // wish_id
+                    actor_id,
+                )
+                .await;
+
+            // Send push notification
             let tokens = match push_token_repo.find_by_user(user_id).await {
                 Ok(t) => t,
                 Err(e) => {
@@ -258,6 +286,7 @@ impl traits::CommunityWishService for PgCommunityWishService {
         let wish_repo = self.wish_repo.clone();
         let this_push_token_repo = self.push_token_repo.clone();
         let this_notification_svc = self.notification_svc.clone();
+        let this_notification_repo = self.notification_repo.clone();
         let this_redis = self.redis.clone();
         let owner_id = user_id;
 
@@ -334,7 +363,26 @@ impl traits::CommunityWishService for PgCommunityWishService {
                     .await;
             }
 
-            // Notify owner
+            // Persist to notification center
+            let notif_type = if new_status == WishStatus::Open {
+                "wish_moderation_approved"
+            } else {
+                "wish_moderation_flagged"
+            };
+            let _ = this_notification_repo
+                .create(
+                    owner_id,
+                    notif_type,
+                    &notif_title,
+                    &notif_body,
+                    None,          // circle_id
+                    None,          // item_id
+                    Some(wish_id), // wish_id
+                    None,          // actor_id
+                )
+                .await;
+
+            // Push notification
             let tokens = match this_push_token_repo.find_by_user(owner_id).await {
                 Ok(t) => t,
                 Err(_) => return,
@@ -635,6 +683,9 @@ impl traits::CommunityWishService for PgCommunityWishService {
                 donor_id,
                 "Souhait fermé".into(),
                 "L'auteur a fermé son souhait.".into(),
+                "wish_closed",
+                Some(wish_id),
+                Some(user_id),
             );
         }
 
@@ -752,6 +803,9 @@ impl traits::CommunityWishService for PgCommunityWishService {
             wish.owner_id,
             "Offre d'aide !".into(),
             format!("{donor_name} propose de vous aider !"),
+            "wish_offer",
+            Some(wish_id),
+            Some(donor_id),
         );
 
         Ok(())
@@ -788,6 +842,9 @@ impl traits::CommunityWishService for PgCommunityWishService {
             wish.owner_id,
             "Offre retirée".into(),
             "L'offre d'aide a été retirée.".into(),
+            "wish_offer_withdrawn",
+            Some(wish_id),
+            Some(donor_id),
         );
 
         Ok(())
@@ -827,6 +884,9 @@ impl traits::CommunityWishService for PgCommunityWishService {
                 did,
                 "Offre déclinée".into(),
                 "L'auteur a décliné votre offre d'aide.".into(),
+                "wish_offer_rejected",
+                Some(wish_id),
+                Some(owner_id),
             );
         }
 
@@ -865,6 +925,9 @@ impl traits::CommunityWishService for PgCommunityWishService {
                 donor_id,
                 "Don confirmé !".into(),
                 "Votre don a été confirmé, merci !".into(),
+                "wish_confirmed",
+                Some(wish_id),
+                Some(owner_id),
             );
         }
 
@@ -950,6 +1013,9 @@ impl traits::CommunityWishService for PgCommunityWishService {
                 wish.owner_id,
                 "Souhait signalé".into(),
                 "Votre souhait a été signalé par la communauté et est en cours de révision.".into(),
+                "wish_reported",
+                Some(wish_id),
+                None,
             );
         }
 
@@ -1024,6 +1090,9 @@ impl traits::CommunityWishService for PgCommunityWishService {
             wish.owner_id,
             "Souhait approuvé".into(),
             "Votre souhait a été approuvé et est maintenant visible.".into(),
+            "wish_approved",
+            Some(wish_id),
+            None,
         );
 
         Ok(())
@@ -1057,6 +1126,9 @@ impl traits::CommunityWishService for PgCommunityWishService {
             wish.owner_id,
             "Souhait refusé".into(),
             "Votre souhait n'a pas été retenu par notre équipe.".into(),
+            "wish_rejected",
+            Some(wish_id),
+            None,
         );
 
         Ok(())

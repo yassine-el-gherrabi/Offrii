@@ -209,6 +209,7 @@ impl PgCircleService {
                             &body,
                             Some(circle_id),
                             item_id,
+                            None, // wish_id
                             actor_id,
                         )
                         .await;
@@ -259,7 +260,9 @@ impl PgCircleService {
             // Persist notification
             if let Some(ref ntype) = persist_type {
                 let _ = notif_repo
-                    .create(user_id, ntype, &title, &body, circle_id, item_id, actor_id)
+                    .create(
+                        user_id, ntype, &title, &body, circle_id, item_id, None, actor_id,
+                    )
                     .await;
             }
 

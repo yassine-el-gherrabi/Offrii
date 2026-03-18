@@ -12,6 +12,7 @@ pub struct Notification {
     pub read: bool,
     pub circle_id: Option<Uuid>,
     pub item_id: Option<Uuid>,
+    pub wish_id: Option<Uuid>,
     pub actor_id: Option<Uuid>,
     pub created_at: DateTime<Utc>,
 }
