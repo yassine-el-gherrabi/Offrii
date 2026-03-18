@@ -13,6 +13,7 @@ struct ShareWithFriendSheet: View {
     @State private var selectedCategoryIds: Set<UUID> = []
     @State private var items: [Item] = []
     @State private var selectedItemIds: Set<UUID> = []
+    @State private var initialSharedItemIds: Set<UUID> = []
     @State private var isLoading = true
     @State private var isSaving = false
     @State private var privateCount = 0
@@ -277,7 +278,9 @@ struct ShareWithFriendSheet: View {
             // For selection mode, load already-shared items from circle
             if rule.shareMode == "selection" {
                 let circleItems = (try? await CircleService.shared.listItems(circleId: circleId)) ?? []
-                selectedItemIds = Set(circleItems.map(\.id))
+                let ids = Set(circleItems.map(\.id))
+                selectedItemIds = ids
+                initialSharedItemIds = ids
             }
         } catch {
             currentMode = "none"
@@ -295,12 +298,22 @@ struct ShareWithFriendSheet: View {
                 categoryIds: selectedMode == "categories" ? Array(selectedCategoryIds) : []
             )
 
-            // For selection mode, also batch share the selected items
-            if selectedMode == "selection" && !selectedItemIds.isEmpty {
-                try await CircleService.shared.batchShareItems(
-                    circleId: circleId,
-                    itemIds: Array(selectedItemIds)
-                )
+            // For selection mode, sync items: add new, remove deselected
+            if selectedMode == "selection" {
+                let toAdd = selectedItemIds.subtracting(initialSharedItemIds)
+                let toRemove = initialSharedItemIds.subtracting(selectedItemIds)
+
+                if !toAdd.isEmpty {
+                    try await CircleService.shared.batchShareItems(
+                        circleId: circleId,
+                        itemIds: Array(toAdd)
+                    )
+                }
+                for itemId in toRemove {
+                    try? await CircleService.shared.unshareItem(
+                        circleId: circleId, itemId: itemId
+                    )
+                }
             }
 
             OffriiHaptics.success()
