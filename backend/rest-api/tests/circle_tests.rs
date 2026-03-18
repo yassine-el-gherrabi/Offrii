@@ -2773,3 +2773,239 @@ async fn leaving_circle_item_still_in_wishlist() {
     assert_eq!(status, StatusCode::OK, "item still exists for owner");
     assert_eq!(body["name"], "Survives");
 }
+
+// ═══════════════════════════════════════════════════════════════════
+// Share Rules — Dynamic Sharing for Direct Circles
+// ═══════════════════════════════════════════════════════════════════
+
+#[tokio::test]
+async fn share_rule_all_makes_items_visible() {
+    let app = TestApp::new().await;
+    let (alice, _) = setup_user_named(&app, "sra1@test.com", "sra_alice").await;
+    let (bob, _bob_id) = setup_user_named(&app, "sra2@test.com", "sra_bob").await;
+    make_friends(&app, &alice, &bob, "sra_bob").await;
+
+    // Find direct circle
+    let circle_id: String = sqlx::query_scalar(
+        "SELECT c.id::text FROM circles c \
+         JOIN circle_members cm1 ON cm1.circle_id = c.id \
+         JOIN circle_members cm2 ON cm2.circle_id = c.id \
+         WHERE c.is_direct = true AND cm1.user_id != cm2.user_id \
+         AND cm1.user_id = (SELECT id FROM users WHERE username = 'sra_alice') \
+         LIMIT 1",
+    )
+    .fetch_one(&app.db)
+    .await
+    .unwrap();
+
+    // Alice creates items
+    app.create_item(
+        &alice,
+        &serde_json::json!({ "name": "Gift A", "category_id": null }),
+    )
+    .await;
+    app.create_item(
+        &alice,
+        &serde_json::json!({ "name": "Gift B", "category_id": null }),
+    )
+    .await;
+
+    // No share rule → Bob sees nothing
+    let (status, items) = app
+        .get_with_auth(&format!("/circles/{circle_id}/items"), &bob)
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(items.as_array().unwrap().len(), 0, "no items before rule");
+
+    // Alice sets share rule to "all"
+    let (status, _) = app
+        .put_json_with_auth(
+            &format!("/circles/{circle_id}/share-rule"),
+            &serde_json::json!({ "share_mode": "all" }),
+            &alice,
+        )
+        .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+
+    // Bob now sees both items
+    let (_, items) = app
+        .get_with_auth(&format!("/circles/{circle_id}/items"), &bob)
+        .await;
+    assert_eq!(
+        items.as_array().unwrap().len(),
+        2,
+        "all items visible after rule"
+    );
+}
+
+#[tokio::test]
+async fn share_rule_all_excludes_private_items() {
+    let app = TestApp::new().await;
+    let (alice, _) = setup_user_named(&app, "srp1@test.com", "srp_alice").await;
+    let (bob, _bob_id) = setup_user_named(&app, "srp2@test.com", "srp_bob").await;
+    make_friends(&app, &alice, &bob, "srp_bob").await;
+
+    let circle_id: String = sqlx::query_scalar(
+        "SELECT c.id::text FROM circles c \
+         JOIN circle_members cm1 ON cm1.circle_id = c.id \
+         JOIN circle_members cm2 ON cm2.circle_id = c.id \
+         WHERE c.is_direct = true AND cm1.user_id != cm2.user_id \
+         AND cm1.user_id = (SELECT id FROM users WHERE username = 'srp_alice') \
+         LIMIT 1",
+    )
+    .fetch_one(&app.db)
+    .await
+    .unwrap();
+
+    // Alice creates a public and a private item
+    app.create_item(
+        &alice,
+        &serde_json::json!({ "name": "Public", "category_id": null }),
+    )
+    .await;
+    app.create_item(
+        &alice,
+        &serde_json::json!({ "name": "Private", "category_id": null, "is_private": true }),
+    )
+    .await;
+
+    // Share all
+    app.put_json_with_auth(
+        &format!("/circles/{circle_id}/share-rule"),
+        &serde_json::json!({ "share_mode": "all" }),
+        &alice,
+    )
+    .await;
+
+    // Bob sees only public item
+    let (_, items) = app
+        .get_with_auth(&format!("/circles/{circle_id}/items"), &bob)
+        .await;
+    assert_eq!(items.as_array().unwrap().len(), 1, "private item excluded");
+    assert_eq!(items[0]["name"], "Public");
+}
+
+#[tokio::test]
+async fn share_rule_all_dynamic_new_items_appear() {
+    let app = TestApp::new().await;
+    let (alice, _) = setup_user_named(&app, "srd1@test.com", "srd_alice").await;
+    let (bob, _bob_id) = setup_user_named(&app, "srd2@test.com", "srd_bob").await;
+    make_friends(&app, &alice, &bob, "srd_bob").await;
+
+    let circle_id: String = sqlx::query_scalar(
+        "SELECT c.id::text FROM circles c \
+         JOIN circle_members cm1 ON cm1.circle_id = c.id \
+         JOIN circle_members cm2 ON cm2.circle_id = c.id \
+         WHERE c.is_direct = true AND cm1.user_id != cm2.user_id \
+         AND cm1.user_id = (SELECT id FROM users WHERE username = 'srd_alice') \
+         LIMIT 1",
+    )
+    .fetch_one(&app.db)
+    .await
+    .unwrap();
+
+    // Share all first
+    app.put_json_with_auth(
+        &format!("/circles/{circle_id}/share-rule"),
+        &serde_json::json!({ "share_mode": "all" }),
+        &alice,
+    )
+    .await;
+
+    // Create item AFTER setting rule
+    app.create_item(
+        &alice,
+        &serde_json::json!({ "name": "New Gift", "category_id": null }),
+    )
+    .await;
+
+    // Bob sees it immediately (dynamic!)
+    let (_, items) = app
+        .get_with_auth(&format!("/circles/{circle_id}/items"), &bob)
+        .await;
+    assert_eq!(
+        items.as_array().unwrap().len(),
+        1,
+        "new item appears dynamically"
+    );
+    assert_eq!(items[0]["name"], "New Gift");
+}
+
+#[tokio::test]
+async fn share_rule_none_hides_everything() {
+    let app = TestApp::new().await;
+    let (alice, _) = setup_user_named(&app, "srn1@test.com", "srn_alice").await;
+    let (bob, _bob_id) = setup_user_named(&app, "srn2@test.com", "srn_bob").await;
+    make_friends(&app, &alice, &bob, "srn_bob").await;
+
+    let circle_id: String = sqlx::query_scalar(
+        "SELECT c.id::text FROM circles c \
+         JOIN circle_members cm1 ON cm1.circle_id = c.id \
+         JOIN circle_members cm2 ON cm2.circle_id = c.id \
+         WHERE c.is_direct = true AND cm1.user_id != cm2.user_id \
+         AND cm1.user_id = (SELECT id FROM users WHERE username = 'srn_alice') \
+         LIMIT 1",
+    )
+    .fetch_one(&app.db)
+    .await
+    .unwrap();
+
+    app.create_item(
+        &alice,
+        &serde_json::json!({ "name": "Gift", "category_id": null }),
+    )
+    .await;
+
+    // Set to all then back to none
+    app.put_json_with_auth(
+        &format!("/circles/{circle_id}/share-rule"),
+        &serde_json::json!({ "share_mode": "all" }),
+        &alice,
+    )
+    .await;
+    let (_, items) = app
+        .get_with_auth(&format!("/circles/{circle_id}/items"), &bob)
+        .await;
+    assert_eq!(items.as_array().unwrap().len(), 1);
+
+    app.put_json_with_auth(
+        &format!("/circles/{circle_id}/share-rule"),
+        &serde_json::json!({ "share_mode": "none" }),
+        &alice,
+    )
+    .await;
+    let (_, items) = app
+        .get_with_auth(&format!("/circles/{circle_id}/items"), &bob)
+        .await;
+    assert_eq!(
+        items.as_array().unwrap().len(),
+        0,
+        "none mode hides everything"
+    );
+}
+
+#[tokio::test]
+async fn get_share_rule_default_none() {
+    let app = TestApp::new().await;
+    let (alice, _) = setup_user_named(&app, "gsr1@test.com", "gsr_alice").await;
+    let (bob, _) = setup_user_named(&app, "gsr2@test.com", "gsr_bob").await;
+    make_friends(&app, &alice, &bob, "gsr_bob").await;
+
+    let circle_id: String = sqlx::query_scalar(
+        "SELECT c.id::text FROM circles c \
+         JOIN circle_members cm1 ON cm1.circle_id = c.id \
+         JOIN circle_members cm2 ON cm2.circle_id = c.id \
+         WHERE c.is_direct = true AND cm1.user_id != cm2.user_id \
+         AND cm1.user_id = (SELECT id FROM users WHERE username = 'gsr_alice') \
+         LIMIT 1",
+    )
+    .fetch_one(&app.db)
+    .await
+    .unwrap();
+
+    let (status, body) = app
+        .get_with_auth(&format!("/circles/{circle_id}/share-rule"), &alice)
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(body["share_mode"], "none");
+}
