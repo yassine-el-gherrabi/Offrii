@@ -373,11 +373,17 @@ async fn create_share_link_with_scope_category() {
     let app = TestApp::new().await;
     let token = app.setup_user_token("alice@test.com", TEST_PASSWORD).await;
 
-    // Create a category and items
-    let cat = app
-        .create_category(&token, &serde_json::json!({ "name": "Consoles de jeu" }))
-        .await;
-    let cat_id = cat["id"].as_str().unwrap();
+    // Use a global category (Loisirs)
+    let (_, cats) = app.get_with_auth("/categories", &token).await;
+    let cat_id = cats
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|c| c["name"].as_str().unwrap() == "Loisirs")
+        .unwrap()["id"]
+        .as_str()
+        .unwrap()
+        .to_string();
 
     app.create_item(
         &token,

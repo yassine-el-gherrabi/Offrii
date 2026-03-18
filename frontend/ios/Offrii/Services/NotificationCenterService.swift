@@ -17,6 +17,10 @@ final class NotificationCenterService: Sendable {
         try await client.requestVoid(.markAllNotificationsRead)
     }
 
+    func delete(id: UUID) async throws {
+        try await client.requestVoid(.deleteNotification(id: id))
+    }
+
     func unreadCount() async throws -> Int {
         let response: UnreadCountResponse = try await client.request(.unreadNotificationCount)
         return response.count

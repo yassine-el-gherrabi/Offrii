@@ -184,10 +184,8 @@ struct ShareWithFriendSheet: View {
                                 }
                             } label: {
                                 HStack(spacing: 4) {
-                                    if let icon = cat.icon {
-                                        Image(systemName: icon)
-                                            .font(.system(size: 12))
-                                    }
+                                    Image(systemName: CategoryStyle(icon: cat.icon).sfSymbol)
+                                        .font(.system(size: 12))
                                     Text("\(cat.name) (\(count))")
                                         .font(OffriiTypography.footnote)
                                 }

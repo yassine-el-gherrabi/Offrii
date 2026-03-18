@@ -243,6 +243,165 @@ async fn list_notifications_respects_pagination() {
     assert_eq!(body["pagination"]["limit"].as_i64().unwrap(), 5);
 }
 
+// ── Delete notification ───────────────────────────────────────────────
+
+#[tokio::test]
+async fn delete_notification_returns_204() {
+    let app = TestApp::new().await;
+    let (alice_token, _) = setup_user(&app, "alice_del@test.com", "alice_del").await;
+    let (bob_token, bob_id) = setup_user(&app, "bob_del@test.com", "bob_del").await;
+
+    make_friends(&app, &alice_token, &bob_token, "bob_del").await;
+    let circle_id = create_circle(&app, &alice_token, "Delete Notif Circle").await;
+    add_member(&app, &alice_token, circle_id, bob_id).await;
+
+    tokio::time::sleep(std::time::Duration::from_millis(500)).await;
+
+    // Bob has notifications
+    let (_, body) = app.get_with_auth("/me/notifications", &bob_token).await;
+    let notifs = body["data"].as_array().unwrap();
+    assert!(!notifs.is_empty());
+
+    let notif_id = notifs[0]["id"].as_str().unwrap();
+
+    // Delete it
+    let (status, _) = app
+        .delete_with_auth(&format!("/me/notifications/{notif_id}"), &bob_token)
+        .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+
+    // Verify it's gone from the list
+    let (_, body) = app.get_with_auth("/me/notifications", &bob_token).await;
+    let remaining = body["data"].as_array().unwrap();
+    assert!(
+        !remaining
+            .iter()
+            .any(|n| n["id"].as_str().unwrap() == notif_id),
+        "deleted notification should not appear in list"
+    );
+}
+
+#[tokio::test]
+async fn delete_notification_nonexistent_returns_404() {
+    let app = TestApp::new().await;
+    let (token, _) = setup_user(&app, "del404@test.com", "del404user").await;
+    let fake_id = Uuid::new_v4();
+
+    let (status, _) = app
+        .delete_with_auth(&format!("/me/notifications/{fake_id}"), &token)
+        .await;
+    assert_eq!(status, StatusCode::NOT_FOUND);
+}
+
+#[tokio::test]
+async fn delete_notification_no_auth_returns_401() {
+    let app = TestApp::new().await;
+    let fake_id = Uuid::new_v4();
+
+    // Use an invalid token to simulate unauthenticated DELETE
+    let (status, _) = app
+        .delete_with_auth(&format!("/me/notifications/{fake_id}"), "invalid_token")
+        .await;
+    assert_eq!(status, StatusCode::UNAUTHORIZED);
+}
+
+#[tokio::test]
+async fn delete_notification_cannot_delete_other_users_notification() {
+    let app = TestApp::new().await;
+    let (alice_token, _) = setup_user(&app, "alice_iso@test.com", "alice_iso").await;
+    let (bob_token, bob_id) = setup_user(&app, "bob_iso@test.com", "bob_iso").await;
+    let (carol_token, _) = setup_user(&app, "carol_iso@test.com", "carol_iso").await;
+
+    make_friends(&app, &alice_token, &bob_token, "bob_iso").await;
+    let circle_id = create_circle(&app, &alice_token, "Iso Circle").await;
+    add_member(&app, &alice_token, circle_id, bob_id).await;
+
+    tokio::time::sleep(std::time::Duration::from_millis(500)).await;
+
+    // Bob has a notification
+    let (_, body) = app.get_with_auth("/me/notifications", &bob_token).await;
+    let notif_id = body["data"][0]["id"].as_str().unwrap();
+
+    // Carol tries to delete Bob's notification — should 404 (not found for her)
+    let (status, _) = app
+        .delete_with_auth(&format!("/me/notifications/{notif_id}"), &carol_token)
+        .await;
+    assert_eq!(status, StatusCode::NOT_FOUND);
+
+    // Bob's notification still exists
+    let (_, body) = app.get_with_auth("/me/notifications", &bob_token).await;
+    assert!(
+        body["data"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|n| n["id"].as_str().unwrap() == notif_id),
+        "notification should still exist for Bob"
+    );
+}
+
+#[tokio::test]
+async fn delete_notification_decreases_unread_count() {
+    let app = TestApp::new().await;
+    let (alice_token, _) = setup_user(&app, "alice_cnt@test.com", "alice_cnt").await;
+    let (bob_token, bob_id) = setup_user(&app, "bob_cnt@test.com", "bob_cnt").await;
+
+    make_friends(&app, &alice_token, &bob_token, "bob_cnt").await;
+    let circle_id = create_circle(&app, &alice_token, "Count Circle").await;
+    add_member(&app, &alice_token, circle_id, bob_id).await;
+
+    tokio::time::sleep(std::time::Duration::from_millis(500)).await;
+
+    // Get initial unread count
+    let (_, body) = app
+        .get_with_auth("/me/notifications/unread-count", &bob_token)
+        .await;
+    let initial_count = body["count"].as_i64().unwrap();
+    assert!(initial_count >= 1, "precondition: unread > 0");
+
+    // Get and delete one notification
+    let (_, body) = app.get_with_auth("/me/notifications", &bob_token).await;
+    let notif_id = body["data"][0]["id"].as_str().unwrap();
+    let (status, _) = app
+        .delete_with_auth(&format!("/me/notifications/{notif_id}"), &bob_token)
+        .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+
+    // Unread count should decrease
+    let (_, body) = app
+        .get_with_auth("/me/notifications/unread-count", &bob_token)
+        .await;
+    assert_eq!(body["count"].as_i64().unwrap(), initial_count - 1);
+}
+
+#[tokio::test]
+async fn delete_already_deleted_notification_returns_404() {
+    let app = TestApp::new().await;
+    let (alice_token, _) = setup_user(&app, "alice_dd@test.com", "alice_dd").await;
+    let (bob_token, bob_id) = setup_user(&app, "bob_dd@test.com", "bob_dd").await;
+
+    make_friends(&app, &alice_token, &bob_token, "bob_dd").await;
+    let circle_id = create_circle(&app, &alice_token, "Double Del Circle").await;
+    add_member(&app, &alice_token, circle_id, bob_id).await;
+
+    tokio::time::sleep(std::time::Duration::from_millis(500)).await;
+
+    let (_, body) = app.get_with_auth("/me/notifications", &bob_token).await;
+    let notif_id = body["data"][0]["id"].as_str().unwrap();
+
+    // Delete once — 204
+    let (status, _) = app
+        .delete_with_auth(&format!("/me/notifications/{notif_id}"), &bob_token)
+        .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+
+    // Delete again — 404
+    let (status, _) = app
+        .delete_with_auth(&format!("/me/notifications/{notif_id}"), &bob_token)
+        .await;
+    assert_eq!(status, StatusCode::NOT_FOUND);
+}
+
 // ── Notification fields ───────────────────────────────────────────────
 
 #[tokio::test]

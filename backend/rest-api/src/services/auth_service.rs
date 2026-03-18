@@ -10,7 +10,7 @@ use uuid::Uuid;
 use crate::dto::auth::{AuthResponse, RefreshResponse, TokenPair, UserResponse};
 use crate::errors::AppError;
 use crate::models::User;
-use crate::repositories::{category_repo, refresh_token_repo, user_repo};
+use crate::repositories::{refresh_token_repo, user_repo};
 use crate::services::oauth_verifier::OAuthVerifier;
 use crate::traits;
 use crate::utils::hash;
@@ -188,10 +188,6 @@ impl traits::AuthService for PgAuthService {
                         AppError::Internal(e)
                     }
                 })?;
-
-        category_repo::copy_defaults_for_user(&mut *tx, user.id)
-            .await
-            .map_err(AppError::Internal)?;
 
         let tokens = generate_token_pair(&self.jwt, user.id, user.token_version)
             .map_err(AppError::Internal)?;
@@ -807,10 +803,6 @@ impl traits::AuthService for PgAuthService {
                         AppError::Internal(e)
                     }
                 })?;
-
-                category_repo::copy_defaults_for_user(&mut *tx, user.id)
-                    .await
-                    .map_err(AppError::Internal)?;
 
                 tx.commit()
                     .await

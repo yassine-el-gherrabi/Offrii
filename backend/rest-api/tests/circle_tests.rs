@@ -3028,14 +3028,17 @@ async fn share_rule_categories_filters_correctly() {
     .await
     .unwrap();
 
-    // Create a category
-    let cat = app
-        .create_category(
-            &alice,
-            &serde_json::json!({ "name": "ShareTest", "icon": "star" }),
-        )
-        .await;
-    let cat_id = cat["id"].as_str().unwrap();
+    // Get a global category (Tech)
+    let (_, cats) = app.get_with_auth("/categories", &alice).await;
+    let cat_id = cats
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|c| c["name"].as_str().unwrap() == "Tech")
+        .unwrap()["id"]
+        .as_str()
+        .unwrap()
+        .to_string();
 
     // Create items: one in Tech, one without category
     app.create_item(

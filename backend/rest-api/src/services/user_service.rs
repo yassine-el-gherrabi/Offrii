@@ -156,7 +156,7 @@ impl traits::UserService for PgUserService {
 
         let categories = self
             .category_repo
-            .list_by_user(user_id)
+            .list_all()
             .await
             .map_err(AppError::Internal)?;
 

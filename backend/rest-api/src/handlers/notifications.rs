@@ -1,6 +1,6 @@
 use axum::extract::{Path, Query, State};
 use axum::http::StatusCode;
-use axum::routing::{get, post};
+use axum::routing::{delete, get, post};
 use axum::{Json, Router};
 use uuid::Uuid;
 
@@ -15,6 +15,7 @@ pub fn router() -> Router<AppState> {
         .route("/", get(list_notifications))
         .route("/read", post(mark_all_read))
         .route("/{id}/read", post(mark_read))
+        .route("/{id}", delete(delete_notification))
         .route("/unread-count", get(unread_count))
 }
 
@@ -101,6 +102,24 @@ async fn mark_read(
         .mark_read(id, auth_user.user_id)
         .await
         .map_err(AppError::Internal)?;
+
+    Ok(StatusCode::NO_CONTENT)
+}
+
+async fn delete_notification(
+    State(state): State<AppState>,
+    auth_user: AuthUser,
+    Path(id): Path<Uuid>,
+) -> Result<StatusCode, AppError> {
+    let deleted = state
+        .notifications
+        .delete(id, auth_user.user_id)
+        .await
+        .map_err(AppError::Internal)?;
+
+    if !deleted {
+        return Err(AppError::NotFound("notification not found".into()));
+    }
 
     Ok(StatusCode::NO_CONTENT)
 }

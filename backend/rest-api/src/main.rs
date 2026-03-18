@@ -121,7 +121,7 @@ async fn main() -> anyhow::Result<()> {
     ));
     let category_repo: Arc<dyn CategoryRepo> = Arc::new(PgCategoryRepo::new(db.clone()));
     let categories: Arc<dyn CategoryService> =
-        Arc::new(PgCategoryService::new(category_repo.clone(), redis.clone()));
+        Arc::new(PgCategoryService::new(category_repo.clone()));
     let health: Arc<dyn HealthCheck> = Arc::new(PgHealthCheck::new(db.clone(), redis.clone()));
 
     // New services

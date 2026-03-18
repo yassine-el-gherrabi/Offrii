@@ -164,13 +164,6 @@ struct ListItemsQuery {
     }
 }
 
-// MARK: - Category Body Types
-
-struct CreateCategoryBody: Encodable {
-    let name: String
-    let icon: String?
-}
-
 // MARK: - User Body Types
 
 struct UpdateProfileBody: Encodable {

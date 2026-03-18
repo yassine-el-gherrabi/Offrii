@@ -284,7 +284,7 @@ pub(crate) async fn find_pending_between(
 }
 
 /// Count items shared via direct (1:1) circles between each friend and the viewer.
-/// Only counts items in the direct circle between the two specific users.
+/// Accounts for dynamic share rules: `all`, `categories`, and `selection` modes.
 pub(crate) async fn count_shared_items_per_user(
     exec: impl PgExecutor<'_>,
     friend_ids: &[Uuid],
@@ -293,17 +293,40 @@ pub(crate) async fn count_shared_items_per_user(
     if friend_ids.is_empty() {
         return Ok(HashMap::new());
     }
+    // Union of three share modes:
+    // 1) selection — items explicitly in circle_items
+    // 2) all — every active non-private item of the friend
+    // 3) categories — active non-private items matching rule's category_ids
     let rows = sqlx::query(
-        "SELECT i.user_id, COUNT(DISTINCT i.id) AS cnt \
-         FROM items i \
-         JOIN circle_items ci ON ci.item_id = i.id \
-         JOIN circles c ON c.id = ci.circle_id \
-         JOIN circle_members cm ON cm.circle_id = ci.circle_id \
-         WHERE i.user_id = ANY($1) \
-           AND i.status = 'active' \
-           AND cm.user_id = $2 \
-           AND c.is_direct = true \
-         GROUP BY i.user_id",
+        "WITH direct_circles AS ( \
+             SELECT c.id AS circle_id, cm_friend.user_id AS friend_id \
+             FROM circles c \
+             JOIN circle_members cm_me ON cm_me.circle_id = c.id AND cm_me.user_id = $2 \
+             JOIN circle_members cm_friend ON cm_friend.circle_id = c.id AND cm_friend.user_id = ANY($1) \
+             WHERE c.is_direct = true \
+         ), \
+         shared_items AS ( \
+             SELECT dc.friend_id AS user_id, i.id AS item_id \
+             FROM direct_circles dc \
+             JOIN circle_share_rules csr ON csr.circle_id = dc.circle_id AND csr.user_id = dc.friend_id \
+             JOIN items i ON i.user_id = dc.friend_id AND i.status = 'active' AND i.is_private = false \
+             WHERE csr.share_mode = 'all' \
+           UNION \
+             SELECT dc.friend_id AS user_id, i.id AS item_id \
+             FROM direct_circles dc \
+             JOIN circle_share_rules csr ON csr.circle_id = dc.circle_id AND csr.user_id = dc.friend_id \
+             JOIN items i ON i.user_id = dc.friend_id AND i.status = 'active' AND i.is_private = false \
+             WHERE csr.share_mode = 'categories' AND i.category_id = ANY(csr.category_ids) \
+           UNION \
+             SELECT dc.friend_id AS user_id, ci.item_id \
+             FROM direct_circles dc \
+             JOIN circle_items ci ON ci.circle_id = dc.circle_id AND ci.shared_by = dc.friend_id \
+             LEFT JOIN circle_share_rules csr ON csr.circle_id = dc.circle_id AND csr.user_id = dc.friend_id \
+             WHERE COALESCE(csr.share_mode, 'selection') = 'selection' \
+         ) \
+         SELECT user_id, COUNT(DISTINCT item_id) AS cnt \
+         FROM shared_items \
+         GROUP BY user_id",
     )
     .bind(friend_ids)
     .bind(viewer_id)

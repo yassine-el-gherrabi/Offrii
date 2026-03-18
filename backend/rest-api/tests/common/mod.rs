@@ -198,7 +198,7 @@ impl TestApp {
         ));
         let category_repo: Arc<dyn CategoryRepo> = Arc::new(PgCategoryRepo::new(db.clone()));
         let categories: Arc<dyn CategoryService> =
-            Arc::new(PgCategoryService::new(category_repo.clone(), redis.clone()));
+            Arc::new(PgCategoryService::new(category_repo.clone()));
         let health: Arc<dyn HealthCheck> = Arc::new(PgHealthCheck::new(db.clone(), redis.clone()));
 
         // New services
@@ -629,18 +629,6 @@ impl TestApp {
             status,
             StatusCode::CREATED,
             "precondition failed: create_item should return 201, got {status}: {resp}"
-        );
-        resp
-    }
-
-    /// Create a category for a user, returning the category response body.
-    /// Asserts 201 status.
-    pub async fn create_category(&self, token: &str, body: &Value) -> Value {
-        let (status, resp) = self.post_json_with_auth("/categories", body, token).await;
-        assert_eq!(
-            status,
-            StatusCode::CREATED,
-            "precondition failed: create_category should return 201, got {status}: {resp}"
         );
         resp
     }

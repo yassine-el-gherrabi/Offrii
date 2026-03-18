@@ -1074,7 +1074,7 @@ async fn forgot_password_nonexistent_email_200() {
     let app = TestApp::new().await;
 
     // No user registered — should still return 200 (no email enumeration)
-    let body = serde_json::json!({ "identifier": "nobody@example.com" });
+    let body = serde_json::json!({ "email": "nobody@example.com" });
     let (status, _) = app.post_json("/auth/forgot-password", &body).await;
 
     assert_eq!(status, StatusCode::OK);

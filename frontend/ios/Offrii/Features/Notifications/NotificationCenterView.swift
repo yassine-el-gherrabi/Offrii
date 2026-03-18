@@ -25,22 +25,26 @@ struct NotificationCenterView: View {
                     )
                     Spacer()
                 } else {
-                    ScrollView {
-                        LazyVStack(spacing: 0) {
-                            ForEach(notifications) { notif in
-                                notificationRow(notif)
-                                    .onAppear {
-                                        if notif.id == notifications.last?.id && hasMore {
-                                            Task { await loadMore() }
-                                        }
+                    List {
+                        ForEach(notifications) { notif in
+                            notificationRow(notif)
+                                .onAppear {
+                                    if notif.id == notifications.last?.id && hasMore {
+                                        Task { await loadMore() }
                                     }
-
-                                Divider()
-                                    .padding(.leading, 56)
-                                    .padding(.horizontal, OffriiTheme.spacingLG)
+                                }
+                                .listRowInsets(EdgeInsets())
+                                .listRowSeparator(.visible)
+                                .listRowSeparatorTint(OffriiTheme.border)
+                        }
+                        .onDelete { offsets in
+                            let toDelete = offsets.map { notifications[$0] }
+                            for notif in toDelete {
+                                Task { await deleteNotification(notif) }
                             }
                         }
                     }
+                    .listStyle(.plain)
                 }
             }
             .navigationTitle(NSLocalizedString("notifications.title", comment: ""))
@@ -151,6 +155,13 @@ struct NotificationCenterView: View {
             notifications.append(contentsOf: response.data)
             hasMore = response.data.count == 20
             page = nextPage
+        } catch {}
+    }
+
+    private func deleteNotification(_ notif: AppNotification) async {
+        do {
+            try await NotificationCenterService.shared.delete(id: notif.id)
+            notifications.removeAll { $0.id == notif.id }
         } catch {}
     }
 

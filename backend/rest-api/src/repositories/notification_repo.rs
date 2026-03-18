@@ -106,4 +106,14 @@ impl traits::NotificationRepo for PgNotificationRepo {
 
         Ok(result.rows_affected() as i64)
     }
+
+    async fn delete(&self, id: Uuid, user_id: Uuid) -> Result<bool> {
+        let result = sqlx::query("DELETE FROM notifications WHERE id = $1 AND user_id = $2")
+            .bind(id)
+            .bind(user_id)
+            .execute(&self.pool)
+            .await?;
+
+        Ok(result.rows_affected() > 0)
+    }
 }

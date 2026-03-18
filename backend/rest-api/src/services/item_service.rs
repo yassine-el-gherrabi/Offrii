@@ -106,25 +106,17 @@ impl PgItemService {
             .await;
     }
 
-    /// Validate that a category_id belongs to the given user.
-    async fn validate_category_ownership(
-        &self,
-        category_id: Uuid,
-        user_id: Uuid,
-    ) -> Result<(), AppError> {
-        let exists: bool = sqlx::query_scalar(
-            "SELECT EXISTS(SELECT 1 FROM categories WHERE id = $1 AND user_id = $2)",
-        )
-        .bind(category_id)
-        .bind(user_id)
-        .fetch_one(&self.pool)
-        .await
-        .map_err(|e| AppError::Internal(e.into()))?;
+    /// Validate that a category_id exists (categories are global).
+    async fn validate_category_exists(&self, category_id: Uuid) -> Result<(), AppError> {
+        let exists: bool =
+            sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM categories WHERE id = $1)")
+                .bind(category_id)
+                .fetch_one(&self.pool)
+                .await
+                .map_err(|e| AppError::Internal(e.into()))?;
 
         if !exists {
-            return Err(AppError::BadRequest(
-                "category not found or does not belong to user".into(),
-            ));
+            return Err(AppError::BadRequest("category not found".into()));
         }
         Ok(())
     }
@@ -199,7 +191,7 @@ impl traits::ItemService for PgItemService {
         }
 
         if let Some(cid) = category_id {
-            self.validate_category_ownership(cid, user_id).await?;
+            self.validate_category_exists(cid).await?;
         }
 
         let item = self
@@ -404,7 +396,7 @@ impl traits::ItemService for PgItemService {
         }
 
         if let Some(Some(cid)) = category_id {
-            self.validate_category_ownership(cid, user_id).await?;
+            self.validate_category_exists(cid).await?;
         }
 
         // Check at least one field is being updated

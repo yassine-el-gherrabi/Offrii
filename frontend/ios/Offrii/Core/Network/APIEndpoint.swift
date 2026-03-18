@@ -54,7 +54,6 @@ enum APIEndpoint {
     // MARK: Categories
 
     case listCategories
-    case createCategory(CreateCategoryBody)
 
     // MARK: Users
 
@@ -110,6 +109,7 @@ enum APIEndpoint {
     case listNotifications(page: Int, limit: Int)
     case markNotificationRead(id: UUID)
     case markAllNotificationsRead
+    case deleteNotification(id: UUID)
     case unreadNotificationCount
 
     // MARK: Friends
@@ -178,7 +178,6 @@ extension APIEndpoint {
 
         // Categories
         case .listCategories:                   return "/categories"
-        case .createCategory:                   return "/categories"
 
         // Users
         case .getProfile:                       return "/users/me"
@@ -223,6 +222,7 @@ extension APIEndpoint {
         case .listNotifications:                        return "/me/notifications"
         case .markNotificationRead(let id):             return "/me/notifications/\(id)/read"
         case .markAllNotificationsRead:                 return "/me/notifications/read"
+        case .deleteNotification(let id):               return "/me/notifications/\(id)"
         case .unreadNotificationCount:                  return "/me/notifications/unread-count"
         case .createCircleInvite(let circleId, _):      return "/circles/\(circleId)/invite"
         case .listCircleInvites(let circleId):          return "/circles/\(circleId)/invites"
@@ -289,7 +289,6 @@ extension APIEndpoint {
 
         // Categories
         case .listCategories:   return .GET
-        case .createCategory:   return .POST
 
         // Users
         case .getProfile:       return .GET
@@ -334,6 +333,7 @@ extension APIEndpoint {
         case .listNotifications:    return .GET
         case .markNotificationRead: return .POST
         case .markAllNotificationsRead: return .POST
+        case .deleteNotification:   return .DELETE
         case .unreadNotificationCount: return .GET
         case .createCircleInvite:   return .POST
         case .listCircleInvites:    return .GET
@@ -452,7 +452,6 @@ extension APIEndpoint {
         case .appleAuth(let body):          return body
         case .createItem(let body):         return body
         case .updateItem(_, let body):      return body
-        case .createCategory(let body):     return body
         case .updateProfile(let body):      return body
         case .registerToken(let body):      return body
         case .createShareLink(let body):    return body

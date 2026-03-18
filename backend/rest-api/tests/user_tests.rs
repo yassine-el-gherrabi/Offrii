@@ -375,14 +375,15 @@ async fn export_data_includes_items_and_categories() {
         .setup_user_token("user@example.com", TEST_PASSWORD)
         .await;
 
-    // Create a category
-    let cat = app
-        .create_category(
-            &token,
-            &serde_json::json!({ "name": "Électronique", "icon": "laptop" }),
-        )
-        .await;
-    let cat_id = cat["id"].as_str().unwrap();
+    // Get a global category (Tech)
+    let (_, cats) = app.get_with_auth("/categories", &token).await;
+    let tech_cat = cats
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|c| c["name"].as_str().unwrap() == "Tech")
+        .unwrap();
+    let cat_id = tech_cat["id"].as_str().unwrap();
 
     // Create two items (one with category, one without)
     app.create_item(
@@ -411,12 +412,12 @@ async fn export_data_includes_items_and_categories() {
     assert!(item_names.contains(&"Livre"));
 
     let categories = body["categories"].as_array().unwrap();
-    // At least the custom one + default "Autre"
+    assert_eq!(categories.len(), 6, "should export all 6 global categories");
     let cat_names: Vec<&str> = categories
         .iter()
         .map(|c| c["name"].as_str().unwrap())
         .collect();
-    assert!(cat_names.contains(&"Électronique"));
+    assert!(cat_names.contains(&"Tech"));
 
     assert!(body["exported_at"].is_string());
 }
@@ -496,8 +497,6 @@ async fn delete_account_cascades_items_and_categories() {
         .await;
 
     // Create data
-    app.create_category(&token, &serde_json::json!({ "name": "Cat1" }))
-        .await;
     app.create_item(
         &token,
         &serde_json::json!({ "name": "Item1", "priority": 2 }),
