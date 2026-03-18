@@ -115,7 +115,9 @@ final class CirclesViewModel {
         do {
             _ = try await FriendService.shared.acceptRequest(id: request.id)
             pendingRequests.removeAll { $0.id == request.id }
-            await loadFriends()
+            async let friendsTask: () = loadFriends()
+            async let circlesTask: () = loadCircles()
+            _ = await (friendsTask, circlesTask)
         } catch {
             self.error = error.localizedDescription
         }
