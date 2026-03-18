@@ -95,7 +95,19 @@ struct CirclesListView: View {
                                 }
                                 .buttonStyle(.plain)
                                 .contextMenu {
-                                    if circle.ownerId == authManager.currentUser?.id {
+                                    if circle.isDirect {
+                                        Button(role: .destructive) {
+                                            // Find the friend for this direct circle
+                                            friendToRemove = viewModel.friends.first { friend in
+                                                circle.memberNames.contains(friend.username)
+                                            }
+                                        } label: {
+                                            Label(
+                                                NSLocalizedString("friends.removeConfirm.title", comment: ""),
+                                                systemImage: "person.badge.minus"
+                                            )
+                                        }
+                                    } else if circle.ownerId == authManager.currentUser?.id {
                                         Button(role: .destructive) {
                                             circleToDelete = circle
                                         } label: {
@@ -104,7 +116,7 @@ struct CirclesListView: View {
                                                 systemImage: "trash"
                                             )
                                         }
-                                    } else if !circle.isDirect {
+                                    } else {
                                         Button(role: .destructive) {
                                             circleToDelete = circle
                                         } label: {

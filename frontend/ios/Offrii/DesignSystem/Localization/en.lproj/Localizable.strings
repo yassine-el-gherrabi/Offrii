@@ -553,7 +553,7 @@
 
 /* Friend removal */
 "friends.removeConfirm.title" = "Remove friend";
-"friends.removeConfirm.message" = "Remove %@ from your friends?";
+"friends.removeConfirm.message" = "Remove %@ from your friends? This will delete your shared circle and all shared wishes between you.";
 
 /* Friends toast & context */
 "friends.accepted.toast" = "%@ added to friends";

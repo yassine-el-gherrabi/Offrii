@@ -553,7 +553,7 @@
 
 /* Supprimer un ami */
 "friends.removeConfirm.title" = "Retirer un ami";
-"friends.removeConfirm.message" = "Retirer %@ de vos amis ?";
+"friends.removeConfirm.message" = "Retirer %@ de vos amis ? Cela supprimera votre cercle partagé et toutes les envies partagées entre vous.";
 
 /* Amis toast & context */
 "friends.accepted.toast" = "%@ ajouté(e)";
