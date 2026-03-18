@@ -67,14 +67,15 @@ struct QuickCreateSheet: View {
             }
         }
         .sheet(isPresented: $navigateToAddWish) {
-            QuickAddSheet { name, price, categoryId, priority, imageUrl, links in
+            QuickAddSheet { name, price, categoryId, priority, imageUrl, links, isPrivate in
                 _ = try? await ItemService.shared.createItem(
                     name: name,
                     estimatedPrice: price,
                     priority: priority,
                     categoryId: categoryId,
                     imageUrl: imageUrl,
-                    links: links
+                    links: links,
+                    isPrivate: isPrivate
                 )
                 return true
             }

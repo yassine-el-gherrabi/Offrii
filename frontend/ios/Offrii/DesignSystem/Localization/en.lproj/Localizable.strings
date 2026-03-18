@@ -555,6 +555,8 @@
 "wishlist.deleteConfirmBatch" = "Delete wishes?";
 "wishlist.deleteConfirmBatchMessage" = "Delete %d wish(es)? This cannot be undone.";
 "wishlist.private" = "Private";
+"wishlist.makePrivate" = "Make private";
+"wishlist.makePublic" = "Make public";
 "wishlist.privateHint" = "Won't appear in share links";
 "item.sharedWith" = "Shared with";
 "item.links" = "Links";

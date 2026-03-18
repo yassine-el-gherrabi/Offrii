@@ -555,6 +555,8 @@
 "wishlist.deleteConfirmBatch" = "Supprimer les envies ?";
 "wishlist.deleteConfirmBatchMessage" = "Supprimer %d envie(s) ? Cette action est irréversible.";
 "wishlist.private" = "Privé";
+"wishlist.makePrivate" = "Rendre privé";
+"wishlist.makePublic" = "Rendre public";
 "wishlist.privateHint" = "Ne sera pas visible dans les liens de partage";
 "item.sharedWith" = "Partagé avec";
 "item.links" = "Liens";

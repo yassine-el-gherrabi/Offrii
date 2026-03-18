@@ -8,10 +8,11 @@ struct QuickAddSheet: View {
     @State private var priority: Int = 2
     @State private var linkText = ""
     @State private var selectedImage: UIImage?
+    @State private var isPrivate = false
     @State private var isAdding = false
     @State private var categories: [CategoryResponse] = []
 
-    let onAdd: (String, Decimal?, UUID?, Int, String?, [String]?) async -> Bool
+    let onAdd: (String, Decimal?, UUID?, Int, String?, [String]?, Bool) async -> Bool
 
     var body: some View {
         NavigationStack {
@@ -81,6 +82,22 @@ struct QuickAddSheet: View {
                         autocapitalization: .never
                     )
 
+                    // Private toggle
+                    Toggle(isOn: $isPrivate) {
+                        HStack {
+                            Image(systemName: "lock.fill")
+                                .foregroundColor(OffriiTheme.textMuted)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(NSLocalizedString("wishlist.private", comment: ""))
+                                    .font(OffriiTypography.body)
+                                Text(NSLocalizedString("wishlist.privateHint", comment: ""))
+                                    .font(OffriiTypography.caption)
+                                    .foregroundColor(OffriiTheme.textMuted)
+                            }
+                        }
+                    }
+                    .tint(OffriiTheme.primary)
+
                     // Submit
                     OffriiButton(
                         NSLocalizedString("wishlist.quickAdd.button", comment: ""),
@@ -107,7 +124,8 @@ struct QuickAddSheet: View {
                                 selectedCategoryId,
                                 priority,
                                 imageUrl,
-                                links
+                                links,
+                                isPrivate
                             )
                             isAdding = false
                             if success { dismiss() }

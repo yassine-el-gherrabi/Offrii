@@ -1,3 +1,4 @@
+// swiftlint:disable file_length
 import SwiftUI
 
 // swiftlint:disable:next type_body_length
@@ -106,8 +107,12 @@ struct WishlistView: View {
             }
         }
         .sheet(isPresented: $showQuickAdd) {
-            QuickAddSheet { name, price, categoryId, priority, imageUrl, links in
-                await viewModel.quickAdd(name: name, price: price, categoryId: categoryId, priority: priority, imageUrl: imageUrl, links: links)
+            QuickAddSheet { name, price, categoryId, priority, imageUrl, links, isPrivate in
+                await viewModel.quickAdd(
+                    name: name, price: price, categoryId: categoryId,
+                    priority: priority, imageUrl: imageUrl, links: links,
+                    isPrivate: isPrivate
+                )
             }
         }
         .sheet(item: $selectedItemId, onDismiss: {
@@ -410,6 +415,22 @@ struct WishlistView: View {
                                 } label: {
                                     Label(NSLocalizedString("wishlist.unarchive", comment: ""), systemImage: "arrow.uturn.backward")
                                 }
+                            }
+
+                            Button {
+                                Task {
+                                    _ = try? await ItemService.shared.updateItem(
+                                        id: item.id, isPrivate: !item.isPrivate
+                                    )
+                                    await viewModel.loadItems()
+                                }
+                            } label: {
+                                Label(
+                                    item.isPrivate
+                                        ? NSLocalizedString("wishlist.makePublic", comment: "")
+                                        : NSLocalizedString("wishlist.makePrivate", comment: ""),
+                                    systemImage: item.isPrivate ? "lock.open" : "lock"
+                                )
                             }
 
                             Button {

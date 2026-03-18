@@ -121,7 +121,8 @@ final class WishlistViewModel {
 
     func quickAdd(
         name: String, price: Decimal? = nil, categoryId: UUID? = nil,
-        priority: Int? = nil, imageUrl: String? = nil, links: [String]? = nil
+        priority: Int? = nil, imageUrl: String? = nil, links: [String]? = nil,
+        isPrivate: Bool = false
     ) async -> Bool {
         do {
             let item = try await ItemService.shared.createItem(
@@ -130,7 +131,8 @@ final class WishlistViewModel {
                 priority: priority,
                 categoryId: categoryId,
                 imageUrl: imageUrl,
-                links: links
+                links: links,
+                isPrivate: isPrivate
             )
             if selectedStatus == "active" {
                 items.insert(item, at: 0)
