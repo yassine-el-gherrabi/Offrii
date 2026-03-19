@@ -1,6 +1,6 @@
 import SwiftUI
 
-// MARK: - My Needs Content (no ScrollView — parent handles it)
+// MARK: - My Needs Content
 
 struct EntraideMyNeedsContent: View {
     var viewModel: EntraideMyNeedsViewModel
@@ -31,7 +31,7 @@ struct EntraideMyNeedsContent: View {
         } else {
             LazyVStack(spacing: OffriiTheme.spacingSM) {
                 ForEach(viewModel.wishes) { wish in
-                    myWishRow(wish)
+                    myNeedCard(wish)
                 }
             }
             .padding(.horizontal, OffriiTheme.spacingBase)
@@ -39,34 +39,60 @@ struct EntraideMyNeedsContent: View {
         }
     }
 
-    // MARK: - Wish Row
+    // MARK: - Card (same visual style as EntraideWishCard)
 
-    private func myWishRow(_ wish: MyWish) -> some View {
+    private func myNeedCard(_ wish: MyWish) -> some View {
         Button {
             OffriiHaptics.tap()
             selectedWishId = wish.id
         } label: {
-            VStack(alignment: .leading, spacing: OffriiTheme.spacingSM) {
-                HStack {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(wish.title)
-                            .font(OffriiTypography.body)
-                            .fontWeight(.semibold)
-                            .foregroundColor(OffriiTheme.text)
-                            .lineLimit(2)
+            HStack(alignment: .top, spacing: OffriiTheme.spacingMD) {
+                // Category icon
+                Image(systemName: categoryIcon(wish.category))
+                    .font(.system(size: 18))
+                    .foregroundColor(categoryColor(wish.category))
+                    .frame(width: 36, height: 36)
+                    .background(categoryColor(wish.category).opacity(0.12))
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
 
-                        Text(wish.category.label)
-                            .font(OffriiTypography.caption)
-                            .foregroundColor(OffriiTheme.textMuted)
+                // Text
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(wish.title)
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundColor(OffriiTheme.text)
+                        .lineLimit(2)
+                        .multilineTextAlignment(.leading)
+
+                    if let desc = wish.description, !desc.isEmpty {
+                        Text(desc)
+                            .font(.system(size: 13))
+                            .foregroundColor(OffriiTheme.textSecondary)
+                            .lineLimit(1)
                     }
 
-                    Spacer()
+                    // Status + context
+                    HStack(spacing: 4) {
+                        statusBadge(wish.status)
 
-                    statusBadge(wish.status)
+                        if let donor = wish.matchedWithDisplayName {
+                            Text("·")
+                                .foregroundColor(OffriiTheme.textMuted)
+                            Text(donor)
+                                .foregroundColor(OffriiTheme.warning)
+                        }
+                    }
+                    .font(.system(size: 12))
+
+                    // Moderation note
+                    if wish.status == .review || wish.status == .flagged,
+                       let note = wish.moderationNote {
+                        Label(note, systemImage: "exclamationmark.triangle.fill")
+                            .font(.system(size: 11))
+                            .foregroundColor(OffriiTheme.danger)
+                    }
                 }
 
-                contextInfo(wish)
-                actionButtons(wish)
+                Spacer(minLength: 0)
             }
             .padding(OffriiTheme.spacingBase)
             .background(OffriiTheme.card)
@@ -74,108 +100,85 @@ struct EntraideMyNeedsContent: View {
             .shadow(color: OffriiTheme.cardShadowColor, radius: 4, x: 0, y: 2)
         }
         .buttonStyle(.plain)
+        .contextMenu {
+            contextMenuActions(wish)
+        }
     }
 
+    // MARK: - Context Menu Actions
+
     @ViewBuilder
+    private func contextMenuActions(_ wish: MyWish) -> some View {
+        switch wish.status {
+        case .matched:
+            Button {
+                Task { await viewModel.confirmWish(id: wish.id) }
+            } label: {
+                Label(
+                    NSLocalizedString("entraide.action.confirm", comment: ""),
+                    systemImage: "checkmark.circle"
+                )
+            }
+            Button {
+                selectedWishId = wish.id
+            } label: {
+                Label(
+                    NSLocalizedString("entraide.action.messages", comment: ""),
+                    systemImage: "bubble.left"
+                )
+            }
+            Button(role: .destructive) {
+                Task { await viewModel.closeWish(id: wish.id) }
+            } label: {
+                Label(
+                    NSLocalizedString("entraide.action.close", comment: ""),
+                    systemImage: "xmark.circle"
+                )
+            }
+        case .open:
+            Button(role: .destructive) {
+                Task { await viewModel.closeWish(id: wish.id) }
+            } label: {
+                Label(
+                    NSLocalizedString("entraide.action.close", comment: ""),
+                    systemImage: "xmark.circle"
+                )
+            }
+        case .review:
+            Button {
+                Task { await viewModel.reopenWish(id: wish.id) }
+            } label: {
+                Label(
+                    NSLocalizedString("entraide.action.reopen", comment: ""),
+                    systemImage: "arrow.counterclockwise"
+                )
+            }
+            Button(role: .destructive) {
+                Task { await viewModel.closeWish(id: wish.id) }
+            } label: {
+                Label(
+                    NSLocalizedString("entraide.action.close", comment: ""),
+                    systemImage: "xmark.circle"
+                )
+            }
+        default:
+            EmptyView()
+        }
+    }
+
+    // MARK: - Status Badge
+
     private func statusBadge(_ status: WishStatus) -> some View {
         let (color, label) = statusInfo(status)
-        HStack(spacing: 4) {
+        return HStack(spacing: 4) {
             Circle().fill(color).frame(width: 6, height: 6)
             Text(label)
-                .font(.system(size: 11, weight: .medium))
-                .foregroundColor(color)
-        }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 4)
-        .background(color.opacity(0.1))
-        .cornerRadius(OffriiTheme.cornerRadiusSM)
-    }
-
-    @ViewBuilder
-    private func contextInfo(_ wish: MyWish) -> some View {
-        if let donor = wish.matchedWithDisplayName {
-            Label(
-                String(format: NSLocalizedString("entraide.detail.matchedBy", comment: ""), donor),
-                systemImage: "person.fill.checkmark"
-            )
-            .font(OffriiTypography.caption)
-            .foregroundColor(OffriiTheme.warning)
-        }
-
-        if wish.status == .review || wish.status == .flagged,
-           let note = wish.moderationNote {
-            Label(note, systemImage: "exclamationmark.triangle.fill")
-                .font(OffriiTypography.caption)
-                .foregroundColor(OffriiTheme.danger)
-        }
-
-        if wish.reportCount > 0 && (wish.status == .review || wish.status == .open) {
-            Label(
-                String(format: NSLocalizedString("entraide.myWishes.reports", comment: ""), wish.reportCount),
-                systemImage: "flag.fill"
-            )
-            .font(OffriiTypography.caption)
-            .foregroundColor(OffriiTheme.textMuted)
-        }
-    }
-
-    @ViewBuilder
-    private func actionButtons(_ wish: MyWish) -> some View {
-        HStack(spacing: OffriiTheme.spacingSM) {
-            switch wish.status {
-            case .open:
-                actionChip(
-                    NSLocalizedString("entraide.action.close", comment: ""),
-                    icon: "xmark.circle", color: OffriiTheme.danger
-                ) {
-                    Task { await viewModel.closeWish(id: wish.id) }
-                }
-            case .matched:
-                actionChip(
-                    NSLocalizedString("entraide.action.confirm", comment: ""),
-                    icon: "checkmark.circle.fill", color: OffriiTheme.success
-                ) {
-                    Task { await viewModel.confirmWish(id: wish.id) }
-                }
-                actionChip(
-                    NSLocalizedString("entraide.action.messages", comment: ""),
-                    icon: "bubble.left.fill", color: OffriiTheme.primary
-                ) {
-                    selectedWishId = wish.id
-                }
-                actionChip(
-                    NSLocalizedString("entraide.action.close", comment: ""),
-                    icon: "xmark.circle", color: OffriiTheme.danger
-                ) {
-                    Task { await viewModel.closeWish(id: wish.id) }
-                }
-            case .review:
-                actionChip(
-                    NSLocalizedString("entraide.action.close", comment: ""),
-                    icon: "xmark.circle", color: OffriiTheme.danger
-                ) {
-                    Task { await viewModel.closeWish(id: wish.id) }
-                }
-            default:
-                EmptyView()
-            }
-        }
-    }
-
-    private func actionChip(
-        _ label: String, icon: String, color: Color, action: @escaping () -> Void
-    ) -> some View {
-        Button(action: action) {
-            Label(label, systemImage: icon)
                 .font(.system(size: 12, weight: .medium))
                 .foregroundColor(color)
-                .padding(.horizontal, OffriiTheme.spacingSM)
-                .padding(.vertical, OffriiTheme.spacingXS)
-                .background(color.opacity(0.1))
-                .cornerRadius(OffriiTheme.cornerRadiusXL)
         }
-        .buttonStyle(.plain)
     }
+
+    // MARK: - Helpers
 
     private func statusInfo(_ status: WishStatus) -> (Color, String) {
         switch status {
@@ -187,6 +190,30 @@ struct EntraideMyNeedsContent: View {
         case .review:    return (OffriiTheme.warning, NSLocalizedString("entraide.status.review", comment: ""))
         case .flagged:   return (OffriiTheme.danger, NSLocalizedString("entraide.status.flagged", comment: ""))
         case .rejected:  return (OffriiTheme.danger, NSLocalizedString("entraide.status.rejected", comment: ""))
+        }
+    }
+
+    private func categoryColor(_ cat: WishCategory) -> Color {
+        switch cat {
+        case .education: return Color(red: 0.2, green: 0.4, blue: 0.85)
+        case .clothing:  return Color(red: 0.7, green: 0.3, blue: 0.6)
+        case .health:    return Color(red: 0.85, green: 0.3, blue: 0.35)
+        case .religion:  return Color(red: 0.55, green: 0.4, blue: 0.75)
+        case .home:      return Color(red: 0.9, green: 0.5, blue: 0.2)
+        case .children:  return Color(red: 0.3, green: 0.7, blue: 0.6)
+        case .other:     return Color(red: 0.5, green: 0.5, blue: 0.6)
+        }
+    }
+
+    private func categoryIcon(_ cat: WishCategory) -> String {
+        switch cat {
+        case .education: return "book.fill"
+        case .clothing:  return "tshirt.fill"
+        case .health:    return "heart.fill"
+        case .religion:  return "hands.sparkles.fill"
+        case .home:      return "house.fill"
+        case .children:  return "figure.and.child.holdinghands"
+        case .other:     return "tag.fill"
         }
     }
 }
