@@ -36,6 +36,7 @@ struct CirclesListView: View {
     @State private var showInviteContacts = false
     @State private var showNotificationCenter = false
     @State private var unreadCount = 0
+    @State private var searchQuery = ""
     @State private var circleToDelete: OffriiCircle?
     @State private var circleToLeave: OffriiCircle?
     @State private var friendToRemove: FriendResponse?
@@ -89,11 +90,6 @@ struct CirclesListView: View {
                 } else {
                     ScrollView {
                         LazyVStack(spacing: OffriiTheme.spacingSM) {
-                            if !viewModel.circles.isEmpty {
-                                searchBar
-                                    .padding(.horizontal, OffriiTheme.spacingXS)
-                            }
-
                             ForEach(displayedCircles) { circle in
                                 NavigationLink(value: circle.id) {
                                     CircleCardRow(circle: circle)
@@ -153,6 +149,15 @@ struct CirclesListView: View {
         .background(OffriiTheme.background.ignoresSafeArea())
         .navigationTitle(NSLocalizedString("circles.title", comment: ""))
         .navigationBarTitleDisplayMode(.large)
+        .searchable(
+            text: $searchQuery,
+            placement: .navigationBarDrawer(displayMode: .automatic),
+            prompt: NSLocalizedString("circles.search.placeholder", comment: "")
+        )
+        .onChange(of: searchQuery) { _, newValue in
+            viewModel.circleSearchQuery = newValue
+            viewModel.friendSearchQuery = newValue
+        }
         .toolbar {
             ToolbarItemGroup(placement: .topBarTrailing) {
                 Button {
@@ -384,40 +389,6 @@ struct CirclesListView: View {
             .padding(.horizontal, OffriiTheme.spacingBase)
         }
         .padding(.vertical, OffriiTheme.spacingSM)
-    }
-
-    // MARK: - Search Bar
-
-    @ViewBuilder
-    private var searchBar: some View {
-        HStack(spacing: OffriiTheme.spacingSM) {
-            Image(systemName: "magnifyingglass")
-                .foregroundColor(OffriiTheme.textMuted)
-
-            TextField(
-                NSLocalizedString("circles.search.placeholder", comment: ""),
-                text: Bindable(viewModel).circleSearchQuery
-            )
-            .font(OffriiTypography.body)
-            .autocapitalization(.none)
-            .autocorrectionDisabled()
-
-            if !viewModel.circleSearchQuery.isEmpty {
-                Button {
-                    viewModel.circleSearchQuery = ""
-                } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .foregroundColor(OffriiTheme.textMuted)
-                }
-            }
-        }
-        .padding(OffriiTheme.spacingSM)
-        .background(OffriiTheme.card)
-        .cornerRadius(OffriiTheme.cornerRadiusSM)
-        .overlay(
-            RoundedRectangle(cornerRadius: OffriiTheme.cornerRadiusSM)
-                .stroke(OffriiTheme.border, lineWidth: 1)
-        )
     }
 
     // MARK: - Friends Content (Amis filter) — extracted to FriendsListContent.swift

@@ -30,11 +30,6 @@ struct FriendsListContent: View {
         } else {
             ScrollView {
                 LazyVStack(spacing: OffriiTheme.spacingSM) {
-                    if !viewModel.friends.isEmpty {
-                        searchBar
-                            .padding(.horizontal, OffriiTheme.spacingXS)
-                    }
-
                     if !viewModel.pendingRequests.isEmpty {
                         pendingSection
                     }
@@ -242,37 +237,4 @@ struct FriendsListContent: View {
         }
     }
 
-    // MARK: - Search Bar
-
-    @ViewBuilder
-    private var searchBar: some View {
-        HStack(spacing: OffriiTheme.spacingSM) {
-            Image(systemName: "magnifyingglass")
-                .foregroundColor(OffriiTheme.textMuted)
-
-            TextField(
-                NSLocalizedString("friends.search.placeholder", comment: ""),
-                text: Bindable(viewModel).friendSearchQuery
-            )
-            .font(OffriiTypography.body)
-            .autocapitalization(.none)
-            .autocorrectionDisabled()
-
-            if !viewModel.friendSearchQuery.isEmpty {
-                Button {
-                    viewModel.friendSearchQuery = ""
-                } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .foregroundColor(OffriiTheme.textMuted)
-                }
-            }
-        }
-        .padding(OffriiTheme.spacingSM)
-        .background(OffriiTheme.card)
-        .cornerRadius(OffriiTheme.cornerRadiusSM)
-        .overlay(
-            RoundedRectangle(cornerRadius: OffriiTheme.cornerRadiusSM)
-                .stroke(OffriiTheme.border, lineWidth: 1)
-        )
-    }
 }
