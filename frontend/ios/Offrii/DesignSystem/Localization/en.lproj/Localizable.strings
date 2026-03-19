@@ -360,6 +360,11 @@
 "entraide.onboarding.body" = "Here, community members share their needs. You can offer your help or publish a wish. Everything is moderated for your safety.";
 "entraide.action.withdrawSuccess" = "You have withdrawn";
 "entraide.action.confirmSuccess" = "Wish confirmed! Thank you";
+"entraide.action.offer" = "Offer help";
+"entraide.action.report" = "Report";
+"entraide.action.viewDetail" = "View detail";
+"entraide.withdraw.confirmTitle" = "Withdraw your offer?";
+"entraide.withdraw.confirmMessage" = "You will no longer be in contact with the requester.";
 
 /* Entraide - Messages */
 "entraide.messages.placeholder" = "Your message...";

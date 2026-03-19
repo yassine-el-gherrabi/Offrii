@@ -51,6 +51,7 @@ struct EntraideView: View {
                                 viewModel: viewModel,
                                 selectedWishId: $selectedWishId,
                                 showCreateSheet: $showCreateSheet,
+                                reportWishId: $reportWishId,
                                 searchQuery: searchQuery
                             )
                         case 1:
@@ -62,7 +63,8 @@ struct EntraideView: View {
                         case 2:
                             EntraideMyOffersContent(
                                 viewModel: viewModel,
-                                selectedWishId: $selectedWishId
+                                selectedWishId: $selectedWishId,
+                                messagesWishId: $messagesWishId
                             )
                         default:
                             EmptyView()

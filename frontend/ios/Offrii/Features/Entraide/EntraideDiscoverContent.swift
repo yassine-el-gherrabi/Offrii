@@ -6,6 +6,7 @@ struct EntraideDiscoverContent: View {
     var viewModel: EntraideViewModel
     @Binding var selectedWishId: UUID?
     @Binding var showCreateSheet: Bool
+    @Binding var reportWishId: UUID?
     var searchQuery: String
     @AppStorage("entraide.onboarding.dismissed") private var onboardingDismissed = false
     @State private var recentFulfilled: [CommunityWish] = []
@@ -142,6 +143,9 @@ struct EntraideDiscoverContent: View {
                     EntraideWishCard(wish: wish) {
                         selectedWishId = wish.id
                     }
+                    .contextMenu {
+                        discoverContextMenu(wish)
+                    }
                     .onAppear {
                         Task { await viewModel.loadMoreIfNeeded(currentWish: wish) }
                     }
@@ -151,6 +155,37 @@ struct EntraideDiscoverContent: View {
             .padding(.vertical, OffriiTheme.spacingSM)
             .task {
                 recentFulfilled = (try? await CommunityWishService.shared.listRecentFulfilled()) ?? []
+            }
+        }
+    }
+
+    // MARK: - Context Menu (Discover)
+
+    @ViewBuilder
+    private func discoverContextMenu(_ wish: CommunityWish) -> some View {
+        if !wish.isMine && wish.status == .open && !wish.isMatchedByMe {
+            Button {
+                Task {
+                    if await viewModel.offerWish(id: wish.id) {
+                        await viewModel.loadWishes()
+                    }
+                }
+            } label: {
+                Label(
+                    NSLocalizedString("entraide.action.offer", comment: ""),
+                    systemImage: "hand.raised.fill"
+                )
+            }
+        }
+
+        if !wish.isMine {
+            Button(role: .destructive) {
+                reportWishId = wish.id
+            } label: {
+                Label(
+                    NSLocalizedString("entraide.action.report", comment: ""),
+                    systemImage: "exclamationmark.triangle"
+                )
             }
         }
     }

@@ -360,6 +360,11 @@
 "entraide.onboarding.body" = "Ici, les membres de la communauté partagent leurs besoins. Proposez votre aide ou publiez un souhait. Tout est modéré pour votre sécurité.";
 "entraide.action.withdrawSuccess" = "Vous vous êtes retiré";
 "entraide.action.confirmSuccess" = "Souhait confirmé ! Merci";
+"entraide.action.offer" = "Proposer mon aide";
+"entraide.action.report" = "Signaler";
+"entraide.action.viewDetail" = "Voir le détail";
+"entraide.withdraw.confirmTitle" = "Retirer votre offre ?";
+"entraide.withdraw.confirmMessage" = "Vous ne serez plus en contact avec le demandeur.";
 
 /* Entraide - Messages */
 "entraide.messages.placeholder" = "Votre message...";
