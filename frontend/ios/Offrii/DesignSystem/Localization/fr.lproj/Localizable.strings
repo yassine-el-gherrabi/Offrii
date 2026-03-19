@@ -292,6 +292,8 @@
 "entraide.search.placeholder" = "Rechercher un besoin...";
 "entraide.sort.newest" = "Récent";
 "entraide.sort.oldest" = "Ancien";
+"entraide.sort.date" = "Date";
+"entraide.sort.name" = "Nom";
 "entraide.offer" = "Je veux offrir";
 "entraide.fab.publish" = "Publier";
 

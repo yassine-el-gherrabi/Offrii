@@ -12,6 +12,17 @@ struct EntraideView: View {
     @State private var messagesWishId: UUID?
     @State private var reportWishId: UUID?
     @State private var searchQuery = ""
+    @State private var sortField = "created_at"
+    @State private var sortOrder = "desc"
+
+    private var sortLabel: String {
+        switch sortField {
+        case "created_at": return NSLocalizedString("entraide.sort.date", comment: "")
+        case "title":      return NSLocalizedString("entraide.sort.name", comment: "")
+        default:           return NSLocalizedString("entraide.sort.date", comment: "")
+        }
+    }
+
     private var segmentLabel: String {
         switch selectedSegment {
         case 0:  return NSLocalizedString("entraide.segment.discover", comment: "")
@@ -235,6 +246,41 @@ struct EntraideView: View {
                     : NSLocalizedString("entraide.countPlural", comment: ""))
                     .font(.system(size: 13))
                     .foregroundColor(OffriiTheme.textMuted)
+
+                Text("·").foregroundColor(OffriiTheme.textMuted)
+
+                Menu {
+                    Button {
+                        sortField = "created_at"
+                        applySort()
+                    } label: {
+                        Label(
+                            NSLocalizedString("entraide.sort.date", comment: ""),
+                            systemImage: sortField == "created_at" ? "checkmark" : ""
+                        )
+                    }
+                    Button {
+                        sortField = "title"
+                        applySort()
+                    } label: {
+                        Label(
+                            NSLocalizedString("entraide.sort.name", comment: ""),
+                            systemImage: sortField == "title" ? "checkmark" : ""
+                        )
+                    }
+                } label: {
+                    HStack(spacing: 2) {
+                        Text(sortLabel)
+                            .font(.system(size: 13, weight: .medium))
+                        Image(systemName: sortOrder == "asc" ? "arrow.up" : "arrow.down")
+                            .font(.system(size: 10, weight: .semibold))
+                    }
+                    .foregroundColor(OffriiTheme.primary)
+                    .onTapGesture {
+                        sortOrder = sortOrder == "desc" ? "asc" : "desc"
+                        applySort()
+                    }
+                }
             }
 
             Spacer()
@@ -249,6 +295,13 @@ struct EntraideView: View {
         }
         .padding(.horizontal, OffriiTheme.spacingBase)
         .padding(.vertical, OffriiTheme.spacingXS)
+    }
+
+    // MARK: - Sort
+
+    private func applySort() {
+        viewModel.sortField = sortField
+        viewModel.sortOrder = sortOrder
     }
 
     // MARK: - Category Helpers

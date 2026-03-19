@@ -10,6 +10,10 @@ final class EntraideViewModel {
     var isLoadingMore = false
     var error: String?
 
+    // Sort
+    var sortField = "created_at"
+    var sortOrder = "desc"
+
     // My Offers (separate data source)
     var myOfferWishes: [CommunityWish] = []
     var isLoadingOffers = false
@@ -19,7 +23,20 @@ final class EntraideViewModel {
     private let limit = 20
 
     var filteredWishes: [CommunityWish] {
-        wishes
+        let sorted: [CommunityWish]
+        switch sortField {
+        case "title":
+            sorted = wishes.sorted { lhs, rhs in
+                sortOrder == "asc"
+                    ? lhs.title.localizedCaseInsensitiveCompare(rhs.title) == .orderedAscending
+                    : lhs.title.localizedCaseInsensitiveCompare(rhs.title) == .orderedDescending
+            }
+        default: // created_at
+            sorted = wishes.sorted { lhs, rhs in
+                sortOrder == "asc" ? lhs.createdAt < rhs.createdAt : lhs.createdAt > rhs.createdAt
+            }
+        }
+        return sorted
     }
 
     // MARK: - Load Discover

@@ -292,6 +292,8 @@
 "entraide.search.placeholder" = "Search wishes...";
 "entraide.sort.newest" = "Newest";
 "entraide.sort.oldest" = "Oldest";
+"entraide.sort.date" = "Date";
+"entraide.sort.name" = "Name";
 "entraide.offer" = "I want to help";
 "entraide.fab.publish" = "Publish";
 
