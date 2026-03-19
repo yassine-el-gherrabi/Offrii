@@ -7,11 +7,6 @@ struct EntraideDiscoverContent: View {
     @Binding var selectedWishId: UUID?
     var searchQuery: String
 
-    private let gridColumns = [
-        GridItem(.flexible(), spacing: OffriiTheme.spacingSM),
-        GridItem(.flexible(), spacing: OffriiTheme.spacingSM)
-    ]
-
     private var displayedWishes: [CommunityWish] {
         if searchQuery.isEmpty {
             return viewModel.filteredWishes
@@ -35,7 +30,7 @@ struct EntraideDiscoverContent: View {
                 Spacer()
             }
         } else {
-            LazyVGrid(columns: gridColumns, spacing: OffriiTheme.spacingSM) {
+            LazyVStack(spacing: OffriiTheme.spacingSM) {
                 ForEach(displayedWishes) { wish in
                     EntraideWishCard(wish: wish) {
                         selectedWishId = wish.id
@@ -51,9 +46,9 @@ struct EntraideDiscoverContent: View {
     }
 
     private var skeletonGrid: some View {
-        LazyVGrid(columns: gridColumns, spacing: OffriiTheme.spacingSM) {
-            ForEach(0..<6, id: \.self) { _ in
-                SkeletonGridCard()
+        LazyVStack(spacing: OffriiTheme.spacingSM) {
+            ForEach(0..<5, id: \.self) { _ in
+                SkeletonRow()
             }
         }
         .padding(.horizontal, OffriiTheme.spacingBase)
