@@ -130,13 +130,13 @@ struct EntraideDiscoverContent: View {
 
     private func entraideCategoryColor(_ cat: WishCategory) -> Color {
         switch cat {
-        case .education: return OffriiTheme.categoryEducationBg
-        case .clothing:  return OffriiTheme.categoryClothingBg
-        case .health:    return OffriiTheme.categoryHealthBg
-        case .religion:  return OffriiTheme.categoryReligionBg
-        case .home:      return OffriiTheme.categoryHomeBg
-        case .children:  return OffriiTheme.categoryChildrenBg
-        case .other:     return OffriiTheme.categoryOtherBg
+        case .education: return Color(red: 0.2, green: 0.4, blue: 0.85)
+        case .clothing:  return Color(red: 0.7, green: 0.3, blue: 0.6)
+        case .health:    return Color(red: 0.85, green: 0.3, blue: 0.35)
+        case .religion:  return Color(red: 0.55, green: 0.4, blue: 0.75)
+        case .home:      return Color(red: 0.9, green: 0.5, blue: 0.2)
+        case .children:  return Color(red: 0.3, green: 0.7, blue: 0.6)
+        case .other:     return Color(red: 0.5, green: 0.5, blue: 0.6)
         }
     }
 

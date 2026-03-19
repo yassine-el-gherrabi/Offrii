@@ -7,20 +7,21 @@ struct EntraideWishCard: View {
     let wish: CommunityWish
     var onTap: (() -> Void)?
 
-    private var categoryColor: Color {
+    // Same saturation level as CategoryStyle.gradient in Envies
+    private var categoryGradient: [Color] {
         switch wish.category {
-        case .education: return OffriiTheme.categoryEducationBg
-        case .clothing:  return OffriiTheme.categoryClothingBg
-        case .health:    return OffriiTheme.categoryHealthBg
-        case .religion:  return OffriiTheme.categoryReligionBg
-        case .home:      return OffriiTheme.categoryHomeBg
-        case .children:  return OffriiTheme.categoryChildrenBg
-        case .other:     return OffriiTheme.categoryOtherBg
+        case .education: return [Color(red: 0.2, green: 0.4, blue: 0.85), Color(red: 0.4, green: 0.6, blue: 1.0)]
+        case .clothing:  return [Color(red: 0.7, green: 0.3, blue: 0.6), Color(red: 0.9, green: 0.5, blue: 0.8)]
+        case .health:    return [Color(red: 0.85, green: 0.3, blue: 0.35), Color(red: 1.0, green: 0.5, blue: 0.55)]
+        case .religion:  return [Color(red: 0.55, green: 0.4, blue: 0.75), Color(red: 0.75, green: 0.6, blue: 0.95)]
+        case .home:      return [Color(red: 0.9, green: 0.5, blue: 0.2), Color(red: 1.0, green: 0.7, blue: 0.4)]
+        case .children:  return [Color(red: 0.3, green: 0.7, blue: 0.6), Color(red: 0.5, green: 0.9, blue: 0.8)]
+        case .other:     return [Color(red: 0.5, green: 0.5, blue: 0.6), Color(red: 0.7, green: 0.7, blue: 0.8)]
         }
     }
 
-    private var categoryGradient: [Color] {
-        [categoryColor, categoryColor.opacity(0.6)]
+    private var categoryChipColor: Color {
+        categoryGradient[0]
     }
 
     private var categoryIcon: String {
