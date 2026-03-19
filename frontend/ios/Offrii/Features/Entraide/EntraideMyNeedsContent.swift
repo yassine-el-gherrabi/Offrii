@@ -298,6 +298,11 @@ struct EntraideMyNeedsContent: View {
             return NSLocalizedString("moderation.prefix", comment: "") + mapped.joined(separator: ", ")
         }
 
+        // "auto-moderated: report threshold reached"
+        if note.contains("report threshold") {
+            return NSLocalizedString("moderation.reportThreshold", comment: "")
+        }
+
         // "moderation service unavailable after retries"
         if note.contains("unavailable") {
             return NSLocalizedString("moderation.unavailable", comment: "")

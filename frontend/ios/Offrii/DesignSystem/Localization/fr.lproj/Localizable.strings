@@ -501,6 +501,7 @@
 "moderation.illicit" = "Activité illégale";
 "moderation.illicit_violent" = "Activité illégale violente";
 "moderation.unavailable" = "En cours de vérification";
+"moderation.reportThreshold" = "Signalé par la communauté";
 "moderation.generic" = "Contenu en cours d'examen";
 "entraide.myOffers.empty" = "Aucune offre";
 "entraide.myOffers.emptySubtitle" = "Vous n'avez pas encore proposé votre aide";

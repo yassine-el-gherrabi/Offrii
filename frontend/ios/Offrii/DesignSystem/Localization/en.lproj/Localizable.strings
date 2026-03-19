@@ -501,6 +501,7 @@
 "moderation.illicit" = "Illegal activity";
 "moderation.illicit_violent" = "Violent illegal activity";
 "moderation.unavailable" = "Under review (moderation pending)";
+"moderation.reportThreshold" = "Reported by the community";
 "moderation.generic" = "Content under review";
 "entraide.myOffers.empty" = "No offers yet";
 "entraide.myOffers.emptySubtitle" = "You haven't offered to help yet";
