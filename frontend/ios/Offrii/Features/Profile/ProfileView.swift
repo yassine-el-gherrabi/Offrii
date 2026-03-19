@@ -194,7 +194,7 @@ struct ProfileView: View {
                             icon: "hand.raised.fill"
                         ) {
                             NavigationLink {
-                                MyWishesView()
+                                EntraideView()
                             } label: {
                                 profileRow(
                                     title: NSLocalizedString("entraide.myWishes.title", comment: ""),

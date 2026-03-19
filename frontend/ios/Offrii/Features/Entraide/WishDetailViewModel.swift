@@ -9,12 +9,8 @@ final class WishDetailViewModel {
     var error: String?
     var actionSuccess: String?
 
-    // MARK: - Load
-
     func loadWish(id: UUID) async {
         isLoading = true
-        error = nil
-
         do {
             wish = try await CommunityWishService.shared.getWish(id: id)
         } catch {
@@ -23,14 +19,13 @@ final class WishDetailViewModel {
         isLoading = false
     }
 
-    // MARK: - Actions
-
     func offer(id: UUID) async -> Bool {
         isActioning = true
         do {
             try await CommunityWishService.shared.offerWish(id: id)
-            await loadWish(id: id)
             actionSuccess = NSLocalizedString("entraide.action.offerSuccess", comment: "")
+            OffriiHaptics.success()
+            await loadWish(id: id)
             isActioning = false
             return true
         } catch {
@@ -44,8 +39,9 @@ final class WishDetailViewModel {
         isActioning = true
         do {
             try await CommunityWishService.shared.withdrawOffer(id: id)
-            await loadWish(id: id)
             actionSuccess = NSLocalizedString("entraide.action.withdrawSuccess", comment: "")
+            OffriiHaptics.success()
+            await loadWish(id: id)
             isActioning = false
             return true
         } catch {
@@ -59,8 +55,9 @@ final class WishDetailViewModel {
         isActioning = true
         do {
             try await CommunityWishService.shared.confirmWish(id: id)
-            await loadWish(id: id)
             actionSuccess = NSLocalizedString("entraide.action.confirmSuccess", comment: "")
+            OffriiHaptics.success()
+            await loadWish(id: id)
             isActioning = false
             return true
         } catch {
@@ -74,6 +71,7 @@ final class WishDetailViewModel {
         isActioning = true
         do {
             try await CommunityWishService.shared.rejectOffer(id: id)
+            OffriiHaptics.success()
             await loadWish(id: id)
             isActioning = false
             return true
@@ -88,6 +86,7 @@ final class WishDetailViewModel {
         isActioning = true
         do {
             try await CommunityWishService.shared.closeWish(id: id)
+            OffriiHaptics.success()
             await loadWish(id: id)
             isActioning = false
             return true

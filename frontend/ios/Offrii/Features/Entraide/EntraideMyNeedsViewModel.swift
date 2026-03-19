@@ -2,17 +2,14 @@ import Foundation
 
 @Observable
 @MainActor
-final class MyWishesViewModel {
+final class EntraideMyNeedsViewModel {
     var wishes: [MyWish] = []
     var isLoading = false
     var error: String?
 
-    // MARK: - Load
-
     func loadMyWishes() async {
         isLoading = true
         error = nil
-
         do {
             wishes = try await CommunityWishService.shared.listMyWishes()
         } catch {
@@ -21,11 +18,20 @@ final class MyWishesViewModel {
         isLoading = false
     }
 
-    // MARK: - Actions
-
     func closeWish(id: UUID) async {
         do {
             try await CommunityWishService.shared.closeWish(id: id)
+            OffriiHaptics.success()
+            await loadMyWishes()
+        } catch {
+            self.error = error.localizedDescription
+        }
+    }
+
+    func reopenWish(id: UUID) async {
+        do {
+            try await CommunityWishService.shared.reopenWish(id: id)
+            OffriiHaptics.success()
             await loadMyWishes()
         } catch {
             self.error = error.localizedDescription

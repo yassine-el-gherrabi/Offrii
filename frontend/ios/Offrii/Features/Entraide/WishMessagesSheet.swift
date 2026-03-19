@@ -1,0 +1,161 @@
+import SwiftUI
+
+// MARK: - Wish Messages Sheet
+
+struct WishMessagesSheet: View {
+    let wishId: UUID
+
+    @Environment(\.dismiss) private var dismiss
+    @State private var messages: [WishMessage] = []
+    @State private var messageText = ""
+    @State private var isLoading = false
+    @State private var isSending = false
+    @State private var pollingTask: Task<Void, Never>?
+
+    var body: some View {
+        NavigationStack {
+            VStack(spacing: 0) {
+                if isLoading && messages.isEmpty {
+                    Spacer()
+                    ProgressView()
+                    Spacer()
+                } else if messages.isEmpty {
+                    Spacer()
+                    OffriiEmptyState(
+                        icon: "bubble.left.and.bubble.right",
+                        title: NSLocalizedString("entraide.messages.empty", comment: ""),
+                        subtitle: NSLocalizedString("entraide.messages.emptySubtitle", comment: "")
+                    )
+                    Spacer()
+                } else {
+                    messageList
+                }
+
+                inputBar
+            }
+            .background(OffriiTheme.background)
+            .navigationTitle(NSLocalizedString("entraide.action.messages", comment: ""))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(NSLocalizedString("common.ok", comment: "")) { dismiss() }
+                }
+            }
+        }
+        .task {
+            await loadMessages()
+            startPolling()
+        }
+        .onDisappear {
+            pollingTask?.cancel()
+        }
+    }
+
+    // MARK: - Message List
+
+    private var messageList: some View {
+        ScrollViewReader { proxy in
+            ScrollView {
+                LazyVStack(spacing: OffriiTheme.spacingSM) {
+                    ForEach(messages) { message in
+                        MessageBubble(
+                            text: message.body,
+                            senderName: message.senderDisplayName,
+                            timestamp: message.createdAt,
+                            isMine: message.isMine
+                        )
+                        .id(message.id)
+                    }
+                }
+                .padding(OffriiTheme.spacingBase)
+            }
+            .onChange(of: messages.count) { _, _ in
+                if let lastId = messages.last?.id {
+                    withAnimation {
+                        proxy.scrollTo(lastId, anchor: .bottom)
+                    }
+                }
+            }
+        }
+    }
+
+    // MARK: - Input Bar
+
+    private var inputBar: some View {
+        HStack(spacing: OffriiTheme.spacingSM) {
+            TextField(
+                NSLocalizedString("entraide.messages.placeholder", comment: ""),
+                text: $messageText,
+                axis: .vertical
+            )
+            .font(OffriiTypography.body)
+            .lineLimit(1...4)
+            .padding(OffriiTheme.spacingSM)
+            .background(OffriiTheme.surface)
+            .cornerRadius(OffriiTheme.cornerRadiusMD)
+
+            Button {
+                Task { await sendMessage() }
+            } label: {
+                Image(systemName: "arrow.up.circle.fill")
+                    .font(.system(size: 32))
+                    .foregroundColor(
+                        messageText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                            ? OffriiTheme.textMuted
+                            : OffriiTheme.primary
+                    )
+            }
+            .disabled(messageText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isSending)
+        }
+        .padding(.horizontal, OffriiTheme.spacingBase)
+        .padding(.vertical, OffriiTheme.spacingSM)
+        .background(OffriiTheme.card)
+    }
+
+    // MARK: - Actions
+
+    private func loadMessages() async {
+        isLoading = true
+        do {
+            let response = try await WishMessageService.shared.listMessages(
+                wishId: wishId, page: 1, limit: 100
+            )
+            messages = response.data
+        } catch {}
+        isLoading = false
+    }
+
+    private func sendMessage() async {
+        let text = messageText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty else { return }
+        isSending = true
+
+        do {
+            let msg = try await WishMessageService.shared.sendMessage(wishId: wishId, body: text)
+            messages.append(msg)
+            messageText = ""
+            OffriiHaptics.tap()
+        } catch {}
+        isSending = false
+    }
+
+    private func startPolling() {
+        pollingTask = Task {
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(10))
+                guard !Task.isCancelled else { break }
+                await refreshMessages()
+            }
+        }
+    }
+
+    private func refreshMessages() async {
+        guard let response = try? await WishMessageService.shared.listMessages(
+            wishId: wishId, page: 1, limit: 100
+        ) else { return }
+
+        if response.data.count != messages.count {
+            messages = response.data
+        }
+    }
+}

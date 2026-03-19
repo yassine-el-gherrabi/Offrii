@@ -88,7 +88,7 @@ struct QuickCreateSheet: View {
             AddFriendSheet {}
         }
         .sheet(isPresented: $navigateToPublishNeed) {
-            CreateWishSheet {}
+            CreateWishSheet()
                 .presentationDetents([.large])
         }
     }

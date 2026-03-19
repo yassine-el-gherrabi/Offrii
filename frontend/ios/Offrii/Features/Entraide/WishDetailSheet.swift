@@ -1,226 +1,313 @@
 import NukeUI
 import SwiftUI
 
-// MARK: - WishDetailSheet
+// MARK: - Wish Detail Sheet
 
 struct WishDetailSheet: View {
     let wishId: UUID
-    @State private var viewModel = WishDetailViewModel()
-    @State private var showReportSheet = false
+    var onOpenMessages: (() -> Void)?
+    var onReport: (() -> Void)?
+
     @Environment(\.dismiss) private var dismiss
+    @Environment(AuthManager.self) private var authManager
+    @State private var viewModel = WishDetailViewModel()
+
+    private var wish: WishDetail? { viewModel.wish }
+    private var isMine: Bool { wish?.isMine ?? false }
+    private var isMatchedByMe: Bool { wish?.isMatchedByMe ?? false }
 
     var body: some View {
         NavigationStack {
             ZStack {
                 OffriiTheme.background.ignoresSafeArea()
 
-                if viewModel.isLoading {
-                    ScrollView {
-                        VStack(spacing: OffriiTheme.spacingBase) {
-                            SkeletonCard()
-                            SkeletonCard()
-                        }
-                        .padding(.horizontal, OffriiTheme.spacingLG)
-                        .padding(.top, OffriiTheme.spacingLG)
-                    }
-                } else if let wish = viewModel.wish {
-                    ScrollView {
-                        VStack(spacing: 0) {
-                            // Image or gradient header
-                            wishHeader(wish)
-
-                            // Content
-                            VStack(alignment: .leading, spacing: OffriiTheme.spacingBase) {
-                                // Title + description
-                                Text(wish.title)
-                                    .font(OffriiTypography.title3)
-                                    .foregroundColor(OffriiTheme.text)
-
-                                // Status badge
-                                WishStatusBadge(status: wish.status)
-
-                                // Category + author + date
-                                HStack(spacing: OffriiTheme.spacingSM) {
-                                    WishCategoryChip(category: wish.category)
-
-                                    HStack(spacing: OffriiTheme.spacingXS) {
-                                        Image(systemName: "person.fill")
-                                            .font(.system(size: 10))
-                                            .foregroundColor(OffriiTheme.textMuted)
-                                        Text(wish.displayName ?? NSLocalizedString("entraide.anonymous", comment: ""))
-                                            .font(OffriiTypography.caption)
-                                            .foregroundColor(OffriiTheme.textMuted)
-                                    }
-
-                                    Spacer()
-
-                                    Text(wish.createdAt, style: .relative)
-                                        .font(OffriiTypography.caption)
-                                        .foregroundColor(OffriiTheme.textMuted)
-                                }
-
-                                if let description = wish.description, !description.isEmpty {
-                                    Text(description)
-                                        .font(OffriiTypography.body)
-                                        .foregroundColor(OffriiTheme.textSecondary)
-                                }
-
-                                // Links
-                                if let links = wish.links, !links.isEmpty {
-                                    VStack(alignment: .leading, spacing: OffriiTheme.spacingXS) {
-                                        ForEach(links, id: \.self) { link in
-                                            if let url = URL(string: link) {
-                                                Link(destination: url) {
-                                                    HStack(spacing: OffriiTheme.spacingXS) {
-                                                        Image(systemName: "link")
-                                                            .font(.system(size: 12))
-                                                        Text(link)
-                                                            .font(OffriiTypography.footnote)
-                                                            .lineLimit(1)
-                                                    }
-                                                    .foregroundColor(OffriiTheme.primary)
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-
-                                // Matched info
-                                if wish.status == .matched, let matchedName = wish.matchedWithDisplayName {
-                                    HStack(spacing: OffriiTheme.spacingSM) {
-                                        Image(systemName: "heart.fill")
-                                            .font(.system(size: 12))
-                                            .foregroundColor(OffriiTheme.accent)
-                                        Text(String(
-                                            format: NSLocalizedString("entraide.detail.matchedBy", comment: ""),
-                                            matchedName
-                                        ))
-                                        .font(OffriiTypography.subheadline)
-                                        .foregroundColor(OffriiTheme.accent)
-                                    }
-                                }
-
-                                Divider()
-
-                                // Action buttons
-                                actionButtons(wish: wish)
-                            }
-                            .padding(.horizontal, OffriiTheme.spacingLG)
-                            .padding(.top, OffriiTheme.spacingBase)
-                            .padding(.bottom, OffriiTheme.spacingXL)
-
-                            // Inline messages for matched wishes
-                            if (wish.isMine && wish.status == .matched) || wish.isMatchedByMe {
-                                Divider()
-                                    .padding(.horizontal, OffriiTheme.spacingLG)
-
-                                WishMessagesView(wishId: wish.id, wishTitle: wish.title)
-                                    .frame(minHeight: 200)
-                            }
-                        }
-                    }
-
-                    // Success toast
-                    if let success = viewModel.actionSuccess {
-                        VStack {
-                            Spacer()
-                            Text(success)
-                                .font(OffriiTypography.footnote)
-                                .fontWeight(.medium)
-                                .foregroundColor(.white)
-                                .padding(.horizontal, OffriiTheme.spacingBase)
-                                .padding(.vertical, OffriiTheme.spacingSM)
-                                .background(OffriiTheme.success)
-                                .cornerRadius(OffriiTheme.cornerRadiusMD)
-                                .padding(.bottom, OffriiTheme.spacingXL)
-                                .transition(.move(edge: .bottom).combined(with: .opacity))
-                        }
-                        .animation(OffriiAnimation.defaultSpring, value: viewModel.actionSuccess)
-                        .onAppear {
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                                viewModel.actionSuccess = nil
-                            }
-                        }
-                    }
-                } else if let error = viewModel.error {
-                    VStack(spacing: OffriiTheme.spacingBase) {
-                        Text(error)
-                            .font(OffriiTypography.body)
-                            .foregroundColor(OffriiTheme.danger)
-                        Button(NSLocalizedString("common.retry", comment: "")) {
-                            Task { await viewModel.loadWish(id: wishId) }
-                        }
-                    }
+                if viewModel.isLoading && wish == nil {
+                    ProgressView()
+                } else if let wish {
+                    wishContent(wish)
                 }
             }
-            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button {
-                        dismiss()
-                    } label: {
-                        Image(systemName: "xmark")
-                            .font(.system(size: 15, weight: .semibold))
-                            .foregroundColor(OffriiTheme.textSecondary)
-                    }
-                }
-
-                ToolbarItem(placement: .primaryAction) {
-                    Menu {
-                        Button {
-                            showReportSheet = true
-                        } label: {
-                            Label(NSLocalizedString("entraide.report.title", comment: ""), systemImage: "flag")
-                        }
-                    } label: {
-                        Image(systemName: "ellipsis.circle")
+                    Button { dismiss() } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: 22))
                             .foregroundColor(OffriiTheme.textMuted)
                     }
                 }
             }
-            .sheet(isPresented: $showReportSheet) {
-                ReportWishSheet(wishId: wishId)
-                    .presentationDetents([.medium])
-            }
-            .task {
-                await viewModel.loadWish(id: wishId)
+        }
+        .task {
+            await viewModel.loadWish(id: wishId)
+        }
+    }
+
+    // MARK: - Content
+
+    // swiftlint:disable:next function_body_length
+    private func wishContent(_ wish: WishDetail) -> some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 0) {
+                // Hero image
+                heroImage(wish)
+
+                VStack(alignment: .leading, spacing: OffriiTheme.spacingMD) {
+                    // Title
+                    Text(wish.title)
+                        .font(OffriiTypography.headline)
+                        .foregroundColor(OffriiTheme.text)
+
+                    // Category + Status
+                    HStack(spacing: OffriiTheme.spacingSM) {
+                        categoryChip(wish.category)
+                        statusBadge(wish.status)
+                        Spacer()
+                    }
+
+                    // Author + date
+                    HStack(spacing: OffriiTheme.spacingXS) {
+                        Image(systemName: "person.fill")
+                            .font(.system(size: 12))
+                            .foregroundColor(OffriiTheme.textMuted)
+                        Text(wish.displayName ?? NSLocalizedString("entraide.anonymous", comment: ""))
+                            .font(OffriiTypography.caption)
+                            .foregroundColor(OffriiTheme.textSecondary)
+                        Text("·")
+                            .foregroundColor(OffriiTheme.textMuted)
+                        Text(wish.createdAt, style: .relative)
+                            .font(OffriiTypography.caption)
+                            .foregroundColor(OffriiTheme.textMuted)
+                    }
+
+                    // Description
+                    if let description = wish.description, !description.isEmpty {
+                        Text(description)
+                            .font(OffriiTypography.body)
+                            .foregroundColor(OffriiTheme.textSecondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+
+                    // Links
+                    if let links = wish.links, !links.isEmpty {
+                        VStack(alignment: .leading, spacing: OffriiTheme.spacingXS) {
+                            ForEach(links, id: \.self) { link in
+                                if let url = URL(string: link) {
+                                    Link(destination: url) {
+                                        HStack(spacing: 4) {
+                                            Image(systemName: "link")
+                                                .font(.system(size: 12))
+                                            Text(link)
+                                                .font(OffriiTypography.caption)
+                                                .lineLimit(1)
+                                        }
+                                        .foregroundColor(OffriiTheme.primary)
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Matched info
+                    if wish.status == .matched, let donor = wish.matchedWithDisplayName {
+                        Label(
+                            String(format: NSLocalizedString("entraide.detail.matchedBy", comment: ""), donor),
+                            systemImage: "person.fill.checkmark"
+                        )
+                        .font(OffriiTypography.subheadline)
+                        .foregroundColor(OffriiTheme.warning)
+                        .padding(OffriiTheme.spacingSM)
+                        .background(OffriiTheme.warning.opacity(0.1))
+                        .cornerRadius(OffriiTheme.cornerRadiusMD)
+                    }
+
+                    Divider()
+
+                    // Actions
+                    actionButtons(wish)
+
+                    // Success toast
+                    if let success = viewModel.actionSuccess {
+                        Label(success, systemImage: "checkmark.circle.fill")
+                            .font(OffriiTypography.footnote)
+                            .foregroundColor(OffriiTheme.success)
+                            .padding(OffriiTheme.spacingSM)
+                            .frame(maxWidth: .infinity)
+                            .background(OffriiTheme.success.opacity(0.1))
+                            .cornerRadius(OffriiTheme.cornerRadiusMD)
+                    }
+                }
+                .padding(OffriiTheme.spacingLG)
             }
         }
     }
 
-    // MARK: - Header
+    // MARK: - Hero Image
 
     @ViewBuilder
-    private func wishHeader(_ wish: WishDetail) -> some View {
-        if let imageUrl = wish.imageUrl, let url = URL(string: imageUrl) {
+    private func heroImage(_ wish: WishDetail) -> some View {
+        let imgUrl = wish.imageUrl.flatMap { URL(string: $0) }
+            ?? wish.ogImageUrl.flatMap { URL(string: $0) }
+        if let url = imgUrl {
             LazyImage(url: url) { state in
                 if let image = state.image {
                     image
                         .resizable()
                         .aspectRatio(contentMode: .fill)
-                        .frame(height: 180)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 200)
                         .clipped()
                 } else {
-                    categoryGradientHeader(wish.category)
+                    gradientPlaceholder(wish.category)
                 }
             }
+            .frame(height: 200)
         } else {
-            categoryGradientHeader(wish.category)
+            gradientPlaceholder(wish.category)
         }
     }
 
-    private func categoryGradientHeader(_ category: WishCategory) -> some View {
-        LinearGradient(
-            colors: [category.backgroundColor, category.textColor.opacity(0.3)],
+    private func gradientPlaceholder(_ category: WishCategory) -> some View {
+        let color = categoryColor(category)
+        return LinearGradient(
+            colors: [color, color.opacity(0.6)],
             startPoint: .topLeading,
             endPoint: .bottomTrailing
         )
-        .frame(height: 140)
+        .frame(height: 200)
         .overlay(
             Image(systemName: categoryIcon(category))
                 .font(.system(size: 48, weight: .light))
-                .foregroundColor(.white.opacity(0.6))
+                .foregroundColor(.white.opacity(0.5))
         )
+    }
+
+    // MARK: - Category Chip
+
+    private func categoryChip(_ category: WishCategory) -> some View {
+        let color = categoryColor(category)
+        return HStack(spacing: 4) {
+            Image(systemName: categoryIcon(category))
+                .font(.system(size: 11))
+            Text(category.label)
+                .font(.system(size: 12, weight: .medium))
+        }
+        .foregroundColor(color)
+        .padding(.horizontal, 8)
+        .padding(.vertical, 4)
+        .background(color.opacity(0.12))
+        .cornerRadius(OffriiTheme.cornerRadiusSM)
+    }
+
+    // MARK: - Status Badge
+
+    private func statusBadge(_ status: WishStatus) -> some View {
+        let (color, label) = statusInfo(status)
+        return HStack(spacing: 4) {
+            Circle().fill(color).frame(width: 6, height: 6)
+            Text(label)
+                .font(.system(size: 12, weight: .medium))
+                .foregroundColor(color)
+        }
+    }
+
+    // MARK: - Actions
+
+    @ViewBuilder
+    private func actionButtons(_ wish: WishDetail) -> some View {
+        VStack(spacing: OffriiTheme.spacingSM) {
+            visitorActions(wish)
+            ownerMatchedActions(wish)
+            donorMatchedActions(wish)
+            ownerOpenActions(wish)
+            reportAction(wish)
+        }
+    }
+
+    @ViewBuilder
+    private func visitorActions(_ wish: WishDetail) -> some View {
+        if wish.status == .open && !isMine {
+            OffriiButton(
+                NSLocalizedString("entraide.offer.cta", comment: ""),
+                variant: .primary,
+                isLoading: viewModel.isActioning
+            ) {
+                Task { _ = await viewModel.offer(id: wish.id) }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func ownerMatchedActions(_ wish: WishDetail) -> some View {
+        if wish.status == .matched && isMine {
+            OffriiButton(
+                NSLocalizedString("entraide.action.confirm", comment: ""),
+                variant: .primary,
+                isLoading: viewModel.isActioning
+            ) {
+                Task { _ = await viewModel.confirm(id: wish.id) }
+            }
+            HStack(spacing: OffriiTheme.spacingSM) {
+                OffriiButton(NSLocalizedString("entraide.action.reject", comment: ""), variant: .danger) {
+                    Task { _ = await viewModel.rejectOffer(id: wish.id) }
+                }
+                OffriiButton(NSLocalizedString("entraide.action.messages", comment: ""), variant: .secondary) {
+                    dismiss()
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { onOpenMessages?() }
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func donorMatchedActions(_ wish: WishDetail) -> some View {
+        if wish.status == .matched && isMatchedByMe && !isMine {
+            OffriiButton(NSLocalizedString("entraide.action.messages", comment: ""), variant: .primary) {
+                dismiss()
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { onOpenMessages?() }
+            }
+            OffriiButton(NSLocalizedString("entraide.action.withdraw", comment: ""), variant: .ghost) {
+                Task { _ = await viewModel.withdrawOffer(id: wish.id) }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func ownerOpenActions(_ wish: WishDetail) -> some View {
+        if isMine && wish.status == .open {
+            OffriiButton(NSLocalizedString("entraide.action.close", comment: ""), variant: .ghost) {
+                Task { _ = await viewModel.closeWish(id: wish.id) }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func reportAction(_ wish: WishDetail) -> some View {
+        if !isMine && wish.status == .open {
+            Button {
+                dismiss()
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { onReport?() }
+            } label: {
+                Label(NSLocalizedString("entraide.report.title", comment: ""), systemImage: "flag")
+                    .font(OffriiTypography.footnote)
+                    .foregroundColor(OffriiTheme.textMuted)
+            }
+            .frame(maxWidth: .infinity, alignment: .center)
+            .padding(.top, OffriiTheme.spacingSM)
+        }
+    }
+
+    // MARK: - Helpers
+
+    private func categoryColor(_ cat: WishCategory) -> Color {
+        switch cat {
+        case .education: return OffriiTheme.categoryEducationBg
+        case .clothing:  return OffriiTheme.categoryClothingBg
+        case .health:    return OffriiTheme.categoryHealthBg
+        case .religion:  return OffriiTheme.categoryReligionBg
+        case .home:      return OffriiTheme.categoryHomeBg
+        case .children:  return OffriiTheme.categoryChildrenBg
+        case .other:     return OffriiTheme.categoryOtherBg
+        }
     }
 
     private func categoryIcon(_ cat: WishCategory) -> String {
@@ -231,107 +318,20 @@ struct WishDetailSheet: View {
         case .religion:  return "hands.sparkles.fill"
         case .home:      return "house.fill"
         case .children:  return "figure.and.child.holdinghands"
-        case .other:     return "gift.fill"
+        case .other:     return "tag.fill"
         }
     }
 
-    // MARK: - Action Buttons
-
-    @ViewBuilder
-    private func actionButtons(wish: WishDetail) -> some View {
-        VStack(spacing: OffriiTheme.spacingSM) {
-            if wish.isMine {
-                ownerActions(wish: wish)
-            } else if wish.isMatchedByMe {
-                donorActions(wish: wish)
-            } else {
-                visitorActions(wish: wish)
-            }
+    private func statusInfo(_ status: WishStatus) -> (Color, String) {
+        switch status {
+        case .open:      return (OffriiTheme.success, NSLocalizedString("entraide.status.open", comment: ""))
+        case .matched:   return (OffriiTheme.warning, NSLocalizedString("entraide.status.matched", comment: ""))
+        case .fulfilled: return (OffriiTheme.primary, NSLocalizedString("entraide.status.fulfilled", comment: ""))
+        case .closed:    return (OffriiTheme.textMuted, NSLocalizedString("entraide.status.closed", comment: ""))
+        case .pending:   return (OffriiTheme.textMuted, NSLocalizedString("entraide.status.pending", comment: ""))
+        case .review:    return (OffriiTheme.warning, NSLocalizedString("entraide.status.review", comment: ""))
+        case .flagged:   return (OffriiTheme.danger, NSLocalizedString("entraide.status.flagged", comment: ""))
+        case .rejected:  return (OffriiTheme.danger, NSLocalizedString("entraide.status.rejected", comment: ""))
         }
-    }
-
-    @ViewBuilder
-    private func visitorActions(wish: WishDetail) -> some View {
-        if wish.status == .open {
-            OffriiButton(
-                NSLocalizedString("entraide.offer.cta", comment: ""),
-                variant: .primary,
-                isLoading: viewModel.isActioning
-            ) {
-                Task { _ = await viewModel.offer(id: wish.id) }
-            }
-        } else if wish.status == .matched {
-            infoCard(
-                icon: "heart.fill",
-                text: NSLocalizedString("entraide.detail.alreadyMatched", comment: ""),
-                color: OffriiTheme.accent
-            )
-        } else if wish.status == .fulfilled {
-            infoCard(
-                icon: "gift.fill",
-                text: NSLocalizedString("entraide.detail.fulfilled", comment: ""),
-                color: OffriiTheme.primary
-            )
-        }
-    }
-
-    @ViewBuilder
-    private func ownerActions(wish: WishDetail) -> some View {
-        if wish.status == .open {
-            OffriiButton(
-                NSLocalizedString("entraide.action.close", comment: ""),
-                variant: .secondary,
-                isLoading: viewModel.isActioning
-            ) {
-                Task { _ = await viewModel.closeWish(id: wish.id) }
-            }
-        } else if wish.status == .matched {
-            OffriiButton(
-                NSLocalizedString("entraide.action.confirm", comment: ""),
-                variant: .primary,
-                isLoading: viewModel.isActioning
-            ) {
-                Task { _ = await viewModel.confirm(id: wish.id) }
-            }
-
-            OffriiButton(
-                NSLocalizedString("entraide.action.reject", comment: ""),
-                variant: .danger,
-                isLoading: viewModel.isActioning
-            ) {
-                Task { _ = await viewModel.rejectOffer(id: wish.id) }
-            }
-        } else if wish.status == .fulfilled {
-            infoCard(
-                icon: "gift.fill",
-                text: NSLocalizedString("entraide.detail.fulfilledThanks", comment: ""),
-                color: OffriiTheme.primary
-            )
-        }
-    }
-
-    @ViewBuilder
-    private func donorActions(wish: WishDetail) -> some View {
-        OffriiButton(
-            NSLocalizedString("entraide.action.withdraw", comment: ""),
-            variant: .danger,
-            isLoading: viewModel.isActioning
-        ) {
-            Task { _ = await viewModel.withdrawOffer(id: wish.id) }
-        }
-    }
-
-    private func infoCard(icon: String, text: String, color: Color) -> some View {
-        HStack(spacing: OffriiTheme.spacingSM) {
-            Image(systemName: icon)
-                .foregroundColor(color)
-            Text(text)
-                .font(OffriiTypography.subheadline)
-                .foregroundColor(color)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(OffriiTheme.spacingBase)
-        .background(color.opacity(0.1))
-        .cornerRadius(OffriiTheme.cornerRadiusMD)
     }
 }

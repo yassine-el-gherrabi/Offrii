@@ -36,14 +36,13 @@ struct CommunitySpotlightSection: View {
                 )
                 .padding(.vertical, OffriiTheme.spacingBase)
             } else {
-                VStack(spacing: OffriiTheme.spacingSM) {
+                let columns = [
+                    GridItem(.flexible(), spacing: OffriiTheme.spacingSM),
+                    GridItem(.flexible(), spacing: OffriiTheme.spacingSM),
+                ]
+                LazyVGrid(columns: columns, spacing: OffriiTheme.spacingSM) {
                     ForEach(wishes.prefix(2)) { wish in
-                        NavigationLink {
-                            WishDetailView(wishId: wish.id)
-                        } label: {
-                            WishCard(wish: wish)
-                        }
-                        .buttonStyle(.plain)
+                        EntraideWishCard(wish: wish)
                     }
                 }
             }

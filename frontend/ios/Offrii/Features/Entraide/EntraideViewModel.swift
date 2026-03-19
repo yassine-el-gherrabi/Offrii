@@ -13,7 +13,13 @@ final class EntraideViewModel {
     private var hasMore = true
     private let limit = 20
 
-    var hasMorePages: Bool { hasMore }
+    var filteredWishes: [CommunityWish] {
+        wishes
+    }
+
+    var myOffers: [CommunityWish] {
+        wishes.filter(\.isMatchedByMe)
+    }
 
     // MARK: - Load
 
@@ -43,27 +49,26 @@ final class EntraideViewModel {
               index >= wishes.count - 3 else { return }
 
         isLoadingMore = true
-        currentPage += 1
+        let nextPage = currentPage + 1
 
         do {
             let response = try await CommunityWishService.shared.listWishes(
                 category: selectedCategory?.rawValue,
-                page: currentPage,
+                page: nextPage,
                 limit: limit
             )
             wishes.append(contentsOf: response.data)
             hasMore = response.pagination.hasMore
-        } catch {
-            currentPage -= 1
-        }
+            currentPage = nextPage
+        } catch {}
         isLoadingMore = false
     }
 
-    // MARK: - Filters
+    // MARK: - Category Filter
 
-    func selectCategory(_ category: WishCategory?) {
+    func selectCategory(_ category: WishCategory?) async {
         selectedCategory = category
-        Task { await loadWishes() }
+        await loadWishes()
     }
 
     // MARK: - Actions
@@ -71,6 +76,7 @@ final class EntraideViewModel {
     func offerWish(id: UUID) async -> Bool {
         do {
             try await CommunityWishService.shared.offerWish(id: id)
+            OffriiHaptics.success()
             await loadWishes()
             return true
         } catch {
