@@ -455,17 +455,25 @@ struct WishDetailSheet: View {
 
     @ViewBuilder
     private func reportAction(_ wish: WishDetail) -> some View {
-        if !isMine && wish.status == .open && !(wish.hasReported ?? false) {
-            Button {
-                dismiss()
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { onReport?() }
-            } label: {
-                Label(NSLocalizedString("entraide.report.title", comment: ""), systemImage: "flag")
+        if !isMine && wish.status == .open {
+            if wish.hasReported ?? false {
+                Label(NSLocalizedString("entraide.report.alreadyReported", comment: ""), systemImage: "checkmark.shield")
                     .font(OffriiTypography.footnote)
                     .foregroundColor(OffriiTheme.textMuted)
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .padding(.top, OffriiTheme.spacingSM)
+            } else {
+                Button {
+                    dismiss()
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { onReport?() }
+                } label: {
+                    Label(NSLocalizedString("entraide.report.title", comment: ""), systemImage: "flag")
+                        .font(OffriiTypography.footnote)
+                        .foregroundColor(OffriiTheme.textMuted)
+                }
+                .frame(maxWidth: .infinity, alignment: .center)
+                .padding(.top, OffriiTheme.spacingSM)
             }
-            .frame(maxWidth: .infinity, alignment: .center)
-            .padding(.top, OffriiTheme.spacingSM)
         }
     }
 

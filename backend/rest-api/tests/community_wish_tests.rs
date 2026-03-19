@@ -3363,3 +3363,122 @@ async fn report_details_with_all_reasons() {
         assert_eq!(row.1.as_deref(), Some(detail_text.as_str()));
     }
 }
+
+// ═══════════════════════════════════════════════════════════════════════
+// has_reported field in wish detail
+// ═══════════════════════════════════════════════════════════════════════
+
+#[tokio::test]
+async fn wish_detail_has_reported_false_before_report() {
+    let app = TestApp::new().await;
+    let owner_token = setup_aged_user(&app, "owner@test.com").await;
+    let wish_id = create_open_wish(&app, &owner_token).await;
+
+    let viewer_token = setup_aged_user(&app, "viewer@test.com").await;
+    let (status, body) = app
+        .get_with_auth(&format!("/community/wishes/{wish_id}"), &viewer_token)
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(
+        body["has_reported"].as_bool(),
+        Some(false),
+        "has_reported must be false when user has not reported"
+    );
+}
+
+#[tokio::test]
+async fn wish_detail_has_reported_true_after_report() {
+    let app = TestApp::new().await;
+    let owner_token = setup_aged_user(&app, "owner@test.com").await;
+    let wish_id = create_open_wish(&app, &owner_token).await;
+
+    let reporter_token = setup_aged_user(&app, "reporter@test.com").await;
+
+    // Report the wish
+    let body = json!({ "reason": "spam" });
+    let (status, _) = app
+        .post_json_with_auth(
+            &format!("/community/wishes/{wish_id}/report"),
+            &body,
+            &reporter_token,
+        )
+        .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+
+    // Fetch detail — should show has_reported = true
+    let (status, detail) = app
+        .get_with_auth(&format!("/community/wishes/{wish_id}"), &reporter_token)
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(
+        detail["has_reported"].as_bool(),
+        Some(true),
+        "has_reported must be true after user reported"
+    );
+}
+
+#[tokio::test]
+async fn wish_detail_has_reported_false_for_other_user() {
+    let app = TestApp::new().await;
+    let owner_token = setup_aged_user(&app, "owner@test.com").await;
+    let wish_id = create_open_wish(&app, &owner_token).await;
+
+    let reporter_token = setup_aged_user(&app, "reporter@test.com").await;
+    let other_token = setup_aged_user(&app, "other@test.com").await;
+
+    // Reporter reports
+    let body = json!({ "reason": "scam" });
+    app.post_json_with_auth(
+        &format!("/community/wishes/{wish_id}/report"),
+        &body,
+        &reporter_token,
+    )
+    .await;
+
+    // Other user fetches detail — should still be false
+    let (status, detail) = app
+        .get_with_auth(&format!("/community/wishes/{wish_id}"), &other_token)
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(
+        detail["has_reported"].as_bool(),
+        Some(false),
+        "has_reported must be false for a user who has NOT reported"
+    );
+}
+
+#[tokio::test]
+async fn wish_detail_has_reported_false_for_unauthenticated() {
+    let app = TestApp::new().await;
+    let owner_token = setup_aged_user(&app, "owner@test.com").await;
+    let wish_id = create_open_wish(&app, &owner_token).await;
+
+    // Unauthenticated access
+    let (status, detail) = app
+        .get_no_auth(&format!("/community/wishes/{wish_id}"))
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(
+        detail["has_reported"].as_bool(),
+        Some(false),
+        "has_reported must be false for unauthenticated users"
+    );
+}
+
+#[tokio::test]
+async fn wish_detail_has_reported_owner_cannot_report() {
+    let app = TestApp::new().await;
+    let owner_token = setup_aged_user(&app, "owner@test.com").await;
+    let wish_id = create_open_wish(&app, &owner_token).await;
+
+    // Owner fetches detail — has_reported should be false (owners can't report own wish)
+    let (status, detail) = app
+        .get_with_auth(&format!("/community/wishes/{wish_id}"), &owner_token)
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(
+        detail["has_reported"].as_bool(),
+        Some(false),
+        "owner should always see has_reported = false for own wish"
+    );
+}
