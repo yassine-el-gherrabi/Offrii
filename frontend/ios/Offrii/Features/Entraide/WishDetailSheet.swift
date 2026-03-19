@@ -7,6 +7,7 @@ struct WishDetailSheet: View {
     let wishId: UUID
     var onOpenMessages: (() -> Void)?
     var onReport: (() -> Void)?
+    var onAction: (() -> Void)?
 
     @Environment(\.dismiss) private var dismiss
     @Environment(AuthManager.self) private var authManager
@@ -42,6 +43,11 @@ struct WishDetailSheet: View {
         }
         .task {
             await viewModel.loadWish(id: wishId)
+        }
+        .onChange(of: viewModel.actionSuccess) { _, newValue in
+            if newValue != nil {
+                onAction?()
+            }
         }
     }
 

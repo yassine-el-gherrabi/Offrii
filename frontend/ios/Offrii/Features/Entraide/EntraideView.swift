@@ -148,7 +148,14 @@ struct EntraideView: View {
             WishDetailSheet(
                 wishId: wishId,
                 onOpenMessages: { messagesWishId = wishId },
-                onReport: { reportWishId = wishId }
+                onReport: { reportWishId = wishId },
+                onAction: {
+                    Task {
+                        await viewModel.loadWishes()
+                        await viewModel.loadMyOffers()
+                        await myNeedsViewModel.loadMyWishes()
+                    }
+                }
             )
             .environment(authManager)
             .presentationDetents([.medium, .large])
