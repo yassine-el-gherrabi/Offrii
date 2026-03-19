@@ -717,11 +717,28 @@ impl traits::CommunityWishService for PgCommunityWishService {
             .map_err(AppError::Internal)?
             .ok_or_else(|| AppError::NotFound("wish not found".into()))?;
 
-        // Set to pending and re-run moderation on updated content
+        // Reset reports (user edited content, old reports no longer relevant)
+        self.wish_repo
+            .reset_reports(wish_id)
+            .await
+            .map_err(AppError::Internal)?;
+        self.report_repo
+            .delete_by_wish(wish_id)
+            .await
+            .map_err(AppError::Internal)?;
+
+        // Set to pending (clear moderation_note) and re-run moderation
         self.wish_repo
             .update_status(wish_id, WishStatus::Pending, None)
             .await
             .map_err(AppError::Internal)?;
+
+        // Clear moderation_note since content changed
+        sqlx::query("UPDATE community_wishes SET moderation_note = NULL WHERE id = $1")
+            .bind(wish_id)
+            .execute(&self.pool)
+            .await
+            .map_err(|e| AppError::Internal(e.into()))?;
 
         self.spawn_moderation_check(
             wish_id,
@@ -749,9 +766,9 @@ impl traits::CommunityWishService for PgCommunityWishService {
             status: "pending".to_string(), // reflect the actual new status
             is_anonymous: updated.is_anonymous,
             matched_with_display_name: donor_dn,
-            report_count: updated.report_count,
+            report_count: 0, // reports were reset
             reopen_count: updated.reopen_count,
-            moderation_note: updated.moderation_note,
+            moderation_note: None, // cleared on edit
             image_url: updated.image_url,
             links: updated.links,
             created_at: updated.created_at,

@@ -353,6 +353,10 @@
 "entraide.action.deleteSuccess" = "Souhait supprimé.";
 "entraide.action.edit" = "Modifier";
 "entraide.edit.title" = "Modifier le souhait";
+"entraide.edit.submit" = "Enregistrer";
+"entraide.edit.warningTitle" = "Re-modération nécessaire";
+"entraide.edit.warningMessage" = "Votre besoin modifié sera vérifié par notre modération avant d'être visible à nouveau.";
+"entraide.edit.warningConfirm" = "Enregistrer quand même";
 "entraide.fulfill.confirmTitle" = "Confirmer l'aide reçue ?";
 "entraide.fulfill.confirmMessage" = "Confirmer que %@ vous a aidé ?";
 "entraide.fulfill.celebration" = "Merci !\nCe geste a été enregistré.";

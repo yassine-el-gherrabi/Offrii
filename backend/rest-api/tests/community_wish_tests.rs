@@ -3644,3 +3644,190 @@ async fn block_own_wish_allowed() {
         .await;
     assert_eq!(status, StatusCode::NO_CONTENT);
 }
+
+// ═══════════════════════════════════════════════════════════════════════
+// Update wish: report reset, moderation_note clear, blocks persist
+// ═══════════════════════════════════════════════════════════════════════
+
+#[tokio::test]
+async fn update_wish_resets_report_count() {
+    let app = TestApp::new().await;
+    let owner_token = setup_aged_user(&app, "owner@test.com").await;
+    let wish_id = create_open_wish(&app, &owner_token).await;
+
+    // Add 3 reports from different users
+    for i in 0..3 {
+        let email = format!("rep_upd{i}@test.com");
+        let reporter_token = setup_aged_user(&app, &email).await;
+        let body = json!({ "reason": "spam" });
+        app.post_json_with_auth(
+            &format!("/community/wishes/{wish_id}/report"),
+            &body,
+            &reporter_token,
+        )
+        .await;
+    }
+
+    // Verify reports exist
+    let row: (i32,) = sqlx::query_as("SELECT report_count FROM community_wishes WHERE id = $1")
+        .bind(wish_id)
+        .fetch_one(&app.db)
+        .await
+        .unwrap();
+    assert_eq!(row.0, 3, "precondition: 3 reports accumulated");
+
+    // Owner updates the wish
+    let body = json!({ "title": "Updated clean title" });
+    let (status, resp) = app
+        .patch_json_with_auth(&format!("/community/wishes/{wish_id}"), &body, &owner_token)
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(
+        resp["report_count"].as_i64(),
+        Some(0),
+        "report_count must be reset after update"
+    );
+
+    // Verify reports deleted from DB
+    let count: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM wish_reports WHERE wish_id = $1")
+        .bind(wish_id)
+        .fetch_one(&app.db)
+        .await
+        .unwrap();
+    assert_eq!(count.0, 0, "wish_reports rows must be deleted after update");
+}
+
+#[tokio::test]
+async fn update_wish_clears_moderation_note() {
+    let app = TestApp::new().await;
+    let owner_token = setup_aged_user(&app, "owner@test.com").await;
+    let wish_id = create_open_wish(&app, &owner_token).await;
+
+    // Manually set a moderation note (simulating review status)
+    sqlx::query(
+        "UPDATE community_wishes SET status = 'review', moderation_note = 'flagged categories: harassment' WHERE id = $1",
+    )
+    .bind(wish_id)
+    .execute(&app.db)
+    .await
+    .unwrap();
+
+    // Owner updates the wish (allowed in review status)
+    let body = json!({ "title": "Cleaned up title" });
+    let (status, resp) = app
+        .patch_json_with_auth(&format!("/community/wishes/{wish_id}"), &body, &owner_token)
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    assert!(
+        resp["moderation_note"].is_null(),
+        "moderation_note must be cleared after update"
+    );
+
+    // Verify in DB
+    let row: (Option<String>,) =
+        sqlx::query_as("SELECT moderation_note FROM community_wishes WHERE id = $1")
+            .bind(wish_id)
+            .fetch_one(&app.db)
+            .await
+            .unwrap();
+    assert!(
+        row.0.is_none(),
+        "moderation_note must be NULL in DB after update"
+    );
+}
+
+#[tokio::test]
+async fn update_wish_blocks_persist() {
+    let app = TestApp::new().await;
+    let owner_token = setup_aged_user(&app, "owner@test.com").await;
+    let wish_id = create_open_wish(&app, &owner_token).await;
+
+    // Another user blocks the wish
+    let blocker_token = setup_aged_user(&app, "blocker@test.com").await;
+    app.post_with_auth(
+        &format!("/community/wishes/{wish_id}/block"),
+        &blocker_token,
+    )
+    .await;
+
+    // Verify block exists
+    let count: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM wish_blocks WHERE wish_id = $1")
+        .bind(wish_id)
+        .fetch_one(&app.db)
+        .await
+        .unwrap();
+    assert_eq!(count.0, 1, "precondition: block exists");
+
+    // Owner updates the wish
+    let body = json!({ "title": "Brand new title" });
+    let (status, _) = app
+        .patch_json_with_auth(&format!("/community/wishes/{wish_id}"), &body, &owner_token)
+        .await;
+    assert_eq!(status, StatusCode::OK);
+
+    // Block must still exist (personal choice, not content-dependent)
+    let count: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM wish_blocks WHERE wish_id = $1")
+        .bind(wish_id)
+        .fetch_one(&app.db)
+        .await
+        .unwrap();
+    assert_eq!(
+        count.0, 1,
+        "wish_blocks must persist after content update — hiding is personal"
+    );
+}
+
+#[tokio::test]
+async fn update_wish_sets_pending_status() {
+    let app = TestApp::new().await;
+    let owner_token = setup_aged_user(&app, "owner@test.com").await;
+    let wish_id = create_open_wish(&app, &owner_token).await;
+
+    let body = json!({ "title": "Updated title for moderation" });
+    let (status, resp) = app
+        .patch_json_with_auth(&format!("/community/wishes/{wish_id}"), &body, &owner_token)
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(
+        resp["status"].as_str(),
+        Some("pending"),
+        "status must be pending after update (awaiting re-moderation)"
+    );
+}
+
+#[tokio::test]
+async fn update_wish_matched_blocked() {
+    let app = TestApp::new().await;
+    let owner_token = setup_aged_user(&app, "owner@test.com").await;
+    let wish_id = create_open_wish(&app, &owner_token).await;
+    let donor_id = get_user_id(&app, "owner@test.com").await; // reuse for simplicity
+    force_match(&app, wish_id, donor_id).await;
+
+    let body = json!({ "title": "Can't edit matched" });
+    let (status, _) = app
+        .patch_json_with_auth(&format!("/community/wishes/{wish_id}"), &body, &owner_token)
+        .await;
+    assert_eq!(
+        status,
+        StatusCode::BAD_REQUEST,
+        "cannot update wish in matched status"
+    );
+}
+
+#[tokio::test]
+async fn update_wish_stranger_forbidden_403() {
+    let app = TestApp::new().await;
+    let owner_token = setup_aged_user(&app, "owner@test.com").await;
+    let wish_id = create_open_wish(&app, &owner_token).await;
+
+    let stranger_token = setup_aged_user(&app, "stranger@test.com").await;
+    let body = json!({ "title": "Hijack attempt" });
+    let (status, _) = app
+        .patch_json_with_auth(
+            &format!("/community/wishes/{wish_id}"),
+            &body,
+            &stranger_token,
+        )
+        .await;
+    assert_eq!(status, StatusCode::FORBIDDEN);
+}

@@ -353,6 +353,10 @@
 "entraide.action.deleteSuccess" = "Wish deleted.";
 "entraide.action.edit" = "Edit";
 "entraide.edit.title" = "Edit wish";
+"entraide.edit.submit" = "Save changes";
+"entraide.edit.warningTitle" = "Re-moderation required";
+"entraide.edit.warningMessage" = "Your modified wish will be reviewed by our moderation before being visible again.";
+"entraide.edit.warningConfirm" = "Save anyway";
 "entraide.fulfill.confirmTitle" = "Confirm help received?";
 "entraide.fulfill.confirmMessage" = "Confirm that %@ helped you?";
 "entraide.fulfill.celebration" = "Thank you!\nThis gesture has been recorded.";

@@ -26,6 +26,7 @@ struct CreateWishSheet: View {
     @State private var isUploading = false
     @State private var isSubmitting = false
     @State private var error: String?
+    @State private var showEditWarning = false
 
     private var isEditing: Bool { editingWishId != nil }
 
@@ -120,12 +121,29 @@ struct CreateWishSheet: View {
 
                     // Submit
                     OffriiButton(
-                        NSLocalizedString("entraide.create.submit", comment: ""),
+                        isEditing
+                            ? NSLocalizedString("entraide.edit.submit", comment: "")
+                            : NSLocalizedString("entraide.create.submit", comment: ""),
                         variant: .primary,
                         isLoading: isSubmitting,
                         isDisabled: !isFormValid || isDescriptionOverLimit
                     ) {
-                        Task { await submit() }
+                        if isEditing {
+                            showEditWarning = true
+                        } else {
+                            Task { await submit() }
+                        }
+                    }
+                    .alert(
+                        NSLocalizedString("entraide.edit.warningTitle", comment: ""),
+                        isPresented: $showEditWarning
+                    ) {
+                        Button(NSLocalizedString("common.cancel", comment: ""), role: .cancel) {}
+                        Button(NSLocalizedString("entraide.edit.warningConfirm", comment: "")) {
+                            Task { await submit() }
+                        }
+                    } message: {
+                        Text(NSLocalizedString("entraide.edit.warningMessage", comment: ""))
                     }
                 }
                 .padding(OffriiTheme.spacingLG)
