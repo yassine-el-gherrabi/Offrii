@@ -256,7 +256,7 @@ struct EntraideView: View {
                     } label: {
                         Label(
                             NSLocalizedString("entraide.sort.date", comment: ""),
-                            systemImage: sortField == "created_at" ? "checkmark" : ""
+                            systemImage: sortField == "created_at" ? "checkmark" : "circle"
                         )
                     }
                     Button {
@@ -265,7 +265,7 @@ struct EntraideView: View {
                     } label: {
                         Label(
                             NSLocalizedString("entraide.sort.name", comment: ""),
-                            systemImage: sortField == "title" ? "checkmark" : ""
+                            systemImage: sortField == "title" ? "checkmark" : "circle"
                         )
                     }
                 } label: {
