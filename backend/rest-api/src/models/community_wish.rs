@@ -83,7 +83,7 @@ pub struct WishReport {
 pub struct WishMessage {
     pub id: Uuid,
     pub wish_id: Uuid,
-    pub sender_id: Uuid,
+    pub sender_id: Option<Uuid>,
     pub body: String,
     pub created_at: DateTime<Utc>,
 }

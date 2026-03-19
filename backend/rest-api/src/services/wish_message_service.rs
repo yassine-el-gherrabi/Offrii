@@ -188,7 +188,7 @@ impl traits::WishMessageService for PgWishMessageService {
         // Batch-fetch sender names (dedup to reduce query size)
         let sender_ids: Vec<Uuid> = messages
             .iter()
-            .map(|m| m.sender_id)
+            .filter_map(|m| m.sender_id)
             .collect::<std::collections::HashSet<_>>()
             .into_iter()
             .collect();
@@ -210,14 +210,14 @@ impl traits::WishMessageService for PgWishMessageService {
         let responses: Vec<MessageResponse> = messages
             .into_iter()
             .map(|m| {
-                let sender_name = user_map
-                    .get(&m.sender_id)
-                    .cloned()
-                    .unwrap_or_else(|| "Quelqu'un".to_string());
+                let sender_name = m
+                    .sender_id
+                    .and_then(|sid| user_map.get(&sid).cloned())
+                    .unwrap_or_else(|| "Utilisateur supprimé".to_string());
                 MessageResponse {
                     id: m.id,
                     sender_display_name: sender_name,
-                    is_mine: m.sender_id == user_id,
+                    is_mine: m.sender_id == Some(user_id),
                     body: m.body,
                     created_at: m.created_at,
                 }

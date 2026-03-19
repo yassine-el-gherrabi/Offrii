@@ -927,8 +927,6 @@ pub trait CommunityWishRepo: Send + Sync {
     async fn list_flagged(&self, limit: i64, offset: i64) -> Result<Vec<CommunityWish>>;
 
     async fn count_flagged(&self) -> Result<i64>;
-
-    async fn find_user_is_admin(&self, user_id: Uuid) -> Result<bool>;
 }
 
 #[async_trait]

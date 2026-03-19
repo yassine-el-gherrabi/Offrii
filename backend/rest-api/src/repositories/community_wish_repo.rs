@@ -146,10 +146,6 @@ impl traits::CommunityWishRepo for PgCommunityWishRepo {
     async fn count_flagged(&self) -> Result<i64> {
         count_flagged(&self.pool).await
     }
-
-    async fn find_user_is_admin(&self, user_id: Uuid) -> Result<bool> {
-        find_user_is_admin(&self.pool, user_id).await
-    }
 }
 
 // ── Free functions (for transaction support) ─────────────────────────
@@ -486,12 +482,4 @@ pub(crate) async fn count_flagged(exec: impl PgExecutor<'_>) -> Result<i64> {
     .fetch_one(exec)
     .await?;
     Ok(count.0)
-}
-
-pub(crate) async fn find_user_is_admin(exec: impl PgExecutor<'_>, user_id: Uuid) -> Result<bool> {
-    let row: Option<(bool,)> = sqlx::query_as("SELECT is_admin FROM users WHERE id = $1")
-        .bind(user_id)
-        .fetch_optional(exec)
-        .await?;
-    Ok(row.map(|r| r.0).unwrap_or(false))
 }

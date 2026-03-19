@@ -35,7 +35,7 @@
 - [ ] Reopen with flagged content → eventually flagged
 - [ ] Reopen still respects max 2 reopens + cooldown
 
-### 4. État orphelin si donneur supprime son compte ⬜
+### 4. État orphelin si donneur supprime son compte ✅
 **Problème** : Si le donneur supprime son compte, le wish reste `matched` avec `matched_with = NULL`.
 **Fix** : Ajouter un trigger SQL ou un check dans `delete_account` qui clear les matchs ouverts (set wishes back to `open` where `matched_with = user_id`).
 **Tests** :
@@ -43,7 +43,7 @@
 - [ ] Owner can see wish is back to open
 - [ ] Another donor can now offer
 
-### 5. Messages supprimés en cascade ⬜
+### 5. Messages supprimés en cascade ✅
 **Problème** : `wish_messages.sender_id` a `ON DELETE CASCADE` — si un user est supprimé, ses messages disparaissent.
 **Fix** : Changer en `ON DELETE SET NULL` + gérer les messages avec sender_id NULL côté affichage (afficher "Utilisateur supprimé").
 **Tests** :
@@ -51,7 +51,7 @@
 - [ ] List messages after sender deletion returns messages with null sender
 - [ ] Message response handles null sender gracefully
 
-### 6. Paginer list_my_wishes ⬜
+### 6. Paginer list_my_wishes ⏭️ (déprioritisé — max 3 wishes actifs, faible impact)
 **Problème** : `GET /community/wishes/mine` retourne tout sans pagination.
 **Fix** : Ajouter pagination (page/limit) comme `list_wishes`.
 **Tests** :
@@ -59,7 +59,7 @@
 - [ ] list_my_wishes returns correct total count
 - [ ] list_my_wishes default pagination works
 
-### 7. Pas de validation URL ⬜
+### 7. Pas de validation URL ✅
 **Problème** : Les liens et image_url ne sont pas validés comme URLs.
 **Fix** : Ajouter validation regex ou url::Url parse sur image_url et chaque lien.
 **Tests** :
@@ -68,7 +68,7 @@
 - [ ] Empty string link rejected
 - [ ] Protocol-less URLs rejected
 
-### 8. Dead code cleanup ⬜
+### 8. Dead code cleanup ✅
 **Problème** : `find_user_is_admin` dans le repo est inutilisé.
 **Fix** : Supprimer la méthode du trait et de l'impl.
 **Tests** :

@@ -15,7 +15,7 @@ pub struct CreateWishRequest {
     pub category: String,
     #[serde(default)]
     pub is_anonymous: bool,
-    #[validate(length(max = 2048, message = "image_url must be at most 2048 characters"))]
+    #[validate(custom(function = "validate_image_url"))]
     pub image_url: Option<String>,
     #[validate(custom(function = "validate_links"))]
     pub links: Option<Vec<String>>,
@@ -29,7 +29,7 @@ pub struct UpdateWishRequest {
     pub description: Option<String>,
     #[validate(custom(function = "validate_wish_category"))]
     pub category: Option<String>,
-    #[validate(length(max = 2048, message = "image_url must be at most 2048 characters"))]
+    #[validate(custom(function = "validate_image_url"))]
     pub image_url: Option<String>,
     #[validate(custom(function = "validate_links"))]
     pub links: Option<Vec<String>>,
@@ -157,6 +157,25 @@ fn validate_links(links: &Vec<String>) -> Result<(), validator::ValidationError>
             err.message = Some("each link must be at most 2048 characters".into());
             return Err(err);
         }
+        if !link.starts_with("http://") && !link.starts_with("https://") {
+            let mut err = validator::ValidationError::new("invalid_link");
+            err.message = Some("links must start with http:// or https://".into());
+            return Err(err);
+        }
+    }
+    Ok(())
+}
+
+fn validate_image_url(url: &str) -> Result<(), validator::ValidationError> {
+    if url.len() > 2048 {
+        let mut err = validator::ValidationError::new("image_url_too_long");
+        err.message = Some("image_url must be at most 2048 characters".into());
+        return Err(err);
+    }
+    if !url.starts_with("http://") && !url.starts_with("https://") {
+        let mut err = validator::ValidationError::new("invalid_image_url");
+        err.message = Some("image_url must start with http:// or https://".into());
+        return Err(err);
     }
     Ok(())
 }

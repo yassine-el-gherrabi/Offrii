@@ -2954,3 +2954,88 @@ async fn reopen_still_respects_max_count() {
             .contains("maximum")
     );
 }
+
+// ── Donor account deletion cleans up matched wishes ──────────────────
+
+#[tokio::test]
+async fn delete_donor_account_resets_matched_wish_to_open() {
+    let app = TestApp::new().await;
+    let owner = setup_aged_user_with_name(&app, "deldnr_own@test.com", "Owner").await;
+    let donor = setup_aged_user(&app, "deldnr_don@test.com").await;
+
+    let wish_id = create_open_wish(&app, &owner).await;
+
+    // Donor offers
+    let (status, _) = app
+        .post_with_auth(&format!("/community/wishes/{wish_id}/offer"), &donor)
+        .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+
+    // Verify matched
+    let row: (String,) = sqlx::query_as("SELECT status FROM community_wishes WHERE id = $1")
+        .bind(wish_id)
+        .fetch_one(&app.db)
+        .await
+        .unwrap();
+    assert_eq!(row.0, "matched");
+
+    // Delete donor account
+    let (status, _) = app.delete_with_auth("/users/me", &donor).await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+
+    // Wish should be back to open
+    let row: (String,) = sqlx::query_as("SELECT status FROM community_wishes WHERE id = $1")
+        .bind(wish_id)
+        .fetch_one(&app.db)
+        .await
+        .unwrap();
+    assert_eq!(
+        row.0, "open",
+        "wish should reset to open when donor is deleted"
+    );
+
+    // matched_with should be NULL
+    let matched: (Option<Uuid>,) =
+        sqlx::query_as("SELECT matched_with FROM community_wishes WHERE id = $1")
+            .bind(wish_id)
+            .fetch_one(&app.db)
+            .await
+            .unwrap();
+    assert!(matched.0.is_none(), "matched_with should be NULL");
+}
+
+#[tokio::test]
+async fn delete_donor_does_not_affect_fulfilled_wishes() {
+    let app = TestApp::new().await;
+    let owner = setup_aged_user_with_name(&app, "delf_own@test.com", "Owner").await;
+    let donor = setup_aged_user(&app, "delf_don@test.com").await;
+
+    let wish_id = create_open_wish(&app, &owner).await;
+
+    app.post_with_auth(&format!("/community/wishes/{wish_id}/offer"), &donor)
+        .await;
+    app.post_with_auth(&format!("/community/wishes/{wish_id}/confirm"), &owner)
+        .await;
+
+    // Verify fulfilled
+    let row: (String,) = sqlx::query_as("SELECT status FROM community_wishes WHERE id = $1")
+        .bind(wish_id)
+        .fetch_one(&app.db)
+        .await
+        .unwrap();
+    assert_eq!(row.0, "fulfilled");
+
+    // Delete donor
+    app.delete_with_auth("/users/me", &donor).await;
+
+    // Wish should stay fulfilled (trigger only affects matched status)
+    let row: (String,) = sqlx::query_as("SELECT status FROM community_wishes WHERE id = $1")
+        .bind(wish_id)
+        .fetch_one(&app.db)
+        .await
+        .unwrap();
+    assert_eq!(
+        row.0, "fulfilled",
+        "fulfilled wishes should not be affected"
+    );
+}
