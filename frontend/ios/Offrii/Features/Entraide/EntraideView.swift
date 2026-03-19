@@ -250,30 +250,44 @@ struct EntraideView: View {
                 Text("·").foregroundColor(OffriiTheme.textMuted)
 
                 Menu {
-                    Picker("", selection: $sortField) {
-                        Text(NSLocalizedString("entraide.sort.date", comment: ""))
-                            .tag("created_at")
-                        Text(NSLocalizedString("entraide.sort.name", comment: ""))
-                            .tag("title")
-                    }
-                    .onChange(of: sortField) { _, _ in applySort() }
-
                     Button {
-                        sortOrder = sortOrder == "desc" ? "asc" : "desc"
+                        if sortField == "created_at" {
+                            sortOrder = sortOrder == "desc" ? "asc" : "desc"
+                        } else {
+                            sortField = "created_at"
+                            sortOrder = "desc"
+                        }
                         applySort()
                     } label: {
-                        Label(
-                            sortOrder == "desc"
-                                ? NSLocalizedString("entraide.sort.oldest", comment: "")
-                                : NSLocalizedString("entraide.sort.newest", comment: ""),
-                            systemImage: sortOrder == "desc" ? "arrow.up" : "arrow.down"
-                        )
+                        HStack {
+                            Text(NSLocalizedString("entraide.sort.date", comment: ""))
+                            if sortField == "created_at" {
+                                Image(systemName: sortOrder == "desc" ? "chevron.down" : "chevron.up")
+                            }
+                        }
+                    }
+
+                    Button {
+                        if sortField == "title" {
+                            sortOrder = sortOrder == "asc" ? "desc" : "asc"
+                        } else {
+                            sortField = "title"
+                            sortOrder = "asc"
+                        }
+                        applySort()
+                    } label: {
+                        HStack {
+                            Text(NSLocalizedString("entraide.sort.name", comment: ""))
+                            if sortField == "title" {
+                                Image(systemName: sortOrder == "asc" ? "chevron.down" : "chevron.up")
+                            }
+                        }
                     }
                 } label: {
                     HStack(spacing: 2) {
                         Text(sortLabel)
                             .font(.system(size: 13, weight: .medium))
-                        Image(systemName: sortOrder == "asc" ? "arrow.up" : "arrow.down")
+                        Image(systemName: sortOrder == "desc" ? "chevron.down" : "chevron.up")
                             .font(.system(size: 10, weight: .semibold))
                     }
                     .foregroundColor(OffriiTheme.primary)
