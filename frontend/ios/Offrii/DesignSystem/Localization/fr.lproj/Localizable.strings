@@ -468,7 +468,7 @@
 /* Entraide - Segments */
 "entraide.segment.discover" = "Découvrir";
 "entraide.segment.myNeeds" = "Mes besoins";
-"entraide.segment.myOffers" = "Mes offres";
+"entraide.segment.myOffers" = "Mes engagements";
 "entraide.offer.cta" = "Proposer mon aide";
 "entraide.offer.confirmTitle" = "Proposer votre aide ?";
 "entraide.offer.confirmAction" = "Confirmer";
@@ -503,7 +503,7 @@
 "moderation.unavailable" = "En cours de vérification";
 "moderation.reportThreshold" = "Signalé par la communauté";
 "moderation.generic" = "Contenu en cours d'examen";
-"entraide.myOffers.empty" = "Aucune offre";
+"entraide.myOffers.empty" = "Aucun engagement";
 "entraide.myOffers.emptySubtitle" = "Vous n'avez pas encore proposé votre aide";
 
 /* Activity Feed */

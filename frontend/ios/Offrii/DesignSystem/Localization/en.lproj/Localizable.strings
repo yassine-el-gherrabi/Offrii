@@ -468,7 +468,7 @@
 /* Entraide - Segments */
 "entraide.segment.discover" = "Discover";
 "entraide.segment.myNeeds" = "My needs";
-"entraide.segment.myOffers" = "My offers";
+"entraide.segment.myOffers" = "My commitments";
 "entraide.offer.cta" = "Offer to help";
 "entraide.offer.confirmTitle" = "Offer your help?";
 "entraide.offer.confirmAction" = "Confirm";
@@ -503,7 +503,7 @@
 "moderation.unavailable" = "Under review (moderation pending)";
 "moderation.reportThreshold" = "Reported by the community";
 "moderation.generic" = "Content under review";
-"entraide.myOffers.empty" = "No offers yet";
+"entraide.myOffers.empty" = "No commitments yet";
 "entraide.myOffers.emptySubtitle" = "You haven't offered to help yet";
 
 /* Activity Feed */
