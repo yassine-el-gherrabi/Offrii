@@ -72,6 +72,13 @@ struct EntraideView: View {
                         }
                     } header: {
                         VStack(spacing: 0) {
+                            Text(NSLocalizedString("entraide.subtitle", comment: ""))
+                                .font(.system(size: 13))
+                                .foregroundColor(OffriiTheme.textMuted)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(.horizontal, OffriiTheme.spacingBase)
+                                .padding(.top, OffriiTheme.spacingXS)
+
                             categoryChipsBar
                             statsBar
                         }

@@ -76,12 +76,51 @@
 
 ---
 
-## Phase 2 : Brainstorm UX/UI + Comparaison industrie ⬜
+## Phase 2 : Refonte frontend ✅
 
-À faire APRÈS la phase 1 :
-- Analyser les apps similaires (GoFundMe, Vinted Dons, Facebook Marketplace, Freecycle, Buy Nothing, GEEV)
-- Comparer les flows de matching/messagerie
-- Définir les wireframes de la nouvelle UI
-- Brainstorm sur les améliorations UX (recherche, filtres avancés, images multiples, etc.)
-- Prioriser les changements frontend
-- Implémenter le nouveau frontend de zéro
+- Réécriture from scratch des 19 fichiers → 12 nouveaux
+- Layout aligné sur Envies/Proches (.navigationTitle, .searchable, chips, stats bar)
+- Cards avec glassBadge style Envies, gradients vibrants
+- Recherche native iOS sur les 3 pages
+
+## Phase 3 : Polish UX cards (en cours) ⬜
+
+### Frontend (pas de changement backend)
+- [x] Supprimer badge "Ouvert" sur Découvrir (bruit visuel)
+- [x] Supprimer badge "Anonyme" sur les cards (contre-productif)
+- [x] Ajouter aperçu description 1 ligne sur les cards
+- [x] Afficher nom auteur dans le sous-titre (humaniser)
+- [x] Afficher sous-titre "Des gestes simples, des impacts réels"
+- [ ] Hint première visite (card contextuelle dismissable)
+
+## Phase 4 : Améliorations backend engagement ⬜
+
+### 1. Compteur d'offres sur les wishes ⬜
+**Besoin** : Ajouter `offer_count` au `WishResponse` DTO pour afficher "0 offres" sur les cards.
+**Pourquoi** : Le plus gros levier d'engagement. "Soyez le premier à aider" est plus motivant que rien.
+**Backend** : Ajouter une colonne ou un COUNT dans la query `list_open`. Incrémenter quand `offer_wish`, décrémenter quand `withdraw_offer` / `reject_offer`.
+**Frontend** : Afficher dans le sous-titre de la card.
+**Tests** :
+- [ ] offer increments count
+- [ ] withdraw decrements count
+- [ ] reject decrements count
+- [ ] count visible in list response
+
+### 2. Stats communauté ⬜
+**Besoin** : Endpoint `GET /community/wishes/stats` retournant le nombre de wishes fulfilled cette semaine.
+**Pourquoi** : Preuve sociale que le système fonctionne.
+**Backend** : Simple COUNT WHERE status='fulfilled' AND fulfilled_at > NOW() - 7 days.
+**Frontend** : Banner en haut du Discover "X souhaits offerts cette semaine".
+**Tests** :
+- [ ] Stats endpoint returns correct count
+- [ ] Count resets weekly
+
+### 3. Wishes récemment comblés ⬜
+**Besoin** : Endpoint `GET /community/wishes/recent-fulfilled` (limit 3, last 7 days).
+**Pourquoi** : Montre que le système marche, inspire confiance.
+**Backend** : Query WHERE status='fulfilled' ORDER BY fulfilled_at DESC LIMIT 3.
+**Frontend** : Section horizontale "Récemment comblés" en haut du Discover.
+**Tests** :
+- [ ] Returns only fulfilled wishes
+- [ ] Respects 7-day window
+- [ ] Limited to 3 results

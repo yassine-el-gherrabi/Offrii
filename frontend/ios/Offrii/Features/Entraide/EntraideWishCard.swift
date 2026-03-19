@@ -63,17 +63,17 @@ struct EntraideWishCard: View {
                 ZStack {
                     imageZone
 
-                    // Badges top-right (same as WishlistGridCard.otherBadges)
+                    // Badges top-right — only show non-default states (like Envies)
                     VStack(alignment: .trailing, spacing: 4) {
-                        // Status badge
-                        glassBadge(color: statusColor) {
-                            HStack(spacing: 3) {
-                                Circle().fill(statusColor).frame(width: 6, height: 6)
-                                Text(statusLabel)
+                        if wish.status != .open {
+                            glassBadge(color: statusColor) {
+                                HStack(spacing: 3) {
+                                    Circle().fill(statusColor).frame(width: 6, height: 6)
+                                    Text(statusLabel)
+                                }
                             }
                         }
 
-                        // Links badge
                         if let links = wish.links, !links.isEmpty {
                             glassBadge(color: OffriiTheme.primary) {
                                 Image(systemName: "link")
@@ -82,21 +82,9 @@ struct EntraideWishCard: View {
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
                     .padding(OffriiTheme.spacingSM)
-
-                    // Anonymous badge top-left (same position as "Privé" in Envies)
-                    if wish.displayName == nil {
-                        VStack {
-                            glassBadge(color: OffriiTheme.primary) {
-                                Image(systemName: "person.fill.questionmark")
-                                Text(NSLocalizedString("entraide.anonymous", comment: ""))
-                            }
-                        }
-                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-                        .padding(OffriiTheme.spacingSM)
-                    }
                 }
 
-                // Text zone (same as WishlistGridCard)
+                // Text zone
                 VStack(alignment: .leading, spacing: 2) {
                     Text(wish.title)
                         .font(.system(size: 14, weight: .semibold))
@@ -104,18 +92,31 @@ struct EntraideWishCard: View {
                         .lineLimit(2)
                         .multilineTextAlignment(.leading)
 
+                    // Description preview
+                    if let desc = wish.description, !desc.isEmpty {
+                        Text(desc)
+                            .font(.system(size: 12))
+                            .foregroundColor(OffriiTheme.textSecondary)
+                            .lineLimit(1)
+                    }
+
+                    // Author · Category · Time
                     HStack(spacing: 4) {
+                        if let name = wish.displayName {
+                            Text(name)
+                            Text("·")
+                        }
                         Text(wish.category.label)
                         Text("·")
                         Text(wish.createdAt, style: .relative)
                     }
-                    .font(.system(size: 12))
+                    .font(.system(size: 11))
                     .foregroundColor(OffriiTheme.textMuted)
                     .lineLimit(1)
                 }
                 .padding(.horizontal, OffriiTheme.spacingSM)
                 .padding(.vertical, OffriiTheme.spacingSM)
-                .frame(height: 56, alignment: .top)
+                .frame(minHeight: 56, alignment: .top)
             }
             .background(OffriiTheme.card)
             .cornerRadius(OffriiTheme.cornerRadiusLG)
