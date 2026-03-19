@@ -1,4 +1,3 @@
-// swiftlint:disable file_length
 import SwiftUI
 
 // swiftlint:disable:next type_body_length
@@ -276,23 +275,20 @@ struct WishlistView: View {
 
                 Text("·").foregroundColor(OffriiTheme.textMuted)
 
-                Menu {
-                    Picker("", selection: Bindable(viewModel).sortField) {
-                        Text(NSLocalizedString("wishlist.sort.date", comment: ""))
-                            .tag("created_at")
-                        Text(NSLocalizedString("wishlist.sort.priority", comment: ""))
-                            .tag("priority")
-                        Text(NSLocalizedString("wishlist.sort.name", comment: ""))
-                            .tag("name")
-                    }
-                } label: {
-                    HStack(spacing: 2) {
-                        Text(sortLabel)
-                            .font(.system(size: 13, weight: .medium))
-                        Image(systemName: viewModel.sortOrder == "asc" ? "arrow.up" : "arrow.down")
-                            .font(.system(size: 10, weight: .semibold))
-                    }
-                    .foregroundColor(OffriiTheme.primary)
+                SortMenuView(
+                    options: [
+                        ("created_at", NSLocalizedString("wishlist.sort.date", comment: "")),
+                        ("priority", NSLocalizedString("wishlist.sort.priority", comment: "")),
+                        ("name", NSLocalizedString("wishlist.sort.name", comment: "")),
+                    ],
+                    sortField: Bindable(viewModel).sortField,
+                    sortOrder: Bindable(viewModel).sortOrder
+                )
+                .onChange(of: viewModel.sortField) { _, _ in
+                    Task { await viewModel.loadItems() }
+                }
+                .onChange(of: viewModel.sortOrder) { _, _ in
+                    Task { await viewModel.loadItems() }
                 }
             }
 
@@ -491,13 +487,6 @@ struct WishlistView: View {
 
     // MARK: - Helpers
 
-    private var sortLabel: String {
-        switch viewModel.sortField {
-        case "priority": return NSLocalizedString("wishlist.sort.priority", comment: "")
-        case "name":     return NSLocalizedString("wishlist.sort.name", comment: "")
-        default:         return NSLocalizedString("wishlist.sort.date", comment: "")
-        }
-    }
 }
 
 extension UUID: @retroactive Identifiable {

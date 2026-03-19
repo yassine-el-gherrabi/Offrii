@@ -15,14 +15,6 @@ struct EntraideView: View {
     @State private var sortField = "created_at"
     @State private var sortOrder = "desc"
 
-    private var sortLabel: String {
-        switch sortField {
-        case "created_at": return NSLocalizedString("entraide.sort.date", comment: "")
-        case "title":      return NSLocalizedString("entraide.sort.name", comment: "")
-        default:           return NSLocalizedString("entraide.sort.date", comment: "")
-        }
-    }
-
     private var segmentLabel: String {
         switch selectedSegment {
         case 0:  return NSLocalizedString("entraide.segment.discover", comment: "")
@@ -249,49 +241,16 @@ struct EntraideView: View {
 
                 Text("·").foregroundColor(OffriiTheme.textMuted)
 
-                Menu {
-                    Button {
-                        if sortField == "created_at" {
-                            sortOrder = sortOrder == "desc" ? "asc" : "desc"
-                        } else {
-                            sortField = "created_at"
-                            sortOrder = "desc"
-                        }
-                        applySort()
-                    } label: {
-                        HStack {
-                            Text(NSLocalizedString("entraide.sort.date", comment: ""))
-                            if sortField == "created_at" {
-                                Image(systemName: sortOrder == "desc" ? "chevron.down" : "chevron.up")
-                            }
-                        }
-                    }
-
-                    Button {
-                        if sortField == "title" {
-                            sortOrder = sortOrder == "asc" ? "desc" : "asc"
-                        } else {
-                            sortField = "title"
-                            sortOrder = "asc"
-                        }
-                        applySort()
-                    } label: {
-                        HStack {
-                            Text(NSLocalizedString("entraide.sort.name", comment: ""))
-                            if sortField == "title" {
-                                Image(systemName: sortOrder == "asc" ? "chevron.down" : "chevron.up")
-                            }
-                        }
-                    }
-                } label: {
-                    HStack(spacing: 2) {
-                        Text(sortLabel)
-                            .font(.system(size: 13, weight: .medium))
-                        Image(systemName: sortOrder == "desc" ? "chevron.down" : "chevron.up")
-                            .font(.system(size: 10, weight: .semibold))
-                    }
-                    .foregroundColor(OffriiTheme.primary)
-                }
+                SortMenuView(
+                    options: [
+                        ("created_at", NSLocalizedString("entraide.sort.date", comment: "")),
+                        ("title", NSLocalizedString("entraide.sort.name", comment: "")),
+                    ],
+                    sortField: $sortField,
+                    sortOrder: $sortOrder
+                )
+                .onChange(of: sortField) { _, _ in applySort() }
+                .onChange(of: sortOrder) { _, _ in applySort() }
             }
 
             Spacer()

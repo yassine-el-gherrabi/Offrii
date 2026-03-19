@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		AA00000000000000000002A0 /* SortMenuView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00000000000000000002A1 /* SortMenuView.swift */; };
 		AA00000000000000000001A0 /* EntraideDiscoverContent.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00000000000000000001A1 /* EntraideDiscoverContent.swift */; };
 		AA00000000000000000001A2 /* EntraideMyNeedsContent.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00000000000000000001A3 /* EntraideMyNeedsContent.swift */; };
 		AA00000000000000000001A4 /* EntraideMyNeedsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00000000000000000001A5 /* EntraideMyNeedsViewModel.swift */; };
@@ -169,6 +170,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		AA00000000000000000002A1 /* SortMenuView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SortMenuView.swift; sourceTree = "<group>"; };
 		AA00000000000000000001A1 /* EntraideDiscoverContent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EntraideDiscoverContent.swift; sourceTree = "<group>"; };
 		AA00000000000000000001A3 /* EntraideMyNeedsContent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EntraideMyNeedsContent.swift; sourceTree = "<group>"; };
 		AA00000000000000000001A5 /* EntraideMyNeedsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EntraideMyNeedsViewModel.swift; sourceTree = "<group>"; };
@@ -529,6 +531,7 @@
 				AA0000000000000000000016 /* ProfileAvatarButton.swift */,
 				B6DE51F114489FF7F830B2B0 /* QuickCreateSheet.swift */,
 				0A4B79A7570DE22D99C36030 /* StatusDot.swift */,
+				AA00000000000000000002A1 /* SortMenuView.swift */,
 				0822596525E78FF89DE7A719 /* OffriiGridCard.swift */,
 				F7281077E11D157F1F2FBE53 /* AvatarStack.swift */,
 				14BF011942E99FD80ADF73B4 /* MemberCarousel.swift */,
@@ -978,6 +981,7 @@
 				BB23760E3BC7BFB013565463 /* QuickStartSection.swift in Sources */,
 				321B1A5FCD094D16E6F36A9C /* WishlistPreviewSection.swift in Sources */,
 				CCFE591C12EB737AB6E26AE8 /* StatusDot.swift in Sources */,
+				AA00000000000000000002A0 /* SortMenuView.swift in Sources */,
 				B17E171DC12780453143CCF3 /* OffriiGridCard.swift in Sources */,
 				501DB52B7E67850D825F04C2 /* AvatarStack.swift in Sources */,
 				8B7B8177E9E8F2C7CDDDB691 /* MemberCarousel.swift in Sources */,
