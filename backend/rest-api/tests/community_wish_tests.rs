@@ -3260,3 +3260,106 @@ async fn delete_wish_rejected_succeeds() {
         .await;
     assert_eq!(status, StatusCode::NO_CONTENT);
 }
+
+// ═══════════════════════════════════════════════════════════════════════
+// Report details field
+// ═══════════════════════════════════════════════════════════════════════
+
+#[tokio::test]
+async fn report_with_details_stored_in_db() {
+    let app = TestApp::new().await;
+    let owner_token = setup_aged_user(&app, "owner@test.com").await;
+    let wish_id = create_open_wish(&app, &owner_token).await;
+
+    let reporter_token = setup_aged_user(&app, "reporter@test.com").await;
+    let reporter_id = get_user_id(&app, "reporter@test.com").await;
+    let body = json!({ "reason": "spam", "details": "Selling counterfeit goods" });
+    let (status, _) = app
+        .post_json_with_auth(
+            &format!("/community/wishes/{wish_id}/report"),
+            &body,
+            &reporter_token,
+        )
+        .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+
+    let row: (String, Option<String>) = sqlx::query_as(
+        "SELECT reason, details FROM wish_reports WHERE wish_id = $1 AND reporter_id = $2",
+    )
+    .bind(wish_id)
+    .bind(reporter_id)
+    .fetch_one(&app.db)
+    .await
+    .unwrap();
+    assert_eq!(row.0, "spam");
+    assert_eq!(row.1.as_deref(), Some("Selling counterfeit goods"));
+}
+
+#[tokio::test]
+async fn report_without_details_stores_null() {
+    let app = TestApp::new().await;
+    let owner_token = setup_aged_user(&app, "owner@test.com").await;
+    let wish_id = create_open_wish(&app, &owner_token).await;
+
+    let reporter_token = setup_aged_user(&app, "reporter@test.com").await;
+    let reporter_id = get_user_id(&app, "reporter@test.com").await;
+    let body = json!({ "reason": "inappropriate" });
+    let (status, _) = app
+        .post_json_with_auth(
+            &format!("/community/wishes/{wish_id}/report"),
+            &body,
+            &reporter_token,
+        )
+        .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+
+    let row: (Option<String>,) =
+        sqlx::query_as("SELECT details FROM wish_reports WHERE wish_id = $1 AND reporter_id = $2")
+            .bind(wish_id)
+            .bind(reporter_id)
+            .fetch_one(&app.db)
+            .await
+            .unwrap();
+    assert!(row.0.is_none(), "details should be NULL when not provided");
+}
+
+#[tokio::test]
+async fn report_details_with_all_reasons() {
+    let app = TestApp::new().await;
+    let reasons = ["inappropriate", "spam", "scam", "other"];
+
+    for (i, reason) in reasons.iter().enumerate() {
+        let owner_email = format!("rpt_dtl_owner{i}@test.com");
+        let reporter_email = format!("rpt_dtl_reporter{i}@test.com");
+        let owner_token = setup_aged_user(&app, &owner_email).await;
+        let wish_id = create_open_wish(&app, &owner_token).await;
+        let reporter_token = setup_aged_user(&app, &reporter_email).await;
+        let reporter_id = get_user_id(&app, &reporter_email).await;
+
+        let detail_text = format!("Details for {reason}");
+        let body = json!({ "reason": reason, "details": detail_text });
+        let (status, _) = app
+            .post_json_with_auth(
+                &format!("/community/wishes/{wish_id}/report"),
+                &body,
+                &reporter_token,
+            )
+            .await;
+        assert_eq!(
+            status,
+            StatusCode::NO_CONTENT,
+            "report with reason '{reason}' + details should succeed"
+        );
+
+        let row: (String, Option<String>) = sqlx::query_as(
+            "SELECT reason, details FROM wish_reports WHERE wish_id = $1 AND reporter_id = $2",
+        )
+        .bind(wish_id)
+        .bind(reporter_id)
+        .fetch_one(&app.db)
+        .await
+        .unwrap();
+        assert_eq!(row.0, *reason);
+        assert_eq!(row.1.as_deref(), Some(detail_text.as_str()));
+    }
+}

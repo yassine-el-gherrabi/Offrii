@@ -934,7 +934,13 @@ pub trait CommunityWishRepo: Send + Sync {
 
 #[async_trait]
 pub trait WishReportRepo: Send + Sync {
-    async fn create(&self, wish_id: Uuid, reporter_id: Uuid, reason: &str) -> Result<WishReport>;
+    async fn create(
+        &self,
+        wish_id: Uuid,
+        reporter_id: Uuid,
+        reason: &str,
+        details: Option<&str>,
+    ) -> Result<WishReport>;
 
     async fn has_reported(&self, wish_id: Uuid, reporter_id: Uuid) -> Result<bool>;
 
@@ -1070,6 +1076,7 @@ pub trait CommunityWishService: Send + Sync {
         wish_id: Uuid,
         reporter_id: Uuid,
         reason: &str,
+        details: Option<&str>,
     ) -> Result<(), crate::errors::AppError>;
 
     async fn admin_list_flagged(

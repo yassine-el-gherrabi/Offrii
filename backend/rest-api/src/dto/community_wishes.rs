@@ -48,6 +48,8 @@ pub struct ListWishesQuery {
 pub struct ReportWishRequest {
     #[validate(custom(function = "validate_report_reason"))]
     pub reason: Option<String>,
+    #[validate(length(max = 1000))]
+    pub details: Option<String>,
 }
 
 // ── Response DTOs ────────────────────────────────────────────────────

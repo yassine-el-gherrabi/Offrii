@@ -113,8 +113,8 @@ final class CommunityWishService: Sendable {
 
     // MARK: - Report
 
-    func reportWish(id: UUID, reason: WishReportReason) async throws {
-        let body = ReportCommunityWishBody(reason: reason.rawValue)
+    func reportWish(id: UUID, reason: WishReportReason, details: String? = nil) async throws {
+        let body = ReportCommunityWishBody(reason: reason.rawValue, details: details)
         try await client.requestVoid(.reportCommunityWish(id: id, body: body))
     }
 }

@@ -265,16 +265,17 @@ async fn report_wish(
     Path(id): Path<Uuid>,
     Json(req): Json<ReportWishRequest>,
 ) -> Result<StatusCode, AppError> {
+    let details = req.details.as_deref();
     if let Some(ref reason) = req.reason {
         validate_request(&req)?;
         state
             .community_wishes
-            .report_wish(id, auth_user.user_id, reason)
+            .report_wish(id, auth_user.user_id, reason, details)
             .await?;
     } else {
         state
             .community_wishes
-            .report_wish(id, auth_user.user_id, "inappropriate")
+            .report_wish(id, auth_user.user_id, "inappropriate", details)
             .await?;
     }
     Ok(StatusCode::NO_CONTENT)

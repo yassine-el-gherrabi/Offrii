@@ -1083,6 +1083,7 @@ impl traits::CommunityWishService for PgCommunityWishService {
         wish_id: Uuid,
         reporter_id: Uuid,
         reason: &str,
+        details: Option<&str>,
     ) -> Result<(), AppError> {
         self.check_account_age(reporter_id).await?;
 
@@ -1127,7 +1128,7 @@ impl traits::CommunityWishService for PgCommunityWishService {
 
         // Create report
         self.report_repo
-            .create(wish_id, reporter_id, reason)
+            .create(wish_id, reporter_id, reason, details)
             .await
             .map_err(AppError::Internal)?;
 

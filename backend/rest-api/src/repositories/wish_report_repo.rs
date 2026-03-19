@@ -20,8 +20,14 @@ impl PgWishReportRepo {
 
 #[async_trait]
 impl traits::WishReportRepo for PgWishReportRepo {
-    async fn create(&self, wish_id: Uuid, reporter_id: Uuid, reason: &str) -> Result<WishReport> {
-        create(&self.pool, wish_id, reporter_id, reason).await
+    async fn create(
+        &self,
+        wish_id: Uuid,
+        reporter_id: Uuid,
+        reason: &str,
+        details: Option<&str>,
+    ) -> Result<WishReport> {
+        create(&self.pool, wish_id, reporter_id, reason, details).await
     }
 
     async fn has_reported(&self, wish_id: Uuid, reporter_id: Uuid) -> Result<bool> {
@@ -44,15 +50,17 @@ pub(crate) async fn create(
     wish_id: Uuid,
     reporter_id: Uuid,
     reason: &str,
+    details: Option<&str>,
 ) -> Result<WishReport> {
     let report = sqlx::query_as::<_, WishReport>(
-        "INSERT INTO wish_reports (wish_id, reporter_id, reason) \
-         VALUES ($1, $2, $3) \
-         RETURNING id, wish_id, reporter_id, reason, created_at",
+        "INSERT INTO wish_reports (wish_id, reporter_id, reason, details) \
+         VALUES ($1, $2, $3, $4) \
+         RETURNING id, wish_id, reporter_id, reason, details, created_at",
     )
     .bind(wish_id)
     .bind(reporter_id)
     .bind(reason)
+    .bind(details)
     .fetch_one(exec)
     .await?;
     Ok(report)

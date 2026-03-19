@@ -395,6 +395,7 @@ struct UpdateCommunityWishBody: Encodable {
 
 struct ReportCommunityWishBody: Encodable {
     let reason: String?
+    let details: String?
 }
 
 // MARK: - Wish Message Body Types

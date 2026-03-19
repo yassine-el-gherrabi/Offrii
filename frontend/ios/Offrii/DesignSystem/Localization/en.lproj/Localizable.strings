@@ -475,6 +475,7 @@
 "entraide.recentFulfilled.title" = "Recently fulfilled";
 "entraide.messages.loadMore" = "Load older messages";
 "entraide.report.otherPlaceholder" = "Please describe the issue...";
+"entraide.report.detailsPlaceholder" = "Add details (optional)...";
 
 "moderation.prefix" = "Flagged: ";
 "moderation.harassment" = "Harassment";

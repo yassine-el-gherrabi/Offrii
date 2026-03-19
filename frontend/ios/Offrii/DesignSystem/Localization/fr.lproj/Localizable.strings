@@ -475,6 +475,7 @@
 "entraide.recentFulfilled.title" = "Récemment comblés";
 "entraide.messages.loadMore" = "Charger les messages précédents";
 "entraide.report.otherPlaceholder" = "Décrivez le problème...";
+"entraide.report.detailsPlaceholder" = "Précisez (optionnel)...";
 
 "moderation.prefix" = "Signalé : ";
 "moderation.harassment" = "Harcèlement";

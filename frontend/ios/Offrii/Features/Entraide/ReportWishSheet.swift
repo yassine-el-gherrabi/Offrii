@@ -10,7 +10,7 @@ struct ReportWishSheet: View {
     @State private var isSubmitting = false
     @State private var error: String?
     @State private var showSuccess = false
-    @State private var otherDetails = ""
+    @State private var details = ""
 
     var body: some View {
         NavigationStack {
@@ -51,10 +51,10 @@ struct ReportWishSheet: View {
                     }
                 }
 
-                if selectedReason == .other {
+                if selectedReason != nil {
                     TextField(
-                        NSLocalizedString("entraide.report.otherPlaceholder", comment: ""),
-                        text: $otherDetails,
+                        NSLocalizedString("entraide.report.detailsPlaceholder", comment: ""),
+                        text: $details,
                         axis: .vertical
                     )
                     .font(OffriiTypography.body)
@@ -91,6 +91,7 @@ struct ReportWishSheet: View {
                         variant: .danger,
                         isLoading: isSubmitting,
                         isDisabled: selectedReason == nil
+                            || (selectedReason == .other && details.trimmingCharacters(in: .whitespaces).isEmpty)
                     ) {
                         Task { await submit() }
                     }
@@ -115,8 +116,13 @@ struct ReportWishSheet: View {
         isSubmitting = true
         error = nil
 
+        let trimmed = details.trimmingCharacters(in: .whitespacesAndNewlines)
         do {
-            try await CommunityWishService.shared.reportWish(id: wishId, reason: reason)
+            try await CommunityWishService.shared.reportWish(
+                id: wishId,
+                reason: reason,
+                details: trimmed.isEmpty ? nil : trimmed
+            )
             OffriiHaptics.success()
             showSuccess = true
             try? await Task.sleep(for: .seconds(2))

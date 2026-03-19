@@ -76,6 +76,7 @@ pub struct WishReport {
     pub wish_id: Uuid,
     pub reporter_id: Uuid,
     pub reason: String,
+    pub details: Option<String>,
     pub created_at: DateTime<Utc>,
 }
 
