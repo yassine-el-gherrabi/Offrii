@@ -250,22 +250,23 @@ struct EntraideView: View {
                 Text("·").foregroundColor(OffriiTheme.textMuted)
 
                 Menu {
-                    Button {
-                        sortField = "created_at"
-                        applySort()
-                    } label: {
-                        Label(
-                            NSLocalizedString("entraide.sort.date", comment: ""),
-                            systemImage: sortField == "created_at" ? "checkmark" : "circle"
-                        )
+                    Picker("", selection: $sortField) {
+                        Text(NSLocalizedString("entraide.sort.date", comment: ""))
+                            .tag("created_at")
+                        Text(NSLocalizedString("entraide.sort.name", comment: ""))
+                            .tag("title")
                     }
+                    .onChange(of: sortField) { _, _ in applySort() }
+
                     Button {
-                        sortField = "title"
+                        sortOrder = sortOrder == "desc" ? "asc" : "desc"
                         applySort()
                     } label: {
                         Label(
-                            NSLocalizedString("entraide.sort.name", comment: ""),
-                            systemImage: sortField == "title" ? "checkmark" : "circle"
+                            sortOrder == "desc"
+                                ? NSLocalizedString("entraide.sort.oldest", comment: "")
+                                : NSLocalizedString("entraide.sort.newest", comment: ""),
+                            systemImage: sortOrder == "desc" ? "arrow.up" : "arrow.down"
                         )
                     }
                 } label: {
@@ -276,10 +277,6 @@ struct EntraideView: View {
                             .font(.system(size: 10, weight: .semibold))
                     }
                     .foregroundColor(OffriiTheme.primary)
-                    .onTapGesture {
-                        sortOrder = sortOrder == "desc" ? "asc" : "desc"
-                        applySort()
-                    }
                 }
             }
 

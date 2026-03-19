@@ -277,17 +277,13 @@ struct WishlistView: View {
                 Text("·").foregroundColor(OffriiTheme.textMuted)
 
                 Menu {
-                    Button { viewModel.changeSort("created_at") } label: {
-                        Label(NSLocalizedString("wishlist.sort.date", comment: ""),
-                              systemImage: viewModel.sortField == "created_at" ? "checkmark" : "")
-                    }
-                    Button { viewModel.changeSort("priority") } label: {
-                        Label(NSLocalizedString("wishlist.sort.priority", comment: ""),
-                              systemImage: viewModel.sortField == "priority" ? "checkmark" : "")
-                    }
-                    Button { viewModel.changeSort("name") } label: {
-                        Label(NSLocalizedString("wishlist.sort.name", comment: ""),
-                              systemImage: viewModel.sortField == "name" ? "checkmark" : "")
+                    Picker("", selection: Bindable(viewModel).sortField) {
+                        Text(NSLocalizedString("wishlist.sort.date", comment: ""))
+                            .tag("created_at")
+                        Text(NSLocalizedString("wishlist.sort.priority", comment: ""))
+                            .tag("priority")
+                        Text(NSLocalizedString("wishlist.sort.name", comment: ""))
+                            .tag("name")
                     }
                 } label: {
                     HStack(spacing: 2) {
