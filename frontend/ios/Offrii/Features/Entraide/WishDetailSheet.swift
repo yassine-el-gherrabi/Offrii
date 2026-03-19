@@ -464,7 +464,7 @@ struct WishDetailSheet: View {
 
     private func statusInfo(_ status: WishStatus) -> (Color, String) {
         switch status {
-        case .open:      return (OffriiTheme.warning, NSLocalizedString("entraide.status.open", comment: ""))
+        case .open:      return (OffriiTheme.success, NSLocalizedString("entraide.status.open", comment: ""))
         case .matched:   return (OffriiTheme.warning, NSLocalizedString("entraide.status.matched", comment: ""))
         case .fulfilled: return (OffriiTheme.primary, NSLocalizedString("entraide.status.fulfilled", comment: ""))
         case .closed:    return (OffriiTheme.textMuted, NSLocalizedString("entraide.status.closed", comment: ""))
