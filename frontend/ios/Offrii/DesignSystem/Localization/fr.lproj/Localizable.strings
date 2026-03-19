@@ -348,6 +348,9 @@
 "entraide.action.withdraw" = "Se retirer";
 "entraide.action.messages" = "Messages";
 "entraide.action.offerSuccess" = "Merci pour votre générosité !";
+"entraide.action.closeSuccess" = "Souhait fermé.";
+"entraide.action.rejectSuccess" = "Offre déclinée.";
+"entraide.action.deleteSuccess" = "Souhait supprimé.";
 "entraide.action.withdrawSuccess" = "Vous vous êtes retiré";
 "entraide.action.confirmSuccess" = "Souhait confirmé ! Merci";
 

@@ -81,6 +81,7 @@ final class WishDetailViewModel {
         isActioning = true
         do {
             try await CommunityWishService.shared.rejectOffer(id: id)
+            actionSuccess = NSLocalizedString("entraide.action.rejectSuccess", comment: "")
             OffriiHaptics.success()
             await loadWish(id: id)
             isActioning = false
@@ -112,6 +113,7 @@ final class WishDetailViewModel {
         isActioning = true
         do {
             try await CommunityWishService.shared.closeWish(id: id)
+            actionSuccess = NSLocalizedString("entraide.action.closeSuccess", comment: "")
             OffriiHaptics.success()
             await loadWish(id: id)
             isActioning = false
@@ -127,6 +129,7 @@ final class WishDetailViewModel {
         isActioning = true
         do {
             try await CommunityWishService.shared.deleteWish(id: id)
+            actionSuccess = NSLocalizedString("entraide.action.deleteSuccess", comment: "")
             OffriiHaptics.success()
             isActioning = false
             return true

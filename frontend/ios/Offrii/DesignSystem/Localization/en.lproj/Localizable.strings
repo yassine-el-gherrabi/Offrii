@@ -348,6 +348,9 @@
 "entraide.action.withdraw" = "Withdraw";
 "entraide.action.messages" = "Messages";
 "entraide.action.offerSuccess" = "Thank you for your generosity!";
+"entraide.action.closeSuccess" = "Wish closed.";
+"entraide.action.rejectSuccess" = "Offer declined.";
+"entraide.action.deleteSuccess" = "Wish deleted.";
 "entraide.action.withdrawSuccess" = "You have withdrawn";
 "entraide.action.confirmSuccess" = "Wish confirmed! Thank you";
 
