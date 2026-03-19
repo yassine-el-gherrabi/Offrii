@@ -96,31 +96,53 @@ struct WishMessagesSheet: View {
 
     // MARK: - Input Bar
 
-    private var inputBar: some View {
-        HStack(spacing: OffriiTheme.spacingSM) {
-            TextField(
-                NSLocalizedString("entraide.messages.placeholder", comment: ""),
-                text: $messageText,
-                axis: .vertical
-            )
-            .font(OffriiTypography.body)
-            .lineLimit(1...4)
-            .padding(OffriiTheme.spacingSM)
-            .background(OffriiTheme.surface)
-            .cornerRadius(OffriiTheme.cornerRadiusMD)
+    private let messageMaxLength = 2000
 
-            Button {
-                Task { await sendMessage() }
-            } label: {
-                Image(systemName: "arrow.up.circle.fill")
-                    .font(.system(size: 32))
-                    .foregroundColor(
-                        messageText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                            ? OffriiTheme.textMuted
-                            : OffriiTheme.primary
-                    )
+    private var isMessageOverLimit: Bool {
+        messageText.count > messageMaxLength
+    }
+
+    private var inputBar: some View {
+        VStack(spacing: 0) {
+            HStack(spacing: OffriiTheme.spacingSM) {
+                TextField(
+                    NSLocalizedString("entraide.messages.placeholder", comment: ""),
+                    text: $messageText,
+                    axis: .vertical
+                )
+                .font(OffriiTypography.body)
+                .lineLimit(1...4)
+                .padding(OffriiTheme.spacingSM)
+                .background(OffriiTheme.surface)
+                .cornerRadius(OffriiTheme.cornerRadiusMD)
+
+                Button {
+                    Task { await sendMessage() }
+                } label: {
+                    Image(systemName: "arrow.up.circle.fill")
+                        .font(.system(size: 32))
+                        .foregroundColor(
+                            messageText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                                || isMessageOverLimit
+                                ? OffriiTheme.textMuted
+                                : OffriiTheme.primary
+                        )
+                }
+                .disabled(
+                    messageText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                        || isMessageOverLimit || isSending
+                )
             }
-            .disabled(messageText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isSending)
+
+            if messageText.count > 1500 {
+                HStack {
+                    Spacer()
+                    Text("\(messageText.count)/\(messageMaxLength)")
+                        .font(.system(size: 11))
+                        .foregroundColor(isMessageOverLimit ? OffriiTheme.danger : OffriiTheme.textMuted)
+                }
+                .padding(.top, 4)
+            }
         }
         .padding(.horizontal, OffriiTheme.spacingBase)
         .padding(.vertical, OffriiTheme.spacingSM)
