@@ -6,6 +6,8 @@ struct EntraideMyNeedsContent: View {
     var viewModel: EntraideMyNeedsViewModel
     @Binding var selectedWishId: UUID?
     @Binding var showCreateSheet: Bool
+    @State private var wishToClose: UUID?
+    @State private var wishToDelete: UUID?
 
     var body: some View {
         if viewModel.isLoading && viewModel.wishes.isEmpty {
@@ -36,6 +38,44 @@ struct EntraideMyNeedsContent: View {
             }
             .padding(.horizontal, OffriiTheme.spacingBase)
             .padding(.vertical, OffriiTheme.spacingSM)
+            .alert(
+                NSLocalizedString("entraide.close.confirmTitle", comment: ""),
+                isPresented: Binding(
+                    get: { wishToClose != nil },
+                    set: { if !$0 { wishToClose = nil } }
+                )
+            ) {
+                Button(NSLocalizedString("common.cancel", comment: ""), role: .cancel) {
+                    wishToClose = nil
+                }
+                Button(NSLocalizedString("entraide.action.close", comment: ""), role: .destructive) {
+                    if let id = wishToClose {
+                        Task { await viewModel.closeWish(id: id) }
+                    }
+                    wishToClose = nil
+                }
+            } message: {
+                Text(NSLocalizedString("entraide.close.confirmMessage", comment: ""))
+            }
+            .alert(
+                NSLocalizedString("entraide.delete.confirmTitle", comment: ""),
+                isPresented: Binding(
+                    get: { wishToDelete != nil },
+                    set: { if !$0 { wishToDelete = nil } }
+                )
+            ) {
+                Button(NSLocalizedString("common.cancel", comment: ""), role: .cancel) {
+                    wishToDelete = nil
+                }
+                Button(NSLocalizedString("entraide.action.delete", comment: ""), role: .destructive) {
+                    if let id = wishToDelete {
+                        Task { await viewModel.deleteWish(id: id) }
+                    }
+                    wishToDelete = nil
+                }
+            } message: {
+                Text(NSLocalizedString("entraide.delete.confirmMessage", comment: ""))
+            }
         }
     }
 
@@ -129,7 +169,7 @@ struct EntraideMyNeedsContent: View {
                 )
             }
             Button(role: .destructive) {
-                Task { await viewModel.closeWish(id: wish.id) }
+                wishToClose = wish.id
             } label: {
                 Label(
                     NSLocalizedString("entraide.action.close", comment: ""),
@@ -138,7 +178,7 @@ struct EntraideMyNeedsContent: View {
             }
         case .open:
             Button(role: .destructive) {
-                Task { await viewModel.closeWish(id: wish.id) }
+                wishToClose = wish.id
             } label: {
                 Label(
                     NSLocalizedString("entraide.action.close", comment: ""),
@@ -155,7 +195,7 @@ struct EntraideMyNeedsContent: View {
                 )
             }
             Button(role: .destructive) {
-                Task { await viewModel.closeWish(id: wish.id) }
+                wishToClose = wish.id
             } label: {
                 Label(
                     NSLocalizedString("entraide.action.close", comment: ""),
@@ -170,7 +210,7 @@ struct EntraideMyNeedsContent: View {
         if wish.status != .matched && wish.status != .fulfilled {
             Divider()
             Button(role: .destructive) {
-                Task { await viewModel.deleteWish(id: wish.id) }
+                wishToDelete = wish.id
             } label: {
                 Label(
                     NSLocalizedString("entraide.action.delete", comment: ""),

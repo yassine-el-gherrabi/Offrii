@@ -339,6 +339,10 @@
 /* Entraide - Actions */
 "entraide.action.close" = "Close wish";
 "entraide.action.delete" = "Delete wish";
+"entraide.close.confirmTitle" = "Close this wish?";
+"entraide.close.confirmMessage" = "Your wish will no longer be visible. You can still see it in your history.";
+"entraide.delete.confirmTitle" = "Delete this wish?";
+"entraide.delete.confirmMessage" = "This action is irreversible. The wish and all associated messages will be permanently deleted.";
 "entraide.action.confirm" = "Confirm received";
 "entraide.action.reject" = "Reject offer";
 "entraide.action.withdraw" = "Withdraw";

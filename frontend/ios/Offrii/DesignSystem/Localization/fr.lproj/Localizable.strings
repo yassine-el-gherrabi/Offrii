@@ -339,6 +339,10 @@
 /* Entraide - Actions */
 "entraide.action.close" = "Fermer le souhait";
 "entraide.action.delete" = "Supprimer le souhait";
+"entraide.close.confirmTitle" = "Fermer ce souhait ?";
+"entraide.close.confirmMessage" = "Votre souhait ne sera plus visible. Vous pourrez toujours le voir dans votre historique.";
+"entraide.delete.confirmTitle" = "Supprimer ce souhait ?";
+"entraide.delete.confirmMessage" = "Cette action est irréversible. Le souhait et tous les messages associés seront définitivement supprimés.";
 "entraide.action.confirm" = "Confirmer la réception";
 "entraide.action.reject" = "Rejeter l'offre";
 "entraide.action.withdraw" = "Se retirer";
