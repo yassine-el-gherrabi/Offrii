@@ -11,6 +11,7 @@ struct WishDetailSheet: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(AuthManager.self) private var authManager
     @State private var viewModel = WishDetailViewModel()
+    @State private var showOfferConfirm = false
 
     private var wish: WishDetail? { viewModel.wish }
     private var isMine: Bool { wish?.isMine ?? false }
@@ -230,7 +231,18 @@ struct WishDetailSheet: View {
                 variant: .primary,
                 isLoading: viewModel.isActioning
             ) {
-                Task { _ = await viewModel.offer(id: wish.id) }
+                showOfferConfirm = true
+            }
+            .alert(
+                NSLocalizedString("entraide.offer.confirmTitle", comment: ""),
+                isPresented: $showOfferConfirm
+            ) {
+                Button(NSLocalizedString("common.cancel", comment: ""), role: .cancel) {}
+                Button(NSLocalizedString("entraide.offer.confirmAction", comment: "")) {
+                    Task { _ = await viewModel.offer(id: wish.id) }
+                }
+            } message: {
+                Text(NSLocalizedString("entraide.offer.confirmMessage", comment: ""))
             }
         }
     }

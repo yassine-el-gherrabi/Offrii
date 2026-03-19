@@ -5,6 +5,7 @@ import SwiftUI
 struct EntraideDiscoverContent: View {
     var viewModel: EntraideViewModel
     @Binding var selectedWishId: UUID?
+    @Binding var showCreateSheet: Bool
     var searchQuery: String
 
     private var displayedWishes: [CommunityWish] {
@@ -25,7 +26,9 @@ struct EntraideDiscoverContent: View {
                 OffriiEmptyState(
                     icon: "heart.circle",
                     title: NSLocalizedString("entraide.empty", comment: ""),
-                    subtitle: NSLocalizedString("entraide.emptySubtitle", comment: "")
+                    subtitle: NSLocalizedString("entraide.emptySubtitle", comment: ""),
+                    ctaTitle: NSLocalizedString("entraide.fab.publish", comment: ""),
+                    ctaAction: { showCreateSheet = true }
                 )
                 Spacer()
             }

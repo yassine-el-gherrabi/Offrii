@@ -132,6 +132,12 @@ struct EntraideMyNeedsContent: View {
                 }
             case .matched:
                 actionChip(
+                    NSLocalizedString("entraide.action.confirm", comment: ""),
+                    icon: "checkmark.circle.fill", color: OffriiTheme.success
+                ) {
+                    Task { await viewModel.confirmWish(id: wish.id) }
+                }
+                actionChip(
                     NSLocalizedString("entraide.action.messages", comment: ""),
                     icon: "bubble.left.fill", color: OffriiTheme.primary
                 ) {

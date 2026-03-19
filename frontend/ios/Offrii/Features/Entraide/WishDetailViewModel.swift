@@ -28,6 +28,16 @@ final class WishDetailViewModel {
             await loadWish(id: id)
             isActioning = false
             return true
+        } catch let apiError as APIError {
+            if case .conflict = apiError {
+                self.error = NSLocalizedString("entraide.offer.alreadyMatched", comment: "")
+            } else {
+                self.error = apiError.localizedDescription
+            }
+            OffriiHaptics.error()
+            await loadWish(id: id)
+            isActioning = false
+            return false
         } catch {
             self.error = error.localizedDescription
             isActioning = false

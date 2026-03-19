@@ -438,6 +438,10 @@
 "entraide.segment.myNeeds" = "My needs";
 "entraide.segment.myOffers" = "My offers";
 "entraide.offer.cta" = "Offer to help";
+"entraide.offer.confirmTitle" = "Offer your help?";
+"entraide.offer.confirmAction" = "Confirm";
+"entraide.offer.confirmMessage" = "You will be connected with the author to help them. You can exchange via messages.";
+"entraide.offer.alreadyMatched" = "Someone has already offered to help for this wish.";
 "entraide.myOffers.empty" = "No offers yet";
 "entraide.myOffers.emptySubtitle" = "You haven't offered to help yet";
 

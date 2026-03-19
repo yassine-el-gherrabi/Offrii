@@ -12,14 +12,6 @@ struct EntraideView: View {
     @State private var messagesWishId: UUID?
     @State private var reportWishId: UUID?
     @State private var searchQuery = ""
-    @State private var sortOrder = "desc" // desc = newest first
-
-    private var sortLabel: String {
-        sortOrder == "desc"
-            ? NSLocalizedString("entraide.sort.newest", comment: "")
-            : NSLocalizedString("entraide.sort.oldest", comment: "")
-    }
-
     private var segmentLabel: String {
         switch selectedSegment {
         case 0:  return NSLocalizedString("entraide.segment.discover", comment: "")
@@ -40,7 +32,7 @@ struct EntraideView: View {
         switch selectedSegment {
         case 0:  return viewModel.filteredWishes.count
         case 1:  return myNeedsViewModel.wishes.count
-        default: return viewModel.myOffers.count
+        default: return viewModel.myOfferWishes.count
         }
     }
 
@@ -54,6 +46,7 @@ struct EntraideView: View {
                             EntraideDiscoverContent(
                                 viewModel: viewModel,
                                 selectedWishId: $selectedWishId,
+                                showCreateSheet: $showCreateSheet,
                                 searchQuery: searchQuery
                             )
                         case 1:
@@ -90,7 +83,7 @@ struct EntraideView: View {
                 switch selectedSegment {
                 case 0:  await viewModel.loadWishes()
                 case 1:  await myNeedsViewModel.loadMyWishes()
-                default: await viewModel.loadWishes()
+                default: await viewModel.loadMyOffers()
                 }
             }
 
@@ -127,6 +120,7 @@ struct EntraideView: View {
         .sheet(isPresented: $showCreateSheet, onDismiss: {
             Task {
                 await viewModel.loadWishes()
+                await viewModel.loadMyOffers()
                 await myNeedsViewModel.loadMyWishes()
             }
         }) {
@@ -136,6 +130,7 @@ struct EntraideView: View {
         .sheet(item: $selectedWishId, onDismiss: {
             Task {
                 await viewModel.loadWishes()
+                await viewModel.loadMyOffers()
                 await myNeedsViewModel.loadMyWishes()
             }
         }) { wishId in
@@ -157,6 +152,7 @@ struct EntraideView: View {
         }
         .task {
             await viewModel.loadWishes()
+            await viewModel.loadMyOffers()
             await myNeedsViewModel.loadMyWishes()
         }
     }
@@ -239,35 +235,6 @@ struct EntraideView: View {
                     : NSLocalizedString("entraide.countPlural", comment: ""))
                     .font(.system(size: 13))
                     .foregroundColor(OffriiTheme.textMuted)
-
-                Text("·").foregroundColor(OffriiTheme.textMuted)
-
-                Menu {
-                    Button {
-                        sortOrder = "desc"
-                    } label: {
-                        Label(
-                            NSLocalizedString("entraide.sort.newest", comment: ""),
-                            systemImage: sortOrder == "desc" ? "checkmark" : ""
-                        )
-                    }
-                    Button {
-                        sortOrder = "asc"
-                    } label: {
-                        Label(
-                            NSLocalizedString("entraide.sort.oldest", comment: ""),
-                            systemImage: sortOrder == "asc" ? "checkmark" : ""
-                        )
-                    }
-                } label: {
-                    HStack(spacing: 2) {
-                        Text(sortLabel)
-                            .font(.system(size: 13, weight: .medium))
-                        Image(systemName: sortOrder == "asc" ? "arrow.up" : "arrow.down")
-                            .font(.system(size: 10, weight: .semibold))
-                    }
-                    .foregroundColor(OffriiTheme.primary)
-                }
             }
 
             Spacer()

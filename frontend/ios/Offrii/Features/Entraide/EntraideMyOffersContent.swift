@@ -7,7 +7,7 @@ struct EntraideMyOffersContent: View {
     @Binding var selectedWishId: UUID?
 
     var body: some View {
-        if viewModel.isLoading && viewModel.wishes.isEmpty {
+        if viewModel.isLoadingOffers && viewModel.myOfferWishes.isEmpty {
             LazyVStack(spacing: OffriiTheme.spacingSM) {
                 ForEach(0..<4, id: \.self) { _ in
                     SkeletonRow()
@@ -15,7 +15,7 @@ struct EntraideMyOffersContent: View {
             }
             .padding(.horizontal, OffriiTheme.spacingBase)
             .padding(.vertical, OffriiTheme.spacingSM)
-        } else if viewModel.myOffers.isEmpty {
+        } else if viewModel.myOfferWishes.isEmpty {
             VStack(spacing: OffriiTheme.spacingBase) {
                 Spacer().frame(height: 40)
                 OffriiEmptyState(
@@ -27,7 +27,7 @@ struct EntraideMyOffersContent: View {
             }
         } else {
             LazyVStack(spacing: OffriiTheme.spacingSM) {
-                ForEach(viewModel.myOffers) { wish in
+                ForEach(viewModel.myOfferWishes) { wish in
                     EntraideWishCard(wish: wish) {
                         selectedWishId = wish.id
                     }

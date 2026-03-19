@@ -3,11 +3,16 @@ import Foundation
 @Observable
 @MainActor
 final class EntraideViewModel {
+    // Discover
     var wishes: [CommunityWish] = []
     var selectedCategory: WishCategory?
     var isLoading = false
     var isLoadingMore = false
     var error: String?
+
+    // My Offers (separate data source)
+    var myOfferWishes: [CommunityWish] = []
+    var isLoadingOffers = false
 
     private var currentPage = 1
     private var hasMore = true
@@ -17,11 +22,7 @@ final class EntraideViewModel {
         wishes
     }
 
-    var myOffers: [CommunityWish] {
-        wishes.filter(\.isMatchedByMe)
-    }
-
-    // MARK: - Load
+    // MARK: - Load Discover
 
     func loadWishes() async {
         isLoading = true
@@ -62,6 +63,22 @@ final class EntraideViewModel {
             currentPage = nextPage
         } catch {}
         isLoadingMore = false
+    }
+
+    // MARK: - Load My Offers (independent from Discover)
+
+    func loadMyOffers() async {
+        isLoadingOffers = true
+        do {
+            // Load all wishes without category filter — filter matched locally
+            let response = try await CommunityWishService.shared.listWishes(
+                category: nil,
+                page: 1,
+                limit: 100
+            )
+            myOfferWishes = response.data.filter(\.isMatchedByMe)
+        } catch {}
+        isLoadingOffers = false
     }
 
     // MARK: - Category Filter
