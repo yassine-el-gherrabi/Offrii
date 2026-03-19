@@ -19,6 +19,7 @@ struct WishDetailSheet: View {
     @State private var showDeleteConfirm = false
     @State private var showEditSheet = false
     @State private var showConfirmFulfillment = false
+    @State private var showWithdrawConfirm = false
     @State private var showCelebration = false
 
     private var wish: WishDetail? { viewModel.wish }
@@ -385,7 +386,18 @@ struct WishDetailSheet: View {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { onOpenMessages?() }
             }
             OffriiButton(NSLocalizedString("entraide.action.withdraw", comment: ""), variant: .ghost) {
-                Task { _ = await viewModel.withdrawOffer(id: wish.id) }
+                showWithdrawConfirm = true
+            }
+            .alert(
+                NSLocalizedString("entraide.withdraw.confirmTitle", comment: ""),
+                isPresented: $showWithdrawConfirm
+            ) {
+                Button(NSLocalizedString("common.cancel", comment: ""), role: .cancel) {}
+                Button(NSLocalizedString("entraide.action.withdraw", comment: ""), role: .destructive) {
+                    Task { _ = await viewModel.withdrawOffer(id: wish.id) }
+                }
+            } message: {
+                Text(NSLocalizedString("entraide.withdraw.confirmMessage", comment: ""))
             }
         }
     }

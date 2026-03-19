@@ -368,6 +368,8 @@
 
 /* Entraide - Messages */
 "entraide.messages.placeholder" = "Your message...";
+"entraide.messages.empty" = "No messages yet";
+"entraide.messages.emptySubtitle" = "Send the first message to start the conversation.";
 
 /* Entraide - Report */
 "entraide.report.title" = "Report this wish";

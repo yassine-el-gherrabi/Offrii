@@ -368,6 +368,8 @@
 
 /* Entraide - Messages */
 "entraide.messages.placeholder" = "Votre message...";
+"entraide.messages.empty" = "Aucun message";
+"entraide.messages.emptySubtitle" = "Envoyez le premier message pour démarrer la conversation.";
 
 /* Entraide - Signalement */
 "entraide.report.title" = "Signaler ce souhait";
