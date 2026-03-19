@@ -116,8 +116,8 @@ async fn list_recent_fulfilled(
 ) -> Result<Json<Vec<WishResponse>>, AppError> {
     let wishes: Vec<crate::models::CommunityWish> = sqlx::query_as(
         "SELECT * FROM community_wishes \
-         WHERE status = 'fulfilled' AND fulfilled_at > NOW() - INTERVAL '7 days' \
-         ORDER BY fulfilled_at DESC LIMIT 5",
+         WHERE status = 'fulfilled' \
+         ORDER BY fulfilled_at DESC NULLS LAST LIMIT 8",
     )
     .fetch_all(&state.db)
     .await
@@ -136,6 +136,7 @@ async fn list_recent_fulfilled(
             is_matched_by_me: false,
             image_url: w.image_url,
             links: w.links,
+            fulfilled_at: w.fulfilled_at,
             created_at: w.created_at,
         })
         .collect();

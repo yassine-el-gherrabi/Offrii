@@ -350,6 +350,7 @@ impl PgCommunityWishService {
             is_matched_by_me: caller_id.is_some() && wish.matched_with == caller_id,
             image_url: wish.image_url.clone(),
             links: wish.links.clone(),
+            fulfilled_at: wish.fulfilled_at,
             created_at: wish.created_at,
         }
     }
@@ -640,6 +641,7 @@ impl traits::CommunityWishService for PgCommunityWishService {
                     is_matched_by_me: true,
                     image_url: w.image_url,
                     links: w.links,
+                    fulfilled_at: w.fulfilled_at,
                     created_at: w.created_at,
                 }
             })

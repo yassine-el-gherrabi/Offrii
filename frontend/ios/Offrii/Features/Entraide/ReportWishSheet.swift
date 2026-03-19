@@ -80,10 +80,10 @@ struct ReportWishSheet: View {
                         systemImage: "checkmark.circle.fill"
                     )
                     .font(OffriiTypography.footnote)
-                    .foregroundColor(OffriiTheme.success)
+                    .foregroundColor(OffriiTheme.warning)
                     .padding(OffriiTheme.spacingSM)
                     .frame(maxWidth: .infinity)
-                    .background(OffriiTheme.success.opacity(0.1))
+                    .background(OffriiTheme.warning.opacity(0.1))
                     .cornerRadius(OffriiTheme.cornerRadiusMD)
                 } else {
                     OffriiButton(

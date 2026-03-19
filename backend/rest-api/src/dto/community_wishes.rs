@@ -64,6 +64,7 @@ pub struct WishResponse {
     pub is_matched_by_me: bool,
     pub image_url: Option<String>,
     pub links: Option<Vec<String>>,
+    pub fulfilled_at: Option<DateTime<Utc>>,
     pub created_at: DateTime<Utc>,
 }
 

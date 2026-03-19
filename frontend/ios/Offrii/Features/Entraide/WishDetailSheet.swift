@@ -34,7 +34,7 @@ struct WishDetailSheet: View {
                     VStack(spacing: OffriiTheme.spacingLG) {
                         Image(systemName: "heart.circle.fill")
                             .font(.system(size: 64))
-                            .foregroundColor(OffriiTheme.success)
+                            .foregroundColor(OffriiTheme.warning)
                         Text(NSLocalizedString("entraide.fulfill.celebration", comment: ""))
                             .font(OffriiTypography.headline)
                             .foregroundColor(OffriiTheme.text)
@@ -51,8 +51,8 @@ struct WishDetailSheet: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button { dismiss() } label: {
-                        Image(systemName: "xmark.circle.fill")
-                            .font(.system(size: 22))
+                        Image(systemName: "xmark")
+                            .font(.system(size: 16, weight: .semibold))
                             .foregroundColor(OffriiTheme.textMuted)
                     }
                 }
@@ -171,10 +171,10 @@ struct WishDetailSheet: View {
                     if let success = viewModel.actionSuccess {
                         Label(success, systemImage: "checkmark.circle.fill")
                             .font(OffriiTypography.footnote)
-                            .foregroundColor(OffriiTheme.success)
+                            .foregroundColor(OffriiTheme.warning)
                             .padding(OffriiTheme.spacingSM)
                             .frame(maxWidth: .infinity)
-                            .background(OffriiTheme.success.opacity(0.1))
+                            .background(OffriiTheme.warning.opacity(0.1))
                             .cornerRadius(OffriiTheme.cornerRadiusMD)
                     }
                 }
@@ -464,7 +464,7 @@ struct WishDetailSheet: View {
 
     private func statusInfo(_ status: WishStatus) -> (Color, String) {
         switch status {
-        case .open:      return (OffriiTheme.success, NSLocalizedString("entraide.status.open", comment: ""))
+        case .open:      return (OffriiTheme.warning, NSLocalizedString("entraide.status.open", comment: ""))
         case .matched:   return (OffriiTheme.warning, NSLocalizedString("entraide.status.matched", comment: ""))
         case .fulfilled: return (OffriiTheme.primary, NSLocalizedString("entraide.status.fulfilled", comment: ""))
         case .closed:    return (OffriiTheme.textMuted, NSLocalizedString("entraide.status.closed", comment: ""))

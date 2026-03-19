@@ -37,42 +37,6 @@ struct EntraideDiscoverContent: View {
             }
         } else {
             LazyVStack(spacing: OffriiTheme.spacingSM) {
-                // Recently fulfilled section
-                if !recentFulfilled.isEmpty {
-                    VStack(alignment: .leading, spacing: OffriiTheme.spacingSM) {
-                        Text(NSLocalizedString("entraide.recentFulfilled.title", comment: ""))
-                            .font(OffriiTypography.subheadline)
-                            .fontWeight(.semibold)
-                            .foregroundColor(OffriiTheme.text)
-
-                        ScrollView(.horizontal, showsIndicators: false) {
-                            HStack(spacing: OffriiTheme.spacingSM) {
-                                ForEach(recentFulfilled) { wish in
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        HStack(spacing: 4) {
-                                            Image(systemName: "checkmark.circle.fill")
-                                                .font(.system(size: 12))
-                                                .foregroundColor(OffriiTheme.success)
-                                            Text(wish.title)
-                                                .font(.system(size: 13, weight: .medium))
-                                                .foregroundColor(OffriiTheme.text)
-                                                .lineLimit(1)
-                                        }
-                                        Text(wish.category.label)
-                                            .font(.system(size: 11))
-                                            .foregroundColor(OffriiTheme.textMuted)
-                                    }
-                                    .padding(OffriiTheme.spacingSM)
-                                    .background(OffriiTheme.success.opacity(0.05))
-                                    .cornerRadius(OffriiTheme.cornerRadiusMD)
-                                    .frame(width: 180)
-                                }
-                            }
-                        }
-                    }
-                    .padding(.bottom, OffriiTheme.spacingSM)
-                }
-
                 // Onboarding card (first visit only)
                 if !onboardingDismissed {
                     VStack(alignment: .leading, spacing: OffriiTheme.spacingSM) {
@@ -103,6 +67,75 @@ struct EntraideDiscoverContent: View {
                         RoundedRectangle(cornerRadius: OffriiTheme.cornerRadiusLG)
                             .strokeBorder(OffriiTheme.primary.opacity(0.2), lineWidth: 1)
                     )
+                }
+
+                // Recently fulfilled section
+                if !recentFulfilled.isEmpty {
+                    VStack(alignment: .leading, spacing: OffriiTheme.spacingSM) {
+                        HStack(spacing: 6) {
+                            Image(systemName: "hands.clap.fill")
+                                .font(.system(size: 14))
+                                .foregroundColor(OffriiTheme.warning)
+                            Text(NSLocalizedString("entraide.recentFulfilled.title", comment: ""))
+                                .font(OffriiTypography.subheadline)
+                                .fontWeight(.semibold)
+                                .foregroundColor(OffriiTheme.text)
+                        }
+
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 10) {
+                                ForEach(recentFulfilled) { wish in
+                                    Button {
+                                        OffriiHaptics.tap()
+                                        selectedWishId = wish.id
+                                    } label: {
+                                        HStack(spacing: 10) {
+                                            Image(systemName: wish.category.icon)
+                                                .font(.system(size: 14))
+                                                .foregroundColor(.white)
+                                                .frame(width: 32, height: 32)
+                                                .background(OffriiTheme.warning)
+                                                .clipShape(RoundedRectangle(cornerRadius: 8))
+
+                                            VStack(alignment: .leading, spacing: 2) {
+                                                Text(wish.title)
+                                                    .font(.system(size: 13, weight: .semibold))
+                                                    .foregroundColor(OffriiTheme.text)
+                                                    .lineLimit(1)
+
+                                                HStack(spacing: 4) {
+                                                    Image(systemName: "checkmark.circle.fill")
+                                                        .font(.system(size: 10))
+                                                        .foregroundColor(OffriiTheme.warning)
+                                                    Text(NSLocalizedString("entraide.status.fulfilled", comment: ""))
+                                                        .font(.system(size: 11, weight: .medium))
+                                                        .foregroundColor(OffriiTheme.warning)
+
+                                                    if let fulfilledAt = wish.fulfilledAt {
+                                                        Text("·")
+                                                            .foregroundColor(OffriiTheme.textMuted)
+                                                        Text(fulfilledAt, style: .relative)
+                                                            .foregroundColor(OffriiTheme.textMuted)
+                                                    }
+                                                }
+                                                .font(.system(size: 11))
+                                            }
+                                        }
+                                        .padding(.horizontal, 12)
+                                        .padding(.vertical, 10)
+                                        .background(OffriiTheme.warning.opacity(0.06))
+                                        .cornerRadius(OffriiTheme.cornerRadiusMD)
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: OffriiTheme.cornerRadiusMD)
+                                                .strokeBorder(OffriiTheme.warning.opacity(0.15), lineWidth: 1)
+                                        )
+                                    }
+                                    .buttonStyle(.plain)
+                                }
+                            }
+                        }
+                    }
+                    .padding(.bottom, OffriiTheme.spacingSM)
                 }
 
                 ForEach(displayedWishes) { wish in
