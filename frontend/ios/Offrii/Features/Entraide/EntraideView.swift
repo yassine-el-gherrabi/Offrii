@@ -213,10 +213,10 @@ struct EntraideView: View {
 
                 ForEach(WishCategory.allCases) { category in
                     let isSelected = viewModel.selectedCategory == category
-                    let color = entraideCategoryColor(category)
+                    let color = category.color
 
                     HStack(spacing: 4) {
-                        Image(systemName: entraideCategoryIcon(category))
+                        Image(systemName: category.icon)
                             .font(.system(size: 11))
                         Text(category.label)
                             .font(.system(size: 13, weight: isSelected ? .semibold : .regular))
@@ -297,29 +297,4 @@ struct EntraideView: View {
         viewModel.sortOrder = sortOrder
     }
 
-    // MARK: - Category Helpers
-
-    private func entraideCategoryColor(_ cat: WishCategory) -> Color {
-        switch cat {
-        case .education: return Color(red: 0.2, green: 0.4, blue: 0.85)
-        case .clothing:  return Color(red: 0.7, green: 0.3, blue: 0.6)
-        case .health:    return Color(red: 0.85, green: 0.3, blue: 0.35)
-        case .religion:  return Color(red: 0.55, green: 0.4, blue: 0.75)
-        case .home:      return Color(red: 0.9, green: 0.5, blue: 0.2)
-        case .children:  return Color(red: 0.3, green: 0.7, blue: 0.6)
-        case .other:     return Color(red: 0.5, green: 0.5, blue: 0.6)
-        }
-    }
-
-    private func entraideCategoryIcon(_ cat: WishCategory) -> String {
-        switch cat {
-        case .education: return "book.fill"
-        case .clothing:  return "tshirt.fill"
-        case .health:    return "heart.fill"
-        case .religion:  return "hands.sparkles.fill"
-        case .home:      return "house.fill"
-        case .children:  return "figure.and.child.holdinghands"
-        case .other:     return "tag.fill"
-        }
-    }
 }

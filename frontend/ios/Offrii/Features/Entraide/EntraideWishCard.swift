@@ -7,30 +7,6 @@ struct EntraideWishCard: View {
     let wish: CommunityWish
     var onTap: (() -> Void)?
 
-    private var categoryIcon: String {
-        switch wish.category {
-        case .education: return "book.fill"
-        case .clothing:  return "tshirt.fill"
-        case .health:    return "heart.fill"
-        case .religion:  return "hands.sparkles.fill"
-        case .home:      return "house.fill"
-        case .children:  return "figure.and.child.holdinghands"
-        case .other:     return "tag.fill"
-        }
-    }
-
-    private var categoryColor: Color {
-        switch wish.category {
-        case .education: return Color(red: 0.2, green: 0.4, blue: 0.85)
-        case .clothing:  return Color(red: 0.7, green: 0.3, blue: 0.6)
-        case .health:    return Color(red: 0.85, green: 0.3, blue: 0.35)
-        case .religion:  return Color(red: 0.55, green: 0.4, blue: 0.75)
-        case .home:      return Color(red: 0.9, green: 0.5, blue: 0.2)
-        case .children:  return Color(red: 0.3, green: 0.7, blue: 0.6)
-        case .other:     return Color(red: 0.5, green: 0.5, blue: 0.6)
-        }
-    }
-
     var body: some View {
         Button {
             OffriiHaptics.tap()
@@ -38,23 +14,21 @@ struct EntraideWishCard: View {
         } label: {
             HStack(alignment: .top, spacing: OffriiTheme.spacingMD) {
                 // Category icon
-                Image(systemName: categoryIcon)
+                Image(systemName: wish.category.icon)
                     .font(.system(size: 18))
-                    .foregroundColor(categoryColor)
+                    .foregroundColor(wish.category.color)
                     .frame(width: 36, height: 36)
-                    .background(categoryColor.opacity(0.12))
+                    .background(wish.category.color.opacity(0.12))
                     .clipShape(RoundedRectangle(cornerRadius: 8))
 
                 // Text content
                 VStack(alignment: .leading, spacing: 3) {
-                    // Title
                     Text(wish.title)
                         .font(.system(size: 15, weight: .semibold))
                         .foregroundColor(OffriiTheme.text)
                         .lineLimit(2)
                         .multilineTextAlignment(.leading)
 
-                    // Description
                     if let desc = wish.description, !desc.isEmpty {
                         Text(desc)
                             .font(.system(size: 13))
@@ -62,7 +36,6 @@ struct EntraideWishCard: View {
                             .lineLimit(2)
                     }
 
-                    // Metadata: Author · Category · Time
                     HStack(spacing: 4) {
                         if let name = wish.displayName {
                             Text(name)
@@ -76,15 +49,22 @@ struct EntraideWishCard: View {
                     .foregroundColor(OffriiTheme.textMuted)
                     .lineLimit(1)
 
-                    // Status badge (only for non-open)
                     if wish.status != .open {
                         statusBadge
+                    } else if wish.createdAt < Date().addingTimeInterval(-48 * 3600) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "clock")
+                                .font(.system(size: 10))
+                            Text(NSLocalizedString("entraide.aging.waiting", comment: ""))
+                                .font(.system(size: 11))
+                        }
+                        .foregroundColor(OffriiTheme.warning)
+                        .padding(.top, 2)
                     }
                 }
 
                 Spacer(minLength: 0)
 
-                // Optional photo (trailing, small)
                 if let url = wish.displayImageUrl {
                     LazyImage(url: url) { state in
                         if let image = state.image {
@@ -105,8 +85,6 @@ struct EntraideWishCard: View {
         }
         .buttonStyle(.plain)
     }
-
-    // MARK: - Status Badge
 
     private var statusBadge: some View {
         let (color, label) = statusInfo

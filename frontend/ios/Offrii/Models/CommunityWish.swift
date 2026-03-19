@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 
 // MARK: - Wish Category
 
@@ -25,6 +26,41 @@ enum WishCategory: String, Codable, CaseIterable, Identifiable {
         }
     }
 
+    var icon: String {
+        switch self {
+        case .education: return "book.fill"
+        case .clothing:  return "tshirt.fill"
+        case .health:    return "heart.fill"
+        case .religion:  return "hands.sparkles.fill"
+        case .home:      return "house.fill"
+        case .children:  return "figure.and.child.holdinghands"
+        case .other:     return "tag.fill"
+        }
+    }
+
+    var color: Color {
+        switch self {
+        case .education: return Color(red: 0.2, green: 0.4, blue: 0.85)
+        case .clothing:  return Color(red: 0.7, green: 0.3, blue: 0.6)
+        case .health:    return Color(red: 0.85, green: 0.3, blue: 0.35)
+        case .religion:  return Color(red: 0.55, green: 0.4, blue: 0.75)
+        case .home:      return Color(red: 0.9, green: 0.5, blue: 0.2)
+        case .children:  return Color(red: 0.3, green: 0.7, blue: 0.6)
+        case .other:     return Color(red: 0.5, green: 0.5, blue: 0.6)
+        }
+    }
+
+    var gradient: [Color] {
+        switch self {
+        case .education: return [color, Color(red: 0.4, green: 0.6, blue: 1.0)]
+        case .clothing:  return [color, Color(red: 0.9, green: 0.5, blue: 0.8)]
+        case .health:    return [color, Color(red: 1.0, green: 0.5, blue: 0.55)]
+        case .religion:  return [color, Color(red: 0.75, green: 0.6, blue: 0.95)]
+        case .home:      return [color, Color(red: 1.0, green: 0.7, blue: 0.4)]
+        case .children:  return [color, Color(red: 0.5, green: 0.9, blue: 0.8)]
+        case .other:     return [color, Color(red: 0.7, green: 0.7, blue: 0.8)]
+        }
+    }
 }
 
 // MARK: - Wish Status

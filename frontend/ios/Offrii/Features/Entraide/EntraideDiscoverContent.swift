@@ -8,6 +8,7 @@ struct EntraideDiscoverContent: View {
     @Binding var showCreateSheet: Bool
     var searchQuery: String
     @AppStorage("entraide.onboarding.dismissed") private var onboardingDismissed = false
+    @State private var recentFulfilled: [CommunityWish] = []
 
     private var displayedWishes: [CommunityWish] {
         if searchQuery.isEmpty {
@@ -36,6 +37,42 @@ struct EntraideDiscoverContent: View {
             }
         } else {
             LazyVStack(spacing: OffriiTheme.spacingSM) {
+                // Recently fulfilled section
+                if !recentFulfilled.isEmpty {
+                    VStack(alignment: .leading, spacing: OffriiTheme.spacingSM) {
+                        Text(NSLocalizedString("entraide.recentFulfilled.title", comment: ""))
+                            .font(OffriiTypography.subheadline)
+                            .fontWeight(.semibold)
+                            .foregroundColor(OffriiTheme.text)
+
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: OffriiTheme.spacingSM) {
+                                ForEach(recentFulfilled) { wish in
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        HStack(spacing: 4) {
+                                            Image(systemName: "checkmark.circle.fill")
+                                                .font(.system(size: 12))
+                                                .foregroundColor(OffriiTheme.success)
+                                            Text(wish.title)
+                                                .font(.system(size: 13, weight: .medium))
+                                                .foregroundColor(OffriiTheme.text)
+                                                .lineLimit(1)
+                                        }
+                                        Text(wish.category.label)
+                                            .font(.system(size: 11))
+                                            .foregroundColor(OffriiTheme.textMuted)
+                                    }
+                                    .padding(OffriiTheme.spacingSM)
+                                    .background(OffriiTheme.success.opacity(0.05))
+                                    .cornerRadius(OffriiTheme.cornerRadiusMD)
+                                    .frame(width: 180)
+                                }
+                            }
+                        }
+                    }
+                    .padding(.bottom, OffriiTheme.spacingSM)
+                }
+
                 // Onboarding card (first visit only)
                 if !onboardingDismissed {
                     VStack(alignment: .leading, spacing: OffriiTheme.spacingSM) {
@@ -79,6 +116,9 @@ struct EntraideDiscoverContent: View {
             }
             .padding(.horizontal, OffriiTheme.spacingBase)
             .padding(.vertical, OffriiTheme.spacingSM)
+            .task {
+                recentFulfilled = (try? await CommunityWishService.shared.listRecentFulfilled()) ?? []
+            }
         }
     }
 

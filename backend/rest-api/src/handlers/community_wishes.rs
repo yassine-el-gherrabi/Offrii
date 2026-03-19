@@ -24,6 +24,7 @@ pub fn router() -> Router<AppState> {
         .route("/", post(create_wish).get(list_wishes))
         .route("/mine", get(list_my_wishes))
         .route("/my-offers", get(list_my_offers))
+        .route("/recent-fulfilled", get(list_recent_fulfilled))
         .route(
             "/{id}",
             get(get_wish).patch(update_wish).delete(delete_wish),
@@ -107,6 +108,39 @@ async fn list_my_offers(
         .list_my_offers(auth_user.user_id)
         .await?;
     Ok(Json(response))
+}
+
+#[tracing::instrument(skip(state))]
+async fn list_recent_fulfilled(
+    State(state): State<AppState>,
+) -> Result<Json<Vec<WishResponse>>, AppError> {
+    let wishes: Vec<crate::models::CommunityWish> = sqlx::query_as(
+        "SELECT * FROM community_wishes \
+         WHERE status = 'fulfilled' AND fulfilled_at > NOW() - INTERVAL '7 days' \
+         ORDER BY fulfilled_at DESC LIMIT 5",
+    )
+    .fetch_all(&state.db)
+    .await
+    .map_err(|e| AppError::Internal(e.into()))?;
+
+    let responses = wishes
+        .into_iter()
+        .map(|w| WishResponse {
+            id: w.id,
+            display_name: None, // Public feed — names resolved by service layer
+            title: w.title,
+            description: w.description,
+            category: w.category,
+            status: w.status,
+            is_mine: false,
+            is_matched_by_me: false,
+            image_url: w.image_url,
+            links: w.links,
+            created_at: w.created_at,
+        })
+        .collect();
+
+    Ok(Json(responses))
 }
 
 #[tracing::instrument(skip(state))]

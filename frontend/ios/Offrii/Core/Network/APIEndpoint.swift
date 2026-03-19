@@ -141,6 +141,7 @@ enum APIEndpoint {
     case reportCommunityWish(id: UUID, body: ReportCommunityWishBody)
     case listMyCommunityWishes
     case listMyCommunityOffers
+    case listRecentFulfilled
 
     // MARK: Wish Messages
 
@@ -249,6 +250,7 @@ extension APIEndpoint {
         case .createCommunityWish:                      return "/community/wishes"
         case .listMyCommunityWishes:                    return "/community/wishes/mine"
         case .listMyCommunityOffers:                   return "/community/wishes/my-offers"
+        case .listRecentFulfilled:                     return "/community/wishes/recent-fulfilled"
         case .getCommunityWish(let id):                 return "/community/wishes/\(id)"
         case .updateCommunityWish(let id, _):           return "/community/wishes/\(id)"
         case .closeCommunityWish(let id):               return "/community/wishes/\(id)/close"
@@ -363,6 +365,7 @@ extension APIEndpoint {
         case .createCommunityWish:              return .POST
         case .listMyCommunityWishes:            return .GET
         case .listMyCommunityOffers:           return .GET
+        case .listRecentFulfilled:             return .GET
         case .getCommunityWish:                 return .GET
         case .updateCommunityWish:              return .PATCH
         case .closeCommunityWish:               return .POST

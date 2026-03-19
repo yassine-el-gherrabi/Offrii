@@ -1,0 +1,1234 @@
+openapi: 3.1.0
+info:
+  title: Offrii API
+  description: |
+    API REST pour l'application Offrii — gestion de wishlists personnelles
+    avec catégories, rappels push, et cercles de partage (à venir).
+  version: 1.0.0
+  contact:
+    name: Offrii
+    email: noreply@offrii.com
+
+servers:
+  - url: http://localhost:3000
+    description: Développement local
+
+security:
+  - BearerAuth: []
+
+tags:
+  - name: Health
+    description: Sondes de santé
+  - name: Auth
+    description: Authentification et gestion de session
+  - name: Users
+    description: Profil utilisateur et données
+  - name: Items
+    description: Gestion des items de wishlist
+  - name: Categories
+    description: Gestion des catégories
+  - name: Push Tokens
+    description: Gestion des tokens de notification push
+
+paths:
+  # ──────────────────────────────────────────────────────────────────
+  # HEALTH
+  # ──────────────────────────────────────────────────────────────────
+
+  /health:
+    get:
+      tags: [Health]
+      summary: Health check complet
+      description: Vérifie la connectivité BDD et Redis (timeout 5s)
+      security: []
+      operationId: healthCheck
+      responses:
+        "200":
+          description: Tous les services sont opérationnels
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+              example:
+                status: ok
+                db: connected
+                redis: connected
+        "503":
+          description: Un ou plusieurs services sont indisponibles
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+              example:
+                status: degraded
+                db: connected
+                redis: disconnected
+
+  /health/live:
+    get:
+      tags: [Health]
+      summary: Liveness probe
+      description: Retourne ok si le processus est vivant
+      security: []
+      operationId: healthLive
+      responses:
+        "200":
+          description: Le service est vivant
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+
+  /health/ready:
+    get:
+      tags: [Health]
+      summary: Readiness probe
+      description: Alias de /health — vérifie BDD + Redis
+      security: []
+      operationId: healthReady
+      responses:
+        "200":
+          description: Le service est prêt
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+        "503":
+          description: Le service n'est pas prêt
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+
+  # ──────────────────────────────────────────────────────────────────
+  # AUTH
+  # ──────────────────────────────────────────────────────────────────
+
+  /auth/register:
+    post:
+      tags: [Auth]
+      summary: Inscription
+      description: |
+        Crée un nouveau compte utilisateur.
+        - Valide le mot de passe (OWASP : 8-128 chars, pas courant, pas breached HIBP)
+        - Copie les 6 catégories par défaut
+        - Retourne une paire de tokens JWT
+      security: []
+      operationId: register
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterRequest"
+      responses:
+        "201":
+          description: Compte créé
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          description: Données invalides ou mot de passe non conforme
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Email déjà utilisé
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Connexion
+      description: |
+        Authentifie un utilisateur par email/mot de passe.
+        Protection anti-timing : le hash est toujours vérifié même si l'email n'existe pas.
+      security: []
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: Connexion réussie
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          description: Données invalides
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Email ou mot de passe incorrect
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/refresh:
+    post:
+      tags: [Auth]
+      summary: Rafraîchir les tokens
+      description: |
+        Échange un refresh token valide contre une nouvelle paire access + refresh.
+        L'ancien refresh token est atomiquement révoqué.
+      security: []
+      operationId: refreshToken
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RefreshRequest"
+      responses:
+        "200":
+          description: Nouvelle paire de tokens
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RefreshResponse"
+        "400":
+          description: Données invalides
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Refresh token invalide, expiré ou révoqué
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/logout:
+    post:
+      tags: [Auth]
+      summary: Déconnexion
+      description: |
+        Révoque tous les refresh tokens de l'utilisateur et ajoute le JTI de l'access token
+        à la blacklist Redis. Pas de request body — utilise uniquement le Bearer token du header.
+      operationId: logout
+      responses:
+        "204":
+          description: Déconnexion réussie (pas de body)
+        "401":
+          description: Token invalide
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/change-password:
+    post:
+      tags: [Auth]
+      summary: Changer le mot de passe
+      description: |
+        Change le mot de passe de l'utilisateur connecté.
+        Invalide tous les tokens existants (version bump + revoke all refresh tokens).
+        Le client doit se re-connecter via /auth/login après ce call.
+      operationId: changePassword
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChangePasswordRequest"
+      responses:
+        "204":
+          description: Mot de passe changé, tous les tokens invalidés (pas de body)
+        "400":
+          description: Nouveau mot de passe non conforme
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Mot de passe actuel incorrect
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/forgot-password:
+    post:
+      tags: [Auth]
+      summary: Demander un reset de mot de passe
+      description: |
+        Envoie un code de 6 chiffres par email (TTL 30 min, code hashé SHA-256 en Redis).
+        Retourne toujours 200 même si l'email n'existe pas (anti-énumération).
+        Rate limited : max 1 requête par email par 60 secondes via Redis SET NX.
+      security: []
+      operationId: forgotPassword
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ForgotPasswordRequest"
+      responses:
+        "200":
+          description: Requête acceptée (pas de body). Toujours 200, même si email inexistant ou rate-limited.
+
+  /auth/reset-password:
+    post:
+      tags: [Auth]
+      summary: Réinitialiser le mot de passe
+      description: |
+        Réinitialise le mot de passe avec le code reçu par email.
+        Le code est vérifié via SHA-256 hash comparison.
+        Invalide tous les tokens existants. Le client doit se re-connecter via /auth/login.
+      security: []
+      operationId: resetPassword
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResetPasswordRequest"
+      responses:
+        "204":
+          description: Mot de passe réinitialisé, tous les tokens invalidés (pas de body)
+        "400":
+          description: Code invalide, expiré, ou mot de passe non conforme
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Code incorrect
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  # ──────────────────────────────────────────────────────────────────
+  # USERS
+  # ──────────────────────────────────────────────────────────────────
+
+  /users/me:
+    get:
+      tags: [Users]
+      summary: Profil de l'utilisateur connecté
+      operationId: getProfile
+      responses:
+        "200":
+          description: Profil utilisateur
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfileResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+    patch:
+      tags: [Users]
+      summary: Mettre à jour le profil
+      description: |
+        Mise à jour partielle du profil. Tous les champs sont optionnels.
+        Quand `reminder_time` ou `timezone` change, `utc_reminder_hour` est recalculé.
+      operationId: updateProfile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateProfileRequest"
+      responses:
+        "200":
+          description: Profil mis à jour
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfileResponse"
+        "400":
+          description: Données invalides (timezone inconnue, etc.)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+    delete:
+      tags: [Users]
+      summary: Supprimer le compte
+      description: |
+        Suppression définitive du compte et de toutes les données associées (CASCADE).
+      operationId: deleteAccount
+      responses:
+        "204":
+          description: Compte supprimé (pas de body)
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /users/me/export:
+    get:
+      tags: [Users]
+      summary: Exporter les données (GDPR)
+      description: |
+        Retourne l'intégralité des données de l'utilisateur : profil, items, catégories.
+      operationId: exportData
+      responses:
+        "200":
+          description: Export complet
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserDataExport"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  # ──────────────────────────────────────────────────────────────────
+  # ITEMS
+  # ──────────────────────────────────────────────────────────────────
+
+  /items:
+    get:
+      tags: [Items]
+      summary: Lister les items
+      description: |
+        Liste paginée des items de l'utilisateur avec tri et filtres.
+        Résultats cachés dans Redis (version-based, TTL 5min).
+      operationId: listItems
+      parameters:
+        - name: status
+          in: query
+          description: Filtrer par statut
+          schema:
+            type: string
+            enum: [active, purchased]
+            default: active
+        - name: category_id
+          in: query
+          description: Filtrer par catégorie
+          schema:
+            type: string
+            format: uuid
+        - name: sort
+          in: query
+          description: Champ de tri
+          schema:
+            type: string
+            enum: [created_at, priority, name]
+            default: created_at
+        - name: order
+          in: query
+          description: Ordre de tri
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
+        - name: page
+          in: query
+          description: Numéro de page (1-1000)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 1000
+            default: 1
+        - name: per_page
+          in: query
+          description: Items par page (1-100)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+      responses:
+        "200":
+          description: Liste paginée d'items
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ItemsListResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+    post:
+      tags: [Items]
+      summary: Créer un item
+      description: |
+        Crée un nouvel item dans la wishlist.
+        La `category_id`, si fournie, est vérifiée (ownership).
+      operationId: createItem
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateItemRequest"
+      responses:
+        "201":
+          description: Item créé
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ItemResponse"
+        "400":
+          description: Données invalides
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /items/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+
+    get:
+      tags: [Items]
+      summary: Détail d'un item
+      description: Retourne un item par son ID (exclut les items deleted)
+      operationId: getItem
+      responses:
+        "200":
+          description: Détail de l'item
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ItemResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          description: Item non trouvé
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+    put:
+      tags: [Items]
+      summary: Mettre à jour un item
+      description: |
+        Mise à jour partielle d'un item.
+        Retourne 409 si le status demandé est identique au status actuel.
+      operationId: updateItem
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateItemRequest"
+      responses:
+        "200":
+          description: Item mis à jour
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ItemResponse"
+        "400":
+          description: Données invalides
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          description: Item non trouvé
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Item déjà dans ce statut
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+    delete:
+      tags: [Items]
+      summary: Supprimer un item (soft delete)
+      description: Passe le status de l'item à `deleted`
+      operationId: deleteItem
+      responses:
+        "204":
+          description: Item supprimé (pas de body)
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          description: Item non trouvé
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  # ──────────────────────────────────────────────────────────────────
+  # CATEGORIES
+  # ──────────────────────────────────────────────────────────────────
+
+  /categories:
+    get:
+      tags: [Categories]
+      summary: Lister les catégories
+      description: |
+        Retourne toutes les catégories de l'utilisateur, triées par position puis date de création.
+        Résultats cachés dans Redis (version-based, TTL 5min).
+      operationId: listCategories
+      responses:
+        "200":
+          description: Liste des catégories
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CategoryResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+    post:
+      tags: [Categories]
+      summary: Créer une catégorie
+      operationId: createCategory
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCategoryRequest"
+      responses:
+        "201":
+          description: Catégorie créée
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CategoryResponse"
+        "400":
+          description: Données invalides
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          description: Nom de catégorie déjà utilisé
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /categories/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+
+    put:
+      tags: [Categories]
+      summary: Mettre à jour une catégorie
+      operationId: updateCategory
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateCategoryRequest"
+      responses:
+        "200":
+          description: Catégorie mise à jour
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CategoryResponse"
+        "400":
+          description: Données invalides
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          description: Catégorie non trouvée
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+    delete:
+      tags: [Categories]
+      summary: Supprimer une catégorie
+      description: |
+        Supprime une catégorie personnalisée. Les catégories par défaut ne peuvent pas être supprimées.
+        Les items associés ont leur `category_id` mis à NULL.
+        Invalide le cache catégories ET items (car FK SET NULL modifie les items).
+      operationId: deleteCategory
+      responses:
+        "204":
+          description: Catégorie supprimée (pas de body)
+        "400":
+          description: Impossible de supprimer une catégorie par défaut
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          description: Catégorie non trouvée
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  # ──────────────────────────────────────────────────────────────────
+  # PUSH TOKENS
+  # ──────────────────────────────────────────────────────────────────
+
+  /push-tokens:
+    post:
+      tags: [Push Tokens]
+      summary: Enregistrer un push token
+      description: |
+        Enregistre ou met à jour un token de notification push pour l'appareil.
+        Upsert : si le token existe déjà, la plateforme est mise à jour.
+      operationId: registerPushToken
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterPushTokenRequest"
+      responses:
+        "201":
+          description: Token enregistré
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PushTokenResponse"
+        "400":
+          description: Données invalides (plateforme non reconnue)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /push-tokens/{token}:
+    parameters:
+      - name: token
+        in: path
+        required: true
+        description: Le token push à supprimer
+        schema:
+          type: string
+
+    delete:
+      tags: [Push Tokens]
+      summary: Supprimer un push token
+      operationId: unregisterPushToken
+      responses:
+        "204":
+          description: Token supprimé (pas de body)
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        JWT RS256 access token (TTL 15min).
+        Claims : sub (user_id), jti, exp, iat, token_type (access/refresh), iss (offrii-api), aud (offrii-app), token_version.
+        Vérifications middleware (en pipeline Redis) :
+        - Signature RS256 + expiration + issuer + audience + token_type
+        - EXISTS blacklist:{jti} → token révoqué
+        - GET tkver:{user_id} → token_version obsolète
+        Fail-open si Redis indisponible.
+
+  responses:
+    Unauthorized:
+      description: Token manquant, invalide, expiré ou révoqué
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            error:
+              code: UNAUTHORIZED
+              message: invalid or expired token
+
+  schemas:
+    # ── Errors ──────────────────────────────────────────────────────
+
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code:
+              type: string
+              description: Code d'erreur machine
+              enum:
+                - BAD_REQUEST
+                - UNAUTHORIZED
+                - NOT_FOUND
+                - CONFLICT
+                - INTERNAL_ERROR
+                - SERVICE_UNAVAILABLE
+            message:
+              type: string
+              description: Message d'erreur lisible
+
+    # ── Health ──────────────────────────────────────────────────────
+
+    HealthResponse:
+      type: object
+      required: [status, db, redis]
+      properties:
+        status:
+          type: string
+          enum: [ok, degraded]
+          description: "'ok' si tout est up, 'degraded' sinon (→ 503)"
+        db:
+          type: string
+          enum: [connected, disconnected]
+        redis:
+          type: string
+          enum: [connected, disconnected]
+
+    # ── Auth ────────────────────────────────────────────────────────
+
+    RegisterRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+          description: Adresse email valide
+        password:
+          type: string
+          minLength: 8
+          maxLength: 128
+          description: "8-128 chars, pas courant, pas breached (OWASP 2024)"
+        display_name:
+          type: string
+          maxLength: 100
+          description: Nom d'affichage (optionnel, validé max 100 chars)
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 1
+
+    RefreshRequest:
+      type: object
+      required: [refresh_token]
+      properties:
+        refresh_token:
+          type: string
+          minLength: 1
+          description: JWT refresh token
+
+    ChangePasswordRequest:
+      type: object
+      required: [current_password, new_password]
+      properties:
+        current_password:
+          type: string
+          minLength: 1
+        new_password:
+          type: string
+          minLength: 8
+          maxLength: 128
+
+    ForgotPasswordRequest:
+      type: object
+      required: [email]
+      properties:
+        email:
+          type: string
+          format: email
+
+    ResetPasswordRequest:
+      type: object
+      required: [email, code, new_password]
+      properties:
+        email:
+          type: string
+          format: email
+        code:
+          type: string
+          minLength: 6
+          maxLength: 6
+          pattern: "^[0-9]{6}$"
+          description: Code de 6 chiffres reçu par email
+        new_password:
+          type: string
+          minLength: 8
+          maxLength: 128
+
+    TokenPair:
+      type: object
+      required: [access_token, refresh_token, token_type, expires_in]
+      properties:
+        access_token:
+          type: string
+          description: JWT RS256 access token
+        refresh_token:
+          type: string
+          description: JWT RS256 refresh token
+        token_type:
+          type: string
+          const: Bearer
+        expires_in:
+          type: integer
+          description: TTL de l'access token en secondes
+          example: 900
+
+    AuthUserResponse:
+      type: object
+      required: [id, email, created_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        display_name:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+
+    AuthResponse:
+      type: object
+      required: [tokens, user]
+      properties:
+        tokens:
+          $ref: "#/components/schemas/TokenPair"
+        user:
+          $ref: "#/components/schemas/AuthUserResponse"
+
+    RefreshResponse:
+      type: object
+      required: [tokens]
+      properties:
+        tokens:
+          $ref: "#/components/schemas/TokenPair"
+
+    # ── Users ───────────────────────────────────────────────────────
+
+    UserProfileResponse:
+      type: object
+      required: [id, email, reminder_freq, reminder_time, timezone, locale, created_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        display_name:
+          type: string
+          nullable: true
+        reminder_freq:
+          type: string
+          enum: [never, daily, weekly, monthly]
+        reminder_time:
+          type: string
+          format: time
+          description: "Heure locale du rappel (HH:MM:SS)"
+          example: "10:00:00"
+        timezone:
+          type: string
+          description: Timezone IANA (ex. Europe/Paris)
+          example: Europe/Paris
+        locale:
+          type: string
+          description: Locale utilisateur
+          example: fr
+        created_at:
+          type: string
+          format: date-time
+
+    UpdateProfileRequest:
+      type: object
+      properties:
+        display_name:
+          type: string
+          maxLength: 100
+          nullable: true
+        reminder_freq:
+          type: string
+          enum: [never, daily, weekly, monthly]
+        reminder_time:
+          type: string
+          format: time
+          description: "Heure locale (HH:MM:SS)"
+        timezone:
+          type: string
+          description: Timezone IANA valide
+        locale:
+          type: string
+          maxLength: 10
+
+    UserDataExport:
+      type: object
+      required: [profile, items, categories, exported_at]
+      properties:
+        profile:
+          $ref: "#/components/schemas/UserProfileResponse"
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ItemResponse"
+        categories:
+          type: array
+          items:
+            $ref: "#/components/schemas/CategoryResponse"
+        exported_at:
+          type: string
+          format: date-time
+
+    # ── Items ───────────────────────────────────────────────────────
+
+    CreateItemRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        description:
+          type: string
+          maxLength: 5000
+          nullable: true
+        url:
+          type: string
+          maxLength: 2048
+          nullable: true
+        estimated_price:
+          type: number
+          format: decimal
+          minimum: 0
+          nullable: true
+          description: Prix estimé (>= 0)
+        priority:
+          type: integer
+          minimum: 1
+          maximum: 3
+          default: 2
+          description: "1 = basse, 2 = moyenne, 3 = haute"
+        category_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: UUID de la catégorie (vérifié ownership)
+
+    UpdateItemRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        description:
+          type: string
+          maxLength: 5000
+          nullable: true
+        url:
+          type: string
+          maxLength: 2048
+          nullable: true
+        estimated_price:
+          type: number
+          format: decimal
+          minimum: 0
+          nullable: true
+        priority:
+          type: integer
+          minimum: 1
+          maximum: 3
+        category_id:
+          type: string
+          format: uuid
+          nullable: true
+        status:
+          type: string
+          enum: [active, purchased]
+          description: "Changer le statut (409 si déjà dans ce statut)"
+
+    ItemResponse:
+      type: object
+      required: [id, name, priority, status, created_at, updated_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        url:
+          type: string
+          nullable: true
+        estimated_price:
+          type: number
+          format: decimal
+          nullable: true
+        priority:
+          type: integer
+          minimum: 1
+          maximum: 3
+        category_id:
+          type: string
+          format: uuid
+          nullable: true
+        status:
+          type: string
+          enum: [active, purchased]
+        purchased_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    ItemsListResponse:
+      type: object
+      required: [items, total, page, per_page]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ItemResponse"
+        total:
+          type: integer
+          description: Nombre total d'items correspondant aux filtres
+        page:
+          type: integer
+        per_page:
+          type: integer
+
+    # ── Categories ──────────────────────────────────────────────────
+
+    CreateCategoryRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        icon:
+          type: string
+          maxLength: 50
+          nullable: true
+          description: Nom d'icône (SF Symbols / Ionicons)
+
+    UpdateCategoryRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        icon:
+          type: string
+          maxLength: 50
+          nullable: true
+        position:
+          type: integer
+          minimum: 0
+          description: Position pour le réordonnancement
+
+    CategoryResponse:
+      type: object
+      required: [id, name, is_default, position, created_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        icon:
+          type: string
+          nullable: true
+        is_default:
+          type: boolean
+          description: Catégorie par défaut (non supprimable)
+        position:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+
+    # ── Push Tokens ─────────────────────────────────────────────────
+
+    RegisterPushTokenRequest:
+      type: object
+      required: [token, platform]
+      properties:
+        token:
+          type: string
+          minLength: 1
+          description: Token Expo Push
+        platform:
+          type: string
+          enum: [ios, android]
+
+    PushTokenResponse:
+      type: object
+      required: [id, token, platform, created_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        token:
+          type: string
+        platform:
+          type: string
+          enum: [ios, android]
+        created_at:
+          type: string
+          format: date-time

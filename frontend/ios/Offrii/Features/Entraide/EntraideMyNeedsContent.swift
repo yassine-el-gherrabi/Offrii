@@ -102,11 +102,11 @@ struct EntraideMyNeedsContent: View {
         } label: {
             HStack(alignment: .top, spacing: OffriiTheme.spacingMD) {
                 // Category icon
-                Image(systemName: categoryIcon(wish.category))
+                Image(systemName: wish.category.icon)
                     .font(.system(size: 18))
-                    .foregroundColor(categoryColor(wish.category))
+                    .foregroundColor(wish.category.color)
                     .frame(width: 36, height: 36)
-                    .background(categoryColor(wish.category).opacity(0.12))
+                    .background(wish.category.color.opacity(0.12))
                     .clipShape(RoundedRectangle(cornerRadius: 8))
 
                 // Text
@@ -127,6 +127,13 @@ struct EntraideMyNeedsContent: View {
                     // Status + context
                     HStack(spacing: 4) {
                         statusBadge(wish.status)
+
+                        if wish.status == .matched, let matchedAt = wish.matchedAt {
+                            Text("·")
+                                .foregroundColor(OffriiTheme.textMuted)
+                            Text(matchedAt, style: .relative)
+                                .foregroundColor(OffriiTheme.textMuted)
+                        }
 
                         if let donor = wish.matchedWithDisplayName {
                             Text("·")
@@ -273,27 +280,4 @@ struct EntraideMyNeedsContent: View {
         }
     }
 
-    private func categoryColor(_ cat: WishCategory) -> Color {
-        switch cat {
-        case .education: return Color(red: 0.2, green: 0.4, blue: 0.85)
-        case .clothing:  return Color(red: 0.7, green: 0.3, blue: 0.6)
-        case .health:    return Color(red: 0.85, green: 0.3, blue: 0.35)
-        case .religion:  return Color(red: 0.55, green: 0.4, blue: 0.75)
-        case .home:      return Color(red: 0.9, green: 0.5, blue: 0.2)
-        case .children:  return Color(red: 0.3, green: 0.7, blue: 0.6)
-        case .other:     return Color(red: 0.5, green: 0.5, blue: 0.6)
-        }
-    }
-
-    private func categoryIcon(_ cat: WishCategory) -> String {
-        switch cat {
-        case .education: return "book.fill"
-        case .clothing:  return "tshirt.fill"
-        case .health:    return "heart.fill"
-        case .religion:  return "hands.sparkles.fill"
-        case .home:      return "house.fill"
-        case .children:  return "figure.and.child.holdinghands"
-        case .other:     return "tag.fill"
-        }
-    }
 }

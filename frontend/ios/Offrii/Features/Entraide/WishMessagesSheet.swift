@@ -10,6 +10,8 @@ struct WishMessagesSheet: View {
     @State private var messageText = ""
     @State private var isLoading = false
     @State private var isSending = false
+    @State private var currentPage = 1
+    @State private var hasMorePages = false
     @State private var pollingTask: Task<Void, Never>?
     @State private var lastActivityTime = Date()
 
@@ -58,6 +60,18 @@ struct WishMessagesSheet: View {
         ScrollViewReader { proxy in
             ScrollView {
                 LazyVStack(spacing: OffriiTheme.spacingSM) {
+                    if hasMorePages {
+                        Button {
+                            Task { await loadOlderMessages() }
+                        } label: {
+                            Text(NSLocalizedString("entraide.messages.loadMore", comment: ""))
+                                .font(OffriiTypography.caption)
+                                .foregroundColor(OffriiTheme.primary)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, OffriiTheme.spacingSM)
+                        }
+                    }
+
                     ForEach(messages) { message in
                         MessageBubble(
                             text: message.body,
@@ -117,13 +131,27 @@ struct WishMessagesSheet: View {
 
     private func loadMessages() async {
         isLoading = true
+        currentPage = 1
         do {
             let response = try await WishMessageService.shared.listMessages(
-                wishId: wishId, page: 1, limit: 100
+                wishId: wishId, page: 1, limit: 50
             )
             messages = response.data
+            hasMorePages = response.pagination.hasMore
         } catch {}
         isLoading = false
+    }
+
+    private func loadOlderMessages() async {
+        let nextPage = currentPage + 1
+        do {
+            let response = try await WishMessageService.shared.listMessages(
+                wishId: wishId, page: nextPage, limit: 50
+            )
+            messages.insert(contentsOf: response.data, at: 0)
+            hasMorePages = response.pagination.hasMore
+            currentPage = nextPage
+        } catch {}
     }
 
     private func sendMessage() async {

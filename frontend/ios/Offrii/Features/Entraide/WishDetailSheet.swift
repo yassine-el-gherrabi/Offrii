@@ -1,4 +1,3 @@
-// swiftlint:disable file_length
 import NukeUI
 import SwiftUI
 
@@ -211,13 +210,13 @@ struct WishDetailSheet: View {
 
     private func gradientPlaceholder(_ category: WishCategory) -> some View {
         return LinearGradient(
-            colors: categoryGradient(category),
+            colors: category.gradient,
             startPoint: .topLeading,
             endPoint: .bottomTrailing
         )
         .frame(height: 200)
         .overlay(
-            Image(systemName: categoryIcon(category))
+            Image(systemName: category.icon)
                 .font(.system(size: 48, weight: .light))
                 .foregroundColor(.white.opacity(0.5))
         )
@@ -226,9 +225,9 @@ struct WishDetailSheet: View {
     // MARK: - Category Chip
 
     private func categoryChip(_ category: WishCategory) -> some View {
-        let color = categoryColor(category)
+        let color = category.color
         return HStack(spacing: 4) {
-            Image(systemName: categoryIcon(category))
+            Image(systemName: category.icon)
                 .font(.system(size: 11))
             Text(category.label)
                 .font(.system(size: 12, weight: .medium))
@@ -462,43 +461,6 @@ struct WishDetailSheet: View {
     }
 
     // MARK: - Helpers
-
-    private func categoryColor(_ cat: WishCategory) -> Color {
-        switch cat {
-        case .education: return Color(red: 0.2, green: 0.4, blue: 0.85)
-        case .clothing:  return Color(red: 0.7, green: 0.3, blue: 0.6)
-        case .health:    return Color(red: 0.85, green: 0.3, blue: 0.35)
-        case .religion:  return Color(red: 0.55, green: 0.4, blue: 0.75)
-        case .home:      return Color(red: 0.9, green: 0.5, blue: 0.2)
-        case .children:  return Color(red: 0.3, green: 0.7, blue: 0.6)
-        case .other:     return Color(red: 0.5, green: 0.5, blue: 0.6)
-        }
-    }
-
-    private func categoryGradient(_ cat: WishCategory) -> [Color] {
-        let base = categoryColor(cat)
-        switch cat {
-        case .education: return [base, Color(red: 0.4, green: 0.6, blue: 1.0)]
-        case .clothing:  return [base, Color(red: 0.9, green: 0.5, blue: 0.8)]
-        case .health:    return [base, Color(red: 1.0, green: 0.5, blue: 0.55)]
-        case .religion:  return [base, Color(red: 0.75, green: 0.6, blue: 0.95)]
-        case .home:      return [base, Color(red: 1.0, green: 0.7, blue: 0.4)]
-        case .children:  return [base, Color(red: 0.5, green: 0.9, blue: 0.8)]
-        case .other:     return [base, Color(red: 0.7, green: 0.7, blue: 0.8)]
-        }
-    }
-
-    private func categoryIcon(_ cat: WishCategory) -> String {
-        switch cat {
-        case .education: return "book.fill"
-        case .clothing:  return "tshirt.fill"
-        case .health:    return "heart.fill"
-        case .religion:  return "hands.sparkles.fill"
-        case .home:      return "house.fill"
-        case .children:  return "figure.and.child.holdinghands"
-        case .other:     return "tag.fill"
-        }
-    }
 
     private func statusInfo(_ status: WishStatus) -> (Color, String) {
         switch status {

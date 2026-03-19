@@ -10,6 +10,7 @@ struct ReportWishSheet: View {
     @State private var isSubmitting = false
     @State private var error: String?
     @State private var showSuccess = false
+    @State private var otherDetails = ""
 
     var body: some View {
         NavigationStack {
@@ -48,6 +49,23 @@ struct ReportWishSheet: View {
                         }
                         .buttonStyle(.plain)
                     }
+                }
+
+                if selectedReason == .other {
+                    TextField(
+                        NSLocalizedString("entraide.report.otherPlaceholder", comment: ""),
+                        text: $otherDetails,
+                        axis: .vertical
+                    )
+                    .font(OffriiTypography.body)
+                    .lineLimit(2...4)
+                    .padding(OffriiTheme.spacingSM)
+                    .background(OffriiTheme.surface)
+                    .cornerRadius(OffriiTheme.cornerRadiusMD)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: OffriiTheme.cornerRadiusMD)
+                            .stroke(OffriiTheme.border, lineWidth: 1)
+                    )
                 }
 
                 if let error {
