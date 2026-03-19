@@ -3,6 +3,7 @@ import SwiftUI
 
 // MARK: - Wish Detail Sheet
 
+// swiftlint:disable:next type_body_length
 struct WishDetailSheet: View {
     let wishId: UUID
     var onOpenMessages: (() -> Void)?
@@ -15,6 +16,9 @@ struct WishDetailSheet: View {
     @State private var showOfferConfirm = false
     @State private var showCloseConfirm = false
     @State private var showDeleteConfirm = false
+    @State private var showEditSheet = false
+    @State private var showConfirmFulfillment = false
+    @State private var showCelebration = false
 
     private var wish: WishDetail? { viewModel.wish }
     private var isMine: Bool { wish?.isMine ?? false }
@@ -25,12 +29,24 @@ struct WishDetailSheet: View {
             ZStack {
                 OffriiTheme.background.ignoresSafeArea()
 
-                if viewModel.isLoading && wish == nil {
+                if showCelebration {
+                    VStack(spacing: OffriiTheme.spacingLG) {
+                        Image(systemName: "heart.circle.fill")
+                            .font(.system(size: 64))
+                            .foregroundColor(OffriiTheme.success)
+                        Text(NSLocalizedString("entraide.fulfill.celebration", comment: ""))
+                            .font(OffriiTypography.headline)
+                            .foregroundColor(OffriiTheme.text)
+                            .multilineTextAlignment(.center)
+                    }
+                    .transition(.opacity)
+                } else if viewModel.isLoading && wish == nil {
                     ProgressView()
                 } else if let wish {
                     wishContent(wish)
                 }
             }
+            .animation(OffriiAnimation.gentle, value: showCelebration)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button { dismiss() } label: {
@@ -39,6 +55,22 @@ struct WishDetailSheet: View {
                             .foregroundColor(OffriiTheme.textMuted)
                     }
                 }
+            }
+        }
+        .sheet(isPresented: $showEditSheet, onDismiss: {
+            Task { await viewModel.loadWish(id: wishId) }
+            onAction?()
+        }) {
+            if let wish = viewModel.wish {
+                CreateWishSheet(
+                    editingWishId: wish.id,
+                    editingTitle: wish.title,
+                    editingDescription: wish.description,
+                    editingCategory: wish.category,
+                    editingImageUrl: wish.imageUrl,
+                    editingLinks: wish.links
+                )
+                .presentationDetents([.large])
             }
         }
         .task {
@@ -263,7 +295,27 @@ struct WishDetailSheet: View {
                 variant: .primary,
                 isLoading: viewModel.isActioning
             ) {
-                Task { _ = await viewModel.confirm(id: wish.id) }
+                showConfirmFulfillment = true
+            }
+            .alert(
+                NSLocalizedString("entraide.fulfill.confirmTitle", comment: ""),
+                isPresented: $showConfirmFulfillment
+            ) {
+                Button(NSLocalizedString("common.cancel", comment: ""), role: .cancel) {}
+                Button(NSLocalizedString("entraide.action.confirm", comment: "")) {
+                    Task {
+                        if await viewModel.confirm(id: wish.id) {
+                            showCelebration = true
+                            try? await Task.sleep(for: .seconds(2))
+                            showCelebration = false
+                        }
+                    }
+                }
+            } message: {
+                Text(String(
+                    format: NSLocalizedString("entraide.fulfill.confirmMessage", comment: ""),
+                    wish.matchedWithDisplayName ?? ""
+                ))
             }
             HStack(spacing: OffriiTheme.spacingSM) {
                 OffriiButton(NSLocalizedString("entraide.action.reject", comment: ""), variant: .danger) {
@@ -292,6 +344,11 @@ struct WishDetailSheet: View {
 
     @ViewBuilder
     private func ownerOpenActions(_ wish: WishDetail) -> some View {
+        if isMine && (wish.status == .open || wish.status == .review) {
+            OffriiButton(NSLocalizedString("entraide.action.edit", comment: ""), variant: .secondary) {
+                showEditSheet = true
+            }
+        }
         if isMine && wish.status == .open {
             OffriiButton(NSLocalizedString("entraide.action.close", comment: ""), variant: .ghost) {
                 showCloseConfirm = true

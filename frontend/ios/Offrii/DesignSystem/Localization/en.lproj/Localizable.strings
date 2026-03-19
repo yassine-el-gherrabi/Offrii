@@ -351,6 +351,13 @@
 "entraide.action.closeSuccess" = "Wish closed.";
 "entraide.action.rejectSuccess" = "Offer declined.";
 "entraide.action.deleteSuccess" = "Wish deleted.";
+"entraide.action.edit" = "Edit";
+"entraide.edit.title" = "Edit wish";
+"entraide.fulfill.confirmTitle" = "Confirm help received?";
+"entraide.fulfill.confirmMessage" = "Confirm that %@ helped you?";
+"entraide.fulfill.celebration" = "Thank you!\nThis gesture has been recorded.";
+"entraide.onboarding.title" = "Welcome to Mutual Aid";
+"entraide.onboarding.body" = "Here, community members share their needs. You can offer your help or publish a wish. Everything is moderated for your safety.";
 "entraide.action.withdrawSuccess" = "You have withdrawn";
 "entraide.action.confirmSuccess" = "Wish confirmed! Thank you";
 

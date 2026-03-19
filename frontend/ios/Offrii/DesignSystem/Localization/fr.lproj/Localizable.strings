@@ -351,6 +351,13 @@
 "entraide.action.closeSuccess" = "Souhait fermé.";
 "entraide.action.rejectSuccess" = "Offre déclinée.";
 "entraide.action.deleteSuccess" = "Souhait supprimé.";
+"entraide.action.edit" = "Modifier";
+"entraide.edit.title" = "Modifier le souhait";
+"entraide.fulfill.confirmTitle" = "Confirmer l'aide reçue ?";
+"entraide.fulfill.confirmMessage" = "Confirmer que %@ vous a aidé ?";
+"entraide.fulfill.celebration" = "Merci !\nCe geste a été enregistré.";
+"entraide.onboarding.title" = "Bienvenue dans l'Entraide";
+"entraide.onboarding.body" = "Ici, les membres de la communauté partagent leurs besoins. Proposez votre aide ou publiez un souhait. Tout est modéré pour votre sécurité.";
 "entraide.action.withdrawSuccess" = "Vous vous êtes retiré";
 "entraide.action.confirmSuccess" = "Souhait confirmé ! Merci";
 

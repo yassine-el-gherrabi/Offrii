@@ -6,6 +6,14 @@ import SwiftUI
 struct CreateWishSheet: View {
     @Environment(\.dismiss) private var dismiss
 
+    /// If set, the sheet operates in edit mode for this wish.
+    var editingWishId: UUID?
+    var editingTitle: String?
+    var editingDescription: String?
+    var editingCategory: WishCategory?
+    var editingImageUrl: String?
+    var editingLinks: [String]?
+
     @State private var title = ""
     @State private var description = ""
     @State private var selectedCategory: WishCategory?
@@ -18,6 +26,8 @@ struct CreateWishSheet: View {
     @State private var isUploading = false
     @State private var isSubmitting = false
     @State private var error: String?
+
+    private var isEditing: Bool { editingWishId != nil }
 
     private var isTitleValid: Bool {
         !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && title.count <= 255
@@ -121,11 +131,23 @@ struct CreateWishSheet: View {
                 .padding(OffriiTheme.spacingLG)
             }
             .background(OffriiTheme.background)
-            .navigationTitle(NSLocalizedString("entraide.create.title", comment: ""))
+            .navigationTitle(isEditing
+                ? NSLocalizedString("entraide.edit.title", comment: "")
+                : NSLocalizedString("entraide.create.title", comment: "")
+            )
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(NSLocalizedString("common.cancel", comment: "")) { dismiss() }
+                }
+            }
+            .onAppear {
+                if editingWishId != nil {
+                    title = editingTitle ?? ""
+                    description = editingDescription ?? ""
+                    selectedCategory = editingCategory
+                    imageUrl = editingImageUrl
+                    links = editingLinks ?? []
                 }
             }
         }
@@ -295,14 +317,25 @@ struct CreateWishSheet: View {
         let validLinks = links.filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
 
         do {
-            _ = try await CommunityWishService.shared.createWish(
-                title: title.trimmingCharacters(in: .whitespacesAndNewlines),
-                description: description.isEmpty ? nil : description,
-                category: selectedCategory ?? .other,
-                isAnonymous: isAnonymous,
-                imageUrl: imageUrl,
-                links: validLinks.isEmpty ? nil : validLinks
-            )
+            if let wishId = editingWishId {
+                _ = try await CommunityWishService.shared.updateWish(
+                    id: wishId,
+                    title: title.trimmingCharacters(in: .whitespacesAndNewlines),
+                    description: description.isEmpty ? nil : description,
+                    category: selectedCategory?.rawValue,
+                    imageUrl: imageUrl,
+                    links: validLinks.isEmpty ? nil : validLinks
+                )
+            } else {
+                _ = try await CommunityWishService.shared.createWish(
+                    title: title.trimmingCharacters(in: .whitespacesAndNewlines),
+                    description: description.isEmpty ? nil : description,
+                    category: selectedCategory ?? .other,
+                    isAnonymous: isAnonymous,
+                    imageUrl: imageUrl,
+                    links: validLinks.isEmpty ? nil : validLinks
+                )
+            }
             OffriiHaptics.success()
             dismiss()
         } catch {

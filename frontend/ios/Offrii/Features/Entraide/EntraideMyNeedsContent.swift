@@ -8,6 +8,7 @@ struct EntraideMyNeedsContent: View {
     @Binding var showCreateSheet: Bool
     @State private var wishToClose: UUID?
     @State private var wishToDelete: UUID?
+    @State private var wishToEdit: MyWish?
 
     var body: some View {
         if viewModel.isLoading && viewModel.wishes.isEmpty {
@@ -75,6 +76,19 @@ struct EntraideMyNeedsContent: View {
                 }
             } message: {
                 Text(NSLocalizedString("entraide.delete.confirmMessage", comment: ""))
+            }
+            .sheet(item: $wishToEdit, onDismiss: {
+                Task { await viewModel.loadMyWishes() }
+            }) { wish in
+                CreateWishSheet(
+                    editingWishId: wish.id,
+                    editingTitle: wish.title,
+                    editingDescription: wish.description,
+                    editingCategory: wish.category,
+                    editingImageUrl: wish.imageUrl,
+                    editingLinks: wish.links
+                )
+                .presentationDetents([.large])
             }
         }
     }
@@ -150,6 +164,18 @@ struct EntraideMyNeedsContent: View {
     @ViewBuilder
     // swiftlint:disable:next function_body_length
     private func contextMenuActions(_ wish: MyWish) -> some View {
+        // Edit for open/review
+        if wish.status == .open || wish.status == .review {
+            Button {
+                wishToEdit = wish
+            } label: {
+                Label(
+                    NSLocalizedString("entraide.action.edit", comment: ""),
+                    systemImage: "pencil"
+                )
+            }
+        }
+
         switch wish.status {
         case .matched:
             Button {
