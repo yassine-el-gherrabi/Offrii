@@ -14,30 +14,8 @@ struct EntraideView: View {
     var body: some View {
         ZStack(alignment: .bottomTrailing) {
             VStack(spacing: 0) {
-                SectionHeader(
-                    title: NSLocalizedString("entraide.title", comment: ""),
-                    subtitle: NSLocalizedString("entraide.subtitle", comment: ""),
-                    variant: .entraide
-                ) {
-                    NavigationLink(destination: ProfileView()) {
-                        ProfileAvatarButton(
-                            initials: ProfileAvatarButton.initials(
-                                from: authManager.currentUser?.displayName
-                            ),
-                            avatarUrl: authManager.currentUser?.avatarUrl
-                                .flatMap { URL(string: $0) }
-                        )
-                    }
-                }
-
-                Picker("", selection: $selectedSegment) {
-                    Text(NSLocalizedString("entraide.segment.discover", comment: "")).tag(0)
-                    Text(NSLocalizedString("entraide.segment.myNeeds", comment: "")).tag(1)
-                    Text(NSLocalizedString("entraide.segment.myOffers", comment: "")).tag(2)
-                }
-                .pickerStyle(.segmented)
-                .padding(.horizontal, OffriiTheme.spacingLG)
-                .padding(.vertical, OffriiTheme.spacingSM)
+                // Segment picker (like Proches filter chips style)
+                segmentChips
 
                 switch selectedSegment {
                 case 0:
@@ -73,6 +51,21 @@ struct EntraideView: View {
             }
         }
         .background(OffriiTheme.background.ignoresSafeArea())
+        .navigationTitle(NSLocalizedString("entraide.title", comment: ""))
+        .navigationBarTitleDisplayMode(.large)
+        .toolbar {
+            ToolbarItemGroup(placement: .topBarTrailing) {
+                NavigationLink(destination: ProfileView()) {
+                    ProfileAvatarButton(
+                        initials: ProfileAvatarButton.initials(
+                            from: authManager.currentUser?.displayName
+                        ),
+                        avatarUrl: authManager.currentUser?.avatarUrl
+                            .flatMap { URL(string: $0) }
+                    )
+                }
+            }
+        }
         .sheet(isPresented: $showCreateSheet, onDismiss: {
             Task { await viewModel.loadWishes() }
         }) {
@@ -101,5 +94,31 @@ struct EntraideView: View {
         .task {
             await viewModel.loadWishes()
         }
+    }
+
+    // MARK: - Segment Chips (same pattern as Proches filterChips)
+
+    private var segmentChips: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: OffriiTheme.spacingSM) {
+                OffriiChip(
+                    title: NSLocalizedString("entraide.segment.discover", comment: ""),
+                    isSelected: selectedSegment == 0,
+                    action: { selectedSegment = 0 }
+                )
+                OffriiChip(
+                    title: NSLocalizedString("entraide.segment.myNeeds", comment: ""),
+                    isSelected: selectedSegment == 1,
+                    action: { selectedSegment = 1 }
+                )
+                OffriiChip(
+                    title: NSLocalizedString("entraide.segment.myOffers", comment: ""),
+                    isSelected: selectedSegment == 2,
+                    action: { selectedSegment = 2 }
+                )
+            }
+            .padding(.horizontal, OffriiTheme.spacingBase)
+        }
+        .padding(.vertical, OffriiTheme.spacingSM)
     }
 }

@@ -39,7 +39,7 @@ struct EntraideDiscoverContent: View {
         }
     }
 
-    // MARK: - Category Chips
+    // MARK: - Category Chips (exact same pattern as WishlistView)
 
     private var categoryChips: some View {
         ScrollView(.horizontal, showsIndicators: false) {
@@ -49,61 +49,51 @@ struct EntraideDiscoverContent: View {
                 Button {
                     Task { await viewModel.selectCategory(nil) }
                 } label: {
-                    chipLabel(
-                        icon: "sparkles",
-                        text: NSLocalizedString("entraide.category.all", comment: ""),
-                        isSelected: allSelected
+                    HStack(spacing: 4) {
+                        Image(systemName: "sparkles")
+                            .font(.system(size: 11))
+                        Text(NSLocalizedString("entraide.category.all", comment: ""))
+                            .font(.system(size: 13, weight: allSelected ? .semibold : .regular))
+                    }
+                    .foregroundColor(allSelected ? .white : OffriiTheme.textSecondary)
+                    .padding(.horizontal, OffriiTheme.spacingMD)
+                    .padding(.vertical, OffriiTheme.spacingSM)
+                    .background(allSelected ? OffriiTheme.primary : .white)
+                    .cornerRadius(OffriiTheme.cornerRadiusXL)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: OffriiTheme.cornerRadiusXL)
+                            .strokeBorder(allSelected ? .clear : OffriiTheme.border, lineWidth: 1)
                     )
                 }
                 .buttonStyle(.plain)
 
                 ForEach(WishCategory.allCases) { category in
                     let isSelected = viewModel.selectedCategory == category
-                    Button {
-                        Task { await viewModel.selectCategory(category) }
-                    } label: {
-                        chipLabel(
-                            icon: categoryIcon(category),
-                            text: category.label,
-                            isSelected: isSelected
-                        )
+                    let color = entraideCategoryColor(category)
+
+                    HStack(spacing: 4) {
+                        Image(systemName: entraideCategoryIcon(category))
+                            .font(.system(size: 11))
+                        Text(category.label)
+                            .font(.system(size: 13, weight: isSelected ? .semibold : .regular))
                     }
-                    .buttonStyle(.plain)
+                    .foregroundColor(isSelected ? .white : OffriiTheme.textSecondary)
+                    .padding(.horizontal, OffriiTheme.spacingMD)
+                    .padding(.vertical, OffriiTheme.spacingSM)
+                    .background(isSelected ? color : .white)
+                    .cornerRadius(OffriiTheme.cornerRadiusXL)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: OffriiTheme.cornerRadiusXL)
+                            .strokeBorder(isSelected ? .clear : OffriiTheme.border, lineWidth: 1)
+                    )
+                    .onTapGesture {
+                        Task { await viewModel.selectCategory(category) }
+                    }
                     .animation(OffriiAnimation.snappy, value: isSelected)
                 }
             }
             .padding(.horizontal, OffriiTheme.spacingBase)
             .padding(.vertical, OffriiTheme.spacingXS)
-        }
-    }
-
-    private func chipLabel(icon: String, text: String, isSelected: Bool) -> some View {
-        HStack(spacing: 4) {
-            Image(systemName: icon)
-                .font(.system(size: 11))
-            Text(text)
-                .font(.system(size: 13, weight: isSelected ? .semibold : .regular))
-        }
-        .foregroundColor(isSelected ? .white : OffriiTheme.textSecondary)
-        .padding(.horizontal, OffriiTheme.spacingMD)
-        .padding(.vertical, OffriiTheme.spacingSM)
-        .background(isSelected ? OffriiTheme.primary : .white)
-        .cornerRadius(OffriiTheme.cornerRadiusXL)
-        .overlay(
-            RoundedRectangle(cornerRadius: OffriiTheme.cornerRadiusXL)
-                .strokeBorder(isSelected ? .clear : OffriiTheme.border, lineWidth: 1)
-        )
-    }
-
-    private func categoryIcon(_ category: WishCategory) -> String {
-        switch category {
-        case .education: return "book.fill"
-        case .clothing:  return "tshirt.fill"
-        case .health:    return "heart.fill"
-        case .religion:  return "hands.sparkles.fill"
-        case .home:      return "house.fill"
-        case .children:  return "figure.and.child.holdinghands"
-        case .other:     return "tag.fill"
         }
     }
 
@@ -134,5 +124,31 @@ struct EntraideDiscoverContent: View {
         }
         .padding(.horizontal, OffriiTheme.spacingBase)
         .padding(.vertical, OffriiTheme.spacingSM)
+    }
+
+    // MARK: - Category Helpers
+
+    private func entraideCategoryColor(_ cat: WishCategory) -> Color {
+        switch cat {
+        case .education: return OffriiTheme.categoryEducationBg
+        case .clothing:  return OffriiTheme.categoryClothingBg
+        case .health:    return OffriiTheme.categoryHealthBg
+        case .religion:  return OffriiTheme.categoryReligionBg
+        case .home:      return OffriiTheme.categoryHomeBg
+        case .children:  return OffriiTheme.categoryChildrenBg
+        case .other:     return OffriiTheme.categoryOtherBg
+        }
+    }
+
+    private func entraideCategoryIcon(_ cat: WishCategory) -> String {
+        switch cat {
+        case .education: return "book.fill"
+        case .clothing:  return "tshirt.fill"
+        case .health:    return "heart.fill"
+        case .religion:  return "hands.sparkles.fill"
+        case .home:      return "house.fill"
+        case .children:  return "figure.and.child.holdinghands"
+        case .other:     return "tag.fill"
+        }
     }
 }
