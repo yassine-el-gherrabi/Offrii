@@ -56,6 +56,7 @@ struct EntraideMyOffersContent: View {
                             try? await CommunityWishService.shared.withdrawOffer(id: id)
                             OffriiHaptics.success()
                             await viewModel.loadMyOffers()
+                            await viewModel.loadWishes()
                         }
                     }
                     wishToWithdraw = nil

@@ -10,6 +10,7 @@ struct EntraideDiscoverContent: View {
     var searchQuery: String
     @AppStorage("entraide.onboarding.dismissed") private var onboardingDismissed = false
     @State private var recentFulfilled: [CommunityWish] = []
+    @State private var wishToOffer: UUID?
 
     private var displayedWishes: [CommunityWish] {
         if searchQuery.isEmpty {
@@ -153,6 +154,30 @@ struct EntraideDiscoverContent: View {
             }
             .padding(.horizontal, OffriiTheme.spacingBase)
             .padding(.vertical, OffriiTheme.spacingSM)
+            .alert(
+                NSLocalizedString("entraide.offer.confirmTitle", comment: ""),
+                isPresented: Binding(
+                    get: { wishToOffer != nil },
+                    set: { if !$0 { wishToOffer = nil } }
+                )
+            ) {
+                Button(NSLocalizedString("common.cancel", comment: ""), role: .cancel) {
+                    wishToOffer = nil
+                }
+                Button(NSLocalizedString("entraide.offer.cta", comment: "")) {
+                    if let id = wishToOffer {
+                        Task {
+                            if await viewModel.offerWish(id: id) {
+                                await viewModel.loadWishes()
+                                await viewModel.loadMyOffers()
+                            }
+                        }
+                    }
+                    wishToOffer = nil
+                }
+            } message: {
+                Text(NSLocalizedString("entraide.offer.confirmMessage", comment: ""))
+            }
             .task {
                 recentFulfilled = (try? await CommunityWishService.shared.listRecentFulfilled()) ?? []
             }
@@ -165,11 +190,7 @@ struct EntraideDiscoverContent: View {
     private func discoverContextMenu(_ wish: CommunityWish) -> some View {
         if !wish.isMine && wish.status == .open && !wish.isMatchedByMe {
             Button {
-                Task {
-                    if await viewModel.offerWish(id: wish.id) {
-                        await viewModel.loadWishes()
-                    }
-                }
+                wishToOffer = wish.id
             } label: {
                 Label(
                     NSLocalizedString("entraide.action.offer", comment: ""),
