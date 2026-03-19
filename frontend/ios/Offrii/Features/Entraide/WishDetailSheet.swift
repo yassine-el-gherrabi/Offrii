@@ -289,6 +289,14 @@ struct WishDetailSheet: View {
                 Task { _ = await viewModel.closeWish(id: wish.id) }
             }
         }
+        if isMine && wish.status == .review {
+            OffriiButton(NSLocalizedString("entraide.action.reopen", comment: ""), variant: .secondary) {
+                Task { _ = await viewModel.reopenWish(id: wish.id) }
+            }
+            OffriiButton(NSLocalizedString("entraide.action.close", comment: ""), variant: .ghost) {
+                Task { _ = await viewModel.closeWish(id: wish.id) }
+            }
+        }
     }
 
     @ViewBuilder

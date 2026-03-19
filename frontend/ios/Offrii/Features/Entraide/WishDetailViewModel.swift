@@ -92,6 +92,22 @@ final class WishDetailViewModel {
         }
     }
 
+    func reopenWish(id: UUID) async -> Bool {
+        isActioning = true
+        do {
+            try await CommunityWishService.shared.reopenWish(id: id)
+            actionSuccess = NSLocalizedString("entraide.action.reopenSuccess", comment: "")
+            OffriiHaptics.success()
+            await loadWish(id: id)
+            isActioning = false
+            return true
+        } catch {
+            self.error = error.localizedDescription
+            isActioning = false
+            return false
+        }
+    }
+
     func closeWish(id: UUID) async -> Bool {
         isActioning = true
         do {

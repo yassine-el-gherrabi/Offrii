@@ -353,6 +353,8 @@
 "entraide.report.title" = "Signaler ce souhait";
 "entraide.report.subtitle" = "Choisissez la raison du signalement";
 "entraide.report.submit" = "Envoyer le signalement";
+"entraide.report.success" = "Merci pour votre signalement. Notre équipe va examiner ce besoin.";
+"entraide.action.reopenSuccess" = "Votre souhait est en cours de re-vérification.";
 "entraide.report.inappropriate" = "Inapproprié";
 "entraide.report.spam" = "Spam";
 "entraide.report.scam" = "Arnaque";

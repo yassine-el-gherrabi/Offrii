@@ -21,36 +21,36 @@
 - ✅ Searchable natif sur les 3 pages (Envies, Proches, Entraide)
 - ✅ Sous-titre italique "Des gestes simples, des impacts réels"
 
-## Phase 3 : Bugs critiques P0 ⬜
+## Phase 3 : Bugs critiques P0 ✅
 
-### 3.1 Sort "Récent/Ancien" décoratif ⬜
+### 3.1 Sort → SortMenuView composant partagé ✅
 **Problème** : `sortOrder` est un `@State` local jamais envoyé au backend.
 **Fix** : Retirer le menu de tri. Toujours afficher par date décroissante (le backend le fait déjà). Un tri "Ancien d'abord" n'a pas de sens pour un mur d'entraide.
 **Fichiers** : `EntraideView.swift`
 
-### 3.2 "Mes offres" utilise les données de Découvrir ⬜
+### 3.2 ✅
 **Problème** : `viewModel.myOffers` = `wishes.filter(\.isMatchedByMe)` — si on pagine ou filtre par catégorie, les offres disparaissent. Ne montre pas les fulfilled/closed.
 **Fix** : Appel API dédié. Le backend `GET /community/wishes` avec auth retourne `is_matched_by_me`. On peut soit :
 - Ajouter un query param `matched_by_me=true` côté backend
 - Ou charger séparément dans un ViewModel dédié
 **Fichiers** : Backend `handlers/community_wishes.rs` + `EntraideMyOffersContent.swift` + nouveau ViewModel ou param
 
-### 3.3 Pas de confirmation avant "Proposer mon aide" ⬜
+### 3.3 ✅
 **Problème** : Tap = match instant. Action irréversible sans filet.
 **Fix** : Alert de confirmation : "Vous allez proposer votre aide à [auteur]. Vous pourrez échanger par messages." Cancel/Confirmer.
 **Fichiers** : `WishDetailSheet.swift`
 
-### 3.4 409 Conflict non géré ⬜
+### 3.4 ✅
 **Problème** : Si quelqu'un offre en même temps, erreur générique.
 **Fix** : Mapper le 409 → "Quelqu'un a déjà proposé son aide pour ce besoin." + refresh du detail.
 **Fichiers** : `WishDetailViewModel.swift`
 
-### 3.5 Pas de "Confirmer" dans Mes besoins ⬜
+### 3.5 ✅
 **Problème** : L'action la plus importante est cachée dans le detail sheet.
 **Fix** : Ajouter chip "Confirmer" (primary) comme première action pour les wishes matched dans `EntraideMyNeedsContent`.
 **Fichiers** : `EntraideMyNeedsContent.swift`
 
-### 3.6 Empty state Discover sans CTA ⬜
+### 3.6 ✅
 **Problème** : Pas de bouton "Publier" quand le mur est vide.
 **Fix** : Ajouter `ctaTitle` + `ctaAction` dans l'empty state de `EntraideDiscoverContent`.
 **Fichiers** : `EntraideDiscoverContent.swift`

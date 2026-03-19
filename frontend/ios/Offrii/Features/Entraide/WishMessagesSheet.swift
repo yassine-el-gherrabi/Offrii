@@ -11,6 +11,7 @@ struct WishMessagesSheet: View {
     @State private var isLoading = false
     @State private var isSending = false
     @State private var pollingTask: Task<Void, Never>?
+    @State private var lastActivityTime = Date()
 
     var body: some View {
         NavigationStack {
@@ -134,6 +135,7 @@ struct WishMessagesSheet: View {
             let msg = try await WishMessageService.shared.sendMessage(wishId: wishId, body: text)
             messages.append(msg)
             messageText = ""
+            lastActivityTime = Date()
             OffriiHaptics.tap()
         } catch {}
         isSending = false
@@ -142,7 +144,17 @@ struct WishMessagesSheet: View {
     private func startPolling() {
         pollingTask = Task {
             while !Task.isCancelled {
-                try? await Task.sleep(for: .seconds(10))
+                let elapsed = Date().timeIntervalSince(lastActivityTime)
+                let interval: Double
+                if elapsed < 30 {
+                    interval = 3
+                } else if elapsed < 120 {
+                    interval = 10
+                } else {
+                    interval = 30
+                }
+
+                try? await Task.sleep(for: .seconds(interval))
                 guard !Task.isCancelled else { break }
                 await refreshMessages()
             }
@@ -154,8 +166,9 @@ struct WishMessagesSheet: View {
             wishId: wishId, page: 1, limit: 100
         ) else { return }
 
-        if response.data.count != messages.count {
+        if response.data.last?.id != messages.last?.id {
             messages = response.data
+            lastActivityTime = Date()
         }
     }
 }

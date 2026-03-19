@@ -92,9 +92,16 @@ struct EntraideView: View {
 
             // FAB
             if selectedSegment == 0 || selectedSegment == 1 {
+                let activeCount = myNeedsViewModel.wishes.filter {
+                    $0.status == .open || $0.status == .matched || $0.status == .pending
+                }.count
+                let atLimit = activeCount >= 3
+
                 OffriiFloatingActionButton(icon: "plus") {
                     showCreateSheet = true
                 }
+                .opacity(atLimit ? 0.4 : 1.0)
+                .disabled(atLimit)
                 .padding(.trailing, OffriiTheme.spacingLG)
                 .padding(.bottom, OffriiTheme.spacingLG)
             }

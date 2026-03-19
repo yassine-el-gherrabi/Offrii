@@ -14,6 +14,7 @@ struct EntraideDiscoverContent: View {
         }
         return viewModel.filteredWishes.filter {
             $0.title.localizedCaseInsensitiveContains(searchQuery)
+                || ($0.description?.localizedCaseInsensitiveContains(searchQuery) ?? false)
         }
     }
 

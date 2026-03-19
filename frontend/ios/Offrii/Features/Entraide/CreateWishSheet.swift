@@ -14,6 +14,7 @@ struct CreateWishSheet: View {
     @State private var showPhotoPicker = false
     @State private var selectedImage: PhotosPickerItem?
     @State private var imageUrl: String?
+    @State private var uploadedImage: UIImage?
     @State private var isUploading = false
     @State private var isSubmitting = false
     @State private var error: String?
@@ -154,17 +155,27 @@ struct CreateWishSheet: View {
                 .frame(height: 120)
                 .background(OffriiTheme.surface)
                 .cornerRadius(OffriiTheme.cornerRadiusLG)
-        } else if imageUrl != nil {
-            Label(
-                NSLocalizedString("entraide.create.imageAdded", comment: ""),
-                systemImage: "checkmark.circle.fill"
-            )
-            .font(OffriiTypography.body)
-            .foregroundColor(OffriiTheme.success)
-            .frame(maxWidth: .infinity)
-            .frame(height: 120)
-            .background(OffriiTheme.success.opacity(0.1))
-            .cornerRadius(OffriiTheme.cornerRadiusLG)
+        } else if let uploadedImage {
+            ZStack(alignment: .topTrailing) {
+                Image(uiImage: uploadedImage)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 120)
+                    .clipShape(RoundedRectangle(cornerRadius: OffriiTheme.cornerRadiusLG))
+
+                Button {
+                    self.imageUrl = nil
+                    self.uploadedImage = nil
+                    self.selectedImage = nil
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 22))
+                        .foregroundColor(.white)
+                        .shadow(radius: 2)
+                }
+                .padding(OffriiTheme.spacingSM)
+            }
         } else {
             VStack(spacing: OffriiTheme.spacingSM) {
                 Image(systemName: "camera.fill")
@@ -270,6 +281,7 @@ struct CreateWishSheet: View {
         do {
             let url = try await ItemService.shared.uploadImage(compressed)
             imageUrl = url
+            uploadedImage = uiImage
         } catch {
             self.error = error.localizedDescription
         }

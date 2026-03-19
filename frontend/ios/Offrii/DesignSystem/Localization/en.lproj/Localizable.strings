@@ -353,6 +353,8 @@
 "entraide.report.title" = "Report this wish";
 "entraide.report.subtitle" = "Choose the reason for reporting";
 "entraide.report.submit" = "Submit report";
+"entraide.report.success" = "Thank you for your report. Our team will review this wish.";
+"entraide.action.reopenSuccess" = "Your wish is being re-reviewed.";
 "entraide.report.inappropriate" = "Inappropriate";
 "entraide.report.spam" = "Spam";
 "entraide.report.scam" = "Scam";

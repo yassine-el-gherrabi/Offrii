@@ -9,6 +9,7 @@ struct ReportWishSheet: View {
     @State private var selectedReason: WishReportReason?
     @State private var isSubmitting = false
     @State private var error: String?
+    @State private var showSuccess = false
 
     var body: some View {
         NavigationStack {
@@ -55,13 +56,26 @@ struct ReportWishSheet: View {
                         .foregroundColor(OffriiTheme.danger)
                 }
 
-                OffriiButton(
-                    NSLocalizedString("entraide.report.submit", comment: ""),
-                    variant: .danger,
-                    isLoading: isSubmitting,
-                    isDisabled: selectedReason == nil
-                ) {
-                    Task { await submit() }
+                if showSuccess {
+                    Label(
+                        NSLocalizedString("entraide.report.success", comment: ""),
+                        systemImage: "checkmark.circle.fill"
+                    )
+                    .font(OffriiTypography.footnote)
+                    .foregroundColor(OffriiTheme.success)
+                    .padding(OffriiTheme.spacingSM)
+                    .frame(maxWidth: .infinity)
+                    .background(OffriiTheme.success.opacity(0.1))
+                    .cornerRadius(OffriiTheme.cornerRadiusMD)
+                } else {
+                    OffriiButton(
+                        NSLocalizedString("entraide.report.submit", comment: ""),
+                        variant: .danger,
+                        isLoading: isSubmitting,
+                        isDisabled: selectedReason == nil
+                    ) {
+                        Task { await submit() }
+                    }
                 }
 
                 Spacer()
@@ -86,6 +100,8 @@ struct ReportWishSheet: View {
         do {
             try await CommunityWishService.shared.reportWish(id: wishId, reason: reason)
             OffriiHaptics.success()
+            showSuccess = true
+            try? await Task.sleep(for: .seconds(2))
             dismiss()
         } catch {
             self.error = error.localizedDescription
