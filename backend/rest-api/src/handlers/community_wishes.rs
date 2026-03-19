@@ -23,6 +23,7 @@ pub fn router() -> Router<AppState> {
     Router::new()
         .route("/", post(create_wish).get(list_wishes))
         .route("/mine", get(list_my_wishes))
+        .route("/my-offers", get(list_my_offers))
         .route("/{id}", get(get_wish).patch(update_wish))
         .route("/{id}/close", post(close_wish))
         .route("/{id}/reopen", post(reopen_wish))
@@ -89,6 +90,18 @@ async fn list_my_wishes(
     let response = state
         .community_wishes
         .list_my_wishes(auth_user.user_id)
+        .await?;
+    Ok(Json(response))
+}
+
+#[tracing::instrument(skip(state))]
+async fn list_my_offers(
+    State(state): State<AppState>,
+    auth_user: AuthUser,
+) -> Result<Json<Vec<WishResponse>>, AppError> {
+    let response = state
+        .community_wishes
+        .list_my_offers(auth_user.user_id)
         .await?;
     Ok(Json(response))
 }

@@ -26,6 +26,10 @@ final class CommunityWishService: Sendable {
         try await client.request(.listMyCommunityWishes)
     }
 
+    func listMyOffers() async throws -> [CommunityWish] {
+        try await client.request(.listMyCommunityOffers)
+    }
+
     // MARK: - Get Wish Detail
 
     func getWish(id: UUID) async throws -> WishDetail {

@@ -72,6 +72,10 @@ impl traits::CommunityWishRepo for PgCommunityWishRepo {
         list_by_owner(&self.pool, owner_id).await
     }
 
+    async fn list_by_donor(&self, donor_id: Uuid) -> Result<Vec<CommunityWish>> {
+        list_by_donor(&self.pool, donor_id).await
+    }
+
     async fn count_active_by_owner(&self, owner_id: Uuid) -> Result<i64> {
         count_active_by_owner(&self.pool, owner_id).await
     }
@@ -255,6 +259,22 @@ pub(crate) async fn list_by_owner(
     );
     let wishes = sqlx::query_as::<_, CommunityWish>(&sql)
         .bind(owner_id)
+        .fetch_all(exec)
+        .await?;
+    Ok(wishes)
+}
+
+pub(crate) async fn list_by_donor(
+    exec: impl PgExecutor<'_>,
+    donor_id: Uuid,
+) -> Result<Vec<CommunityWish>> {
+    let sql = format!(
+        "SELECT {WISH_COLS} FROM community_wishes \
+         WHERE matched_with = $1 \
+         ORDER BY created_at DESC"
+    );
+    let wishes = sqlx::query_as::<_, CommunityWish>(&sql)
+        .bind(donor_id)
         .fetch_all(exec)
         .await?;
     Ok(wishes)

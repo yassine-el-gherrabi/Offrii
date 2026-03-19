@@ -885,6 +885,7 @@ pub trait CommunityWishRepo: Send + Sync {
     async fn count_open(&self, category: Option<&str>) -> Result<i64>;
 
     async fn list_by_owner(&self, owner_id: Uuid) -> Result<Vec<CommunityWish>>;
+    async fn list_by_donor(&self, donor_id: Uuid) -> Result<Vec<CommunityWish>>;
 
     async fn count_active_by_owner(&self, owner_id: Uuid) -> Result<i64>;
 
@@ -1006,6 +1007,11 @@ pub trait CommunityWishService: Send + Sync {
         &self,
         user_id: Uuid,
     ) -> Result<Vec<crate::dto::community_wishes::MyWishResponse>, crate::errors::AppError>;
+
+    async fn list_my_offers(
+        &self,
+        user_id: Uuid,
+    ) -> Result<Vec<crate::dto::community_wishes::WishResponse>, crate::errors::AppError>;
 
     async fn update_wish(
         &self,

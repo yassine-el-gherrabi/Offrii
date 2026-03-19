@@ -70,13 +70,7 @@ final class EntraideViewModel {
     func loadMyOffers() async {
         isLoadingOffers = true
         do {
-            // Load all wishes without category filter — filter matched locally
-            let response = try await CommunityWishService.shared.listWishes(
-                category: nil,
-                page: 1,
-                limit: 100
-            )
-            myOfferWishes = response.data.filter(\.isMatchedByMe)
+            myOfferWishes = try await CommunityWishService.shared.listMyOffers()
         } catch {}
         isLoadingOffers = false
     }

@@ -613,6 +613,42 @@ impl traits::CommunityWishService for PgCommunityWishService {
     }
 
     #[tracing::instrument(skip(self))]
+    async fn list_my_offers(&self, user_id: Uuid) -> Result<Vec<WishResponse>, AppError> {
+        let wishes = self
+            .wish_repo
+            .list_by_donor(user_id)
+            .await
+            .map_err(AppError::Internal)?;
+
+        let responses = wishes
+            .into_iter()
+            .map(|w| {
+                let dn = if w.is_anonymous {
+                    None
+                } else {
+                    // owner display name not available here — use None
+                    None
+                };
+                WishResponse {
+                    id: w.id,
+                    display_name: dn,
+                    title: w.title,
+                    description: w.description,
+                    category: w.category,
+                    status: w.status,
+                    is_mine: false,
+                    is_matched_by_me: true,
+                    image_url: w.image_url,
+                    links: w.links,
+                    created_at: w.created_at,
+                }
+            })
+            .collect();
+
+        Ok(responses)
+    }
+
+    #[tracing::instrument(skip(self))]
     async fn update_wish(
         &self,
         wish_id: Uuid,
