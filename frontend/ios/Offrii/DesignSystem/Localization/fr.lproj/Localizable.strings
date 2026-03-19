@@ -463,6 +463,7 @@
 "entraide.offer.confirmAction" = "Confirmer";
 "entraide.offer.confirmMessage" = "Vous serez mis en contact avec l'auteur pour l'aider. Vous pourrez échanger par messages.";
 "entraide.offer.alreadyMatched" = "Quelqu'un a déjà proposé son aide pour ce besoin.";
+"entraide.offer.messagePlaceholder" = "Laissez un message (facultatif)";
 "entraide.myOffers.empty" = "Aucune offre";
 "entraide.myOffers.emptySubtitle" = "Vous n'avez pas encore proposé votre aide";
 

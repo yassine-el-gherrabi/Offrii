@@ -1,3 +1,4 @@
+// swiftlint:disable file_length
 import NukeUI
 import SwiftUI
 
@@ -13,7 +14,8 @@ struct WishDetailSheet: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(AuthManager.self) private var authManager
     @State private var viewModel = WishDetailViewModel()
-    @State private var showOfferConfirm = false
+    @State private var showOfferSheet = false
+    @State private var offerMessage = ""
     @State private var showCloseConfirm = false
     @State private var showDeleteConfirm = false
     @State private var showEditSheet = false
@@ -271,20 +273,67 @@ struct WishDetailSheet: View {
                 variant: .primary,
                 isLoading: viewModel.isActioning
             ) {
-                showOfferConfirm = true
+                offerMessage = ""
+                showOfferSheet = true
             }
-            .alert(
-                NSLocalizedString("entraide.offer.confirmTitle", comment: ""),
-                isPresented: $showOfferConfirm
-            ) {
-                Button(NSLocalizedString("common.cancel", comment: ""), role: .cancel) {}
-                Button(NSLocalizedString("entraide.offer.confirmAction", comment: "")) {
-                    Task { _ = await viewModel.offer(id: wish.id) }
-                }
-            } message: {
-                Text(NSLocalizedString("entraide.offer.confirmMessage", comment: ""))
+            .sheet(isPresented: $showOfferSheet) {
+                offerConfirmSheet(wish)
+                    .presentationDetents([.height(280)])
+                    .presentationDragIndicator(.visible)
             }
         }
+    }
+
+    private func offerConfirmSheet(_ wish: WishDetail) -> some View {
+        VStack(alignment: .leading, spacing: OffriiTheme.spacingMD) {
+            Text(NSLocalizedString("entraide.offer.confirmTitle", comment: ""))
+                .font(OffriiTypography.headline)
+                .foregroundColor(OffriiTheme.text)
+
+            Text(NSLocalizedString("entraide.offer.confirmMessage", comment: ""))
+                .font(OffriiTypography.caption)
+                .foregroundColor(OffriiTheme.textSecondary)
+
+            TextField(
+                NSLocalizedString("entraide.offer.messagePlaceholder", comment: ""),
+                text: $offerMessage,
+                axis: .vertical
+            )
+            .font(OffriiTypography.body)
+            .lineLimit(2...4)
+            .padding(OffriiTheme.spacingSM)
+            .background(OffriiTheme.surface)
+            .cornerRadius(OffriiTheme.cornerRadiusMD)
+            .overlay(
+                RoundedRectangle(cornerRadius: OffriiTheme.cornerRadiusMD)
+                    .stroke(OffriiTheme.border, lineWidth: 1)
+            )
+
+            HStack(spacing: OffriiTheme.spacingSM) {
+                OffriiButton(NSLocalizedString("common.cancel", comment: ""), variant: .ghost) {
+                    showOfferSheet = false
+                }
+                OffriiButton(
+                    NSLocalizedString("entraide.offer.confirmAction", comment: ""),
+                    variant: .primary,
+                    isLoading: viewModel.isActioning
+                ) {
+                    Task {
+                        if await viewModel.offer(id: wish.id) {
+                            // Send initial message if provided
+                            let msg = offerMessage.trimmingCharacters(in: .whitespacesAndNewlines)
+                            if !msg.isEmpty {
+                                _ = try? await WishMessageService.shared.sendMessage(
+                                    wishId: wish.id, body: msg
+                                )
+                            }
+                            showOfferSheet = false
+                        }
+                    }
+                }
+            }
+        }
+        .padding(OffriiTheme.spacingLG)
     }
 
     @ViewBuilder
