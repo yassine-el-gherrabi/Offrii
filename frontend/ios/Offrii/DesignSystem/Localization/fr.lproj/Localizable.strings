@@ -287,6 +287,11 @@
 "entraide.empty" = "Aucun souhait pour le moment";
 "entraide.emptySubtitle" = "Soyez le premier à publier un souhait";
 "entraide.anonymous" = "Anonyme";
+"entraide.countSingular" = "besoin";
+"entraide.countPlural" = "besoins";
+"entraide.search.placeholder" = "Rechercher un besoin...";
+"entraide.sort.newest" = "Récent";
+"entraide.sort.oldest" = "Ancien";
 "entraide.offer" = "Je veux offrir";
 "entraide.fab.publish" = "Publier";
 

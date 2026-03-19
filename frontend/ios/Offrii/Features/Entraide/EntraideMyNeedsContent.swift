@@ -1,41 +1,41 @@
 import SwiftUI
 
-// MARK: - My Needs Content
+// MARK: - My Needs Content (no ScrollView — parent handles it)
 
 struct EntraideMyNeedsContent: View {
-    @State private var viewModel = EntraideMyNeedsViewModel()
+    var viewModel: EntraideMyNeedsViewModel
     @Binding var selectedWishId: UUID?
     @Binding var showCreateSheet: Bool
 
     var body: some View {
         if viewModel.isLoading && viewModel.wishes.isEmpty {
-            ScrollView {
-                SkeletonList(count: 4)
-                    .padding(.top, OffriiTheme.spacingBase)
-            }
-        } else if viewModel.wishes.isEmpty {
-            Spacer()
-            OffriiEmptyState(
-                icon: "tray",
-                title: NSLocalizedString("entraide.myWishes.empty", comment: ""),
-                subtitle: NSLocalizedString("entraide.myWishes.emptySubtitle", comment: ""),
-                ctaTitle: NSLocalizedString("entraide.fab.publish", comment: ""),
-                ctaAction: { showCreateSheet = true }
-            )
-            Spacer()
-        } else {
-            ScrollView {
-                LazyVStack(spacing: OffriiTheme.spacingSM) {
-                    ForEach(viewModel.wishes) { wish in
-                        myWishRow(wish)
-                    }
+            LazyVStack(spacing: OffriiTheme.spacingSM) {
+                ForEach(0..<4, id: \.self) { _ in
+                    SkeletonRow()
                 }
-                .padding(.horizontal, OffriiTheme.spacingBase)
-                .padding(.vertical, OffriiTheme.spacingSM)
             }
-            .refreshable {
-                await viewModel.loadMyWishes()
+            .padding(.horizontal, OffriiTheme.spacingBase)
+            .padding(.top, OffriiTheme.spacingBase)
+        } else if viewModel.wishes.isEmpty {
+            VStack(spacing: OffriiTheme.spacingBase) {
+                Spacer().frame(height: 40)
+                OffriiEmptyState(
+                    icon: "tray",
+                    title: NSLocalizedString("entraide.myWishes.empty", comment: ""),
+                    subtitle: NSLocalizedString("entraide.myWishes.emptySubtitle", comment: ""),
+                    ctaTitle: NSLocalizedString("entraide.fab.publish", comment: ""),
+                    ctaAction: { showCreateSheet = true }
+                )
+                Spacer()
             }
+        } else {
+            LazyVStack(spacing: OffriiTheme.spacingSM) {
+                ForEach(viewModel.wishes) { wish in
+                    myWishRow(wish)
+                }
+            }
+            .padding(.horizontal, OffriiTheme.spacingBase)
+            .padding(.vertical, OffriiTheme.spacingSM)
         }
     }
 
@@ -62,13 +62,10 @@ struct EntraideMyNeedsContent: View {
 
                     Spacer()
 
-                    statusBadge(wish)
+                    statusBadge(wish.status)
                 }
 
-                // Context info
                 contextInfo(wish)
-
-                // Actions
                 actionButtons(wish)
             }
             .padding(OffriiTheme.spacingBase)
@@ -80,8 +77,8 @@ struct EntraideMyNeedsContent: View {
     }
 
     @ViewBuilder
-    private func statusBadge(_ wish: MyWish) -> some View {
-        let (color, label) = statusInfo(wish.status)
+    private func statusBadge(_ status: WishStatus) -> some View {
+        let (color, label) = statusInfo(status)
         HStack(spacing: 4) {
             Circle().fill(color).frame(width: 6, height: 6)
             Text(label)
@@ -105,12 +102,11 @@ struct EntraideMyNeedsContent: View {
             .foregroundColor(OffriiTheme.warning)
         }
 
-        if wish.status == .review || wish.status == .flagged {
-            if let note = wish.moderationNote {
-                Label(note, systemImage: "exclamationmark.triangle.fill")
-                    .font(OffriiTypography.caption)
-                    .foregroundColor(OffriiTheme.danger)
-            }
+        if wish.status == .review || wish.status == .flagged,
+           let note = wish.moderationNote {
+            Label(note, systemImage: "exclamationmark.triangle.fill")
+                .font(OffriiTypography.caption)
+                .foregroundColor(OffriiTheme.danger)
         }
 
         if wish.reportCount > 0 && (wish.status == .review || wish.status == .open) {
@@ -128,18 +124,30 @@ struct EntraideMyNeedsContent: View {
         HStack(spacing: OffriiTheme.spacingSM) {
             switch wish.status {
             case .open:
-                actionChip(NSLocalizedString("entraide.action.close", comment: ""), icon: "xmark.circle", color: OffriiTheme.danger) {
+                actionChip(
+                    NSLocalizedString("entraide.action.close", comment: ""),
+                    icon: "xmark.circle", color: OffriiTheme.danger
+                ) {
                     Task { await viewModel.closeWish(id: wish.id) }
                 }
             case .matched:
-                actionChip(NSLocalizedString("entraide.action.messages", comment: ""), icon: "bubble.left.fill", color: OffriiTheme.primary) {
+                actionChip(
+                    NSLocalizedString("entraide.action.messages", comment: ""),
+                    icon: "bubble.left.fill", color: OffriiTheme.primary
+                ) {
                     selectedWishId = wish.id
                 }
-                actionChip(NSLocalizedString("entraide.action.close", comment: ""), icon: "xmark.circle", color: OffriiTheme.danger) {
+                actionChip(
+                    NSLocalizedString("entraide.action.close", comment: ""),
+                    icon: "xmark.circle", color: OffriiTheme.danger
+                ) {
                     Task { await viewModel.closeWish(id: wish.id) }
                 }
             case .review:
-                actionChip(NSLocalizedString("entraide.action.close", comment: ""), icon: "xmark.circle", color: OffriiTheme.danger) {
+                actionChip(
+                    NSLocalizedString("entraide.action.close", comment: ""),
+                    icon: "xmark.circle", color: OffriiTheme.danger
+                ) {
                     Task { await viewModel.closeWish(id: wish.id) }
                 }
             default:
@@ -148,7 +156,9 @@ struct EntraideMyNeedsContent: View {
         }
     }
 
-    private func actionChip(_ label: String, icon: String, color: Color, action: @escaping () -> Void) -> some View {
+    private func actionChip(
+        _ label: String, icon: String, color: Color, action: @escaping () -> Void
+    ) -> some View {
         Button(action: action) {
             Label(label, systemImage: icon)
                 .font(.system(size: 12, weight: .medium))

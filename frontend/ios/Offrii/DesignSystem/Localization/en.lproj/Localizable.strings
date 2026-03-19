@@ -287,6 +287,11 @@
 "entraide.empty" = "No wishes yet";
 "entraide.emptySubtitle" = "Be the first to publish a wish";
 "entraide.anonymous" = "Anonymous";
+"entraide.countSingular" = "wish";
+"entraide.countPlural" = "wishes";
+"entraide.search.placeholder" = "Search wishes...";
+"entraide.sort.newest" = "Newest";
+"entraide.sort.oldest" = "Oldest";
 "entraide.offer" = "I want to help";
 "entraide.fab.publish" = "Publish";
 
