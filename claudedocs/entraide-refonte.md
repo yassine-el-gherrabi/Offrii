@@ -1,126 +1,155 @@
 # Entraide — Refonte complète
 
-## Phase 1 : Corrections backend (gaps identifiés)
+## Phase 1 : Corrections backend (gaps identifiés) ✅
 
-### 1. Re-modération sur update ✅
-**Problème** : Un user peut modifier le contenu d'un wish après approbation sans re-modération.
-**Fix** : Quand `update_wish` est appelé sur un wish `open` ou `review`, relancer la modération async (même flow que création : passer en `pending` → modération → `open`/`flagged`).
-**Tests** :
-- [ ] Update wish content triggers re-moderation
-- [ ] Wish goes to pending during re-moderation
-- [ ] Wish returns to open after approved re-moderation
-- [ ] Wish goes to flagged if re-moderation flags it
-- [ ] Update from review status also triggers re-moderation
+- ✅ Re-modération sur update
+- ✅ Intégration notification center
+- ✅ Update + reopen contourne les signalements
+- ✅ État orphelin si donneur supprime son compte
+- ✅ Messages supprimés en cascade → SET NULL
+- ⏭️ Paginer list_my_wishes (déprioritisé)
+- ✅ Validation URL
+- ✅ Dead code cleanup
 
-### 2. Intégration notification center ✅
-**Problème** : Les push notifications entraide sont envoyées mais pas stockées dans la table `notifications` → invisibles dans la cloche in-app.
-**Fix** : À chaque envoi de push dans `community_wish_service` et `wish_message_service`, aussi créer un record dans `notifications` via `NotificationRepo::create`.
-**Tests** :
-- [ ] Offer creates notification for owner
-- [ ] Withdraw creates notification for owner
-- [ ] Reject creates notification for donor
-- [ ] Confirm creates notification for donor
-- [ ] Close (when matched) creates notification for donor
-- [ ] Report threshold creates notification for owner
-- [ ] Moderation result creates notification for owner
-- [ ] New message creates notification for recipient
-- [ ] Notifications appear in GET /me/notifications
+## Phase 2 : Refonte frontend from scratch ✅
 
-### 3. Update + reopen contourne les signalements ✅
-**Problème** : Un user peut modifier le contenu d'un wish en `review`, puis le réouvrir — les signalements sont reset mais le nouveau contenu n'est pas modéré.
-**Fix** : `reopen_wish` doit relancer la modération. Au lieu de passer directement en `open`, passer en `pending` → modération async → `open`/`flagged`.
-**Tests** :
-- [ ] Reopen triggers re-moderation (status goes to pending, not open)
-- [ ] Reopen with clean content → eventually open
-- [ ] Reopen with flagged content → eventually flagged
-- [ ] Reopen still respects max 2 reopens + cooldown
+- ✅ Réécriture 19 fichiers → 12 nouveaux
+- ✅ Layout aligné Envies/Proches (navigationTitle, searchable, chips, stats bar)
+- ✅ Cards full-width text-first (icône catégorie + titre + description + auteur + photo optionnelle)
+- ✅ Couleurs catégories vibrantes alignées sur Envies
+- ✅ glassBadge style unifié
+- ✅ Searchable natif sur les 3 pages (Envies, Proches, Entraide)
+- ✅ Sous-titre italique "Des gestes simples, des impacts réels"
 
-### 4. État orphelin si donneur supprime son compte ✅
-**Problème** : Si le donneur supprime son compte, le wish reste `matched` avec `matched_with = NULL`.
-**Fix** : Ajouter un trigger SQL ou un check dans `delete_account` qui clear les matchs ouverts (set wishes back to `open` where `matched_with = user_id`).
-**Tests** :
-- [ ] Delete donor account → matched wish returns to open
-- [ ] Owner can see wish is back to open
-- [ ] Another donor can now offer
+## Phase 3 : Bugs critiques P0 ⬜
 
-### 5. Messages supprimés en cascade ✅
-**Problème** : `wish_messages.sender_id` a `ON DELETE CASCADE` — si un user est supprimé, ses messages disparaissent.
-**Fix** : Changer en `ON DELETE SET NULL` + gérer les messages avec sender_id NULL côté affichage (afficher "Utilisateur supprimé").
-**Tests** :
-- [ ] Delete user → messages preserved with sender_id NULL
-- [ ] List messages after sender deletion returns messages with null sender
-- [ ] Message response handles null sender gracefully
+### 3.1 Sort "Récent/Ancien" décoratif ⬜
+**Problème** : `sortOrder` est un `@State` local jamais envoyé au backend.
+**Fix** : Retirer le menu de tri. Toujours afficher par date décroissante (le backend le fait déjà). Un tri "Ancien d'abord" n'a pas de sens pour un mur d'entraide.
+**Fichiers** : `EntraideView.swift`
 
-### 6. Paginer list_my_wishes ⏭️ (déprioritisé — max 3 wishes actifs, faible impact)
-**Problème** : `GET /community/wishes/mine` retourne tout sans pagination.
-**Fix** : Ajouter pagination (page/limit) comme `list_wishes`.
-**Tests** :
-- [ ] list_my_wishes respects page/limit
-- [ ] list_my_wishes returns correct total count
-- [ ] list_my_wishes default pagination works
+### 3.2 "Mes offres" utilise les données de Découvrir ⬜
+**Problème** : `viewModel.myOffers` = `wishes.filter(\.isMatchedByMe)` — si on pagine ou filtre par catégorie, les offres disparaissent. Ne montre pas les fulfilled/closed.
+**Fix** : Appel API dédié. Le backend `GET /community/wishes` avec auth retourne `is_matched_by_me`. On peut soit :
+- Ajouter un query param `matched_by_me=true` côté backend
+- Ou charger séparément dans un ViewModel dédié
+**Fichiers** : Backend `handlers/community_wishes.rs` + `EntraideMyOffersContent.swift` + nouveau ViewModel ou param
 
-### 7. Pas de validation URL ✅
-**Problème** : Les liens et image_url ne sont pas validés comme URLs.
-**Fix** : Ajouter validation regex ou url::Url parse sur image_url et chaque lien.
-**Tests** :
-- [ ] Valid URLs accepted
-- [ ] Invalid URLs rejected (400)
-- [ ] Empty string link rejected
-- [ ] Protocol-less URLs rejected
+### 3.3 Pas de confirmation avant "Proposer mon aide" ⬜
+**Problème** : Tap = match instant. Action irréversible sans filet.
+**Fix** : Alert de confirmation : "Vous allez proposer votre aide à [auteur]. Vous pourrez échanger par messages." Cancel/Confirmer.
+**Fichiers** : `WishDetailSheet.swift`
 
-### 8. Dead code cleanup ✅
-**Problème** : `find_user_is_admin` dans le repo est inutilisé.
-**Fix** : Supprimer la méthode du trait et de l'impl.
-**Tests** :
-- [ ] Compilation passes after removal
+### 3.4 409 Conflict non géré ⬜
+**Problème** : Si quelqu'un offre en même temps, erreur générique.
+**Fix** : Mapper le 409 → "Quelqu'un a déjà proposé son aide pour ce besoin." + refresh du detail.
+**Fichiers** : `WishDetailViewModel.swift`
 
----
+### 3.5 Pas de "Confirmer" dans Mes besoins ⬜
+**Problème** : L'action la plus importante est cachée dans le detail sheet.
+**Fix** : Ajouter chip "Confirmer" (primary) comme première action pour les wishes matched dans `EntraideMyNeedsContent`.
+**Fichiers** : `EntraideMyNeedsContent.swift`
 
-## Phase 2 : Refonte frontend ✅
+### 3.6 Empty state Discover sans CTA ⬜
+**Problème** : Pas de bouton "Publier" quand le mur est vide.
+**Fix** : Ajouter `ctaTitle` + `ctaAction` dans l'empty state de `EntraideDiscoverContent`.
+**Fichiers** : `EntraideDiscoverContent.swift`
 
-- Réécriture from scratch des 19 fichiers → 12 nouveaux
-- Layout aligné sur Envies/Proches (.navigationTitle, .searchable, chips, stats bar)
-- Cards avec glassBadge style Envies, gradients vibrants
-- Recherche native iOS sur les 3 pages
+## Phase 4 : Améliorations P1 ⬜
 
-## Phase 3 : Polish UX cards (en cours) ⬜
+### 4.1 Recherche sur description ⬜
+**Problème** : Search filtre uniquement sur le titre.
+**Fix** : Filtrer sur `title` ET `description` dans `EntraideDiscoverContent.displayedWishes`.
+**Fichiers** : `EntraideDiscoverContent.swift`
 
-### Frontend (pas de changement backend)
-- [x] Supprimer badge "Ouvert" sur Découvrir (bruit visuel)
-- [x] Supprimer badge "Anonyme" sur les cards (contre-productif)
-- [x] Ajouter aperçu description 1 ligne sur les cards
-- [x] Afficher nom auteur dans le sous-titre (humaniser)
-- [x] Afficher sous-titre "Des gestes simples, des impacts réels"
-- [ ] Hint première visite (card contextuelle dismissable)
+### 4.2 Bouton "Modifier" pour l'owner ⬜
+**Problème** : Le backend supporte `updateWish`, le service `CommunityWishService.updateWish()` existe, mais aucune UI.
+**Fix** : Ajouter bouton "Modifier" dans `WishDetailSheet` (owner + open) qui ouvre `CreateWishSheet` pré-rempli. Ajouter chip "Modifier" dans `EntraideMyNeedsContent`.
+**Fichiers** : `WishDetailSheet.swift`, `EntraideMyNeedsContent.swift`, `CreateWishSheet.swift` (mode édition)
 
-## Phase 4 : Améliorations backend engagement ⬜
+### 4.3 Bouton "Rouvrir" pour review ⬜
+**Problème** : `reopenWish()` existe côté backend et ViewModel mais l'UI ne l'affiche jamais.
+**Fix** : Chip "Rouvrir" dans `EntraideMyNeedsContent` pour status `.review` (gate: `reopenCount < 2`). Bouton dans `WishDetailSheet` aussi.
+**Fichiers** : `EntraideMyNeedsContent.swift`, `WishDetailSheet.swift`
 
-### 1. Compteur d'offres sur les wishes ⬜
-**Besoin** : Ajouter `offer_count` au `WishResponse` DTO pour afficher "0 offres" sur les cards.
-**Pourquoi** : Le plus gros levier d'engagement. "Soyez le premier à aider" est plus motivant que rien.
-**Backend** : Ajouter une colonne ou un COUNT dans la query `list_open`. Incrémenter quand `offer_wish`, décrémenter quand `withdraw_offer` / `reject_offer`.
-**Frontend** : Afficher dans le sous-titre de la card.
-**Tests** :
-- [ ] offer increments count
-- [ ] withdraw decrements count
-- [ ] reject decrements count
-- [ ] count visible in list response
+### 4.4 Message initial optionnel à l'offre ⬜
+**Problème** : Quand on propose son aide, le thread de messages est vide.
+**Fix** : Dans le dialog de confirmation (3.3), ajouter un TextField optionnel "Laissez un premier message (facultatif)". Si rempli, envoyer le message après le match.
+**Fichiers** : `WishDetailSheet.swift`
 
-### 2. Stats communauté ⬜
-**Besoin** : Endpoint `GET /community/wishes/stats` retournant le nombre de wishes fulfilled cette semaine.
-**Pourquoi** : Preuve sociale que le système fonctionne.
-**Backend** : Simple COUNT WHERE status='fulfilled' AND fulfilled_at > NOW() - 7 days.
-**Frontend** : Banner en haut du Discover "X souhaits offerts cette semaine".
-**Tests** :
-- [ ] Stats endpoint returns correct count
-- [ ] Count resets weekly
+### 4.5 Confirmation fulfillment avec gratitude ⬜
+**Problème** : Confirmer = toast générique.
+**Fix** : Dialog avant : "Confirmer que [donneur] vous a aidé ?" + TextArea "Remercier [donneur] (facultatif)" qui envoie un dernier message.
+**Fichiers** : `WishDetailSheet.swift`, `EntraideMyNeedsContent.swift`
 
-### 3. Wishes récemment comblés ⬜
-**Besoin** : Endpoint `GET /community/wishes/recent-fulfilled` (limit 3, last 7 days).
-**Pourquoi** : Montre que le système marche, inspire confiance.
-**Backend** : Query WHERE status='fulfilled' ORDER BY fulfilled_at DESC LIMIT 3.
-**Frontend** : Section horizontale "Récemment comblés" en haut du Discover.
-**Tests** :
-- [ ] Returns only fulfilled wishes
-- [ ] Respects 7-day window
-- [ ] Limited to 3 results
+### 4.6 Célébration post-confirmation ⬜
+**Problème** : Après confirmation, retour plat.
+**Fix** : Animation brève (confetti ou illustration warm) + "Merci ! Ce geste a été enregistré." pendant 2-3s.
+**Fichiers** : `WishDetailSheet.swift`
+
+### 4.7 Polling adaptatif messages ⬜
+**Problème** : 10s fixe — trop lent quand actif, gaspillage quand inactif.
+**Fix** : 3s après envoi/réception → 10s après 30s d'inactivité → 30s après 2min.
+**Fichiers** : `WishMessagesSheet.swift`
+
+### 4.8 Preview photo dans CreateWishSheet ⬜
+**Problème** : Après upload, juste un checkmark vert. L'user ne voit pas ce qu'il a uploadé.
+**Fix** : Afficher thumbnail de l'image uploadée avec bouton X pour supprimer.
+**Fichiers** : `CreateWishSheet.swift`
+
+### 4.9 Card d'onboarding première visite ⬜
+**Problème** : Nouveau user arrive sans contexte.
+**Fix** : Card dismissable au-dessus du feed : "Bienvenue dans l'Entraide" + 3 bullets + bouton "Compris". UserDefaults pour ne plus afficher.
+**Fichiers** : `EntraideDiscoverContent.swift`
+
+### 4.10 Feedback post-signalement ⬜
+**Problème** : Après signalement, le sheet se ferme sans feedback.
+**Fix** : Avant fermeture, afficher "Merci pour votre signalement. Notre équipe va examiner ce besoin." pendant 2s.
+**Fichiers** : `ReportWishSheet.swift`
+
+### 4.11 FAB désactivé à 3 wishes ⬜
+**Problème** : L'user peut taper le FAB alors qu'il a déjà 3 wishes actifs (erreur 409 du backend).
+**Fix** : Vérifier le count dans le ViewModel, désactiver/masquer le FAB à 3. Ou montrer un tooltip explicatif.
+**Fichiers** : `EntraideView.swift`, `EntraideMyNeedsViewModel.swift`
+
+## Phase 5 : Polish P2 ⬜
+
+### 5.1 Section "Récemment comblés" ⬜
+**Backend** : Endpoint `GET /community/wishes/recent-fulfilled` (limit 5, last 7 days).
+**Frontend** : Section horizontale compacte au-dessus du feed Discover.
+**Fichiers** : Backend handler + `EntraideDiscoverContent.swift`
+
+### 5.2 Indicateur d'âge sur vieux wishes ⬜
+**Fix** : Pour wishes open > 48h, afficher "Publié il y a 3j — toujours en attente" en subtle.
+**Fichiers** : `EntraideWishCard.swift`
+
+### 5.3 Extraire couleurs/icônes catégorie ⬜
+**Problème** : Mapping catégorie → couleur/icône dupliqué dans 3 fichiers.
+**Fix** : Extension sur `WishCategory` avec `var color`, `var icon`, `var gradient`.
+**Fichiers** : `CommunityWish.swift` (extension) + refactor 3 fichiers
+
+### 5.4 Contexte temporel dans badges status Mes besoins ⬜
+**Fix** : "En cours depuis 3j" au lieu de juste "En cours".
+**Fichiers** : `EntraideMyNeedsContent.swift`
+
+### 5.5 Pagination messages ⬜
+**Fix** : Scroll-to-load-more en haut du thread pour les vieilles conversations.
+**Fichiers** : `WishMessagesSheet.swift`
+
+### 5.6 Champ libre pour signalement "Autre" ⬜
+**Fix** : Quand "Autre" sélectionné, afficher TextField pour détailler.
+**Fichiers** : `ReportWishSheet.swift`
+
+### 5.7 Comparaison messages par last ID ⬜
+**Problème** : `refreshMessages()` compare par count au lieu du dernier ID.
+**Fix** : Comparer `response.data.last?.id != messages.last?.id`.
+**Fichiers** : `WishMessagesSheet.swift`
+
+## À ne PAS faire ❌
+
+- ❌ Stats communauté (déprimant si nombre bas au lancement)
+- ❌ Read receipts (pression sociale inappropriée)
+- ❌ Partage de localisation (liability, hors scope)
+- ❌ Description assistée par IA (inauthentique pour l'entraide)
+- ❌ Compteur d'offres (pas pertinent avec le modèle 1:1)
+- ❌ Visibilité post-report pour le reporter (incentive au report weaponisé)
