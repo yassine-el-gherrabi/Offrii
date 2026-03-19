@@ -1,7 +1,7 @@
 import NukeUI
 import SwiftUI
 
-// MARK: - Entraide Wish Card
+// MARK: - Entraide Wish Card (same visual pattern as WishlistGridCard)
 
 struct EntraideWishCard: View {
     let wish: CommunityWish
@@ -18,10 +18,6 @@ struct EntraideWishCard: View {
         case .children:  return [Color(red: 0.3, green: 0.7, blue: 0.6), Color(red: 0.5, green: 0.9, blue: 0.8)]
         case .other:     return [Color(red: 0.5, green: 0.5, blue: 0.6), Color(red: 0.7, green: 0.7, blue: 0.8)]
         }
-    }
-
-    private var categoryChipColor: Color {
-        categoryGradient[0]
     }
 
     private var categoryIcon: String {
@@ -41,7 +37,6 @@ struct EntraideWishCard: View {
         case .open:      return OffriiTheme.success
         case .matched:   return OffriiTheme.warning
         case .fulfilled: return OffriiTheme.primary
-        case .closed:    return OffriiTheme.textMuted
         default:         return OffriiTheme.textMuted
         }
     }
@@ -65,45 +60,43 @@ struct EntraideWishCard: View {
             onTap?()
         } label: {
             VStack(alignment: .leading, spacing: 0) {
-                // Image zone
                 ZStack {
                     imageZone
 
-                    // Status badge (top right)
-                    HStack(spacing: 4) {
-                        Circle()
-                            .fill(statusColor)
-                            .frame(width: 6, height: 6)
-                        Text(statusLabel)
-                            .font(.system(size: 10, weight: .semibold))
-                            .foregroundColor(.white)
+                    // Badges top-right (same as WishlistGridCard.otherBadges)
+                    VStack(alignment: .trailing, spacing: 4) {
+                        // Status badge
+                        glassBadge(color: statusColor) {
+                            HStack(spacing: 3) {
+                                Circle().fill(statusColor).frame(width: 6, height: 6)
+                                Text(statusLabel)
+                            }
+                        }
+
+                        // Links badge
+                        if let links = wish.links, !links.isEmpty {
+                            glassBadge(color: OffriiTheme.primary) {
+                                Image(systemName: "link")
+                            }
+                        }
                     }
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 3)
-                    .background(.ultraThinMaterial)
-                    .cornerRadius(OffriiTheme.cornerRadiusSM)
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
                     .padding(OffriiTheme.spacingSM)
 
-                    // Anonymous badge (top left)
+                    // Anonymous badge top-left (same position as "Privé" in Envies)
                     if wish.displayName == nil {
-                        HStack(spacing: 3) {
-                            Image(systemName: "person.fill.questionmark")
-                                .font(.system(size: 9))
-                            Text(NSLocalizedString("entraide.anonymous", comment: ""))
-                                .font(.system(size: 9, weight: .medium))
+                        VStack {
+                            glassBadge(color: OffriiTheme.primary) {
+                                Image(systemName: "person.fill.questionmark")
+                                Text(NSLocalizedString("entraide.anonymous", comment: ""))
+                            }
                         }
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 3)
-                        .background(.ultraThinMaterial)
-                        .cornerRadius(OffriiTheme.cornerRadiusSM)
                         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                         .padding(OffriiTheme.spacingSM)
                     }
                 }
 
-                // Text zone
+                // Text zone (same as WishlistGridCard)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(wish.title)
                         .font(.system(size: 14, weight: .semibold))
@@ -113,14 +106,11 @@ struct EntraideWishCard: View {
 
                     HStack(spacing: 4) {
                         Text(wish.category.label)
-                            .font(.system(size: 12))
-                            .foregroundColor(OffriiTheme.textMuted)
                         Text("·")
-                            .foregroundColor(OffriiTheme.textMuted)
                         Text(wish.createdAt, style: .relative)
-                            .font(.system(size: 12))
-                            .foregroundColor(OffriiTheme.textMuted)
                     }
+                    .font(.system(size: 12))
+                    .foregroundColor(OffriiTheme.textMuted)
                     .lineLimit(1)
                 }
                 .padding(.horizontal, OffriiTheme.spacingSM)
@@ -170,5 +160,26 @@ struct EntraideWishCard: View {
                 .font(.system(size: 32, weight: .light))
                 .foregroundColor(.white.opacity(0.7))
         )
+    }
+
+    // MARK: - Glass Badge (same style as WishlistGridCard.glassBadge)
+
+    private func glassBadge<Content: View>(
+        color: Color = OffriiTheme.primary,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        HStack(spacing: 3) {
+            content()
+        }
+        .foregroundColor(color)
+        .font(.system(size: 9, weight: .semibold))
+        .padding(.horizontal, 7)
+        .padding(.vertical, 4)
+        .background(
+            RoundedRectangle(cornerRadius: 6)
+                .fill(.white)
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 6))
+        .shadow(color: .black.opacity(0.08), radius: 4, x: 0, y: 1)
     }
 }
