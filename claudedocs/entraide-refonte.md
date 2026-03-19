@@ -2,7 +2,7 @@
 
 ## Phase 1 : Corrections backend (gaps identifiés)
 
-### 1. Re-modération sur update ⬜
+### 1. Re-modération sur update ✅
 **Problème** : Un user peut modifier le contenu d'un wish après approbation sans re-modération.
 **Fix** : Quand `update_wish` est appelé sur un wish `open` ou `review`, relancer la modération async (même flow que création : passer en `pending` → modération → `open`/`flagged`).
 **Tests** :
@@ -26,7 +26,7 @@
 - [ ] New message creates notification for recipient
 - [ ] Notifications appear in GET /me/notifications
 
-### 3. Update + reopen contourne les signalements ⬜
+### 3. Update + reopen contourne les signalements ✅
 **Problème** : Un user peut modifier le contenu d'un wish en `review`, puis le réouvrir — les signalements sont reset mais le nouveau contenu n'est pas modéré.
 **Fix** : `reopen_wish` doit relancer la modération. Au lieu de passer directement en `open`, passer en `pending` → modération async → `open`/`flagged`.
 **Tests** :

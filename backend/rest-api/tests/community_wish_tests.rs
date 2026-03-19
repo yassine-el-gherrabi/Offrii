@@ -2853,3 +2853,104 @@ async fn wish_moderation_creates_notification_for_owner() {
             .collect::<Vec<_>>()
     );
 }
+
+// ── Re-moderation on update ──────────────────────────────────────────
+
+#[tokio::test]
+async fn update_wish_triggers_remoderation() {
+    let app = TestApp::new().await;
+    let token = setup_aged_user_with_name(&app, "remod@test.com", "Remod").await;
+
+    let wish_id = create_open_wish(&app, &token).await;
+
+    // Update content — should go to pending
+    let (status, body) = app
+        .patch_json_with_auth(
+            &format!("/community/wishes/{wish_id}"),
+            &json!({ "title": "Updated title" }),
+            &token,
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(
+        body["status"], "pending",
+        "update should set status to pending"
+    );
+
+    // Wait for moderation to complete (NoopModerationService → approved → open)
+    wait_for_wish_status(&app, wish_id, "open").await;
+}
+
+#[tokio::test]
+async fn update_wish_from_review_triggers_remoderation() {
+    let app = TestApp::new().await;
+    let token = setup_aged_user_with_name(&app, "remod_rev@test.com", "Remod2").await;
+
+    let wish_id = create_open_wish(&app, &token).await;
+    force_wish_status(&app, wish_id, "review").await;
+
+    let (status, body) = app
+        .patch_json_with_auth(
+            &format!("/community/wishes/{wish_id}"),
+            &json!({ "title": "Fixed content" }),
+            &token,
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(body["status"], "pending");
+
+    wait_for_wish_status(&app, wish_id, "open").await;
+}
+
+// ── Re-moderation on reopen ──────────────────────────────────────────
+
+#[tokio::test]
+async fn reopen_wish_triggers_remoderation() {
+    let app = TestApp::new().await;
+    let token = setup_aged_user_with_name(&app, "reopen_mod@test.com", "Reopen").await;
+
+    let wish_id = create_open_wish(&app, &token).await;
+    force_wish_status(&app, wish_id, "review").await;
+
+    let (status, _) = app
+        .post_with_auth(&format!("/community/wishes/{wish_id}/reopen"), &token)
+        .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+
+    // Should go through pending → open via moderation (NoopModerationService approves instantly)
+    wait_for_wish_status(&app, wish_id, "open").await;
+
+    // Verify reports were cleared
+    let count: (i32,) = sqlx::query_as("SELECT report_count FROM community_wishes WHERE id = $1")
+        .bind(wish_id)
+        .fetch_one(&app.db)
+        .await
+        .unwrap();
+    assert_eq!(count.0, 0, "reports should be cleared after reopen");
+}
+
+#[tokio::test]
+async fn reopen_still_respects_max_count() {
+    let app = TestApp::new().await;
+    let token = setup_aged_user_with_name(&app, "reopen_max@test.com", "Max").await;
+
+    let wish_id = create_open_wish(&app, &token).await;
+
+    // Simulate 2 previous reopens
+    sqlx::query("UPDATE community_wishes SET status = 'review', reopen_count = 2 WHERE id = $1")
+        .bind(wish_id)
+        .execute(&app.db)
+        .await
+        .unwrap();
+
+    let (status, body) = app
+        .post_with_auth(&format!("/community/wishes/{wish_id}/reopen"), &token)
+        .await;
+    assert_eq!(status, StatusCode::FORBIDDEN);
+    assert!(
+        body["error"]["message"]
+            .as_str()
+            .unwrap()
+            .contains("maximum")
+    );
+}

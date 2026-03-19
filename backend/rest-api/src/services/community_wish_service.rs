@@ -128,6 +128,145 @@ impl PgCommunityWishService {
         }
     }
 
+    /// Spawn an async moderation check for a wish. Sets status to `pending` first,
+    /// then runs moderation with retries. On completion: `open` or `flagged`.
+    /// Used by create_wish, update_wish, and reopen_wish.
+    #[allow(clippy::too_many_arguments)]
+    fn spawn_moderation_check(
+        &self,
+        wish_id: Uuid,
+        owner_id: Uuid,
+        title: &str,
+        description: Option<&str>,
+        category: &str,
+        image_url: Option<&str>,
+        links: Option<&[String]>,
+    ) {
+        let mod_title = title.to_string();
+        let mod_desc = description.map(|d| d.to_string());
+        let mod_cat = category.to_string();
+        let mod_image_url = image_url.map(|u| u.to_string());
+        let mod_links: Option<Vec<String>> = links.map(|l| l.to_vec());
+        let moderation_svc = self.moderation_svc.clone();
+        let wish_repo = self.wish_repo.clone();
+        let push_token_repo = self.push_token_repo.clone();
+        let notification_svc = self.notification_svc.clone();
+        let notification_repo = self.notification_repo.clone();
+        let redis = self.redis.clone();
+
+        tokio::spawn(async move {
+            let max_retries = 3;
+            let mut result = None;
+
+            for attempt in 0..max_retries {
+                match moderation_svc
+                    .check_wish(
+                        &mod_title,
+                        mod_desc.as_deref(),
+                        &mod_cat,
+                        mod_image_url.as_deref(),
+                        mod_links.as_deref(),
+                    )
+                    .await
+                {
+                    Ok(r) => {
+                        result = Some(r);
+                        break;
+                    }
+                    Err(e) => {
+                        tracing::warn!(
+                            wish_id = %wish_id,
+                            attempt = attempt + 1,
+                            error = %e,
+                            "moderation check failed, retrying"
+                        );
+                        if attempt < max_retries - 1 {
+                            tokio::time::sleep(std::time::Duration::from_secs(
+                                2u64.pow(attempt as u32),
+                            ))
+                            .await;
+                        }
+                    }
+                }
+            }
+
+            let (new_status, note, notif_title, notif_body) = match result {
+                Some(ModerationResult::Approved) => (
+                    WishStatus::Open,
+                    None,
+                    "Souhait publié !".to_string(),
+                    "Votre souhait est maintenant visible sur le mur d'entraide.".to_string(),
+                ),
+                Some(ModerationResult::Flagged { reason }) => (
+                    WishStatus::Flagged,
+                    Some(reason),
+                    "Souhait en révision".to_string(),
+                    "Votre souhait est en cours de révision par notre équipe.".to_string(),
+                ),
+                None => (
+                    WishStatus::Flagged,
+                    Some("moderation service unavailable after retries".to_string()),
+                    "Souhait en révision".to_string(),
+                    "Votre souhait est en cours de révision par notre équipe.".to_string(),
+                ),
+            };
+
+            if let Err(e) = wish_repo
+                .update_status(wish_id, new_status, note.as_deref())
+                .await
+            {
+                tracing::error!(wish_id = %wish_id, error = %e, "failed to update wish status after moderation");
+                return;
+            }
+
+            // Bump cache
+            if let Ok(mut conn) = redis.get_multiplexed_async_connection().await {
+                let _: Result<i64, _> = redis::cmd("INCR")
+                    .arg("community_wishes:ver")
+                    .query_async(&mut conn)
+                    .await;
+            }
+
+            // Persist notification
+            let notif_type = if new_status == WishStatus::Open {
+                "wish_moderation_approved"
+            } else {
+                "wish_moderation_flagged"
+            };
+            let _ = notification_repo
+                .create(
+                    owner_id,
+                    notif_type,
+                    &notif_title,
+                    &notif_body,
+                    None,
+                    None,
+                    Some(wish_id),
+                    None,
+                )
+                .await;
+
+            // Push notification
+            let tokens = match push_token_repo.find_by_user(owner_id).await {
+                Ok(t) => t,
+                Err(_) => return,
+            };
+            let requests: Vec<NotificationRequest> = tokens
+                .into_iter()
+                .map(|pt| NotificationRequest {
+                    device_token: pt.token,
+                    title: notif_title.clone(),
+                    body: notif_body.clone(),
+                    custom_data: std::collections::HashMap::new(),
+                    ..Default::default()
+                })
+                .collect();
+            if !requests.is_empty() {
+                notification_svc.send_batch(&requests).await;
+            }
+        });
+    }
+
     async fn get_cache_version(&self) -> Option<i64> {
         let Ok(mut conn) = self.redis.get_multiplexed_async_connection().await else {
             return None;
@@ -276,131 +415,15 @@ impl traits::CommunityWishService for PgCommunityWishService {
             .map_err(AppError::Internal)?;
 
         // Async moderation check
-        let wish_id = wish.id;
-        let mod_title = title.to_string();
-        let mod_desc = description.map(|d| d.to_string());
-        let mod_cat = category.to_string();
-        let mod_image_url = image_url.map(|u| u.to_string());
-        let mod_links: Option<Vec<String>> = links.map(|l| l.to_vec());
-        let moderation_svc = self.moderation_svc.clone();
-        let wish_repo = self.wish_repo.clone();
-        let this_push_token_repo = self.push_token_repo.clone();
-        let this_notification_svc = self.notification_svc.clone();
-        let this_notification_repo = self.notification_repo.clone();
-        let this_redis = self.redis.clone();
-        let owner_id = user_id;
-
-        tokio::spawn(async move {
-            let max_retries = 3;
-            let mut result = None;
-
-            for attempt in 0..max_retries {
-                match moderation_svc
-                    .check_wish(
-                        &mod_title,
-                        mod_desc.as_deref(),
-                        &mod_cat,
-                        mod_image_url.as_deref(),
-                        mod_links.as_deref(),
-                    )
-                    .await
-                {
-                    Ok(r) => {
-                        result = Some(r);
-                        break;
-                    }
-                    Err(e) => {
-                        tracing::warn!(
-                            wish_id = %wish_id,
-                            attempt = attempt + 1,
-                            error = %e,
-                            "moderation check failed, retrying"
-                        );
-                        if attempt < max_retries - 1 {
-                            tokio::time::sleep(std::time::Duration::from_secs(
-                                2u64.pow(attempt as u32),
-                            ))
-                            .await;
-                        }
-                    }
-                }
-            }
-
-            let (new_status, note, notif_title, notif_body) = match result {
-                Some(ModerationResult::Approved) => (
-                    WishStatus::Open,
-                    None,
-                    "Souhait publié !".to_string(),
-                    "Votre souhait est maintenant visible sur le mur d'entraide.".to_string(),
-                ),
-                Some(ModerationResult::Flagged { reason }) => (
-                    WishStatus::Flagged,
-                    Some(reason),
-                    "Souhait en révision".to_string(),
-                    "Votre souhait est en cours de révision par notre équipe.".to_string(),
-                ),
-                None => (
-                    WishStatus::Flagged,
-                    Some("moderation service unavailable after retries".to_string()),
-                    "Souhait en révision".to_string(),
-                    "Votre souhait est en cours de révision par notre équipe.".to_string(),
-                ),
-            };
-
-            if let Err(e) = wish_repo
-                .update_status(wish_id, new_status, note.as_deref())
-                .await
-            {
-                tracing::error!(wish_id = %wish_id, error = %e, "failed to update wish status after moderation");
-                return;
-            }
-
-            // Bump cache
-            if let Ok(mut conn) = this_redis.get_multiplexed_async_connection().await {
-                let _: Result<i64, _> = redis::cmd("INCR")
-                    .arg("community_wishes:ver")
-                    .query_async(&mut conn)
-                    .await;
-            }
-
-            // Persist to notification center
-            let notif_type = if new_status == WishStatus::Open {
-                "wish_moderation_approved"
-            } else {
-                "wish_moderation_flagged"
-            };
-            let _ = this_notification_repo
-                .create(
-                    owner_id,
-                    notif_type,
-                    &notif_title,
-                    &notif_body,
-                    None,          // circle_id
-                    None,          // item_id
-                    Some(wish_id), // wish_id
-                    None,          // actor_id
-                )
-                .await;
-
-            // Push notification
-            let tokens = match this_push_token_repo.find_by_user(owner_id).await {
-                Ok(t) => t,
-                Err(_) => return,
-            };
-            let requests: Vec<NotificationRequest> = tokens
-                .into_iter()
-                .map(|pt| NotificationRequest {
-                    device_token: pt.token,
-                    title: notif_title.clone(),
-                    body: notif_body.clone(),
-                    custom_data: std::collections::HashMap::new(),
-                    ..Default::default()
-                })
-                .collect();
-            if !requests.is_empty() {
-                this_notification_svc.send_batch(&requests).await;
-            }
-        });
+        self.spawn_moderation_check(
+            wish.id,
+            user_id,
+            title,
+            description,
+            category,
+            image_url,
+            links,
+        );
 
         Ok(MyWishResponse {
             id: wish.id,
@@ -626,6 +649,22 @@ impl traits::CommunityWishService for PgCommunityWishService {
             .map_err(AppError::Internal)?
             .ok_or_else(|| AppError::NotFound("wish not found".into()))?;
 
+        // Set to pending and re-run moderation on updated content
+        self.wish_repo
+            .update_status(wish_id, WishStatus::Pending, None)
+            .await
+            .map_err(AppError::Internal)?;
+
+        self.spawn_moderation_check(
+            wish_id,
+            user_id,
+            updated.title.as_str(),
+            updated.description.as_deref(),
+            &updated.category,
+            updated.image_url.as_deref(),
+            updated.links.as_deref(),
+        );
+
         self.bump_cache_version().await;
 
         let donor_dn = if let Some(donor_id) = updated.matched_with {
@@ -639,7 +678,7 @@ impl traits::CommunityWishService for PgCommunityWishService {
             title: updated.title,
             description: updated.description,
             category: updated.category,
-            status: updated.status,
+            status: "pending".to_string(), // reflect the actual new status
             is_anonymous: updated.is_anonymous,
             matched_with_display_name: donor_dn,
             report_count: updated.report_count,
@@ -751,10 +790,21 @@ impl traits::CommunityWishService for PgCommunityWishService {
             .await
             .map_err(AppError::Internal)?;
 
+        // Set to pending and re-run moderation on current content
         self.wish_repo
-            .update_status(wish_id, WishStatus::Open, None)
+            .update_status(wish_id, WishStatus::Pending, None)
             .await
             .map_err(AppError::Internal)?;
+
+        self.spawn_moderation_check(
+            wish_id,
+            user_id,
+            &wish.title,
+            wish.description.as_deref(),
+            &wish.category,
+            wish.image_url.as_deref(),
+            wish.links.as_deref(),
+        );
 
         self.bump_cache_version().await;
         Ok(())
