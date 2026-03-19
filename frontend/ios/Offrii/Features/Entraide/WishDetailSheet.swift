@@ -12,6 +12,8 @@ struct WishDetailSheet: View {
     @Environment(AuthManager.self) private var authManager
     @State private var viewModel = WishDetailViewModel()
     @State private var showOfferConfirm = false
+    @State private var showCloseConfirm = false
+    @State private var showDeleteConfirm = false
 
     private var wish: WishDetail? { viewModel.wish }
     private var isMine: Bool { wish?.isMine ?? false }
@@ -286,7 +288,18 @@ struct WishDetailSheet: View {
     private func ownerOpenActions(_ wish: WishDetail) -> some View {
         if isMine && wish.status == .open {
             OffriiButton(NSLocalizedString("entraide.action.close", comment: ""), variant: .ghost) {
-                Task { _ = await viewModel.closeWish(id: wish.id) }
+                showCloseConfirm = true
+            }
+            .alert(
+                NSLocalizedString("entraide.close.confirmTitle", comment: ""),
+                isPresented: $showCloseConfirm
+            ) {
+                Button(NSLocalizedString("common.cancel", comment: ""), role: .cancel) {}
+                Button(NSLocalizedString("entraide.action.close", comment: ""), role: .destructive) {
+                    Task { _ = await viewModel.closeWish(id: wish.id) }
+                }
+            } message: {
+                Text(NSLocalizedString("entraide.close.confirmMessage", comment: ""))
             }
         }
         if isMine && wish.status == .review {
@@ -294,7 +307,28 @@ struct WishDetailSheet: View {
                 Task { _ = await viewModel.reopenWish(id: wish.id) }
             }
             OffriiButton(NSLocalizedString("entraide.action.close", comment: ""), variant: .ghost) {
-                Task { _ = await viewModel.closeWish(id: wish.id) }
+                showCloseConfirm = true
+            }
+        }
+        // Delete — available for open, closed, pending, review, flagged, rejected
+        if isMine && wish.status != .matched && wish.status != .fulfilled {
+            OffriiButton(NSLocalizedString("entraide.action.delete", comment: ""), variant: .danger) {
+                showDeleteConfirm = true
+            }
+            .alert(
+                NSLocalizedString("entraide.delete.confirmTitle", comment: ""),
+                isPresented: $showDeleteConfirm
+            ) {
+                Button(NSLocalizedString("common.cancel", comment: ""), role: .cancel) {}
+                Button(NSLocalizedString("entraide.action.delete", comment: ""), role: .destructive) {
+                    Task {
+                        if await viewModel.deleteWish(id: wish.id) {
+                            dismiss()
+                        }
+                    }
+                }
+            } message: {
+                Text(NSLocalizedString("entraide.delete.confirmMessage", comment: ""))
             }
         }
     }

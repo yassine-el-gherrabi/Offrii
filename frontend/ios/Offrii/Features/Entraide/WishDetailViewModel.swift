@@ -122,4 +122,18 @@ final class WishDetailViewModel {
             return false
         }
     }
+
+    func deleteWish(id: UUID) async -> Bool {
+        isActioning = true
+        do {
+            try await CommunityWishService.shared.deleteWish(id: id)
+            OffriiHaptics.success()
+            isActioning = false
+            return true
+        } catch {
+            self.error = error.localizedDescription
+            isActioning = false
+            return false
+        }
+    }
 }
