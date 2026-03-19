@@ -108,6 +108,7 @@ struct EntraideMyNeedsContent: View {
     // MARK: - Context Menu Actions
 
     @ViewBuilder
+    // swiftlint:disable:next function_body_length
     private func contextMenuActions(_ wish: MyWish) -> some View {
         switch wish.status {
         case .matched:
@@ -163,6 +164,17 @@ struct EntraideMyNeedsContent: View {
             }
         default:
             EmptyView()
+        }
+
+        // Delete always available
+        Divider()
+        Button(role: .destructive) {
+            Task { await viewModel.deleteWish(id: wish.id) }
+        } label: {
+            Label(
+                NSLocalizedString("entraide.action.delete", comment: ""),
+                systemImage: "trash"
+            )
         }
     }
 

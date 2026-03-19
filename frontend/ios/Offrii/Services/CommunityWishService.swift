@@ -83,6 +83,10 @@ final class CommunityWishService: Sendable {
         try await client.requestVoid(.closeCommunityWish(id: id))
     }
 
+    func deleteWish(id: UUID) async throws {
+        try await client.requestVoid(.deleteCommunityWish(id: id))
+    }
+
     func reopenWish(id: UUID) async throws {
         try await client.requestVoid(.reopenCommunityWish(id: id))
     }

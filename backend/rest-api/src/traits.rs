@@ -928,6 +928,8 @@ pub trait CommunityWishRepo: Send + Sync {
     async fn list_flagged(&self, limit: i64, offset: i64) -> Result<Vec<CommunityWish>>;
 
     async fn count_flagged(&self) -> Result<i64>;
+
+    async fn delete(&self, id: Uuid) -> Result<bool>;
 }
 
 #[async_trait]
@@ -1026,6 +1028,12 @@ pub trait CommunityWishService: Send + Sync {
 
     async fn close_wish(&self, wish_id: Uuid, user_id: Uuid)
     -> Result<(), crate::errors::AppError>;
+
+    async fn delete_wish(
+        &self,
+        wish_id: Uuid,
+        user_id: Uuid,
+    ) -> Result<(), crate::errors::AppError>;
 
     async fn reopen_wish(
         &self,

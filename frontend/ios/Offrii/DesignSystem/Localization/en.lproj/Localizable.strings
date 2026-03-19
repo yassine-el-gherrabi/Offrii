@@ -338,6 +338,7 @@
 
 /* Entraide - Actions */
 "entraide.action.close" = "Close wish";
+"entraide.action.delete" = "Delete wish";
 "entraide.action.confirm" = "Confirm received";
 "entraide.action.reject" = "Reject offer";
 "entraide.action.withdraw" = "Withdraw";

@@ -38,6 +38,16 @@ final class EntraideMyNeedsViewModel {
         }
     }
 
+    func deleteWish(id: UUID) async {
+        do {
+            try await CommunityWishService.shared.deleteWish(id: id)
+            OffriiHaptics.success()
+            await loadMyWishes()
+        } catch {
+            self.error = error.localizedDescription
+        }
+    }
+
     func reopenWish(id: UUID) async {
         do {
             try await CommunityWishService.shared.reopenWish(id: id)

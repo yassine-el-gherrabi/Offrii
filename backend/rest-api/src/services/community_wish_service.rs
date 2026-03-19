@@ -774,6 +774,45 @@ impl traits::CommunityWishService for PgCommunityWishService {
     }
 
     #[tracing::instrument(skip(self))]
+    async fn delete_wish(&self, wish_id: Uuid, user_id: Uuid) -> Result<(), AppError> {
+        let wish = self
+            .wish_repo
+            .find_by_id(wish_id)
+            .await
+            .map_err(AppError::Internal)?
+            .ok_or_else(|| AppError::NotFound("wish not found".into()))?;
+
+        if wish.owner_id != user_id {
+            return Err(AppError::Forbidden("not the wish owner".into()));
+        }
+
+        // If matched, notify donor before deleting
+        if let Some(donor_id) = wish.matched_with {
+            self.notify_user(
+                donor_id,
+                "Souhait supprimé".into(),
+                "L'auteur a supprimé son souhait.".into(),
+                "wish_deleted",
+                None,
+                Some(user_id),
+            );
+        }
+
+        let deleted = self
+            .wish_repo
+            .delete(wish_id)
+            .await
+            .map_err(AppError::Internal)?;
+
+        if !deleted {
+            return Err(AppError::NotFound("wish not found".into()));
+        }
+
+        self.bump_cache_version().await;
+        Ok(())
+    }
+
+    #[tracing::instrument(skip(self))]
     async fn reopen_wish(&self, wish_id: Uuid, user_id: Uuid) -> Result<(), AppError> {
         let wish = self
             .wish_repo

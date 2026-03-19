@@ -132,6 +132,7 @@ enum APIEndpoint {
     case getCommunityWish(id: UUID)
     case updateCommunityWish(id: UUID, body: UpdateCommunityWishBody)
     case closeCommunityWish(id: UUID)
+    case deleteCommunityWish(id: UUID)
     case reopenCommunityWish(id: UUID)
     case offerCommunityWish(id: UUID)
     case withdrawOfferCommunityWish(id: UUID)
@@ -251,6 +252,7 @@ extension APIEndpoint {
         case .getCommunityWish(let id):                 return "/community/wishes/\(id)"
         case .updateCommunityWish(let id, _):           return "/community/wishes/\(id)"
         case .closeCommunityWish(let id):               return "/community/wishes/\(id)/close"
+        case .deleteCommunityWish(let id):              return "/community/wishes/\(id)"
         case .reopenCommunityWish(let id):              return "/community/wishes/\(id)/reopen"
         case .offerCommunityWish(let id):               return "/community/wishes/\(id)/offer"
         case .withdrawOfferCommunityWish(let id):       return "/community/wishes/\(id)/offer"
@@ -364,6 +366,7 @@ extension APIEndpoint {
         case .getCommunityWish:                 return .GET
         case .updateCommunityWish:              return .PATCH
         case .closeCommunityWish:               return .POST
+        case .deleteCommunityWish:              return .DELETE
         case .reopenCommunityWish:              return .POST
         case .offerCommunityWish:               return .POST
         case .withdrawOfferCommunityWish:       return .DELETE

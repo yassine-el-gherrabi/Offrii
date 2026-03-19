@@ -24,7 +24,10 @@ pub fn router() -> Router<AppState> {
         .route("/", post(create_wish).get(list_wishes))
         .route("/mine", get(list_my_wishes))
         .route("/my-offers", get(list_my_offers))
-        .route("/{id}", get(get_wish).patch(update_wish))
+        .route(
+            "/{id}",
+            get(get_wish).patch(update_wish).delete(delete_wish),
+        )
         .route("/{id}/close", post(close_wish))
         .route("/{id}/reopen", post(reopen_wish))
         .route("/{id}/offer", post(offer_wish).delete(withdraw_offer))
@@ -138,6 +141,19 @@ async fn close_wish(
     state
         .community_wishes
         .close_wish(id, auth_user.user_id)
+        .await?;
+    Ok(StatusCode::NO_CONTENT)
+}
+
+#[tracing::instrument(skip(state))]
+async fn delete_wish(
+    State(state): State<AppState>,
+    auth_user: AuthUser,
+    Path(id): Path<Uuid>,
+) -> Result<StatusCode, AppError> {
+    state
+        .community_wishes
+        .delete_wish(id, auth_user.user_id)
         .await?;
     Ok(StatusCode::NO_CONTENT)
 }

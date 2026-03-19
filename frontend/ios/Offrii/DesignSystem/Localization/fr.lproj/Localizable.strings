@@ -338,6 +338,7 @@
 
 /* Entraide - Actions */
 "entraide.action.close" = "Fermer le souhait";
+"entraide.action.delete" = "Supprimer le souhait";
 "entraide.action.confirm" = "Confirmer la réception";
 "entraide.action.reject" = "Rejeter l'offre";
 "entraide.action.withdraw" = "Se retirer";

@@ -150,6 +150,14 @@ impl traits::CommunityWishRepo for PgCommunityWishRepo {
     async fn count_flagged(&self) -> Result<i64> {
         count_flagged(&self.pool).await
     }
+
+    async fn delete(&self, id: Uuid) -> Result<bool> {
+        let result = sqlx::query("DELETE FROM community_wishes WHERE id = $1")
+            .bind(id)
+            .execute(&self.pool)
+            .await?;
+        Ok(result.rows_affected() > 0)
+    }
 }
 
 // ── Free functions (for transaction support) ─────────────────────────
