@@ -468,7 +468,7 @@
 /* Entraide - Segments */
 "entraide.segment.discover" = "Découvrir";
 "entraide.segment.myNeeds" = "Mes besoins";
-"entraide.segment.myOffers" = "Mes engagements";
+"entraide.segment.myOffers" = "Engagements";
 "entraide.offer.cta" = "Proposer mon aide";
 "entraide.offer.confirmTitle" = "Proposer votre aide ?";
 "entraide.offer.confirmAction" = "Confirmer";
