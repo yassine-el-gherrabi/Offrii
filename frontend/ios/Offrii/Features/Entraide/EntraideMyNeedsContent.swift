@@ -147,9 +147,12 @@ struct EntraideMyNeedsContent: View {
                     // Moderation note
                     if wish.status == .review || wish.status == .flagged,
                        let note = wish.moderationNote {
-                        Label(note, systemImage: "exclamationmark.triangle.fill")
-                            .font(.system(size: 11))
-                            .foregroundColor(OffriiTheme.danger)
+                        Label(
+                            humanReadableModerationNote(note),
+                            systemImage: "exclamationmark.triangle.fill"
+                        )
+                        .font(.system(size: 11))
+                        .foregroundColor(OffriiTheme.danger)
                     }
                 }
 
@@ -266,6 +269,45 @@ struct EntraideMyNeedsContent: View {
     }
 
     // MARK: - Helpers
+
+    private func humanReadableModerationNote(_ note: String) -> String {
+        // Map OpenAI category names to localized labels
+        let categoryMap: [String: String] = [
+            "harassment": NSLocalizedString("moderation.harassment", comment: ""),
+            "harassment/threatening": NSLocalizedString("moderation.harassment_threatening", comment: ""),
+            "hate": NSLocalizedString("moderation.hate", comment: ""),
+            "hate/threatening": NSLocalizedString("moderation.hate_threatening", comment: ""),
+            "sexual": NSLocalizedString("moderation.sexual", comment: ""),
+            "sexual/minors": NSLocalizedString("moderation.sexual_minors", comment: ""),
+            "violence": NSLocalizedString("moderation.violence", comment: ""),
+            "violence/graphic": NSLocalizedString("moderation.violence_graphic", comment: ""),
+            "self-harm": NSLocalizedString("moderation.self_harm", comment: ""),
+            "self-harm/intent": NSLocalizedString("moderation.self_harm_intent", comment: ""),
+            "self-harm/instructions": NSLocalizedString("moderation.self_harm_instructions", comment: ""),
+            "illicit": NSLocalizedString("moderation.illicit", comment: ""),
+            "illicit/violent": NSLocalizedString("moderation.illicit_violent", comment: ""),
+        ]
+
+        // "flagged categories: harassment, violence" → extract categories
+        if note.hasPrefix("flagged categories: ") {
+            let raw = note.replacingOccurrences(of: "flagged categories: ", with: "")
+            let categories = raw.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }
+            let mapped = categories.map { categoryMap[$0] ?? $0 }
+            return NSLocalizedString("moderation.prefix", comment: "") + mapped.joined(separator: ", ")
+        }
+
+        // "moderation service unavailable after retries"
+        if note.contains("unavailable") {
+            return NSLocalizedString("moderation.unavailable", comment: "")
+        }
+
+        // "content flagged by moderation"
+        if note.contains("flagged") {
+            return NSLocalizedString("moderation.generic", comment: "")
+        }
+
+        return note
+    }
 
     private func statusInfo(_ status: WishStatus) -> (Color, String) {
         switch status {

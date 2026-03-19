@@ -468,6 +468,23 @@
 "entraide.recentFulfilled.title" = "Recently fulfilled";
 "entraide.messages.loadMore" = "Load older messages";
 "entraide.report.otherPlaceholder" = "Please describe the issue...";
+
+"moderation.prefix" = "Flagged: ";
+"moderation.harassment" = "Harassment";
+"moderation.harassment_threatening" = "Threats";
+"moderation.hate" = "Hate speech";
+"moderation.hate_threatening" = "Hate threats";
+"moderation.sexual" = "Sexual content";
+"moderation.sexual_minors" = "Sexual content (minors)";
+"moderation.violence" = "Violence";
+"moderation.violence_graphic" = "Graphic violence";
+"moderation.self_harm" = "Self-harm";
+"moderation.self_harm_intent" = "Self-harm intent";
+"moderation.self_harm_instructions" = "Self-harm instructions";
+"moderation.illicit" = "Illegal activity";
+"moderation.illicit_violent" = "Violent illegal activity";
+"moderation.unavailable" = "Under review (moderation pending)";
+"moderation.generic" = "Content under review";
 "entraide.myOffers.empty" = "No offers yet";
 "entraide.myOffers.emptySubtitle" = "You haven't offered to help yet";
 
