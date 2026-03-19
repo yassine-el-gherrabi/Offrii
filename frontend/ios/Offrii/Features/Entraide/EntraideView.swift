@@ -166,7 +166,9 @@ struct EntraideView: View {
             WishMessagesSheet(wishId: wishId)
                 .presentationDetents([.large])
         }
-        .sheet(item: $reportWishId) { wishId in
+        .sheet(item: $reportWishId, onDismiss: {
+            Task { await viewModel.loadWishes() }
+        }) { wishId in
             ReportWishSheet(wishId: wishId)
                 .presentationDetents([.medium])
         }
