@@ -166,15 +166,17 @@ struct EntraideMyNeedsContent: View {
             EmptyView()
         }
 
-        // Delete always available
-        Divider()
-        Button(role: .destructive) {
-            Task { await viewModel.deleteWish(id: wish.id) }
-        } label: {
-            Label(
-                NSLocalizedString("entraide.action.delete", comment: ""),
-                systemImage: "trash"
-            )
+        // Delete available except for matched and fulfilled
+        if wish.status != .matched && wish.status != .fulfilled {
+            Divider()
+            Button(role: .destructive) {
+                Task { await viewModel.deleteWish(id: wish.id) }
+            } label: {
+                Label(
+                    NSLocalizedString("entraide.action.delete", comment: ""),
+                    systemImage: "trash"
+                )
+            }
         }
     }
 

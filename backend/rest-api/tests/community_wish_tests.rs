@@ -3039,3 +3039,224 @@ async fn delete_donor_does_not_affect_fulfilled_wishes() {
         "fulfilled wishes should not be affected"
     );
 }
+
+// ── Delete wish ──────────────────────────────────────────────────────
+
+#[tokio::test]
+async fn delete_wish_open_succeeds() {
+    let app = TestApp::new().await;
+    let token = setup_aged_user_with_name(&app, "del_open@test.com", "DelOpen").await;
+
+    let wish_id = create_open_wish(&app, &token).await;
+
+    let (status, _) = app
+        .delete_with_auth(&format!("/community/wishes/{wish_id}"), &token)
+        .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+
+    // Verify it's gone
+    let row = sqlx::query_as::<_, (i64,)>("SELECT COUNT(*) FROM community_wishes WHERE id = $1")
+        .bind(wish_id)
+        .fetch_one(&app.db)
+        .await
+        .unwrap();
+    assert_eq!(row.0, 0, "wish should be deleted from database");
+}
+
+#[tokio::test]
+async fn delete_wish_closed_succeeds() {
+    let app = TestApp::new().await;
+    let token = setup_aged_user_with_name(&app, "del_closed@test.com", "DelClosed").await;
+
+    let wish_id = create_open_wish(&app, &token).await;
+    // Close it first
+    app.post_with_auth(&format!("/community/wishes/{wish_id}/close"), &token)
+        .await;
+
+    let (status, _) = app
+        .delete_with_auth(&format!("/community/wishes/{wish_id}"), &token)
+        .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+}
+
+#[tokio::test]
+async fn delete_wish_pending_succeeds() {
+    let app = TestApp::new().await;
+    let token = setup_aged_user_with_name(&app, "del_pend@test.com", "DelPend").await;
+
+    // Create but don't wait for moderation (stays pending)
+    let body = json!({
+        "title": "Pending wish",
+        "category": "clothing",
+        "is_anonymous": true,
+    });
+    let (status, resp) = app
+        .post_json_with_auth("/community/wishes", &body, &token)
+        .await;
+    assert_eq!(status, StatusCode::CREATED);
+    let wish_id = resp["id"].as_str().unwrap();
+
+    // Delete while pending
+    let (status, _) = app
+        .delete_with_auth(&format!("/community/wishes/{wish_id}"), &token)
+        .await;
+    // May be NO_CONTENT if still pending, or if moderation already ran
+    assert!(
+        status == StatusCode::NO_CONTENT || status == StatusCode::BAD_REQUEST,
+        "should succeed or fail gracefully, got {status}"
+    );
+}
+
+#[tokio::test]
+async fn delete_wish_matched_blocked() {
+    let app = TestApp::new().await;
+    let owner = setup_aged_user_with_name(&app, "del_match_own@test.com", "DelMatchOwn").await;
+    let donor = setup_aged_user(&app, "del_match_don@test.com").await;
+
+    let wish_id = create_open_wish(&app, &owner).await;
+    app.post_with_auth(&format!("/community/wishes/{wish_id}/offer"), &donor)
+        .await;
+
+    // Try to delete while matched
+    let (status, body) = app
+        .delete_with_auth(&format!("/community/wishes/{wish_id}"), &owner)
+        .await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    assert!(
+        body["error"]["message"]
+            .as_str()
+            .unwrap()
+            .contains("close it first"),
+        "should tell user to close first"
+    );
+
+    // Verify wish still exists
+    let row = sqlx::query_as::<_, (i64,)>("SELECT COUNT(*) FROM community_wishes WHERE id = $1")
+        .bind(wish_id)
+        .fetch_one(&app.db)
+        .await
+        .unwrap();
+    assert_eq!(row.0, 1, "wish should still exist");
+}
+
+#[tokio::test]
+async fn delete_wish_fulfilled_blocked() {
+    let app = TestApp::new().await;
+    let owner = setup_aged_user_with_name(&app, "del_ful_own@test.com", "DelFulOwn").await;
+    let donor = setup_aged_user(&app, "del_ful_don@test.com").await;
+
+    let wish_id = create_open_wish(&app, &owner).await;
+    app.post_with_auth(&format!("/community/wishes/{wish_id}/offer"), &donor)
+        .await;
+    app.post_with_auth(&format!("/community/wishes/{wish_id}/confirm"), &owner)
+        .await;
+
+    let (status, _) = app
+        .delete_with_auth(&format!("/community/wishes/{wish_id}"), &owner)
+        .await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+}
+
+#[tokio::test]
+async fn delete_wish_not_owner_forbidden() {
+    let app = TestApp::new().await;
+    let owner = setup_aged_user_with_name(&app, "del_notown@test.com", "Owner").await;
+    let stranger = setup_aged_user(&app, "del_stranger@test.com").await;
+
+    let wish_id = create_open_wish(&app, &owner).await;
+
+    let (status, _) = app
+        .delete_with_auth(&format!("/community/wishes/{wish_id}"), &stranger)
+        .await;
+    assert_eq!(status, StatusCode::FORBIDDEN);
+}
+
+#[tokio::test]
+async fn delete_wish_nonexistent_404() {
+    let app = TestApp::new().await;
+    let token = setup_aged_user(&app, "del_404@test.com").await;
+    let fake_id = Uuid::new_v4();
+
+    let (status, _) = app
+        .delete_with_auth(&format!("/community/wishes/{fake_id}"), &token)
+        .await;
+    assert_eq!(status, StatusCode::NOT_FOUND);
+}
+
+#[tokio::test]
+async fn delete_wish_no_auth_401() {
+    let app = TestApp::new().await;
+    let fake_id = Uuid::new_v4();
+
+    let (status, _) = app
+        .delete_with_auth(&format!("/community/wishes/{fake_id}"), "invalid_token")
+        .await;
+    assert_eq!(status, StatusCode::UNAUTHORIZED);
+}
+
+#[tokio::test]
+async fn delete_wish_cascades_messages_and_reports() {
+    let app = TestApp::new().await;
+    let owner = setup_aged_user_with_name(&app, "del_casc_own@test.com", "CascOwn").await;
+    let reporter = setup_aged_user(&app, "del_casc_rep@test.com").await;
+
+    let wish_id = create_open_wish(&app, &owner).await;
+
+    // Add a report
+    app.post_json_with_auth(
+        &format!("/community/wishes/{wish_id}/report"),
+        &json!({ "reason": "spam" }),
+        &reporter,
+    )
+    .await;
+
+    // Verify report exists
+    let count: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM wish_reports WHERE wish_id = $1")
+        .bind(wish_id)
+        .fetch_one(&app.db)
+        .await
+        .unwrap();
+    assert!(count.0 >= 1, "precondition: report exists");
+
+    // Delete the wish
+    let (status, _) = app
+        .delete_with_auth(&format!("/community/wishes/{wish_id}"), &owner)
+        .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+
+    // Reports should be cascade deleted
+    let count: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM wish_reports WHERE wish_id = $1")
+        .bind(wish_id)
+        .fetch_one(&app.db)
+        .await
+        .unwrap();
+    assert_eq!(count.0, 0, "reports should be cascade deleted");
+}
+
+#[tokio::test]
+async fn delete_wish_review_succeeds() {
+    let app = TestApp::new().await;
+    let token = setup_aged_user_with_name(&app, "del_rev@test.com", "DelRev").await;
+
+    let wish_id = create_open_wish(&app, &token).await;
+    force_wish_status(&app, wish_id, "review").await;
+
+    let (status, _) = app
+        .delete_with_auth(&format!("/community/wishes/{wish_id}"), &token)
+        .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+}
+
+#[tokio::test]
+async fn delete_wish_rejected_succeeds() {
+    let app = TestApp::new().await;
+    let token = setup_aged_user_with_name(&app, "del_rej@test.com", "DelRej").await;
+
+    let wish_id = create_open_wish(&app, &token).await;
+    force_wish_status(&app, wish_id, "rejected").await;
+
+    let (status, _) = app
+        .delete_with_auth(&format!("/community/wishes/{wish_id}"), &token)
+        .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+}

@@ -786,16 +786,18 @@ impl traits::CommunityWishService for PgCommunityWishService {
             return Err(AppError::Forbidden("not the wish owner".into()));
         }
 
-        // If matched, notify donor before deleting
-        if let Some(donor_id) = wish.matched_with {
-            self.notify_user(
-                donor_id,
-                "Souhait supprimé".into(),
-                "L'auteur a supprimé son souhait.".into(),
-                "wish_deleted",
-                None,
-                Some(user_id),
-            );
+        // Cannot delete matched or fulfilled wishes
+        let status = WishStatus::parse(&wish.status)
+            .ok_or_else(|| AppError::Internal(anyhow::anyhow!("invalid wish status")))?;
+        if status == WishStatus::Matched {
+            return Err(AppError::BadRequest(
+                "cannot delete a matched wish — close it first".into(),
+            ));
+        }
+        if status == WishStatus::Fulfilled {
+            return Err(AppError::BadRequest(
+                "cannot delete a fulfilled wish".into(),
+            ));
         }
 
         let deleted = self
