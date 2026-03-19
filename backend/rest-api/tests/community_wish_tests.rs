@@ -3831,3 +3831,231 @@ async fn update_wish_stranger_forbidden_403() {
         .await;
     assert_eq!(status, StatusCode::FORBIDDEN);
 }
+
+// ═══════════════════════════════════════════════════════════════════════
+// Closed wishes: reopen + edit
+// ═══════════════════════════════════════════════════════════════════════
+
+#[tokio::test]
+async fn reopen_closed_wish_success() {
+    let app = TestApp::new().await;
+    let token = setup_aged_user(&app, "owner@test.com").await;
+    let wish_id = create_open_wish(&app, &token).await;
+
+    // Close it
+    let (status, _) = app
+        .post_with_auth(&format!("/community/wishes/{wish_id}/close"), &token)
+        .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+
+    // Verify closed
+    let row: (String,) = sqlx::query_as("SELECT status FROM community_wishes WHERE id = $1")
+        .bind(wish_id)
+        .fetch_one(&app.db)
+        .await
+        .unwrap();
+    assert_eq!(row.0, "closed");
+
+    // Reopen
+    let (status, _) = app
+        .post_with_auth(&format!("/community/wishes/{wish_id}/reopen"), &token)
+        .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+
+    // Should end up open after re-moderation completes (pending → open)
+    wait_for_wish_status(&app, wish_id, "open").await;
+
+    // Verify it's no longer closed
+    let row: (String,) = sqlx::query_as("SELECT status FROM community_wishes WHERE id = $1")
+        .bind(wish_id)
+        .fetch_one(&app.db)
+        .await
+        .unwrap();
+    assert_ne!(
+        row.0, "closed",
+        "wish must no longer be closed after reopen"
+    );
+}
+
+#[tokio::test]
+async fn update_closed_wish_success() {
+    let app = TestApp::new().await;
+    let token = setup_aged_user(&app, "owner@test.com").await;
+    let wish_id = create_open_wish(&app, &token).await;
+
+    // Close it
+    app.post_with_auth(&format!("/community/wishes/{wish_id}/close"), &token)
+        .await;
+
+    // Update it
+    let body = json!({ "title": "Reopened via edit" });
+    let (status, resp) = app
+        .patch_json_with_auth(&format!("/community/wishes/{wish_id}"), &body, &token)
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(
+        resp["status"].as_str(),
+        Some("pending"),
+        "editing a closed wish must set status to pending"
+    );
+    assert_eq!(resp["title"].as_str(), Some("Reopened via edit"));
+}
+
+#[tokio::test]
+async fn reopen_fulfilled_wish_blocked() {
+    let app = TestApp::new().await;
+    let token = setup_aged_user(&app, "owner@test.com").await;
+    let wish_id = create_open_wish(&app, &token).await;
+    force_wish_status(&app, wish_id, "fulfilled").await;
+
+    let (status, _) = app
+        .post_with_auth(&format!("/community/wishes/{wish_id}/reopen"), &token)
+        .await;
+    assert_eq!(
+        status,
+        StatusCode::BAD_REQUEST,
+        "cannot reopen a fulfilled wish"
+    );
+}
+
+#[tokio::test]
+async fn update_fulfilled_wish_blocked() {
+    let app = TestApp::new().await;
+    let token = setup_aged_user(&app, "owner@test.com").await;
+    let wish_id = create_open_wish(&app, &token).await;
+    force_wish_status(&app, wish_id, "fulfilled").await;
+
+    let body = json!({ "title": "Can't edit fulfilled" });
+    let (status, _) = app
+        .patch_json_with_auth(&format!("/community/wishes/{wish_id}"), &body, &token)
+        .await;
+    assert_eq!(
+        status,
+        StatusCode::BAD_REQUEST,
+        "cannot update a fulfilled wish"
+    );
+}
+
+#[tokio::test]
+async fn reopen_rejected_wish_blocked() {
+    let app = TestApp::new().await;
+    let token = setup_aged_user(&app, "owner@test.com").await;
+    let wish_id = create_open_wish(&app, &token).await;
+    force_wish_status(&app, wish_id, "rejected").await;
+
+    let (status, _) = app
+        .post_with_auth(&format!("/community/wishes/{wish_id}/reopen"), &token)
+        .await;
+    assert_eq!(
+        status,
+        StatusCode::BAD_REQUEST,
+        "cannot reopen a rejected wish"
+    );
+}
+
+#[tokio::test]
+async fn update_rejected_wish_blocked() {
+    let app = TestApp::new().await;
+    let token = setup_aged_user(&app, "owner@test.com").await;
+    let wish_id = create_open_wish(&app, &token).await;
+    force_wish_status(&app, wish_id, "rejected").await;
+
+    let body = json!({ "title": "Can't edit rejected" });
+    let (status, _) = app
+        .patch_json_with_auth(&format!("/community/wishes/{wish_id}"), &body, &token)
+        .await;
+    assert_eq!(
+        status,
+        StatusCode::BAD_REQUEST,
+        "cannot update a rejected wish"
+    );
+}
+
+#[tokio::test]
+async fn reopen_closed_wish_respects_max_reopens() {
+    let app = TestApp::new().await;
+    let token = setup_aged_user(&app, "owner@test.com").await;
+    let wish_id = create_open_wish(&app, &token).await;
+
+    // Set reopen_count to max (3) and close the wish
+    sqlx::query("UPDATE community_wishes SET status = 'closed', reopen_count = 3 WHERE id = $1")
+        .bind(wish_id)
+        .execute(&app.db)
+        .await
+        .unwrap();
+
+    let (status, _) = app
+        .post_with_auth(&format!("/community/wishes/{wish_id}/reopen"), &token)
+        .await;
+    assert_eq!(
+        status,
+        StatusCode::FORBIDDEN,
+        "cannot reopen when max reopens reached"
+    );
+}
+
+#[tokio::test]
+async fn reopen_closed_wish_clears_reports() {
+    let app = TestApp::new().await;
+    let owner_token = setup_aged_user(&app, "owner@test.com").await;
+    let wish_id = create_open_wish(&app, &owner_token).await;
+
+    // Add a report
+    let reporter_token = setup_aged_user(&app, "reporter@test.com").await;
+    app.post_json_with_auth(
+        &format!("/community/wishes/{wish_id}/report"),
+        &json!({ "reason": "spam" }),
+        &reporter_token,
+    )
+    .await;
+
+    // Close
+    app.post_with_auth(&format!("/community/wishes/{wish_id}/close"), &owner_token)
+        .await;
+
+    // Reopen
+    let (status, _) = app
+        .post_with_auth(&format!("/community/wishes/{wish_id}/reopen"), &owner_token)
+        .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+
+    // Reports must be cleared
+    let count: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM wish_reports WHERE wish_id = $1")
+        .bind(wish_id)
+        .fetch_one(&app.db)
+        .await
+        .unwrap();
+    assert_eq!(
+        count.0, 0,
+        "reports must be cleared after reopen from closed"
+    );
+
+    let row: (i32,) = sqlx::query_as("SELECT report_count FROM community_wishes WHERE id = $1")
+        .bind(wish_id)
+        .fetch_one(&app.db)
+        .await
+        .unwrap();
+    assert_eq!(
+        row.0, 0,
+        "report_count must be reset after reopen from closed"
+    );
+}
+
+#[tokio::test]
+async fn reopen_closed_wish_not_owner_403() {
+    let app = TestApp::new().await;
+    let owner_token = setup_aged_user(&app, "owner@test.com").await;
+    let wish_id = create_open_wish(&app, &owner_token).await;
+
+    app.post_with_auth(&format!("/community/wishes/{wish_id}/close"), &owner_token)
+        .await;
+
+    let stranger_token = setup_aged_user(&app, "stranger@test.com").await;
+    let (status, _) = app
+        .post_with_auth(
+            &format!("/community/wishes/{wish_id}/reopen"),
+            &stranger_token,
+        )
+        .await;
+    assert_eq!(status, StatusCode::FORBIDDEN);
+}

@@ -174,8 +174,8 @@ struct EntraideMyNeedsContent: View {
     @ViewBuilder
     // swiftlint:disable:next function_body_length
     private func contextMenuActions(_ wish: MyWish) -> some View {
-        // Edit for open/review
-        if wish.status == .open || wish.status == .review {
+        // Edit for open/review/closed
+        if [.open, .review, .closed].contains(wish.status) {
             Button {
                 wishToEdit = wish
             } label: {
@@ -221,7 +221,7 @@ struct EntraideMyNeedsContent: View {
                     systemImage: "xmark.circle"
                 )
             }
-        case .review:
+        case .review, .closed:
             Button {
                 Task { await viewModel.reopenWish(id: wish.id) }
             } label: {
@@ -230,13 +230,15 @@ struct EntraideMyNeedsContent: View {
                     systemImage: "arrow.counterclockwise"
                 )
             }
-            Button(role: .destructive) {
-                wishToClose = wish.id
-            } label: {
-                Label(
-                    NSLocalizedString("entraide.action.close", comment: ""),
-                    systemImage: "xmark.circle"
-                )
+            if wish.status == .review {
+                Button(role: .destructive) {
+                    wishToClose = wish.id
+                } label: {
+                    Label(
+                        NSLocalizedString("entraide.action.close", comment: ""),
+                        systemImage: "xmark.circle"
+                    )
+                }
             }
         default:
             EmptyView()

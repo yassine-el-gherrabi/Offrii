@@ -401,7 +401,7 @@ struct WishDetailSheet: View {
 
     @ViewBuilder
     private func ownerOpenActions(_ wish: WishDetail) -> some View {
-        if isMine && (wish.status == .open || wish.status == .review) {
+        if isMine && [.open, .review, .closed].contains(wish.status) {
             OffriiButton(NSLocalizedString("entraide.action.edit", comment: ""), variant: .secondary) {
                 showEditSheet = true
             }
@@ -422,12 +422,14 @@ struct WishDetailSheet: View {
                 Text(NSLocalizedString("entraide.close.confirmMessage", comment: ""))
             }
         }
-        if isMine && wish.status == .review {
+        if isMine && (wish.status == .review || wish.status == .closed) {
             OffriiButton(NSLocalizedString("entraide.action.reopen", comment: ""), variant: .secondary) {
                 Task { _ = await viewModel.reopenWish(id: wish.id) }
             }
-            OffriiButton(NSLocalizedString("entraide.action.close", comment: ""), variant: .ghost) {
-                showCloseConfirm = true
+            if wish.status == .review {
+                OffriiButton(NSLocalizedString("entraide.action.close", comment: ""), variant: .ghost) {
+                    showCloseConfirm = true
+                }
             }
         }
         // Delete — available for open, closed, pending, review, flagged, rejected

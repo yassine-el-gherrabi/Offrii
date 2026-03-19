@@ -704,9 +704,12 @@ impl traits::CommunityWishService for PgCommunityWishService {
 
         let status = WishStatus::parse(&wish.status)
             .ok_or_else(|| AppError::Internal(anyhow::anyhow!("invalid wish status")))?;
-        if !matches!(status, WishStatus::Open | WishStatus::Review) {
+        if !matches!(
+            status,
+            WishStatus::Open | WishStatus::Review | WishStatus::Closed
+        ) {
             return Err(AppError::BadRequest(
-                "can only update wishes in open or review status".into(),
+                "can only update wishes in open, review, or closed status".into(),
             ));
         }
 
@@ -878,9 +881,9 @@ impl traits::CommunityWishService for PgCommunityWishService {
 
         let status = WishStatus::parse(&wish.status)
             .ok_or_else(|| AppError::Internal(anyhow::anyhow!("invalid wish status")))?;
-        if status != WishStatus::Review {
+        if !matches!(status, WishStatus::Review | WishStatus::Closed) {
             return Err(AppError::BadRequest(
-                "can only reopen wishes in review status".into(),
+                "can only reopen wishes in review or closed status".into(),
             ));
         }
 
