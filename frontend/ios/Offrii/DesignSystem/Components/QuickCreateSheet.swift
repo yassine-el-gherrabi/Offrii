@@ -8,6 +8,7 @@ struct QuickCreateSheet: View {
     @State private var navigateToCreateCircle = false
     @State private var navigateToAddFriend = false
     @State private var navigateToPublishNeed = false
+    @State private var showWishLimitAlert = false
 
     var body: some View {
         NavigationStack {
@@ -45,7 +46,17 @@ struct QuickCreateSheet: View {
                     title: NSLocalizedString("create.publishNeed", comment: ""),
                     subtitle: NSLocalizedString("create.publishNeedSubtitle", comment: "")
                 ) {
-                    navigateToPublishNeed = true
+                    Task {
+                        let wishes = (try? await CommunityWishService.shared.listMyWishes()) ?? []
+                        let activeCount = wishes.filter {
+                            $0.status == .open || $0.status == .matched || $0.status == .pending
+                        }.count
+                        if activeCount >= 3 {
+                            showWishLimitAlert = true
+                        } else {
+                            navigateToPublishNeed = true
+                        }
+                    }
                 }
 
                 Spacer()
@@ -90,6 +101,14 @@ struct QuickCreateSheet: View {
         .sheet(isPresented: $navigateToPublishNeed) {
             CreateWishSheet()
                 .presentationDetents([.large])
+        }
+        .alert(
+            NSLocalizedString("entraide.wishLimit.title", comment: ""),
+            isPresented: $showWishLimitAlert
+        ) {
+            Button(NSLocalizedString("common.ok", comment: ""), role: .cancel) {}
+        } message: {
+            Text(NSLocalizedString("entraide.wishLimit.message", comment: ""))
         }
     }
 

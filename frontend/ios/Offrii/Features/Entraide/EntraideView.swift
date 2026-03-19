@@ -12,6 +12,7 @@ struct EntraideView: View {
     @State private var messagesWishId: UUID?
     @State private var reportWishId: UUID?
     @State private var searchQuery = ""
+    @State private var showWishLimitAlert = false
     @State private var sortField = "created_at"
     @State private var sortOrder = "desc"
 
@@ -92,16 +93,16 @@ struct EntraideView: View {
 
             // FAB
             if selectedSegment == 0 || selectedSegment == 1 {
-                let activeCount = myNeedsViewModel.wishes.filter {
-                    $0.status == .open || $0.status == .matched || $0.status == .pending
-                }.count
-                let atLimit = activeCount >= 3
-
                 OffriiFloatingActionButton(icon: "plus") {
-                    showCreateSheet = true
+                    let activeCount = myNeedsViewModel.wishes.filter {
+                        $0.status == .open || $0.status == .matched || $0.status == .pending
+                    }.count
+                    if activeCount >= 3 {
+                        showWishLimitAlert = true
+                    } else {
+                        showCreateSheet = true
+                    }
                 }
-                .opacity(atLimit ? 0.4 : 1.0)
-                .disabled(atLimit)
                 .padding(.trailing, OffriiTheme.spacingLG)
                 .padding(.bottom, OffriiTheme.spacingLG)
             }
@@ -159,6 +160,14 @@ struct EntraideView: View {
         .sheet(item: $reportWishId) { wishId in
             ReportWishSheet(wishId: wishId)
                 .presentationDetents([.medium])
+        }
+        .alert(
+            NSLocalizedString("entraide.wishLimit.title", comment: ""),
+            isPresented: $showWishLimitAlert
+        ) {
+            Button(NSLocalizedString("common.ok", comment: ""), role: .cancel) {}
+        } message: {
+            Text(NSLocalizedString("entraide.wishLimit.message", comment: ""))
         }
         .task {
             await viewModel.loadWishes()

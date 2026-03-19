@@ -355,6 +355,8 @@
 "entraide.report.submit" = "Envoyer le signalement";
 "entraide.report.success" = "Merci pour votre signalement. Notre équipe va examiner ce besoin.";
 "entraide.action.reopenSuccess" = "Votre souhait est en cours de re-vérification.";
+"entraide.wishLimit.title" = "Limite atteinte";
+"entraide.wishLimit.message" = "Vous avez déjà 3 besoins actifs. Fermez-en un ou attendez qu'un soit comblé avant d'en publier un nouveau.";
 "entraide.report.inappropriate" = "Inapproprié";
 "entraide.report.spam" = "Spam";
 "entraide.report.scam" = "Arnaque";
