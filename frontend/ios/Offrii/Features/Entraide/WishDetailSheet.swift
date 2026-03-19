@@ -81,6 +81,10 @@ struct WishDetailSheet: View {
         .onChange(of: viewModel.actionSuccess) { _, newValue in
             if newValue != nil {
                 onAction?()
+                // Don't dismiss during fulfillment celebration — it has its own dismiss
+                if !showCelebration {
+                    dismiss()
+                }
             }
         }
     }
@@ -168,16 +172,8 @@ struct WishDetailSheet: View {
                     // Actions
                     actionButtons(wish)
 
-                    // Success toast
-                    if let success = viewModel.actionSuccess {
-                        Label(success, systemImage: "checkmark.circle.fill")
-                            .font(OffriiTypography.footnote)
-                            .foregroundColor(OffriiTheme.warning)
-                            .padding(OffriiTheme.spacingSM)
-                            .frame(maxWidth: .infinity)
-                            .background(OffriiTheme.warning.opacity(0.1))
-                            .cornerRadius(OffriiTheme.cornerRadiusMD)
-                    }
+                    // Error display
+
                 }
                 .padding(OffriiTheme.spacingLG)
             }
@@ -357,6 +353,7 @@ struct WishDetailSheet: View {
                             showCelebration = true
                             try? await Task.sleep(for: .seconds(2))
                             showCelebration = false
+                            dismiss()
                         }
                     }
                 }
