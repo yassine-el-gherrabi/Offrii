@@ -964,6 +964,13 @@ impl traits::CommunityWishService for PgCommunityWishService {
             .await
             .map_err(AppError::Internal)?;
 
+        // Delete conversation messages (privacy: new donor must not see old exchanges)
+        sqlx::query("DELETE FROM wish_messages WHERE wish_id = $1")
+            .bind(wish_id)
+            .execute(&self.pool)
+            .await
+            .map_err(|e| AppError::Internal(e.into()))?;
+
         self.bump_cache_version().await;
 
         // Notify owner
@@ -1004,6 +1011,13 @@ impl traits::CommunityWishService for PgCommunityWishService {
             .clear_match(wish_id)
             .await
             .map_err(AppError::Internal)?;
+
+        // Delete conversation messages (privacy: new donor must not see old exchanges)
+        sqlx::query("DELETE FROM wish_messages WHERE wish_id = $1")
+            .bind(wish_id)
+            .execute(&self.pool)
+            .await
+            .map_err(|e| AppError::Internal(e.into()))?;
 
         self.bump_cache_version().await;
 

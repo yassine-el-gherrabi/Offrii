@@ -761,3 +761,199 @@ async fn list_messages_donor_after_withdraw_400() {
         .await;
     assert_eq!(status, StatusCode::BAD_REQUEST);
 }
+
+// ═══════════════════════════════════════════════════════════════════════
+// Cat. 7: Message cleanup on withdraw / reject
+// ═══════════════════════════════════════════════════════════════════════
+
+/// Helper: count messages in DB for a given wish (bypasses auth).
+async fn count_messages_in_db(app: &TestApp, wish_id: Uuid) -> i64 {
+    let row: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM wish_messages WHERE wish_id = $1")
+        .bind(wish_id)
+        .fetch_one(&app.db)
+        .await
+        .unwrap();
+    row.0
+}
+
+/// Helper: send N messages alternating between owner and donor.
+async fn send_messages(
+    app: &TestApp,
+    wish_id: Uuid,
+    owner_token: &str,
+    donor_token: &str,
+    count: usize,
+) {
+    for i in 0..count {
+        let token = if i % 2 == 0 { owner_token } else { donor_token };
+        let body = json!({ "body": format!("Message #{}", i + 1) });
+        let (status, _) = app
+            .post_json_with_auth(
+                &format!("/community/wishes/{wish_id}/messages"),
+                &body,
+                token,
+            )
+            .await;
+        assert_eq!(status, StatusCode::CREATED, "send message #{}", i + 1);
+    }
+}
+
+#[tokio::test]
+async fn withdraw_deletes_all_messages() {
+    let app = TestApp::new().await;
+    let (wish_id, owner_token, donor_token) = setup_matched_wish(&app).await;
+
+    // Both sides exchange messages
+    send_messages(&app, wish_id, &owner_token, &donor_token, 4).await;
+    assert_eq!(count_messages_in_db(&app, wish_id).await, 4);
+
+    // Donor withdraws
+    let (status, _) = app
+        .delete_with_auth(&format!("/community/wishes/{wish_id}/offer"), &donor_token)
+        .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+
+    // All messages must be gone
+    assert_eq!(
+        count_messages_in_db(&app, wish_id).await,
+        0,
+        "messages must be deleted after donor withdrawal"
+    );
+}
+
+#[tokio::test]
+async fn reject_deletes_all_messages() {
+    let app = TestApp::new().await;
+    let (wish_id, owner_token, donor_token) = setup_matched_wish(&app).await;
+
+    // Exchange messages
+    send_messages(&app, wish_id, &owner_token, &donor_token, 3).await;
+    assert_eq!(count_messages_in_db(&app, wish_id).await, 3);
+
+    // Owner rejects the offer
+    let (status, _) = app
+        .post_json_with_auth(
+            &format!("/community/wishes/{wish_id}/reject"),
+            &json!({}),
+            &owner_token,
+        )
+        .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+
+    // All messages must be gone
+    assert_eq!(
+        count_messages_in_db(&app, wish_id).await,
+        0,
+        "messages must be deleted after owner rejects offer"
+    );
+}
+
+#[tokio::test]
+async fn new_donor_sees_empty_conversation_after_withdraw() {
+    let app = TestApp::new().await;
+    let (wish_id, owner_token, donor_token) = setup_matched_wish(&app).await;
+
+    // First donor sends messages
+    send_messages(&app, wish_id, &owner_token, &donor_token, 2).await;
+
+    // First donor withdraws → messages deleted
+    let (status, _) = app
+        .delete_with_auth(&format!("/community/wishes/{wish_id}/offer"), &donor_token)
+        .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+
+    // New donor enters the picture
+    let donor2_token = setup_aged_user_with_name(&app, "donor2@test.com", "Charlie").await;
+    let donor2_id = get_user_id(&app, "donor2@test.com").await;
+    force_match(&app, wish_id, donor2_id).await;
+
+    // New donor lists messages → must be empty (no leakage from previous donor)
+    let (status, resp) = app
+        .get_with_auth(
+            &format!("/community/wishes/{wish_id}/messages"),
+            &donor2_token,
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(
+        resp["data"].as_array().unwrap().len(),
+        0,
+        "new donor must not see messages from previous donor"
+    );
+}
+
+#[tokio::test]
+async fn new_donor_sees_empty_conversation_after_reject() {
+    let app = TestApp::new().await;
+    let (wish_id, owner_token, donor_token) = setup_matched_wish(&app).await;
+
+    // Exchange messages
+    send_messages(&app, wish_id, &owner_token, &donor_token, 3).await;
+
+    // Owner rejects → messages deleted
+    let (status, _) = app
+        .post_json_with_auth(
+            &format!("/community/wishes/{wish_id}/reject"),
+            &json!({}),
+            &owner_token,
+        )
+        .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+
+    // New donor
+    let donor2_token = setup_aged_user_with_name(&app, "donor2@test.com", "Charlie").await;
+    let donor2_id = get_user_id(&app, "donor2@test.com").await;
+    force_match(&app, wish_id, donor2_id).await;
+
+    // New donor must see zero messages
+    let (status, resp) = app
+        .get_with_auth(
+            &format!("/community/wishes/{wish_id}/messages"),
+            &donor2_token,
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(
+        resp["data"].as_array().unwrap().len(),
+        0,
+        "new donor must not see messages from rejected donor"
+    );
+}
+
+#[tokio::test]
+async fn withdraw_with_no_messages_succeeds() {
+    let app = TestApp::new().await;
+    let (wish_id, _owner_token, donor_token) = setup_matched_wish(&app).await;
+
+    // No messages sent — withdraw should still succeed gracefully
+    assert_eq!(count_messages_in_db(&app, wish_id).await, 0);
+
+    let (status, _) = app
+        .delete_with_auth(&format!("/community/wishes/{wish_id}/offer"), &donor_token)
+        .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+    assert_eq!(count_messages_in_db(&app, wish_id).await, 0);
+}
+
+#[tokio::test]
+async fn owner_sees_empty_conversation_after_withdraw() {
+    let app = TestApp::new().await;
+    let (wish_id, owner_token, donor_token) = setup_matched_wish(&app).await;
+
+    // Exchange messages
+    send_messages(&app, wish_id, &owner_token, &donor_token, 4).await;
+
+    // Donor withdraws
+    let (status, _) = app
+        .delete_with_auth(&format!("/community/wishes/{wish_id}/offer"), &donor_token)
+        .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+
+    // Owner tries to list messages → wish is now open with no match,
+    // but owner should also not see old messages even via DB
+    assert_eq!(
+        count_messages_in_db(&app, wish_id).await,
+        0,
+        "messages must be purged so owner cannot see stale conversation"
+    );
+}
