@@ -476,6 +476,7 @@
 "entraide.messages.loadMore" = "Load older messages";
 "entraide.report.otherPlaceholder" = "Please describe the issue...";
 "entraide.report.detailsPlaceholder" = "Add details (optional)...";
+"entraide.report.alreadyReported" = "You have already reported this wish.";
 
 "moderation.prefix" = "Flagged: ";
 "moderation.harassment" = "Harassment";

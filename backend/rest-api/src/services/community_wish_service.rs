@@ -558,6 +558,15 @@ impl traits::CommunityWishService for PgCommunityWishService {
             None
         };
 
+        let has_reported = if let Some(uid) = caller_id {
+            self.report_repo
+                .has_reported(wish.id, uid)
+                .await
+                .unwrap_or(false)
+        } else {
+            false
+        };
+
         Ok(WishDetailResponse {
             id: wish.id,
             display_name,
@@ -572,6 +581,7 @@ impl traits::CommunityWishService for PgCommunityWishService {
             links: wish.links,
             matched_at: wish.matched_at,
             fulfilled_at: wish.fulfilled_at,
+            has_reported,
             created_at: wish.created_at,
         })
     }

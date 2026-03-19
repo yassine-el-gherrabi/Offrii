@@ -151,6 +151,7 @@ struct WishDetail: Codable, Identifiable, Equatable, Sendable {
     let links: [String]?
     let matchedAt: Date?
     let fulfilledAt: Date?
+    let hasReported: Bool?
     let createdAt: Date
     let ogImageUrl: String?
     let ogTitle: String?
@@ -165,6 +166,7 @@ struct WishDetail: Codable, Identifiable, Equatable, Sendable {
         case imageUrl = "image_url"
         case matchedAt = "matched_at"
         case fulfilledAt = "fulfilled_at"
+        case hasReported = "has_reported"
         case createdAt = "created_at"
         case ogImageUrl = "og_image_url"
         case ogTitle = "og_title"

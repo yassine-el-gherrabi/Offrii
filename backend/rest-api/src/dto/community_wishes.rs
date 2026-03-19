@@ -85,6 +85,7 @@ pub struct WishDetailResponse {
     pub links: Option<Vec<String>>,
     pub matched_at: Option<DateTime<Utc>>,
     pub fulfilled_at: Option<DateTime<Utc>>,
+    pub has_reported: bool,
     pub created_at: DateTime<Utc>,
 }
 

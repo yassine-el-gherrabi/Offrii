@@ -455,7 +455,7 @@ struct WishDetailSheet: View {
 
     @ViewBuilder
     private func reportAction(_ wish: WishDetail) -> some View {
-        if !isMine && wish.status == .open {
+        if !isMine && wish.status == .open && !(wish.hasReported ?? false) {
             Button {
                 dismiss()
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { onReport?() }

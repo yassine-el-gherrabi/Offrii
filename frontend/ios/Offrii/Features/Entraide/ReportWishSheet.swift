@@ -105,7 +105,11 @@ struct ReportWishSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button(NSLocalizedString("common.cancel", comment: "")) { dismiss() }
+                    Button { dismiss() } label: {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(OffriiTheme.textMuted)
+                    }
                 }
             }
         }
@@ -127,6 +131,12 @@ struct ReportWishSheet: View {
             showSuccess = true
             try? await Task.sleep(for: .seconds(2))
             dismiss()
+        } catch let apiError as APIError {
+            if case .conflict = apiError {
+                self.error = NSLocalizedString("entraide.report.alreadyReported", comment: "")
+            } else {
+                self.error = apiError.localizedDescription
+            }
         } catch {
             self.error = error.localizedDescription
         }
