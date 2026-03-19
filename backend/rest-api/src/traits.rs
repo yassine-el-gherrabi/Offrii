@@ -1079,6 +1079,15 @@ pub trait CommunityWishService: Send + Sync {
         details: Option<&str>,
     ) -> Result<(), crate::errors::AppError>;
 
+    async fn block_wish(&self, wish_id: Uuid, user_id: Uuid)
+    -> Result<(), crate::errors::AppError>;
+
+    async fn unblock_wish(
+        &self,
+        wish_id: Uuid,
+        user_id: Uuid,
+    ) -> Result<(), crate::errors::AppError>;
+
     async fn admin_list_flagged(
         &self,
         page: i64,

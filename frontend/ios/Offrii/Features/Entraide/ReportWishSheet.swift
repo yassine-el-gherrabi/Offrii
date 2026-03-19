@@ -10,6 +10,7 @@ struct ReportWishSheet: View {
     @State private var isSubmitting = false
     @State private var error: String?
     @State private var showSuccess = false
+    @State private var showBlockPrompt = false
     @State private var details = ""
 
     var body: some View {
@@ -112,6 +113,22 @@ struct ReportWishSheet: View {
                     }
                 }
             }
+            .alert(
+                NSLocalizedString("entraide.block.promptTitle", comment: ""),
+                isPresented: $showBlockPrompt
+            ) {
+                Button(NSLocalizedString("entraide.block.confirm", comment: "")) {
+                    Task {
+                        try? await CommunityWishService.shared.blockWish(id: wishId)
+                        dismiss()
+                    }
+                }
+                Button(NSLocalizedString("entraide.block.decline", comment: ""), role: .cancel) {
+                    dismiss()
+                }
+            } message: {
+                Text(NSLocalizedString("entraide.block.promptMessage", comment: ""))
+            }
         }
     }
 
@@ -129,8 +146,7 @@ struct ReportWishSheet: View {
             )
             OffriiHaptics.success()
             showSuccess = true
-            try? await Task.sleep(for: .seconds(2))
-            dismiss()
+            showBlockPrompt = true
         } catch let apiError as APIError {
             if case .conflict = apiError {
                 self.error = NSLocalizedString("entraide.report.alreadyReported", comment: "")

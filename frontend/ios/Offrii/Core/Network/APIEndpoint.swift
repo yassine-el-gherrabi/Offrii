@@ -139,6 +139,8 @@ enum APIEndpoint {
     case rejectOfferCommunityWish(id: UUID)
     case confirmCommunityWish(id: UUID)
     case reportCommunityWish(id: UUID, body: ReportCommunityWishBody)
+    case blockCommunityWish(id: UUID)
+    case unblockCommunityWish(id: UUID)
     case listMyCommunityWishes
     case listMyCommunityOffers
     case listRecentFulfilled
@@ -261,6 +263,8 @@ extension APIEndpoint {
         case .rejectOfferCommunityWish(let id):         return "/community/wishes/\(id)/reject"
         case .confirmCommunityWish(let id):             return "/community/wishes/\(id)/confirm"
         case .reportCommunityWish(let id, _):           return "/community/wishes/\(id)/report"
+        case .blockCommunityWish(let id):              return "/community/wishes/\(id)/block"
+        case .unblockCommunityWish(let id):            return "/community/wishes/\(id)/block"
 
         // Wish Messages
         case .listWishMessages(let wishId, _):          return "/community/wishes/\(wishId)/messages"
@@ -376,6 +380,8 @@ extension APIEndpoint {
         case .rejectOfferCommunityWish:         return .POST
         case .confirmCommunityWish:             return .POST
         case .reportCommunityWish:              return .POST
+        case .blockCommunityWish:               return .POST
+        case .unblockCommunityWish:             return .DELETE
 
         // Wish Messages
         case .listWishMessages:                 return .GET

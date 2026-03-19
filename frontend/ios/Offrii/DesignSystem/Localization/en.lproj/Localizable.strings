@@ -477,6 +477,10 @@
 "entraide.report.otherPlaceholder" = "Please describe the issue...";
 "entraide.report.detailsPlaceholder" = "Add details (optional)...";
 "entraide.report.alreadyReported" = "You have already reported this wish.";
+"entraide.block.promptTitle" = "Hide this wish?";
+"entraide.block.promptMessage" = "You won't see this wish in your feed anymore.";
+"entraide.block.confirm" = "Hide";
+"entraide.block.decline" = "No thanks";
 
 "moderation.prefix" = "Flagged: ";
 "moderation.harassment" = "Harassment";

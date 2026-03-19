@@ -35,6 +35,7 @@ pub fn router() -> Router<AppState> {
         .route("/{id}/reject", post(reject_offer))
         .route("/{id}/confirm", post(confirm_wish))
         .route("/{id}/report", post(report_wish))
+        .route("/{id}/block", post(block_wish).delete(unblock_wish))
 }
 
 #[tracing::instrument(skip(state))]
@@ -278,5 +279,31 @@ async fn report_wish(
             .report_wish(id, auth_user.user_id, "inappropriate", details)
             .await?;
     }
+    Ok(StatusCode::NO_CONTENT)
+}
+
+#[tracing::instrument(skip(state))]
+async fn block_wish(
+    State(state): State<AppState>,
+    auth_user: AuthUser,
+    Path(id): Path<Uuid>,
+) -> Result<StatusCode, AppError> {
+    state
+        .community_wishes
+        .block_wish(id, auth_user.user_id)
+        .await?;
+    Ok(StatusCode::NO_CONTENT)
+}
+
+#[tracing::instrument(skip(state))]
+async fn unblock_wish(
+    State(state): State<AppState>,
+    auth_user: AuthUser,
+    Path(id): Path<Uuid>,
+) -> Result<StatusCode, AppError> {
+    state
+        .community_wishes
+        .unblock_wish(id, auth_user.user_id)
+        .await?;
     Ok(StatusCode::NO_CONTENT)
 }

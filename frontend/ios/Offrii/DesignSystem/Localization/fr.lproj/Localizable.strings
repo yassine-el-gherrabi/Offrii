@@ -477,6 +477,10 @@
 "entraide.report.otherPlaceholder" = "Décrivez le problème...";
 "entraide.report.detailsPlaceholder" = "Précisez (optionnel)...";
 "entraide.report.alreadyReported" = "Vous avez déjà signalé ce souhait.";
+"entraide.block.promptTitle" = "Masquer ce besoin ?";
+"entraide.block.promptMessage" = "Vous ne verrez plus ce besoin dans votre fil.";
+"entraide.block.confirm" = "Masquer";
+"entraide.block.decline" = "Non merci";
 
 "moderation.prefix" = "Signalé : ";
 "moderation.harassment" = "Harcèlement";

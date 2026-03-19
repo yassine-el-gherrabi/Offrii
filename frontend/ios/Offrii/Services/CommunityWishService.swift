@@ -117,4 +117,14 @@ final class CommunityWishService: Sendable {
         let body = ReportCommunityWishBody(reason: reason.rawValue, details: details)
         try await client.requestVoid(.reportCommunityWish(id: id, body: body))
     }
+
+    // MARK: - Block
+
+    func blockWish(id: UUID) async throws {
+        try await client.requestVoid(.blockCommunityWish(id: id))
+    }
+
+    func unblockWish(id: UUID) async throws {
+        try await client.requestVoid(.unblockCommunityWish(id: id))
+    }
 }

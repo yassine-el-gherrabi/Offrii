@@ -3482,3 +3482,165 @@ async fn wish_detail_has_reported_owner_cannot_report() {
         "owner should always see has_reported = false for own wish"
     );
 }
+
+// ═══════════════════════════════════════════════════════════════════════
+// Cat. 15: Wish block/hide
+// ═══════════════════════════════════════════════════════════════════════
+
+#[tokio::test]
+async fn block_wish_success_204() {
+    let app = TestApp::new().await;
+    let owner_token = setup_aged_user(&app, "owner@test.com").await;
+    let blocker_token = setup_aged_user(&app, "blocker@test.com").await;
+    let wish_id = create_open_wish(&app, &owner_token).await;
+
+    let (status, _) = app
+        .post_with_auth(
+            &format!("/community/wishes/{wish_id}/block"),
+            &blocker_token,
+        )
+        .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+}
+
+#[tokio::test]
+async fn block_wish_duplicate_still_204() {
+    let app = TestApp::new().await;
+    let owner_token = setup_aged_user(&app, "owner@test.com").await;
+    let blocker_token = setup_aged_user(&app, "blocker@test.com").await;
+    let wish_id = create_open_wish(&app, &owner_token).await;
+
+    let (status, _) = app
+        .post_with_auth(
+            &format!("/community/wishes/{wish_id}/block"),
+            &blocker_token,
+        )
+        .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+
+    // Second block should also succeed (idempotent)
+    let (status, _) = app
+        .post_with_auth(
+            &format!("/community/wishes/{wish_id}/block"),
+            &blocker_token,
+        )
+        .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+}
+
+#[tokio::test]
+async fn block_wish_not_found_404() {
+    let app = TestApp::new().await;
+    let token = setup_aged_user(&app, "blocker@test.com").await;
+    let fake_id = Uuid::new_v4();
+
+    let (status, resp) = app
+        .post_with_auth(&format!("/community/wishes/{fake_id}/block"), &token)
+        .await;
+    assert_eq!(status, StatusCode::NOT_FOUND);
+    assert_error(&resp, "NOT_FOUND");
+}
+
+#[tokio::test]
+async fn block_wish_without_auth_401() {
+    let app = TestApp::new().await;
+    let id = Uuid::new_v4();
+    let (status, _) = app
+        .post_empty(&format!("/community/wishes/{id}/block"))
+        .await;
+    assert_eq!(status, StatusCode::UNAUTHORIZED);
+}
+
+#[tokio::test]
+async fn unblock_wish_success_204() {
+    let app = TestApp::new().await;
+    let owner_token = setup_aged_user(&app, "owner@test.com").await;
+    let blocker_token = setup_aged_user(&app, "blocker@test.com").await;
+    let wish_id = create_open_wish(&app, &owner_token).await;
+
+    // Block first
+    app.post_with_auth(
+        &format!("/community/wishes/{wish_id}/block"),
+        &blocker_token,
+    )
+    .await;
+
+    // Then unblock
+    let (status, _) = app
+        .delete_with_auth(
+            &format!("/community/wishes/{wish_id}/block"),
+            &blocker_token,
+        )
+        .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+}
+
+#[tokio::test]
+async fn blocked_wish_hidden_from_feed() {
+    let app = TestApp::new().await;
+    let owner_token = setup_aged_user(&app, "owner@test.com").await;
+    let blocker_token = setup_aged_user(&app, "blocker@test.com").await;
+    let wish_id = create_open_wish(&app, &owner_token).await;
+
+    // Block the wish
+    let (status, _) = app
+        .post_with_auth(
+            &format!("/community/wishes/{wish_id}/block"),
+            &blocker_token,
+        )
+        .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+
+    // The blocked wish should not appear in the blocker's feed
+    let (status, body) = app.get_with_auth("/community/wishes", &blocker_token).await;
+    assert_eq!(status, StatusCode::OK);
+    let wishes = body["data"].as_array().unwrap();
+    for w in wishes {
+        assert_ne!(
+            w["id"].as_str().unwrap(),
+            wish_id.to_string(),
+            "blocked wish should not appear in feed"
+        );
+    }
+    assert_eq!(body["pagination"]["total"].as_i64(), Some(0));
+}
+
+#[tokio::test]
+async fn blocked_wish_still_visible_to_others() {
+    let app = TestApp::new().await;
+    let owner_token = setup_aged_user(&app, "owner@test.com").await;
+    let blocker_token = setup_aged_user(&app, "blocker@test.com").await;
+    let other_token = setup_aged_user(&app, "other@test.com").await;
+    let wish_id = create_open_wish(&app, &owner_token).await;
+
+    // Blocker blocks the wish
+    app.post_with_auth(
+        &format!("/community/wishes/{wish_id}/block"),
+        &blocker_token,
+    )
+    .await;
+
+    // Other user should still see it
+    let (status, body) = app.get_with_auth("/community/wishes", &other_token).await;
+    assert_eq!(status, StatusCode::OK);
+    let wishes = body["data"].as_array().unwrap();
+    assert_eq!(wishes.len(), 1);
+    assert_eq!(
+        wishes[0]["id"].as_str().unwrap(),
+        wish_id.to_string(),
+        "other user should still see the wish"
+    );
+}
+
+#[tokio::test]
+async fn block_own_wish_allowed() {
+    let app = TestApp::new().await;
+    let owner_token = setup_aged_user(&app, "owner@test.com").await;
+    let wish_id = create_open_wish(&app, &owner_token).await;
+
+    // Owner can block their own wish (no restriction)
+    let (status, _) = app
+        .post_with_auth(&format!("/community/wishes/{wish_id}/block"), &owner_token)
+        .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+}

@@ -44,6 +44,11 @@ pub struct ListWishesQuery {
     pub page: Option<i64>,
 }
 
+#[derive(Debug, Deserialize)]
+pub struct BlockWishRequest {
+    // empty body — just POST to /{id}/block
+}
+
 #[derive(Debug, Deserialize, Validate)]
 pub struct ReportWishRequest {
     #[validate(custom(function = "validate_report_reason"))]

@@ -478,6 +478,26 @@ impl traits::CommunityWishService for PgCommunityWishService {
             .await
             .map_err(AppError::Internal)?;
 
+        // Filter out blocked wishes for authenticated users
+        let (wishes, total) = if let Some(uid) = caller_id {
+            let blocked_ids: Vec<(Uuid,)> =
+                sqlx::query_as("SELECT wish_id FROM wish_blocks WHERE user_id = $1")
+                    .bind(uid)
+                    .fetch_all(&self.pool)
+                    .await
+                    .map_err(|e| AppError::Internal(e.into()))?;
+            let blocked_set: std::collections::HashSet<Uuid> =
+                blocked_ids.into_iter().map(|r| r.0).collect();
+            let filtered: Vec<_> = wishes
+                .into_iter()
+                .filter(|w| !blocked_set.contains(&w.id))
+                .collect();
+            let removed = total - filtered.len() as i64;
+            (filtered, total - removed)
+        } else {
+            (wishes, total)
+        };
+
         // Batch-fetch owner display names (dedup to reduce query size)
         let owner_ids: Vec<Uuid> = wishes
             .iter()
@@ -1172,6 +1192,41 @@ impl traits::CommunityWishService for PgCommunityWishService {
                 None,
             );
         }
+
+        Ok(())
+    }
+
+    // ── Block / unblock ──────────────────────────────────────────────
+
+    #[tracing::instrument(skip(self))]
+    async fn block_wish(&self, wish_id: Uuid, user_id: Uuid) -> Result<(), AppError> {
+        // Verify the wish exists
+        self.wish_repo
+            .find_by_id(wish_id)
+            .await
+            .map_err(AppError::Internal)?
+            .ok_or_else(|| AppError::NotFound("wish not found".into()))?;
+
+        sqlx::query(
+            "INSERT INTO wish_blocks (wish_id, user_id) VALUES ($1, $2) ON CONFLICT DO NOTHING",
+        )
+        .bind(wish_id)
+        .bind(user_id)
+        .execute(&self.pool)
+        .await
+        .map_err(|e| AppError::Internal(e.into()))?;
+
+        Ok(())
+    }
+
+    #[tracing::instrument(skip(self))]
+    async fn unblock_wish(&self, wish_id: Uuid, user_id: Uuid) -> Result<(), AppError> {
+        sqlx::query("DELETE FROM wish_blocks WHERE wish_id = $1 AND user_id = $2")
+            .bind(wish_id)
+            .bind(user_id)
+            .execute(&self.pool)
+            .await
+            .map_err(|e| AppError::Internal(e.into()))?;
 
         Ok(())
     }
