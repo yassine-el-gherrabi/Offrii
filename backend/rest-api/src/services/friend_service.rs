@@ -118,10 +118,18 @@ impl traits::FriendService for PgFriendService {
         }
 
         let pattern = format!("{query}%");
-        let rows: Vec<(String, Option<String>)> = sqlx::query_as(
-            "SELECT username, display_name FROM users \
-             WHERE username ILIKE $1 AND id != $2 \
-             ORDER BY username \
+        let rows: Vec<(String, Option<String>, bool, bool)> = sqlx::query_as(
+            "SELECT u.username, u.display_name, \
+               EXISTS(SELECT 1 FROM friends f WHERE \
+                 (f.user_id = $2 AND f.friend_id = u.id) OR \
+                 (f.user_id = u.id AND f.friend_id = $2)) AS is_friend, \
+               EXISTS(SELECT 1 FROM friend_requests fr WHERE \
+                 ((fr.from_user_id = $2 AND fr.to_user_id = u.id) OR \
+                  (fr.from_user_id = u.id AND fr.to_user_id = $2)) \
+                 AND fr.status = 'pending') AS is_pending \
+             FROM users u \
+             WHERE u.username ILIKE $1 AND u.id != $2 \
+             ORDER BY u.username \
              LIMIT 10",
         )
         .bind(&pattern)
@@ -132,10 +140,14 @@ impl traits::FriendService for PgFriendService {
 
         Ok(rows
             .into_iter()
-            .map(|(username, display_name)| UserSearchResult {
-                username,
-                display_name,
-            })
+            .map(
+                |(username, display_name, is_friend, is_pending)| UserSearchResult {
+                    username,
+                    display_name,
+                    is_friend,
+                    is_pending,
+                },
+            )
             .collect())
     }
 

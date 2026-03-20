@@ -52,4 +52,6 @@ pub struct FriendResponse {
 pub struct UserSearchResult {
     pub username: String,
     pub display_name: Option<String>,
+    pub is_friend: bool,
+    pub is_pending: bool,
 }

@@ -87,10 +87,17 @@ struct AddFriendSheet: View {
 
                                     Spacer()
 
-                                    if sentUsernames.contains(user.username) {
-                                        Text(NSLocalizedString("friends.add.sent", comment: ""))
+                                    if user.isFriend ?? false {
+                                        Label(
+                                            NSLocalizedString("friends.add.alreadyFriend", comment: ""),
+                                            systemImage: "checkmark.circle.fill"
+                                        )
+                                        .font(OffriiTypography.caption)
+                                        .foregroundColor(OffriiTheme.primary)
+                                    } else if user.isPending ?? false || sentUsernames.contains(user.username) {
+                                        Text(NSLocalizedString("friends.add.pending", comment: ""))
                                             .font(OffriiTypography.caption)
-                                            .foregroundColor(OffriiTheme.success)
+                                            .foregroundColor(OffriiTheme.textMuted)
                                     } else {
                                         Button {
                                             Task { await sendRequest(username: user.username) }

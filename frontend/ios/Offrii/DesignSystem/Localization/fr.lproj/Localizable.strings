@@ -273,6 +273,8 @@
 "friends.add.noResults" = "Aucun utilisateur trouvé";
 "friends.add.send" = "Ajouter";
 "friends.add.sent" = "Envoyé";
+"friends.add.alreadyFriend" = "Ami";
+"friends.add.pending" = "En attente";
 "friends.pending.title" = "Demandes d'amitié";
 "friends.pending.empty" = "Aucune demande en attente";
 "friends.sentSection" = "Demandes envoyées (%d)";

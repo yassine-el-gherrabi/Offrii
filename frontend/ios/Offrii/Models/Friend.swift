@@ -65,10 +65,14 @@ struct SentFriendRequestResponse: Codable, Identifiable {
 struct UserSearchResult: Codable, Identifiable {
     let username: String
     let displayName: String?
+    let isFriend: Bool?
+    let isPending: Bool?
     var id: String { username }
 
     enum CodingKeys: String, CodingKey {
         case username
         case displayName = "display_name"
+        case isFriend = "is_friend"
+        case isPending = "is_pending"
     }
 }
