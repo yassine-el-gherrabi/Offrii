@@ -484,6 +484,7 @@
 "entraide.offer.alreadyMatched" = "Someone has already offered to help for this need.";
 "entraide.offer.messagePlaceholder" = "Leave a message (optional)";
 "entraide.aging.waiting" = "Still waiting for help";
+"entraide.card.actionRequired" = "Waiting for response";
 "entraide.recentFulfilled.title" = "Recently fulfilled";
 "entraide.messages.loadMore" = "Load older messages";
 "entraide.report.otherPlaceholder" = "Please describe the issue...";

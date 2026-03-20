@@ -17,6 +17,7 @@ pub struct PgWishMessageService {
     user_repo: Arc<dyn traits::UserRepo>,
     push_token_repo: Arc<dyn traits::PushTokenRepo>,
     notification_svc: Arc<dyn traits::NotificationService>,
+    notification_repo: Arc<dyn traits::NotificationRepo>,
 }
 
 impl PgWishMessageService {
@@ -26,6 +27,7 @@ impl PgWishMessageService {
         user_repo: Arc<dyn traits::UserRepo>,
         push_token_repo: Arc<dyn traits::PushTokenRepo>,
         notification_svc: Arc<dyn traits::NotificationService>,
+        notification_repo: Arc<dyn traits::NotificationRepo>,
     ) -> Self {
         Self {
             wish_repo,
@@ -33,14 +35,38 @@ impl PgWishMessageService {
             user_repo,
             push_token_repo,
             notification_svc,
+            notification_repo,
         }
     }
 
-    fn notify_user(&self, user_id: Uuid, title: String, body: String) {
+    fn notify_user(
+        &self,
+        user_id: Uuid,
+        title: String,
+        body: String,
+        wish_id: Uuid,
+        actor_id: Uuid,
+    ) {
         let push_token_repo = self.push_token_repo.clone();
         let notification_svc = self.notification_svc.clone();
+        let notification_repo = self.notification_repo.clone();
 
         tokio::spawn(async move {
+            // Persist to notification center
+            let _ = notification_repo
+                .create(
+                    user_id,
+                    "wish_message",
+                    &title,
+                    &body,
+                    None,           // circle_id
+                    None,           // item_id
+                    Some(wish_id),  // wish_id
+                    Some(actor_id), // actor_id
+                )
+                .await;
+
+            // Send push notification
             let tokens = match push_token_repo.find_by_user(user_id).await {
                 Ok(t) => t,
                 Err(e) => {
@@ -126,6 +152,8 @@ impl traits::WishMessageService for PgWishMessageService {
                 recipient_id,
                 "Nouveau message".to_string(),
                 "Nouveau message sur votre demande d'entraide".to_string(),
+                wish_id,
+                sender_id,
             );
         }
 

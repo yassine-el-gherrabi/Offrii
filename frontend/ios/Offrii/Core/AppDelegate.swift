@@ -10,6 +10,7 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
     /// Pending navigation stored when didReceive fires before router is connected
     private var pendingShowFriends = false
     private var pendingCircleId: UUID?
+    private var pendingShowEntraide = false
 
     func application(
         _ application: UIApplication,
@@ -47,6 +48,10 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
             router.navigateToCircle(circleId)
             pendingCircleId = nil
         }
+        if pendingShowEntraide {
+            router.selectedTab = .entraide
+            pendingShowEntraide = false
+        }
     }
 }
 
@@ -60,6 +65,15 @@ extension AppDelegate: @preconcurrency UNUserNotificationCenterDelegate {
         withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
     ) {
         completionHandler([.banner, .sound, .badge])
+        // Refresh badge count
+        Task { await Self.refreshBadgeCount() }
+    }
+
+    /// Update the app icon badge with unread notification count
+    @MainActor
+    static func refreshBadgeCount() async {
+        let count = (try? await NotificationCenterService.shared.unreadCount()) ?? 0
+        try? await UNUserNotificationCenter.current().setBadgeCount(count)
     }
 
     /// Handle tap on push notification — navigate to circle/item
@@ -77,6 +91,12 @@ extension AppDelegate: @preconcurrency UNUserNotificationCenterDelegate {
             } else {
                 pendingShowFriends = true
             }
+        } else if notifType.hasPrefix("wish_") {
+            if let router {
+                Task { @MainActor in router.selectedTab = .entraide }
+            } else {
+                pendingShowEntraide = true
+            }
         } else if let circleIdString = userInfo["circle_id"] as? String,
                   let circleId = UUID(uuidString: circleIdString) {
             if let router {
@@ -85,6 +105,9 @@ extension AppDelegate: @preconcurrency UNUserNotificationCenterDelegate {
                 pendingCircleId = circleId
             }
         }
+
+        // Refresh badge
+        Task { await Self.refreshBadgeCount() }
 
         completionHandler()
     }

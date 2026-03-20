@@ -484,6 +484,7 @@
 "entraide.offer.alreadyMatched" = "Quelqu'un a déjà proposé son aide pour ce besoin.";
 "entraide.offer.messagePlaceholder" = "Laissez un message (facultatif)";
 "entraide.aging.waiting" = "Toujours en attente d'aide";
+"entraide.card.actionRequired" = "En attente de réponse";
 "entraide.recentFulfilled.title" = "Récemment comblés";
 "entraide.messages.loadMore" = "Charger les messages précédents";
 "entraide.report.otherPlaceholder" = "Décrivez le problème...";

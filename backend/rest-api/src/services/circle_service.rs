@@ -124,6 +124,7 @@ impl PgCircleService {
         });
     }
 
+    #[allow(dead_code)]
     fn notify_members(&self, circle_id: Uuid, exclude_user: Uuid, title: String, body: String) {
         self.notify_members_with_context(
             circle_id,
@@ -1001,11 +1002,15 @@ impl traits::CircleService for PgCircleService {
             .await
             .map_err(AppError::Internal)?
         {
-            self.notify_members(
+            self.notify_members_with_context(
                 invite.circle_id,
                 user_id,
                 "Nouveau membre !".to_string(),
                 format!("{} a rejoint le cercle", user.username),
+                Some("circle_member_joined"),
+                None,
+                Some(user_id),
+                vec![user.display_name.unwrap_or(user.username)],
             );
         }
 
@@ -1504,11 +1509,20 @@ impl traits::CircleService for PgCircleService {
         );
 
         // Notify other members that someone joined
-        self.notify_members(
+        self.notify_members_with_context(
             circle_id,
             user_id, // exclude the added user (they got their own notif)
             "Nouveau membre !".to_string(),
             format!("{} a rejoint le cercle", target.username),
+            Some("circle_member_joined"),
+            None,
+            Some(user_id),
+            vec![
+                target
+                    .display_name
+                    .clone()
+                    .unwrap_or_else(|| target.username.clone()),
+            ],
         );
 
         self.bump_circle_version(circle_id);

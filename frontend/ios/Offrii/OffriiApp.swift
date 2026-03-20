@@ -106,6 +106,8 @@ struct MainTabView: View {
                         UIApplication.shared.registerForRemoteNotifications()
                     }
                 }
+                // Refresh app icon badge count
+                await AppDelegate.refreshBadgeCount()
             }
         }
         .task {
@@ -120,6 +122,12 @@ struct MainTabView: View {
         .sheet(isPresented: $showCreateSheet) {
             QuickCreateSheet()
                 .presentationDetents([.medium])
+        }
+        .onChange(of: router.selectedTab) { _, tab in
+            if let tab {
+                selectedTab = tab
+                router.selectedTab = nil
+            }
         }
         .onChange(of: router.pendingCircleId) { _, circleId in
             guard let circleId else { return }

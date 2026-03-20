@@ -67,6 +67,9 @@ final class AppRouter {
     /// Triggers switching to the friends filter in Circles tab
     var showFriends = false
 
+    /// Triggers switching to a specific tab (set by push notification handler)
+    var selectedTab: TabItem?
+
     func handleURL(_ url: URL) {
         // offrii://join/{token}
         guard url.scheme == "offrii", url.host == "join",

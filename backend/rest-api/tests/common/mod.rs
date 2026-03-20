@@ -307,6 +307,7 @@ impl TestApp {
             user_repo,
             push_token_repo,
             notification_svc,
+            notification_repo.clone(),
         ));
 
         let redis_for_app = redis.clone();
