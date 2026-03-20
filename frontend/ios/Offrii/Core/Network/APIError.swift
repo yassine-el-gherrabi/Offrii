@@ -14,6 +14,7 @@ enum APIError: LocalizedError {
     case badRequest(String)
     case notFound(String)
     case conflict(String)
+    case tooManyRequests(String)
     case serverError
     case networkError(Error)
     case decodingError(Error)
@@ -30,6 +31,8 @@ enum APIError: LocalizedError {
         case .notFound(let message):
             return message
         case .conflict(let message):
+            return message
+        case .tooManyRequests(let message):
             return message
         case .serverError:
             return String(localized: "error.serverError")

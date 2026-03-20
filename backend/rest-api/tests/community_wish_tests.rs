@@ -4223,3 +4223,127 @@ async fn user_profile_includes_email_verified() {
         "/me must include email_verified field"
     );
 }
+
+#[tokio::test]
+async fn resend_verification_rate_limited_429() {
+    let app = TestApp::new().await;
+    let (status, resp) = app
+        .register_user_with_name("ratelimit@test.com", TEST_PASSWORD, "RateLimit")
+        .await;
+    assert_eq!(status, StatusCode::CREATED);
+    let token = resp["tokens"]["access_token"].as_str().unwrap();
+
+    // Registration already created a token < 5 min ago — resend must be rate limited
+    let (status, _) = app.post_with_auth("/auth/resend-verification", token).await;
+    assert_eq!(
+        status,
+        StatusCode::TOO_MANY_REQUESTS,
+        "resend within 5 minutes of registration must return 429"
+    );
+
+    // Expire the existing token to allow a new one
+    sqlx::query(
+        "UPDATE email_verification_tokens SET created_at = NOW() - INTERVAL '10 minutes' \
+         WHERE user_id = (SELECT id FROM users WHERE email = $1)",
+    )
+    .bind("ratelimit@test.com")
+    .execute(&app.db)
+    .await
+    .unwrap();
+
+    // Now resend should work
+    let (status, _) = app.post_with_auth("/auth/resend-verification", token).await;
+    assert_eq!(
+        status,
+        StatusCode::NO_CONTENT,
+        "resend after cooldown must succeed"
+    );
+
+    // And immediately after, should be rate limited again
+    let (status, _) = app.post_with_auth("/auth/resend-verification", token).await;
+    assert_eq!(
+        status,
+        StatusCode::TOO_MANY_REQUESTS,
+        "second resend within 5 minutes must return 429"
+    );
+}
+
+#[tokio::test]
+async fn verify_email_token_deleted_after_use() {
+    let app = TestApp::new().await;
+    app.register_user_with_name("tokenuse@test.com", TEST_PASSWORD, "TokenUse")
+        .await;
+
+    let token: (String,) = sqlx::query_as(
+        "SELECT token FROM email_verification_tokens \
+         WHERE user_id = (SELECT id FROM users WHERE email = $1)",
+    )
+    .bind("tokenuse@test.com")
+    .fetch_one(&app.db)
+    .await
+    .unwrap();
+
+    // Use the token
+    let body = json!({ "token": token.0 });
+    let (status, _) = app.post_json("/auth/verify-email", &body).await;
+    assert_eq!(status, StatusCode::OK);
+
+    // Try to use it again — should fail (token consumed)
+    let (status, _) = app.post_json("/auth/verify-email", &body).await;
+    assert_eq!(status, StatusCode::BAD_REQUEST, "token must be single-use");
+}
+
+#[tokio::test]
+async fn verify_email_without_auth_works() {
+    // verify-email is public (no auth needed — user clicks link from email)
+    let app = TestApp::new().await;
+    app.register_user_with_name("noauth@test.com", TEST_PASSWORD, "NoAuth")
+        .await;
+
+    let token: (String,) = sqlx::query_as(
+        "SELECT token FROM email_verification_tokens \
+         WHERE user_id = (SELECT id FROM users WHERE email = $1)",
+    )
+    .bind("noauth@test.com")
+    .fetch_one(&app.db)
+    .await
+    .unwrap();
+
+    let body = json!({ "token": token.0 });
+    let (status, _) = app.post_json("/auth/verify-email", &body).await;
+    assert_eq!(
+        status,
+        StatusCode::OK,
+        "verify-email must work without auth"
+    );
+}
+
+#[tokio::test]
+async fn resend_verification_without_auth_401() {
+    let app = TestApp::new().await;
+    let body = json!({});
+    let (status, _) = app.post_json("/auth/resend-verification", &body).await;
+    assert_eq!(
+        status,
+        StatusCode::UNAUTHORIZED,
+        "resend-verification requires auth"
+    );
+}
+
+#[tokio::test]
+async fn user_profile_unverified_shows_false() {
+    let app = TestApp::new().await;
+    let (status, resp) = app
+        .register_user_with_name("unv_profile@test.com", TEST_PASSWORD, "UnvProfile")
+        .await;
+    assert_eq!(status, StatusCode::CREATED);
+    let token = resp["tokens"]["access_token"].as_str().unwrap();
+
+    let (status, body) = app.get_with_auth("/users/me", token).await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(
+        body["email_verified"].as_bool(),
+        Some(false),
+        "newly registered user must have email_verified = false"
+    );
+}

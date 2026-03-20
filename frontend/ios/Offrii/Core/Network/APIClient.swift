@@ -167,6 +167,7 @@ final class APIClient: Sendable {
 
     // MARK: - Execute
 
+    // swiftlint:disable:next cyclomatic_complexity
     private func execute<T: Decodable>(
         _ request: URLRequest,
         endpoint: APIEndpoint,
@@ -236,7 +237,9 @@ final class APIClient: Sendable {
         case 400: throw APIError.badRequest(errMsg)
         case 401: throw APIError.unauthorized(errMsg)
         case 404: throw APIError.notFound(errMsg)
+        case 403: throw APIError.unauthorized(errMsg)
         case 409: throw APIError.conflict(errMsg)
+        case 429: throw APIError.tooManyRequests(errMsg)
         case 500..<600: throw APIError.serverError
         default: throw APIError.unknown(statusCode, errMsg)
         }

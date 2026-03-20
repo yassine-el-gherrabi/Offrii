@@ -386,6 +386,13 @@ struct EntraideView: View {
             resendCooldown = true
             try? await Task.sleep(for: .seconds(60))
             resendCooldown = false
+        } catch let error as APIError {
+            if case .tooManyRequests = error {
+                // Backend rate limit hit — activate frontend cooldown too
+                resendCooldown = true
+                try? await Task.sleep(for: .seconds(60))
+                resendCooldown = false
+            }
         } catch {}
     }
 
