@@ -636,6 +636,8 @@
 "wishlist.makePrivate" = "Rendre privé";
 "wishlist.makePublic" = "Rendre public";
 "wishlist.privateHint" = "Ne sera pas visible dans les liens de partage";
+"wishlist.privateWarning.title" = "Retirer des partages ?";
+"wishlist.privateWarning.message" = "Cette envie est partagée avec des cercles. La rendre privée la retirera de tous les partages.";
 "item.sharedWith" = "Partagé avec";
 "item.links" = "Liens";
 

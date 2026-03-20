@@ -427,6 +427,9 @@ impl PgCircleService {
                             .find_by_ids_any_user(&ids)
                             .await
                             .map_err(AppError::Internal)?
+                            .into_iter()
+                            .filter(|i| !i.is_private)
+                            .collect()
                     }
                 }
                 Some("none") => vec![],
@@ -449,6 +452,9 @@ impl PgCircleService {
                             .find_by_ids_any_user(&ids)
                             .await
                             .map_err(AppError::Internal)?
+                            .into_iter()
+                            .filter(|i| !i.is_private)
+                            .collect()
                     }
                 }
                 _ => vec![],

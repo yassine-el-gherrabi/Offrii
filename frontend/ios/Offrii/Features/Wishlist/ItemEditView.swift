@@ -22,6 +22,7 @@ struct ItemEditView: View {
     @State private var imageRemoved = false
     @State private var existingImageUrl: URL?
     @State private var circleToUnshare: SharedCircleInfo?
+    @State private var showPrivateWarning = false
     @State private var sharedCircles: [SharedCircleInfo]
     @State private var didCancel = false
     @State private var didSave = false
@@ -124,7 +125,16 @@ struct ItemEditView: View {
                         linksSection
 
                         // Privacy toggle
-                        Toggle(isOn: $isPrivate) {
+                        Toggle(isOn: Binding(
+                            get: { isPrivate },
+                            set: { newValue in
+                                if newValue && !item.sharedCircles.isEmpty {
+                                    showPrivateWarning = true
+                                } else {
+                                    isPrivate = newValue
+                                }
+                            }
+                        )) {
                             VStack(alignment: .leading, spacing: 2) {
                                 HStack(spacing: 4) {
                                     Image(systemName: "lock.fill")
@@ -139,6 +149,17 @@ struct ItemEditView: View {
                             }
                         }
                         .tint(OffriiTheme.primary)
+                        .alert(
+                            NSLocalizedString("wishlist.privateWarning.title", comment: ""),
+                            isPresented: $showPrivateWarning
+                        ) {
+                            Button(NSLocalizedString("wishlist.private", comment: "")) {
+                                isPrivate = true
+                            }
+                            Button(NSLocalizedString("common.cancel", comment: ""), role: .cancel) {}
+                        } message: {
+                            Text(NSLocalizedString("wishlist.privateWarning.message", comment: ""))
+                        }
                     }
                 }
                 .padding(.horizontal, OffriiTheme.spacingLG)

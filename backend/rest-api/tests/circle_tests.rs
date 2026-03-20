@@ -3859,3 +3859,229 @@ async fn share_rule_group_transition_from_legacy_to_all() {
         "switching to 'all' should reveal all items"
     );
 }
+
+// ═══════════════════════════════════════════════════════════════════
+// Private Items — circle_items cleanup and filtering
+// ═══════════════════════════════════════════════════════════════════
+
+#[tokio::test]
+async fn make_private_removes_circle_items() {
+    let app = TestApp::new().await;
+    let (alice, _) = setup_user_named(&app, "priv-rm1@test.com", "priv_rm_alice").await;
+    let (bob, _) = setup_user_named(&app, "priv-rm2@test.com", "priv_rm_bob").await;
+    make_friends(&app, &alice, &bob, "priv_rm_bob").await;
+
+    let circle_id = create_circle(&app, &alice, "PrivRmCircle").await;
+    invite_and_join(&app, &circle_id, &alice, &bob).await;
+
+    // Alice creates an item and shares it with the circle
+    let item = app
+        .create_item(&alice, &serde_json::json!({ "name": "SharedItem" }))
+        .await;
+    let item_id = item["id"].as_str().unwrap();
+
+    let share_body = serde_json::json!({ "item_id": item_id });
+    let (status, _) = app
+        .post_json_with_auth(&format!("/circles/{circle_id}/items"), &share_body, &alice)
+        .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+
+    // Bob can see the item
+    let (_, items) = app
+        .get_with_auth(&format!("/circles/{circle_id}/items"), &bob)
+        .await;
+    assert_eq!(
+        items.as_array().unwrap().len(),
+        1,
+        "item visible before private"
+    );
+
+    // Alice sets the item to private
+    let (status, _) = app
+        .put_json_with_auth(
+            &format!("/items/{item_id}"),
+            &serde_json::json!({ "is_private": true }),
+            &alice,
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK);
+
+    // Bob should no longer see the item
+    let (_, items) = app
+        .get_with_auth(&format!("/circles/{circle_id}/items"), &bob)
+        .await;
+    assert_eq!(
+        items.as_array().unwrap().len(),
+        0,
+        "circle_items row should be deleted when item is set to private"
+    );
+}
+
+#[tokio::test]
+async fn make_private_selection_mode_excludes() {
+    let app = TestApp::new().await;
+    let (alice, _) = setup_user_named(&app, "priv-sel1@test.com", "priv_sel_alice").await;
+    let (bob, _) = setup_user_named(&app, "priv-sel2@test.com", "priv_sel_bob").await;
+    make_friends(&app, &alice, &bob, "priv_sel_bob").await;
+
+    let circle_id = create_circle(&app, &alice, "PrivSelCircle").await;
+    invite_and_join(&app, &circle_id, &alice, &bob).await;
+
+    // Alice creates two items
+    let item1 = app
+        .create_item(&alice, &serde_json::json!({ "name": "KeepThis" }))
+        .await;
+    let item1_id = item1["id"].as_str().unwrap();
+    let item2 = app
+        .create_item(&alice, &serde_json::json!({ "name": "HideThis" }))
+        .await;
+    let item2_id = item2["id"].as_str().unwrap();
+
+    // Share both items manually (selection mode via circle_items)
+    app.post_json_with_auth(
+        &format!("/circles/{circle_id}/items"),
+        &serde_json::json!({ "item_id": item1_id }),
+        &alice,
+    )
+    .await;
+    app.post_json_with_auth(
+        &format!("/circles/{circle_id}/items"),
+        &serde_json::json!({ "item_id": item2_id }),
+        &alice,
+    )
+    .await;
+
+    // Bob sees 2 items
+    let (_, items) = app
+        .get_with_auth(&format!("/circles/{circle_id}/items"), &bob)
+        .await;
+    assert_eq!(items.as_array().unwrap().len(), 2, "both items visible");
+
+    // Alice makes item2 private
+    let (status, _) = app
+        .put_json_with_auth(
+            &format!("/items/{item2_id}"),
+            &serde_json::json!({ "is_private": true }),
+            &alice,
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK);
+
+    // Bob sees only 1 item — the private one is excluded
+    let (_, items) = app
+        .get_with_auth(&format!("/circles/{circle_id}/items"), &bob)
+        .await;
+    let items_arr = items.as_array().unwrap();
+    assert_eq!(
+        items_arr.len(),
+        1,
+        "private item excluded from selection mode"
+    );
+    assert_eq!(items_arr[0]["name"], "KeepThis");
+}
+
+#[tokio::test]
+async fn make_public_again_does_not_restore_shares() {
+    let app = TestApp::new().await;
+    let (alice, _) = setup_user_named(&app, "priv-pub1@test.com", "priv_pub_alice").await;
+    let (bob, _) = setup_user_named(&app, "priv-pub2@test.com", "priv_pub_bob").await;
+    make_friends(&app, &alice, &bob, "priv_pub_bob").await;
+
+    let circle_id = create_circle(&app, &alice, "PrivPubCircle").await;
+    invite_and_join(&app, &circle_id, &alice, &bob).await;
+
+    // Alice creates and shares an item
+    let item = app
+        .create_item(&alice, &serde_json::json!({ "name": "Vanishes" }))
+        .await;
+    let item_id = item["id"].as_str().unwrap();
+
+    app.post_json_with_auth(
+        &format!("/circles/{circle_id}/items"),
+        &serde_json::json!({ "item_id": item_id }),
+        &alice,
+    )
+    .await;
+
+    // Confirm Bob sees the item
+    let (_, items) = app
+        .get_with_auth(&format!("/circles/{circle_id}/items"), &bob)
+        .await;
+    assert_eq!(items.as_array().unwrap().len(), 1);
+
+    // Alice makes the item private (deletes circle_items)
+    app.put_json_with_auth(
+        &format!("/items/{item_id}"),
+        &serde_json::json!({ "is_private": true }),
+        &alice,
+    )
+    .await;
+
+    // Alice makes the item public again
+    app.put_json_with_auth(
+        &format!("/items/{item_id}"),
+        &serde_json::json!({ "is_private": false }),
+        &alice,
+    )
+    .await;
+
+    // Bob should still NOT see the item — shares were deleted, not restored
+    let (_, items) = app
+        .get_with_auth(&format!("/circles/{circle_id}/items"), &bob)
+        .await;
+    assert_eq!(
+        items.as_array().unwrap().len(),
+        0,
+        "making public again should NOT auto-restore circle_items shares"
+    );
+}
+
+#[tokio::test]
+async fn make_private_item_not_in_shared_view() {
+    let app = TestApp::new().await;
+    let (alice, _) = setup_user_named(&app, "priv-sv1@test.com", "priv_sv_alice").await;
+
+    // Alice creates a public item
+    let item = app
+        .create_item(&alice, &serde_json::json!({ "name": "Visible" }))
+        .await;
+    let item_id = item["id"].as_str().unwrap();
+
+    // Create a share link (scope=all)
+    let (status, link_body) = app.post_with_auth("/share-links", &alice).await;
+    assert_eq!(status, StatusCode::CREATED);
+    let share_token = link_body["token"].as_str().unwrap();
+
+    // Shared view should show the item
+    let (status, view) = app.get_no_auth(&format!("/shared/{share_token}")).await;
+    assert_eq!(status, StatusCode::OK);
+    let items = &view["items"];
+    assert!(
+        items
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|i| i["name"] == "Visible"),
+        "public item should appear in shared view"
+    );
+
+    // Alice makes the item private
+    app.put_json_with_auth(
+        &format!("/items/{item_id}"),
+        &serde_json::json!({ "is_private": true }),
+        &alice,
+    )
+    .await;
+
+    // Shared view should no longer show the item
+    let (_, view) = app.get_no_auth(&format!("/shared/{share_token}")).await;
+    let items = &view["items"];
+    assert!(
+        !items
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|i| i["name"] == "Visible"),
+        "private item should NOT appear in shared view"
+    );
+}

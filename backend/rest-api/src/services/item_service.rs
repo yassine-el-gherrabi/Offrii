@@ -453,6 +453,16 @@ impl traits::ItemService for PgItemService {
             }
         };
 
+        // When an item is set to private, remove all circle_items shares
+        if is_private == Some(true) {
+            sqlx::query("DELETE FROM circle_items WHERE item_id = $1")
+                .bind(id)
+                .execute(&self.pool)
+                .await
+                .map_err(|e| AppError::Internal(e.into()))?;
+            tracing::info!(item_id = %id, "removed all circle_items shares (item set to private)");
+        }
+
         // Invalidate list cache
         self.bump_version(user_id).await;
 
