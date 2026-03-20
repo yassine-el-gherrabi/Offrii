@@ -1,5 +1,4 @@
 import SwiftUI
-import UserNotifications
 
 // MARK: - HomeViewModel
 
@@ -69,21 +68,10 @@ final class HomeViewModel {
         }
         unreadNotificationCount = (try? await unreadResult) ?? 0
 
-        // Group 2: Profile progress data (separate calls to avoid concurrency issues)
-        let circleCount = (try? await CircleService.shared.listCircles())?.count ?? 0
-        let friendCount = (try? await FriendService.shared.listFriends())?.count ?? 0
-        let shareRules = (try? await CircleService.shared.listMyShareRules()) ?? []
-        let pushEnabled = await checkPushEnabled()
-        let hasVisitedEntraide = UserDefaults.standard.bool(forKey: "entraide.hasVisited")
-
-        // Compute profile progress
-        computeProgress(
+        // Profile progress (centralized computation)
+        profileProgress = await ProfileProgress.compute(
             user: authManager.currentUser,
-            circleCount: circleCount,
-            friendCount: friendCount,
-            shareRules: shareRules,
-            pushEnabled: pushEnabled,
-            hasVisitedEntraide: hasVisitedEntraide
+            totalItems: stats.totalItems
         )
     }
 
@@ -98,34 +86,4 @@ final class HomeViewModel {
         recentNotifications
     }
 
-    // MARK: - Progress Computation
-
-    // swiftlint:disable:next function_parameter_count
-    private func computeProgress(
-        user: User?,
-        circleCount: Int,
-        friendCount: Int,
-        shareRules: [CircleShareRuleSummary],
-        pushEnabled: Bool,
-        hasVisitedEntraide: Bool
-    ) {
-        guard let user else { return }
-
-        profileProgress.update(id: "displayName", completed: user.displayName != nil && !user.displayName!.isEmpty)
-        profileProgress.update(id: "username", completed: !user.username.isEmpty && user.username != user.email)
-        profileProgress.update(id: "avatar", completed: user.avatarUrl != nil && !user.avatarUrl!.isEmpty)
-        profileProgress.update(id: "emailVerified", completed: user.emailVerified ?? false)
-        profileProgress.update(id: "firstItem", completed: stats.totalItems > 0)
-        profileProgress.update(id: "shareList", completed: shareRules.contains { $0.shareMode != "none" })
-        profileProgress.update(id: "firstFriend", completed: friendCount > 0)
-        profileProgress.update(id: "firstCircle", completed: circleCount > 0)
-        profileProgress.update(id: "pushNotifications", completed: pushEnabled)
-        profileProgress.update(id: "firstNeed", completed: hasVisitedEntraide)
-    }
-
-    private func checkPushEnabled() async -> Bool {
-        let center = UNUserNotificationCenter.current()
-        let settings = await center.notificationSettings()
-        return settings.authorizationStatus == .authorized
-    }
 }

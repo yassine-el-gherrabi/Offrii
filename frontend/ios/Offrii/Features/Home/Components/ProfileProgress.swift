@@ -1,4 +1,5 @@
 import Foundation
+import UserNotifications
 
 // MARK: - Profile Progress Step
 
@@ -126,6 +127,39 @@ struct ProfileProgress {
         }
     }
 
+    // MARK: - Centralized Computation (single source of truth)
+
+    @MainActor
+    static func compute(user: User?, totalItems: Int) async -> ProfileProgress {
+        var progress = ProfileProgress()
+        guard let user else { return progress }
+
+        // Identity
+        progress.update(id: "displayName", completed: user.displayName != nil && !(user.displayName ?? "").isEmpty)
+        progress.update(id: "username", completed: !user.username.isEmpty && user.username != user.email)
+        progress.update(id: "avatar", completed: user.avatarUrl != nil && !(user.avatarUrl ?? "").isEmpty)
+        progress.update(id: "emailVerified", completed: user.emailVerified ?? false)
+
+        // Wishlist
+        progress.update(id: "firstItem", completed: totalItems > 0)
+        let shareRules = (try? await CircleService.shared.listMyShareRules()) ?? []
+        progress.update(id: "shareList", completed: shareRules.contains { $0.shareMode != "none" })
+
+        // Social
+        let friendCount = (try? await FriendService.shared.listFriends())?.count ?? 0
+        progress.update(id: "firstFriend", completed: friendCount > 0)
+        let circleCount = (try? await CircleService.shared.listCircles())?.count ?? 0
+        progress.update(id: "firstCircle", completed: circleCount > 0)
+        progress.update(id: "firstNeed", completed: UserDefaults.standard.bool(forKey: "entraide.hasVisited"))
+
+        // Settings
+        let center = UNUserNotificationCenter.current()
+        let settings = await center.notificationSettings()
+        progress.update(id: "pushNotifications", completed: settings.authorizationStatus == .authorized)
+
+        return progress
+    }
+
     // Legacy compatibility
     var hasUsername: Bool { steps.first { $0.id == "username" }?.isCompleted ?? false }
     var hasDisplayName: Bool { steps.first { $0.id == "displayName" }?.isCompleted ?? false }
@@ -133,7 +167,6 @@ struct ProfileProgress {
     var hasFirstCircle: Bool { steps.first { $0.id == "firstCircle" }?.isCompleted ?? false }
     var hasFirstFriend: Bool { steps.first { $0.id == "firstFriend" }?.isCompleted ?? false }
     var hasSharedList: Bool { steps.first { $0.id == "shareList" }?.isCompleted ?? false }
-    var hasReminders: Bool { false } // Legacy — reminders feature removed
 }
 
 // MARK: - Quick Start Action (legacy, kept for compatibility)

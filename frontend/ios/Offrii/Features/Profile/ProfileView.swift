@@ -283,8 +283,8 @@ struct ProfileView: View {
         )
         .task {
             await viewModel.loadProfile()
-            await computeProfileProgress()
             await refreshPushStatus()
+            await computeProfileProgress()
         }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
             Task { await refreshPushStatus() }
@@ -482,23 +482,11 @@ struct ProfileView: View {
     // MARK: - Profile Progress
 
     private func computeProfileProgress() async {
-        guard let user = authManager.currentUser else { return }
-        profileProgress.update(id: "username", completed: !user.username.isEmpty && user.username != user.email)
-        profileProgress.update(id: "displayName", completed: user.displayName != nil && !(user.displayName ?? "").isEmpty)
-        profileProgress.update(id: "avatar", completed: user.avatarUrl != nil && !(user.avatarUrl ?? "").isEmpty)
-
-        if let items = try? await ItemService.shared.listItems(page: 1, perPage: 1) {
-            profileProgress.update(id: "firstItem", completed: items.total > 0)
-        }
-        if let circles = try? await CircleService.shared.listCircles() {
-            profileProgress.update(id: "firstCircle", completed: !circles.isEmpty)
-        }
-        if let friends = try? await FriendService.shared.listFriends() {
-            profileProgress.update(id: "firstFriend", completed: !friends.isEmpty)
-        }
-        if let rules = try? await CircleService.shared.listMyShareRules() {
-            profileProgress.update(id: "shareList", completed: rules.contains { $0.shareMode != "none" })
-        }
+        let totalItems = (try? await ItemService.shared.listItems(page: 1, perPage: 1))?.total ?? 0
+        profileProgress = await ProfileProgress.compute(
+            user: authManager.currentUser,
+            totalItems: totalItems
+        )
     }
 
     // MARK: - Helpers
