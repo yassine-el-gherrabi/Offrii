@@ -15,14 +15,11 @@ struct SplashView: View {
                 .opacity(0.5)
 
             VStack(spacing: OffriiTheme.spacingMD) {
-                RoundedRectangle(cornerRadius: OffriiTheme.cornerRadiusLG)
-                    .fill(OffriiTheme.primary)
-                    .frame(width: 88, height: 88)
-                    .overlay(
-                        Image(systemName: "gift.fill")
-                            .font(.system(size: 40))
-                            .foregroundColor(.white)
-                    )
+                Image("offrii-logo")
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 100, height: 100)
+                    .clipShape(RoundedRectangle(cornerRadius: 22))
                     .scaleEffect(logoVisible ? 1.0 : 0.8)
                     .opacity(logoVisible ? 1.0 : 0)
 

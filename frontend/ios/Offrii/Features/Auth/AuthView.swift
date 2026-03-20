@@ -74,7 +74,11 @@ struct AuthView: View {
 
     private var logoSection: some View {
         VStack(spacing: OffriiTheme.spacingMD) {
-            ShinyIcon(systemName: "gift.fill", color: OffriiTheme.primary)
+            Image("offrii-logo")
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: 80, height: 80)
+                .clipShape(RoundedRectangle(cornerRadius: 18))
 
             Text("Offrii")
                 .font(OffriiTypography.titleLarge)

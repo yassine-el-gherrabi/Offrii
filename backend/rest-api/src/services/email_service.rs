@@ -5,6 +5,11 @@ use resend_rs::types::CreateEmailBaseOptions;
 use crate::errors::AppError;
 use crate::traits;
 
+const EMAIL_LOGO_HEADER: &str = "\
+<div style=\"text-align:center;padding:24px 0 16px\">\
+<img src=\"https://offrii.com/logo.png\" alt=\"Offrii\" width=\"60\" height=\"60\" style=\"border-radius:14px\">\
+</div>";
+
 pub struct ResendEmailService {
     client: Resend,
     from: String,
@@ -25,7 +30,8 @@ impl traits::EmailService for ResendEmailService {
         let email =
             CreateEmailBaseOptions::new(&self.from, [to], "Your Offrii password reset code")
                 .with_html(&format!(
-                    "<h2>Password Reset</h2>\
+                    "{EMAIL_LOGO_HEADER}\
+             <h2>Password Reset</h2>\
              <p>Your code: <strong>{code}</strong></p>\
              <p>Valid for 30 minutes.</p>"
                 ));
@@ -47,7 +53,8 @@ impl traits::EmailService for ResendEmailService {
         let name = display_name.unwrap_or("there");
         let email = CreateEmailBaseOptions::new(&self.from, [to], "Welcome to Offrii!")
             .with_html(&format!(
-                "<h2>Welcome to Offrii, {name}!</h2>\
+                "{EMAIL_LOGO_HEADER}\
+                 <h2>Welcome to Offrii, {name}!</h2>\
                  <p>Your account is ready. Start creating your wishlist and sharing it with your loved ones.</p>\
                  <p>See you soon on Offrii!</p>"
             ));
@@ -66,7 +73,8 @@ impl traits::EmailService for ResendEmailService {
         let email =
             CreateEmailBaseOptions::new(&self.from, [to], "Verify your Offrii email address")
                 .with_html(&format!(
-                    "<h2>Verify your email</h2>\
+                    "{EMAIL_LOGO_HEADER}\
+             <h2>Verify your email</h2>\
              <p>Click the link below to verify your email address:</p>\
              <p><a href=\"{verification_url}\">{verification_url}</a></p>\
              <p>This link expires in 24 hours.</p>"
