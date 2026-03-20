@@ -41,12 +41,8 @@ struct WishlistGridCard: View {
                             .foregroundColor(.white)
                     }
 
-                    // Other badges (top-right)
-                    VStack(alignment: .trailing, spacing: 4) {
-                        otherBadges
-                    }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
-                    .padding(OffriiTheme.spacingSM)
+                    // Badges
+                    badgeOverlay
 
                     // Shared circles avatar stack (bottom-left)
                     if !item.sharedCircles.isEmpty {
@@ -164,47 +160,44 @@ struct WishlistGridCard: View {
             .overlay(Circle().strokeBorder(.white, lineWidth: 1.5))
     }
 
-    // MARK: - Badge Overlay (non-claimed badges)
+    // MARK: - Badge Overlay
 
-    @ViewBuilder
-    private var otherBadges: some View {
-            // Priority flames (1/2/3)
-            glassBadge {
-                HStack(spacing: -1) {
-                    ForEach(0..<item.priority, id: \.self) { _ in
-                        Image(systemName: "flame.fill")
-                            .font(.system(size: 10))
-                    }
-                }
-                .foregroundColor(OffriiTheme.primary)
-            }
-            // Purchased checkmark
-            if isPurchasedTab {
-                glassBadge {
-                    Image(systemName: "checkmark")
-                        .font(.system(size: 10, weight: .bold))
-                }
-            }
-
-            // Private
+    private var badgeOverlay: some View {
+        ZStack {
+            // Top-left: Private lock (icon only)
             if item.isPrivate {
                 glassBadge {
                     Image(systemName: "lock.fill")
-                        .font(.system(size: 9, weight: .semibold))
-                    Text(NSLocalizedString("wishlist.private", comment: ""))
-                        .font(.system(size: 9, weight: .semibold))
+                        .font(.system(size: 10, weight: .semibold))
                 }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                .padding(OffriiTheme.spacingSM)
             }
 
-            // (Shared circles now shown as avatar stack at bottom-left of image)
+            // Top-right: Priority flames (2-3 only, 1 = default = no badge)
+            if item.priority >= 2 {
+                glassBadge {
+                    HStack(spacing: -1) {
+                        ForEach(0..<item.priority, id: \.self) { _ in
+                            Image(systemName: "flame.fill")
+                                .font(.system(size: 10))
+                        }
+                    }
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
+                .padding(OffriiTheme.spacingSM)
+            }
 
-            // Has links
+            // Bottom-right: Link indicator (small, discreet)
             if let links = item.links, !links.isEmpty {
                 glassBadge {
                     Image(systemName: "link")
                         .font(.system(size: 9, weight: .semibold))
                 }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
+                .padding(OffriiTheme.spacingSM)
             }
+        }
     }
 
     /// Badge style: white background + corail icons
