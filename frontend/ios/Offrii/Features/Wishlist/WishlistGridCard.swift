@@ -168,17 +168,15 @@ struct WishlistGridCard: View {
 
     @ViewBuilder
     private var otherBadges: some View {
-            // Priority flames
-            if item.priority >= 2 {
-                glassBadge {
-                    HStack(spacing: 2) {
-                        ForEach(0..<(item.priority - 1), id: \.self) { _ in
-                            Image(systemName: "flame.fill")
-                                .font(.system(size: 10))
-                        }
+            // Priority flames (1/2/3)
+            glassBadge {
+                HStack(spacing: -1) {
+                    ForEach(0..<item.priority, id: \.self) { _ in
+                        Image(systemName: "flame.fill")
+                            .font(.system(size: 10))
                     }
-                    .foregroundColor(item.priority == 3 ? OffriiTheme.danger : OffriiTheme.primary)
                 }
+                .foregroundColor(OffriiTheme.primary)
             }
             // Purchased checkmark
             if isPurchasedTab {

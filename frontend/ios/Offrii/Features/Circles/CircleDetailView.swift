@@ -719,28 +719,24 @@ struct CircleDetailView: View {
                         .foregroundColor(.white)
                 }
 
-                // Priority flames (top-right)
-                if item.priority >= 2 {
-                    HStack(spacing: 2) {
-                        ForEach(0..<(Int(item.priority) - 1), id: \.self) { _ in
-                            Image(systemName: "flame.fill")
-                                .font(.system(size: 10))
-                        }
+                // Priority flames (top-right, 1/2/3)
+                HStack(spacing: -1) {
+                    ForEach(0..<Int(item.priority), id: \.self) { _ in
+                        Image(systemName: "flame.fill")
+                            .font(.system(size: 10))
                     }
-                    .foregroundColor(
-                        item.priority == 3 ? OffriiTheme.danger : OffriiTheme.primary
-                    )
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 3)
-                    .background(.white)
-                    .cornerRadius(OffriiTheme.cornerRadiusXS)
-                    .shadow(color: .black.opacity(0.08), radius: 4, x: 0, y: 1)
-                    .frame(
-                        maxWidth: .infinity, maxHeight: .infinity,
-                        alignment: .topTrailing
-                    )
-                    .padding(OffriiTheme.spacingSM)
                 }
+                .foregroundColor(OffriiTheme.primary)
+                .padding(.horizontal, 6)
+                .padding(.vertical, 3)
+                .background(.white)
+                .cornerRadius(OffriiTheme.cornerRadiusXS)
+                .shadow(color: .black.opacity(0.08), radius: 4, x: 0, y: 1)
+                .frame(
+                    maxWidth: .infinity, maxHeight: .infinity,
+                    alignment: .topTrailing
+                )
+                .padding(OffriiTheme.spacingSM)
             }
             .frame(height: 130)
             .clipped()
