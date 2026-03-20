@@ -3,6 +3,7 @@ import SwiftUI
 
 // MARK: - EntraideView
 
+struct EntraideView: View {
     @Environment(AuthManager.self) private var authManager
     @State private var viewModel = EntraideViewModel()
     @State private var myNeedsViewModel = EntraideMyNeedsViewModel()

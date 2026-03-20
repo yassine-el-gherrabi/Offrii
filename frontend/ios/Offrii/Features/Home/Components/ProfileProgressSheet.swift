@@ -4,6 +4,7 @@ import UserNotifications
 
 // MARK: - ProfileProgressSheet
 
+struct ProfileProgressSheet: View {
     @State private var progress: ProfileProgress
     @Environment(\.dismiss) private var dismiss
     @Environment(AuthManager.self) private var authManager

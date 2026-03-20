@@ -1,5 +1,6 @@
-use axum::extract::State;
+use axum::extract::{Query, State};
 use axum::http::StatusCode;
+use axum::response::Html;
 use axum::routing::post;
 use axum::{Json, Router};
 use validator::Validate;
@@ -28,7 +29,7 @@ pub fn router() -> Router<AppState> {
         .route("/forgot-password", post(forgot_password))
         .route("/verify-reset-code", post(verify_reset_code))
         .route("/reset-password", post(reset_password))
-        .route("/verify-email", post(verify_email))
+        .route("/verify-email", post(verify_email).get(verify_email_get))
         .route("/resend-verification", post(resend_verification))
         .route("/google", post(google_auth))
         .route("/apple", post(apple_auth))
@@ -248,6 +249,51 @@ async fn verify_email(
     state.auth.verify_email(&req.token).await?;
 
     Ok(StatusCode::OK)
+}
+
+#[derive(Debug, serde::Deserialize)]
+struct VerifyEmailQuery {
+    token: String,
+}
+
+async fn verify_email_get(
+    State(state): State<AppState>,
+    Query(query): Query<VerifyEmailQuery>,
+) -> Html<String> {
+    match state.auth.verify_email(&query.token).await {
+        Ok(()) => Html(verify_email_page(
+            "Email vérifié",
+            "Votre adresse email a bien été vérifiée. Vous pouvez retourner sur l'application.",
+            true,
+        )),
+        Err(_) => Html(verify_email_page(
+            "Lien invalide ou expiré",
+            "Ce lien de vérification est invalide ou a expiré. Renvoyez un email de vérification depuis l'application.",
+            false,
+        )),
+    }
+}
+
+fn verify_email_page(title: &str, message: &str, success: bool) -> String {
+    let color = if success { "#22c55e" } else { "#ef4444" };
+    let icon = if success { "&#10003;" } else { "&#10007;" };
+    format!(
+        r#"<!DOCTYPE html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{title} — Offrii</title>
+<style>
+body{{font-family:-apple-system,system-ui,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;background:#fafafa;}}
+.card{{text-align:center;padding:48px 32px;max-width:400px;background:#fff;border-radius:16px;box-shadow:0 4px 24px rgba(0,0,0,0.08);}}
+.icon{{font-size:48px;color:{color};margin-bottom:16px;}}
+h1{{font-size:22px;color:#1a1a2e;margin:0 0 12px;}}
+p{{font-size:15px;color:#6b7280;line-height:1.6;margin:0;}}
+</style></head><body>
+<div class="card">
+<div class="icon">{icon}</div>
+<h1>{title}</h1>
+<p>{message}</p>
+</div></body></html>"#
+    )
 }
 
 #[utoipa::path(

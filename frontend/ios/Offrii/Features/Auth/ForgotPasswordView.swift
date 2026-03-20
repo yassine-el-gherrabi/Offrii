@@ -296,11 +296,9 @@ struct ForgotPasswordView: View {
     // MARK: - Actions
 
     private func resendCode() async {
-        // Reset the spy/email state so a new code is sent
         viewModel.resetCode = ""
         viewModel.codeError = nil
 
-        // The backend enforces 60s rate limit, but we also show cooldown in UI
         if await viewModel.sendResetCode() {
             resendCount += 1
             startResendCooldown()
@@ -308,11 +306,16 @@ struct ForgotPasswordView: View {
             codeExpiryMinutes = 30
             startExpiryTimer()
 
-            // Hide confirmation after 3 seconds
             DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
                 withAnimation(OffriiAnimation.snappy) {
                     showResendConfirmation = false
                 }
+            }
+        } else {
+            // If rate limited (429), start cooldown anyway so user sees the timer
+            if case .error = viewModel.state {
+                startResendCooldown()
+                viewModel.state = .idle
             }
         }
     }

@@ -499,9 +499,11 @@ impl traits::AuthService for PgAuthService {
                 .query_async(&mut conn)
                 .await;
 
-            // If SET NX failed (key already exists), silently return Ok
+            // If SET NX failed (key already exists), rate limit
             if set.is_err() || !set.unwrap_or(false) {
-                return Ok(());
+                return Err(AppError::TooManyRequests(
+                    "please wait before requesting another code".into(),
+                ));
             }
 
             // Resend rate limit: max 3 per 5 minutes
@@ -519,7 +521,9 @@ impl traits::AuthService for PgAuthService {
                     .await;
             }
             if resend_5m > 3 {
-                return Ok(());
+                return Err(AppError::TooManyRequests(
+                    "too many reset attempts, please try again later".into(),
+                ));
             }
 
             // Resend rate limit: max 10 per day
@@ -537,7 +541,9 @@ impl traits::AuthService for PgAuthService {
                     .await;
             }
             if resend_daily > 10 {
-                return Ok(());
+                return Err(AppError::TooManyRequests(
+                    "daily reset limit reached, please try again tomorrow".into(),
+                ));
             }
         }
 
@@ -638,11 +644,18 @@ impl traits::AuthService for PgAuthService {
         let stored_hash =
             stored_hash.ok_or_else(|| AppError::BadRequest("invalid_or_expired_code".into()))?;
 
-        // Verify code hash — do NOT delete the code (it will be consumed by reset_password)
+        // Verify code hash
         let code_hash = sha256_hex(code);
         if code_hash != stored_hash {
             return Err(AppError::BadRequest("invalid_or_expired_code".into()));
         }
+
+        // Code is valid — extend TTL to give user time for step 3 (new password)
+        let _: Result<(), _> = redis::cmd("EXPIRE")
+            .arg(format!("pwreset:{email}"))
+            .arg(300) // 5 more minutes after code verification
+            .query_async(&mut conn)
+            .await;
 
         Ok(())
     }

@@ -16,23 +16,9 @@ struct OTPField: View {
                     .opacity(0.01)
 
                 // Visual digit boxes
-                HStack(spacing: OffriiTheme.spacingSM) {
-                    // First group of 3
-                    HStack(spacing: OffriiTheme.spacingXS) {
-                        ForEach(0..<3, id: \.self) { index in
-                            digitBox(at: index)
-                        }
-                    }
-
-                    Text("-")
-                        .font(.system(size: 20, weight: .medium, design: .monospaced))
-                        .foregroundColor(OffriiTheme.textMuted)
-
-                    // Second group of 3
-                    HStack(spacing: OffriiTheme.spacingXS) {
-                        ForEach(3..<6, id: \.self) { index in
-                            digitBox(at: index)
-                        }
+                HStack(spacing: OffriiTheme.spacingXS) {
+                    ForEach(0..<6, id: \.self) { index in
+                        digitBox(at: index)
                     }
                 }
             }

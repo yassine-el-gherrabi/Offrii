@@ -98,6 +98,7 @@ async fn main() -> anyhow::Result<()> {
     let email_service: Arc<dyn EmailService> = Arc::new(ResendEmailService::new(
         &config.resend_api_key,
         config.email_from.clone(),
+        config.app_base_url.clone(),
     ));
 
     let oauth_verifier = Arc::new(OAuthVerifier::new(

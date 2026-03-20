@@ -80,13 +80,15 @@ fn cta_button(label: &str, url: &str) -> String {
 pub struct ResendEmailService {
     client: Resend,
     from: String,
+    base_url: String,
 }
 
 impl ResendEmailService {
-    pub fn new(api_key: &str, from: String) -> Self {
+    pub fn new(api_key: &str, from: String, base_url: String) -> Self {
         Self {
             client: Resend::new(api_key),
             from,
+            base_url,
         }
     }
 }
@@ -187,7 +189,7 @@ Votre compte est prêt. Voici ce que vous pouvez faire sur Offrii :
     }
 
     async fn send_verification_email(&self, to: &str, token: &str) -> Result<(), AppError> {
-        let verification_url = format!("https://offrii.com/verify?token={token}");
+        let verification_url = format!("{}/auth/verify-email?token={token}", self.base_url);
 
         let body = format!(
             r#"<h1 style="margin:0 0 8px;font-size:22px;font-weight:700;color:#1a1a2e;">
