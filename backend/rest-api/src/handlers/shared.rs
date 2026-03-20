@@ -139,6 +139,17 @@ fn build_translations() -> HashMap<&'static str, HashMap<&'static str, &'static 
 
 // ── Handlers ──────────────────────────────────────────────────────────
 
+#[utoipa::path(
+    get,
+    path = "/shared/{token}",
+    params(("token" = String, Path, description = "Share link token")),
+    responses(
+        (status = 200, body = SharedViewResponse, description = "JSON response (or HTML if Accept: text/html)"),
+        (status = 404, description = "Link not found"),
+        (status = 410, description = "Link expired or disabled"),
+    ),
+    tag = "Shared"
+)]
 #[tracing::instrument(skip(state, headers))]
 async fn get_shared_view(
     State(state): State<AppState>,
@@ -180,6 +191,19 @@ async fn get_shared_view(
     }
 }
 
+#[utoipa::path(
+    post,
+    path = "/shared/{token}/items/{item_id}/claim",
+    params(
+        ("token" = String, Path, description = "Share link token"),
+        ("item_id" = Uuid, Path, description = "Item ID"),
+    ),
+    responses(
+        (status = 204, description = "Item claimed"),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "Shared"
+)]
 #[tracing::instrument(skip(state))]
 async fn claim_via_share(
     State(state): State<AppState>,
@@ -193,6 +217,19 @@ async fn claim_via_share(
     Ok(StatusCode::NO_CONTENT)
 }
 
+#[utoipa::path(
+    delete,
+    path = "/shared/{token}/items/{item_id}/claim",
+    params(
+        ("token" = String, Path, description = "Share link token"),
+        ("item_id" = Uuid, Path, description = "Item ID"),
+    ),
+    responses(
+        (status = 204, description = "Claim removed"),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "Shared"
+)]
 #[tracing::instrument(skip(state))]
 async fn unclaim_via_share(
     State(state): State<AppState>,
@@ -211,6 +248,19 @@ struct WebClaimRequest {
     name: String,
 }
 
+#[utoipa::path(
+    post,
+    path = "/shared/{token}/items/{item_id}/web-claim",
+    params(
+        ("token" = String, Path, description = "Share link token"),
+        ("item_id" = Uuid, Path, description = "Item ID"),
+    ),
+    request_body = WebClaimRequest,
+    responses(
+        (status = 201, description = "Web claim created"),
+    ),
+    tag = "Shared"
+)]
 #[tracing::instrument(skip(state))]
 async fn web_claim_via_share(
     State(state): State<AppState>,
@@ -241,6 +291,19 @@ struct WebUnclaimRequest {
     web_claim_token: Uuid,
 }
 
+#[utoipa::path(
+    delete,
+    path = "/shared/{token}/items/{item_id}/web-claim",
+    params(
+        ("token" = String, Path, description = "Share link token"),
+        ("item_id" = Uuid, Path, description = "Item ID"),
+    ),
+    request_body = WebUnclaimRequest,
+    responses(
+        (status = 204, description = "Web claim removed"),
+    ),
+    tag = "Shared"
+)]
 #[tracing::instrument(skip(state))]
 async fn web_unclaim_via_share(
     State(state): State<AppState>,

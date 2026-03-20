@@ -108,6 +108,12 @@ use utoipa::openapi::security::{HttpAuthScheme, HttpBuilder, SecurityScheme};
         crate::handlers::share_links::update_share_link,
         // Upload
         crate::handlers::upload::upload_image,
+        // Shared
+        crate::handlers::shared::get_shared_view,
+        crate::handlers::shared::claim_via_share,
+        crate::handlers::shared::unclaim_via_share,
+        crate::handlers::shared::web_claim_via_share,
+        crate::handlers::shared::web_unclaim_via_share,
         // Admin
         crate::handlers::admin::list_pending,
         crate::handlers::admin::approve_wish,
