@@ -369,7 +369,7 @@ struct WishlistShareSheet: View {
         if ruleMode == "all" {
             Label(NSLocalizedString("share.ruleAll", comment: ""), systemImage: "checkmark.seal.fill")
                 .font(OffriiTypography.caption)
-                .foregroundColor(OffriiTheme.success)
+                .foregroundColor(OffriiTheme.primary)
         } else if ruleMode == "categories", let catCount = shareRules[circle.id]?.categoryCount {
             Label(
                 String(format: NSLocalizedString("share.ruleCategories", comment: ""), catCount),
@@ -423,7 +423,7 @@ struct WishlistShareSheet: View {
                 if isRuleAll {
                     Image(systemName: "checkmark.seal.fill")
                         .font(.system(size: 22))
-                        .foregroundColor(OffriiTheme.success)
+                        .foregroundColor(OffriiTheme.primary)
                 } else {
                     Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
                         .font(.system(size: 22))
@@ -570,13 +570,13 @@ struct WishlistShareSheet: View {
 
     private var linkCreatedToast: some View {
         HStack(spacing: OffriiTheme.spacingSM) {
-            Image(systemName: "checkmark.circle.fill").foregroundColor(OffriiTheme.success)
+            Image(systemName: "checkmark.circle.fill").foregroundColor(OffriiTheme.primary)
             Text(NSLocalizedString("share.linkCopied", comment: ""))
-                .font(OffriiTypography.subheadline).foregroundColor(OffriiTheme.success)
+                .font(OffriiTypography.subheadline).foregroundColor(OffriiTheme.primary)
         }
         .frame(maxWidth: .infinity)
         .padding(OffriiTheme.spacingSM)
-        .background(OffriiTheme.success.opacity(0.1))
+        .background(OffriiTheme.primary.opacity(0.1))
         .cornerRadius(OffriiTheme.cornerRadiusSM)
         .padding(.horizontal, OffriiTheme.spacingLG)
         .transition(.move(edge: .top).combined(with: .opacity))
@@ -753,10 +753,10 @@ struct WishlistShareSheet: View {
             Image(systemName: "checkmark.circle.fill")
             Text(message).font(.system(size: 13, weight: .medium))
         }
-        .foregroundColor(OffriiTheme.success)
+        .foregroundColor(OffriiTheme.primary)
         .frame(maxWidth: .infinity)
         .padding(OffriiTheme.spacingSM)
-        .background(OffriiTheme.success.opacity(0.1))
+        .background(OffriiTheme.primary.opacity(0.1))
         .cornerRadius(OffriiTheme.cornerRadiusSM)
         .padding(.horizontal, OffriiTheme.spacingLG)
         .transition(.move(edge: .top).combined(with: .opacity))
