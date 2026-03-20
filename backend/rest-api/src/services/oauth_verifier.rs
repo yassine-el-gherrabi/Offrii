@@ -17,6 +17,7 @@ pub struct OAuthClaims {
     pub sub: String,
     pub email: String,
     pub name: Option<String>,
+    pub picture: Option<String>,
 }
 
 /// JSON Web Key as returned by Google/Apple JWKS endpoints.
@@ -41,6 +42,7 @@ struct GoogleClaims {
     email: String,
     email_verified: Option<bool>,
     name: Option<String>,
+    picture: Option<String>,
     iss: String,
     aud: String,
 }
@@ -170,6 +172,7 @@ impl OAuthVerifier {
             sub: claims.sub,
             email: claims.email,
             name: claims.name,
+            picture: claims.picture,
         })
     }
 
@@ -199,7 +202,8 @@ impl OAuthVerifier {
         Ok(OAuthClaims {
             sub: claims.sub,
             email: claims.email.unwrap_or_default(),
-            name: None, // Apple doesn't include name in the JWT
+            name: None,    // Apple doesn't include name in the JWT
+            picture: None, // Apple doesn't provide avatar in the JWT
         })
     }
 }

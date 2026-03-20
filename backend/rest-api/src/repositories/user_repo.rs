@@ -116,6 +116,7 @@ impl traits::UserRepo for PgUserRepo {
         display_name: Option<&str>,
         oauth_provider: &str,
         oauth_provider_id: &str,
+        avatar_url: Option<&str>,
     ) -> Result<User> {
         create_oauth_user(
             &self.pool,
@@ -124,6 +125,7 @@ impl traits::UserRepo for PgUserRepo {
             display_name,
             oauth_provider,
             oauth_provider_id,
+            avatar_url,
         )
         .await
     }
@@ -376,10 +378,11 @@ pub(crate) async fn create_oauth_user(
     display_name: Option<&str>,
     oauth_provider: &str,
     oauth_provider_id: &str,
+    avatar_url: Option<&str>,
 ) -> Result<User> {
     let sql = format!(
-        "INSERT INTO users (email, username, display_name, oauth_provider, oauth_provider_id, email_verified) \
-         VALUES ($1, $2, $3, $4, $5, true) \
+        "INSERT INTO users (email, username, display_name, oauth_provider, oauth_provider_id, email_verified, avatar_url) \
+         VALUES ($1, $2, $3, $4, $5, true, $6) \
          RETURNING {USER_COLS}"
     );
     let user = sqlx::query_as::<_, User>(&sql)
@@ -388,6 +391,7 @@ pub(crate) async fn create_oauth_user(
         .bind(display_name)
         .bind(oauth_provider)
         .bind(oauth_provider_id)
+        .bind(avatar_url)
         .fetch_one(exec)
         .await?;
 

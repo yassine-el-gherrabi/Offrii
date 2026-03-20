@@ -314,6 +314,8 @@ async fn main() -> anyhow::Result<()> {
         .route("/join/{token}", get(circles::join_page))
         .route("/favicon.png", get(serve_favicon))
         .route("/favicon.ico", get(serve_favicon))
+        .route("/legal/privacy", get(legal_privacy))
+        .route("/legal/terms", get(legal_terms))
         .nest("/me", friends::router())
         .nest("/users", friends::search_router())
         .nest("/community/wishes", community_wishes::router())
@@ -390,4 +392,125 @@ async fn serve_favicon() -> impl IntoResponse {
         ],
         FAVICON_PNG,
     )
+}
+
+async fn legal_privacy() -> axum::response::Html<String> {
+    axum::response::Html(
+        r#"<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Politique de confidentialité — Offrii</title>
+<style>
+body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 680px; margin: 40px auto; padding: 0 20px; color: #1a1a1a; line-height: 1.7; }}
+h1 {{ color: #FF6B6B; font-size: 24px; }}
+h2 {{ color: #333; font-size: 18px; margin-top: 32px; }}
+p {{ margin: 12px 0; }}
+.date {{ color: #999; font-size: 14px; }}
+</style>
+</head>
+<body>
+<h1>Politique de confidentialité</h1>
+<p class="date">Dernière mise à jour : 20 mars 2026</p>
+
+<h2>1. Données collectées</h2>
+<p>Offrii collecte les données suivantes lors de votre utilisation de l'application :</p>
+<ul>
+<li><strong>Compte</strong> : adresse email, nom d'affichage, photo de profil (optionnelle)</li>
+<li><strong>Listes de souhaits</strong> : vos envies, catégories, priorités, liens et images associés</li>
+<li><strong>Cercles</strong> : les groupes que vous créez ou rejoignez, et les membres associés</li>
+<li><strong>Entraide</strong> : les besoins communautaires que vous publiez ou auxquels vous contribuez</li>
+<li><strong>Messages</strong> : les messages échangés dans le cadre de l'entraide</li>
+</ul>
+
+<h2>2. Utilisation des données</h2>
+<p>Vos données sont utilisées exclusivement pour :</p>
+<ul>
+<li>Le fonctionnement de l'application (authentification, partage, notifications)</li>
+<li>L'envoi d'emails transactionnels (vérification, réinitialisation de mot de passe)</li>
+<li>La modération du contenu communautaire (via analyse automatisée)</li>
+</ul>
+
+<h2>3. Partage des données</h2>
+<p>Vos données ne sont jamais vendues. Elles sont partagées uniquement avec :</p>
+<ul>
+<li><strong>Les membres de vos cercles</strong> : vos envies partagées et votre profil public</li>
+<li><strong>Les utilisateurs de l'entraide</strong> : vos besoins publiés et messages associés</li>
+<li><strong>Nos sous-traitants techniques</strong> : hébergement (Hetzner, Allemagne), stockage (Cloudflare R2), emails (Resend)</li>
+</ul>
+
+<h2>4. Stockage et sécurité</h2>
+<p>Vos données sont stockées sur des serveurs sécurisés en Europe (Hetzner, Allemagne). Les communications sont chiffrées en transit (TLS). Les mots de passe sont hachés avec Argon2.</p>
+
+<h2>5. Vos droits</h2>
+<p>Conformément au RGPD, vous pouvez :</p>
+<ul>
+<li>Accéder à vos données depuis votre profil dans l'application</li>
+<li>Modifier ou supprimer vos données à tout moment</li>
+<li>Supprimer votre compte (suppression définitive de toutes vos données)</li>
+<li>Nous contacter : <a href="mailto:contact@offrii.com">contact@offrii.com</a></li>
+</ul>
+
+<h2>6. Connexion via Google / Apple</h2>
+<p>Si vous utilisez la connexion Google ou Apple, nous recevons uniquement votre adresse email, votre nom et votre photo de profil. Nous n'accédons à aucune autre donnée de votre compte Google ou Apple.</p>
+
+<p style="margin-top:40px;color:#999;font-size:13px;">Offrii — Offre, partage, fais plaisir.<br>Contact : <a href="mailto:contact@offrii.com" style="color:#FF6B6B;">contact@offrii.com</a></p>
+</body>
+</html>"#.to_string())
+}
+
+async fn legal_terms() -> axum::response::Html<String> {
+    axum::response::Html(
+        r#"<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Conditions d'utilisation — Offrii</title>
+<style>
+body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 680px; margin: 40px auto; padding: 0 20px; color: #1a1a1a; line-height: 1.7; }}
+h1 {{ color: #FF6B6B; font-size: 24px; }}
+h2 {{ color: #333; font-size: 18px; margin-top: 32px; }}
+p {{ margin: 12px 0; }}
+.date {{ color: #999; font-size: 14px; }}
+</style>
+</head>
+<body>
+<h1>Conditions d'utilisation</h1>
+<p class="date">Dernière mise à jour : 20 mars 2026</p>
+
+<h2>1. Objet</h2>
+<p>Offrii est une application de listes de souhaits et d'entraide communautaire. Ces conditions régissent votre utilisation du service.</p>
+
+<h2>2. Inscription</h2>
+<p>Vous devez fournir une adresse email valide. Vous êtes responsable de la confidentialité de vos identifiants. Un seul compte par personne.</p>
+
+<h2>3. Utilisation acceptable</h2>
+<p>Vous vous engagez à :</p>
+<ul>
+<li>Ne pas publier de contenu illicite, offensant ou trompeur</li>
+<li>Ne pas usurper l'identité d'autrui</li>
+<li>Ne pas utiliser l'application à des fins commerciales non autorisées</li>
+<li>Respecter les autres utilisateurs dans les échanges communautaires</li>
+</ul>
+
+<h2>4. Contenu utilisateur</h2>
+<p>Vous conservez la propriété de votre contenu. En le publiant, vous accordez à Offrii une licence limitée pour l'afficher dans le cadre du service. Le contenu signalé peut être modéré ou supprimé.</p>
+
+<h2>5. Entraide communautaire</h2>
+<p>L'entraide est un service de mise en relation. Offrii n'est pas responsable des engagements pris entre utilisateurs. Les besoins publiés doivent être légitimes et respectueux.</p>
+
+<h2>6. Suppression de compte</h2>
+<p>Vous pouvez supprimer votre compte à tout moment depuis l'application. La suppression est définitive et entraîne la suppression de toutes vos données.</p>
+
+<h2>7. Limitation de responsabilité</h2>
+<p>Offrii est fourni "tel quel". Nous ne garantissons pas la disponibilité permanente du service. Nous ne sommes pas responsables des échanges entre utilisateurs.</p>
+
+<h2>8. Modification</h2>
+<p>Ces conditions peuvent être modifiées. Les utilisateurs seront informés des changements significatifs.</p>
+
+<p style="margin-top:40px;color:#999;font-size:13px;">Offrii — Offre, partage, fais plaisir.<br>Contact : <a href="mailto:contact@offrii.com" style="color:#FF6B6B;">contact@offrii.com</a></p>
+</body>
+</html>"#.to_string())
 }

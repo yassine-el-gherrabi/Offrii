@@ -297,7 +297,7 @@ async fn login_wrong_password_401() {
     app.setup_user(TEST_EMAIL, TEST_PASSWORD).await;
 
     let body = serde_json::json!({
-        "email": TEST_EMAIL,
+        "identifier": TEST_EMAIL,
         "password": "wrongpassword",
     });
     let (status, body) = app.post_json("/auth/login", &body).await;

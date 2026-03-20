@@ -86,6 +86,7 @@ pub trait UserRepo: Send + Sync {
         display_name: Option<&str>,
         oauth_provider: &str,
         oauth_provider_id: &str,
+        avatar_url: Option<&str>,
     ) -> Result<User>;
 
     async fn find_by_oauth(&self, provider: &str, provider_id: &str) -> Result<Option<User>>;

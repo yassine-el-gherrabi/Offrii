@@ -796,8 +796,19 @@ impl traits::AuthService for PgAuthService {
             .await
             .map_err(AppError::Internal)?;
 
-        let (user, is_new_user) = if let Some(user) = existing {
+        let (user, is_new_user) = if let Some(mut user) = existing {
             // Existing OAuth user → login
+            // Backfill avatar from Google if user has none
+            if user.avatar_url.is_none()
+                && let Some(ref picture) = claims.picture
+            {
+                let _ = sqlx::query("UPDATE users SET avatar_url = $1 WHERE id = $2")
+                    .bind(picture.as_str())
+                    .bind(user.id)
+                    .execute(&self.pool)
+                    .await;
+                user.avatar_url = Some(picture.clone());
+            }
             (user, false)
         } else {
             // 3. Check if email already exists → link OAuth
@@ -836,6 +847,7 @@ impl traits::AuthService for PgAuthService {
                     name.as_deref(),
                     provider,
                     &claims.sub,
+                    claims.picture.as_deref(),
                 )
                 .await
                 .map_err(|e| {
