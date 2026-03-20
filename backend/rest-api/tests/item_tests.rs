@@ -1814,3 +1814,128 @@ async fn list_items_consistent_after_mutations() {
     let (_, body) = app.get_with_auth("/items", &token).await;
     assert_eq!(body["pagination"]["total"], 0);
 }
+
+// ═══════════════════════════════════════════════════════════════════════
+// Secondary sort: same priority ordered by created_at DESC
+// ═══════════════════════════════════════════════════════════════════════
+
+#[tokio::test]
+async fn sort_priority_secondary_by_created_at() {
+    let app = TestApp::new().await;
+    let token = app.setup_user_token(TEST_EMAIL, TEST_PASSWORD).await;
+
+    // Create 3 items with same priority, small delays for distinct created_at
+    app.create_item(
+        &token,
+        &serde_json::json!({ "name": "First", "priority": 2 }),
+    )
+    .await;
+    tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+    app.create_item(
+        &token,
+        &serde_json::json!({ "name": "Second", "priority": 2 }),
+    )
+    .await;
+    tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+    app.create_item(
+        &token,
+        &serde_json::json!({ "name": "Third", "priority": 2 }),
+    )
+    .await;
+
+    // Sort by priority DESC — within same priority, newest first (created_at DESC)
+    let (_, body) = app
+        .get_with_auth("/items?sort=priority&order=desc", &token)
+        .await;
+    let items = body["data"].as_array().unwrap();
+    assert_eq!(
+        items[0]["name"], "Third",
+        "newest item first within same priority"
+    );
+    assert_eq!(items[1]["name"], "Second");
+    assert_eq!(
+        items[2]["name"], "First",
+        "oldest item last within same priority"
+    );
+}
+
+#[tokio::test]
+async fn sort_priority_asc_secondary_by_created_at() {
+    let app = TestApp::new().await;
+    let token = app.setup_user_token(TEST_EMAIL, TEST_PASSWORD).await;
+
+    // Priority 1 items (created in order: A then B)
+    app.create_item(
+        &token,
+        &serde_json::json!({ "name": "LowA", "priority": 1 }),
+    )
+    .await;
+    tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+    app.create_item(
+        &token,
+        &serde_json::json!({ "name": "LowB", "priority": 1 }),
+    )
+    .await;
+    // Priority 3 item
+    app.create_item(
+        &token,
+        &serde_json::json!({ "name": "High", "priority": 3 }),
+    )
+    .await;
+
+    // Sort by priority ASC — low first, within same priority newest first
+    let (_, body) = app
+        .get_with_auth("/items?sort=priority&order=asc", &token)
+        .await;
+    let items = body["data"].as_array().unwrap();
+    assert_eq!(items[0]["name"], "LowB", "newest low-priority first");
+    assert_eq!(items[1]["name"], "LowA", "oldest low-priority second");
+    assert_eq!(items[2]["name"], "High", "high priority last in ASC");
+}
+
+#[tokio::test]
+async fn sort_name_secondary_by_created_at() {
+    let app = TestApp::new().await;
+    let token = app.setup_user_token(TEST_EMAIL, TEST_PASSWORD).await;
+
+    // Two items with same name
+    app.create_item(&token, &serde_json::json!({ "name": "Same" }))
+        .await;
+    tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+    app.create_item(&token, &serde_json::json!({ "name": "Same" }))
+        .await;
+
+    // Sort by name — same names should be ordered by created_at DESC
+    let (_, body) = app
+        .get_with_auth("/items?sort=name&order=asc", &token)
+        .await;
+    let items = body["data"].as_array().unwrap();
+    assert_eq!(items.len(), 2);
+    // Newer one should come first within same name
+    let first_created = items[0]["created_at"].as_str().unwrap();
+    let second_created = items[1]["created_at"].as_str().unwrap();
+    assert!(
+        first_created > second_created,
+        "newer item first within same name"
+    );
+}
+
+#[tokio::test]
+async fn sort_created_at_no_secondary_sort() {
+    let app = TestApp::new().await;
+    let token = app.setup_user_token(TEST_EMAIL, TEST_PASSWORD).await;
+
+    app.create_item(&token, &serde_json::json!({ "name": "Old" }))
+        .await;
+    tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+    app.create_item(&token, &serde_json::json!({ "name": "New" }))
+        .await;
+
+    // Sort by created_at DESC — should NOT add secondary sort
+    let (_, body) = app
+        .get_with_auth("/items?sort=created_at&order=desc", &token)
+        .await;
+    let items = body["data"].as_array().unwrap();
+    assert_eq!(items[0]["name"], "New");
+    assert_eq!(items[1]["name"], "Old");
+}

@@ -296,6 +296,10 @@ pub(crate) async fn list(
     qb.push(sort);
     qb.push(" ");
     qb.push(order);
+    // Secondary sort for deterministic ordering within same primary value
+    if sort != "created_at" {
+        qb.push(", created_at DESC");
+    }
 
     qb.push(" LIMIT ");
     qb.push_bind(limit);
