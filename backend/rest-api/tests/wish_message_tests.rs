@@ -8,11 +8,13 @@ use uuid::Uuid;
 // ── Helpers ───────────────────────────────────────────────────────────
 
 async fn age_account(app: &TestApp, email: &str) {
-    sqlx::query("UPDATE users SET created_at = NOW() - INTERVAL '48 hours' WHERE email = $1")
-        .bind(email)
-        .execute(&app.db)
-        .await
-        .unwrap();
+    sqlx::query(
+        "UPDATE users SET created_at = NOW() - INTERVAL '48 hours', email_verified = true WHERE email = $1",
+    )
+    .bind(email)
+    .execute(&app.db)
+    .await
+    .unwrap();
 }
 
 async fn setup_aged_user_with_name(app: &TestApp, email: &str, name: &str) -> String {

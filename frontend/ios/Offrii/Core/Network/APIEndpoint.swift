@@ -37,6 +37,8 @@ enum APIEndpoint {
     case resetPassword(ResetPasswordBody)
     case googleAuth(GoogleAuthBody)
     case appleAuth(AppleAuthBody)
+    case verifyEmail(VerifyEmailBody)
+    case resendVerification
 
     // MARK: Items
 
@@ -169,6 +171,8 @@ extension APIEndpoint {
         case .resetPassword:                    return "/auth/reset-password"
         case .googleAuth:                       return "/auth/google"
         case .appleAuth:                        return "/auth/apple"
+        case .verifyEmail:                      return "/auth/verify-email"
+        case .resendVerification:               return "/auth/resend-verification"
 
         // Items
         case .listItems:                        return "/items"
@@ -286,6 +290,8 @@ extension APIEndpoint {
         case .resetPassword:    return .POST
         case .googleAuth:       return .POST
         case .appleAuth:        return .POST
+        case .verifyEmail:      return .POST
+        case .resendVerification: return .POST
 
         // Items
         case .listItems:        return .GET
@@ -468,6 +474,7 @@ extension APIEndpoint {
         case .resetPassword(let body):      return body
         case .googleAuth(let body):         return body
         case .appleAuth(let body):          return body
+        case .verifyEmail(let body):        return body
         case .createItem(let body):         return body
         case .updateItem(_, let body):      return body
         case .updateProfile(let body):      return body

@@ -256,6 +256,7 @@ pub trait EmailService: Send + Sync {
         to: &str,
         display_name: Option<&str>,
     ) -> Result<(), AppError>;
+    async fn send_verification_email(&self, to: &str, token: &str) -> Result<(), AppError>;
 }
 
 #[async_trait]
@@ -300,6 +301,10 @@ pub trait AuthService: Send + Sync {
         id_token: &str,
         display_name: Option<&str>,
     ) -> Result<AuthResponse, AppError>;
+
+    async fn verify_email(&self, token: &str) -> Result<(), AppError>;
+
+    async fn resend_verification(&self, user_id: Uuid) -> Result<(), AppError>;
 }
 
 #[allow(clippy::too_many_arguments)]

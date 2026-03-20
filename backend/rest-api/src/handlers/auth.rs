@@ -8,7 +8,7 @@ use crate::AppState;
 use crate::dto::auth::{
     AppleAuthRequest, AuthResponse, ChangePasswordRequest, ForgotPasswordRequest,
     GoogleAuthRequest, LoginRequest, RefreshRequest, RefreshResponse, RegisterRequest,
-    ResetPasswordRequest, VerifyResetCodeRequest,
+    ResetPasswordRequest, VerifyEmailRequest, VerifyResetCodeRequest,
 };
 use crate::errors::AppError;
 use crate::middleware::AuthUser;
@@ -28,6 +28,8 @@ pub fn router() -> Router<AppState> {
         .route("/forgot-password", post(forgot_password))
         .route("/verify-reset-code", post(verify_reset_code))
         .route("/reset-password", post(reset_password))
+        .route("/verify-email", post(verify_email))
+        .route("/resend-verification", post(resend_verification))
         .route("/google", post(google_auth))
         .route("/apple", post(apple_auth))
 }
@@ -140,6 +142,28 @@ async fn reset_password(
         .auth
         .reset_password(&req.email, &req.code, &req.new_password)
         .await?;
+
+    Ok(StatusCode::NO_CONTENT)
+}
+
+#[tracing::instrument(skip(state, req))]
+async fn verify_email(
+    State(state): State<AppState>,
+    Json(req): Json<VerifyEmailRequest>,
+) -> Result<StatusCode, AppError> {
+    validate_request(&req)?;
+
+    state.auth.verify_email(&req.token).await?;
+
+    Ok(StatusCode::OK)
+}
+
+#[tracing::instrument(skip(state, auth_user))]
+async fn resend_verification(
+    State(state): State<AppState>,
+    auth_user: AuthUser,
+) -> Result<StatusCode, AppError> {
+    state.auth.resend_verification(auth_user.user_id).await?;
 
     Ok(StatusCode::NO_CONTENT)
 }

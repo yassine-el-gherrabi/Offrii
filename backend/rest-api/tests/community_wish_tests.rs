@@ -8,11 +8,13 @@ use uuid::Uuid;
 // ── Helpers ───────────────────────────────────────────────────────────
 
 async fn age_account(app: &TestApp, email: &str) {
-    sqlx::query("UPDATE users SET created_at = NOW() - INTERVAL '48 hours' WHERE email = $1")
-        .bind(email)
-        .execute(&app.db)
-        .await
-        .unwrap();
+    sqlx::query(
+        "UPDATE users SET created_at = NOW() - INTERVAL '48 hours', email_verified = true WHERE email = $1",
+    )
+    .bind(email)
+    .execute(&app.db)
+    .await
+    .unwrap();
 }
 
 async fn make_admin(app: &TestApp, email: &str) {
@@ -4058,4 +4060,166 @@ async fn reopen_closed_wish_not_owner_403() {
         )
         .await;
     assert_eq!(status, StatusCode::FORBIDDEN);
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// Email verification requirement
+// ═══════════════════════════════════════════════════════════════════════
+
+async fn setup_aged_unverified_user(app: &TestApp, email: &str) -> String {
+    let token = app.setup_user_token(email, TEST_PASSWORD).await;
+    sqlx::query(
+        "UPDATE users SET created_at = NOW() - INTERVAL '48 hours', email_verified = false WHERE email = $1",
+    )
+    .bind(email)
+    .execute(&app.db)
+    .await
+    .unwrap();
+    token
+}
+
+#[tokio::test]
+async fn create_wish_email_not_verified_403() {
+    let app = TestApp::new().await;
+    let token = setup_aged_unverified_user(&app, "unverified@test.com").await;
+
+    let body = json!({
+        "title": "Need help",
+        "category": "other",
+        "is_anonymous": true,
+    });
+    let (status, _) = app
+        .post_json_with_auth("/community/wishes", &body, &token)
+        .await;
+    assert_eq!(
+        status,
+        StatusCode::FORBIDDEN,
+        "unverified email must block wish creation"
+    );
+}
+
+#[tokio::test]
+async fn offer_wish_email_not_verified_403() {
+    let app = TestApp::new().await;
+    let owner_token = setup_aged_user(&app, "owner@test.com").await;
+    let wish_id = create_open_wish(&app, &owner_token).await;
+
+    let unverified_token = setup_aged_unverified_user(&app, "unverified@test.com").await;
+    let (status, _) = app
+        .post_with_auth(
+            &format!("/community/wishes/{wish_id}/offer"),
+            &unverified_token,
+        )
+        .await;
+    assert_eq!(
+        status,
+        StatusCode::FORBIDDEN,
+        "unverified email must block offering help"
+    );
+}
+
+#[tokio::test]
+async fn report_wish_email_not_verified_403() {
+    let app = TestApp::new().await;
+    let owner_token = setup_aged_user(&app, "owner@test.com").await;
+    let wish_id = create_open_wish(&app, &owner_token).await;
+
+    let unverified_token = setup_aged_unverified_user(&app, "unverified@test.com").await;
+    let body = json!({ "reason": "spam" });
+    let (status, _) = app
+        .post_json_with_auth(
+            &format!("/community/wishes/{wish_id}/report"),
+            &body,
+            &unverified_token,
+        )
+        .await;
+    assert_eq!(
+        status,
+        StatusCode::FORBIDDEN,
+        "unverified email must block reporting"
+    );
+}
+
+#[tokio::test]
+async fn create_wish_email_verified_succeeds() {
+    let app = TestApp::new().await;
+    let token = setup_aged_user(&app, "verified@test.com").await;
+
+    let body = json!({
+        "title": "Need help verified",
+        "category": "other",
+        "is_anonymous": true,
+    });
+    let (status, _) = app
+        .post_json_with_auth("/community/wishes", &body, &token)
+        .await;
+    assert_eq!(
+        status,
+        StatusCode::CREATED,
+        "verified email must allow wish creation"
+    );
+}
+
+#[tokio::test]
+async fn verify_email_endpoint_success() {
+    let app = TestApp::new().await;
+    app.register_user_with_name("newuser@test.com", TEST_PASSWORD, "NewUser")
+        .await;
+
+    let token: (String,) = sqlx::query_as(
+        "SELECT token FROM email_verification_tokens \
+         WHERE user_id = (SELECT id FROM users WHERE email = $1)",
+    )
+    .bind("newuser@test.com")
+    .fetch_one(&app.db)
+    .await
+    .unwrap();
+
+    let body = json!({ "token": token.0 });
+    let (status, _) = app.post_json("/auth/verify-email", &body).await;
+    assert_eq!(status, StatusCode::OK);
+
+    let verified: (bool,) = sqlx::query_as("SELECT email_verified FROM users WHERE email = $1")
+        .bind("newuser@test.com")
+        .fetch_one(&app.db)
+        .await
+        .unwrap();
+    assert!(verified.0, "email must be verified after token validation");
+}
+
+#[tokio::test]
+async fn verify_email_invalid_token_400() {
+    let app = TestApp::new().await;
+    let body = json!({ "token": "invalid_token_that_does_not_exist" });
+    let (status, _) = app.post_json("/auth/verify-email", &body).await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+}
+
+#[tokio::test]
+async fn resend_verification_already_verified_400() {
+    let app = TestApp::new().await;
+    let token = setup_aged_user(&app, "alreadyv@test.com").await;
+
+    let (status, _) = app
+        .post_with_auth("/auth/resend-verification", &token)
+        .await;
+    assert_eq!(
+        status,
+        StatusCode::BAD_REQUEST,
+        "already verified user should get 400"
+    );
+}
+
+#[tokio::test]
+async fn user_profile_includes_email_verified() {
+    let app = TestApp::new().await;
+    let token = setup_aged_user(&app, "profile@test.com").await;
+
+    let (status, body) = app.get_with_auth("/users/me", &token).await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(
+        body["email_verified"].as_bool(),
+        Some(true),
+        "/me must include email_verified field"
+    );
 }

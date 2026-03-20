@@ -60,4 +60,24 @@ impl traits::EmailService for ResendEmailService {
 
         Ok(())
     }
+
+    async fn send_verification_email(&self, to: &str, token: &str) -> Result<(), AppError> {
+        let verification_url = format!("https://offrii.com/verify?token={token}");
+        let email =
+            CreateEmailBaseOptions::new(&self.from, [to], "Verify your Offrii email address")
+                .with_html(&format!(
+                    "<h2>Verify your email</h2>\
+             <p>Click the link below to verify your email address:</p>\
+             <p><a href=\"{verification_url}\">{verification_url}</a></p>\
+             <p>This link expires in 24 hours.</p>"
+                ));
+
+        self.client
+            .emails
+            .send(email)
+            .await
+            .map_err(|e| AppError::Internal(anyhow::anyhow!("email send failed: {e}")))?;
+
+        Ok(())
+    }
 }

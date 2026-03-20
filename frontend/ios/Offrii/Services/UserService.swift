@@ -69,4 +69,14 @@ final class UserService: Sendable {
     func exportData() async throws -> UserDataExport {
         try await client.request(.exportData)
     }
+
+    // MARK: - Email Verification
+
+    func verifyEmail(token: String) async throws {
+        try await client.requestVoid(.verifyEmail(VerifyEmailBody(token: token)))
+    }
+
+    func resendVerification() async throws {
+        try await client.requestVoid(.resendVerification)
+    }
 }

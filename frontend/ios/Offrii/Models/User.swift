@@ -10,6 +10,7 @@ struct User: Codable, Identifiable, Equatable {
     let reminderTime: String
     let timezone: String
     let locale: String
+    let emailVerified: Bool?
     let createdAt: Date
     let updatedAt: Date
 
@@ -20,6 +21,7 @@ struct User: Codable, Identifiable, Equatable {
         case reminderFreq = "reminder_freq"
         case reminderTime = "reminder_time"
         case timezone, locale
+        case emailVerified = "email_verified"
         case createdAt = "created_at"
         case updatedAt = "updated_at"
     }

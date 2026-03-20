@@ -19,6 +19,12 @@ use crate::utils::password_policy::{self, PasswordPolicyViolation};
 use crate::utils::token_hash::sha256_hex;
 use crate::utils::username::{is_reserved_username, is_valid_username};
 
+/// Generate a cryptographically random 64-character hex token for email verification.
+fn generate_verification_token() -> String {
+    let bytes: [u8; 32] = rand::random();
+    bytes.iter().map(|b| format!("{b:02x}")).collect()
+}
+
 /// Maximum number of active refresh tokens kept per user.
 const MAX_REFRESH_TOKENS_PER_USER: i64 = 5;
 
@@ -208,6 +214,24 @@ impl traits::AuthService for PgAuthService {
         tokio::spawn(async move {
             if let Err(e) = email_svc.send_welcome_email(&to, name.as_deref()).await {
                 tracing::error!("failed to send welcome email: {e}");
+            }
+        });
+
+        // Generate email verification token and send verification email
+        let verification_token = generate_verification_token();
+        sqlx::query("INSERT INTO email_verification_tokens (user_id, token) VALUES ($1, $2)")
+            .bind(user.id)
+            .bind(&verification_token)
+            .execute(&self.pool)
+            .await
+            .map_err(|e| AppError::Internal(e.into()))?;
+
+        let email_svc = self.email_service.clone();
+        let to = email.clone();
+        let token = verification_token.clone();
+        tokio::spawn(async move {
+            if let Err(e) = email_svc.send_verification_email(&to, &token).await {
+                tracing::error!("failed to send verification email: {e}");
             }
         });
 
@@ -872,6 +896,117 @@ impl traits::AuthService for PgAuthService {
             .revoke_all_for_user(user_id)
             .await
             .map_err(AppError::Internal)?;
+
+        Ok(())
+    }
+
+    #[tracing::instrument(skip(self, token))]
+    async fn verify_email(&self, token: &str) -> Result<(), AppError> {
+        // Look up the token and check expiry in a single query
+        let row: Option<(Uuid, chrono::DateTime<Utc>)> = sqlx::query_as(
+            "SELECT user_id, expires_at FROM email_verification_tokens WHERE token = $1",
+        )
+        .bind(token)
+        .fetch_optional(&self.pool)
+        .await
+        .map_err(|e| AppError::Internal(e.into()))?;
+
+        let (user_id, expires_at) = row
+            .ok_or_else(|| AppError::BadRequest("invalid or expired verification token".into()))?;
+
+        if Utc::now() > expires_at {
+            // Clean up expired token
+            sqlx::query("DELETE FROM email_verification_tokens WHERE token = $1")
+                .bind(token)
+                .execute(&self.pool)
+                .await
+                .map_err(|e| AppError::Internal(e.into()))?;
+            return Err(AppError::BadRequest(
+                "invalid or expired verification token".into(),
+            ));
+        }
+
+        // Set email_verified = true and delete the token atomically
+        let mut tx = self
+            .pool
+            .begin()
+            .await
+            .map_err(|e| AppError::Internal(e.into()))?;
+
+        sqlx::query("UPDATE users SET email_verified = true WHERE id = $1")
+            .bind(user_id)
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| AppError::Internal(e.into()))?;
+
+        sqlx::query("DELETE FROM email_verification_tokens WHERE token = $1")
+            .bind(token)
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| AppError::Internal(e.into()))?;
+
+        tx.commit()
+            .await
+            .map_err(|e| AppError::Internal(e.into()))?;
+
+        Ok(())
+    }
+
+    #[tracing::instrument(skip(self))]
+    async fn resend_verification(&self, user_id: Uuid) -> Result<(), AppError> {
+        // Fetch user to check email_verified status
+        let user = self
+            .user_repo
+            .find_by_id(user_id)
+            .await
+            .map_err(AppError::Internal)?
+            .ok_or_else(|| AppError::NotFound("user not found".into()))?;
+
+        if user.email_verified {
+            return Err(AppError::BadRequest("email already verified".into()));
+        }
+
+        // Rate limit: check if a token was created in the last 5 minutes
+        let recent_token_exists: bool = sqlx::query_scalar(
+            "SELECT EXISTS(SELECT 1 FROM email_verification_tokens \
+             WHERE user_id = $1 AND created_at > NOW() - INTERVAL '5 minutes')",
+        )
+        .bind(user_id)
+        .fetch_one(&self.pool)
+        .await
+        .map_err(|e| AppError::Internal(e.into()))?;
+
+        if recent_token_exists {
+            return Err(AppError::TooManyRequests(
+                "please wait before requesting another verification email".into(),
+            ));
+        }
+
+        // Delete old tokens for this user
+        sqlx::query("DELETE FROM email_verification_tokens WHERE user_id = $1")
+            .bind(user_id)
+            .execute(&self.pool)
+            .await
+            .map_err(|e| AppError::Internal(e.into()))?;
+
+        // Generate new token and insert
+        let token = generate_verification_token();
+        sqlx::query("INSERT INTO email_verification_tokens (user_id, token) VALUES ($1, $2)")
+            .bind(user_id)
+            .bind(&token)
+            .execute(&self.pool)
+            .await
+            .map_err(|e| AppError::Internal(e.into()))?;
+
+        // Send verification email (fire-and-forget)
+        let email_svc = self.email_service.clone();
+        let to = user.email.clone();
+        let token_clone = token.clone();
+        tokio::spawn(async move {
+            if let Err(e) = email_svc.send_verification_email(&to, &token_clone).await {
+                tracing::error!("failed to send verification email: {e}");
+            }
+        });
 
         Ok(())
     }

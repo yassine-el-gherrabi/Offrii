@@ -82,6 +82,12 @@ pub struct VerifyResetCodeRequest {
 }
 
 #[derive(Debug, Deserialize, Validate)]
+pub struct VerifyEmailRequest {
+    #[validate(length(min = 1, max = 64, message = "token is required"))]
+    pub token: String,
+}
+
+#[derive(Debug, Deserialize, Validate)]
 pub struct GoogleAuthRequest {
     #[validate(length(min = 1, message = "id_token is required"))]
     pub id_token: String,
@@ -125,6 +131,7 @@ pub struct UserResponse {
     pub email: String,
     pub username: String,
     pub display_name: Option<String>,
+    pub email_verified: bool,
     pub created_at: DateTime<Utc>,
 }
 
@@ -135,6 +142,7 @@ impl From<&User> for UserResponse {
             email: u.email.clone(),
             username: u.username.clone(),
             display_name: u.display_name.clone(),
+            email_verified: u.email_verified,
             created_at: u.created_at,
         }
     }

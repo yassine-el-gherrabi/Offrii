@@ -13,8 +13,29 @@ struct EntraideView: View {
     @State private var reportWishId: UUID?
     @State private var searchQuery = ""
     @State private var showWishLimitAlert = false
+    @State private var showEligibilityAlert = false
     @State private var sortField = "created_at"
     @State private var sortOrder = "desc"
+
+    private var isAccountTooRecent: Bool {
+        guard let user = authManager.currentUser else { return true }
+        return Date().timeIntervalSince(user.createdAt) < 24 * 3600
+    }
+
+    private var isEmailVerified: Bool {
+        authManager.currentUser?.emailVerified ?? true
+    }
+
+    private var isEligible: Bool {
+        !isAccountTooRecent && isEmailVerified
+    }
+
+    private var eligibilityMessage: String {
+        if isAccountTooRecent {
+            return NSLocalizedString("entraide.eligibility.tooRecent", comment: "")
+        }
+        return NSLocalizedString("entraide.eligibility.emailNotVerified", comment: "")
+    }
 
     private var segmentLabel: String {
         switch selectedSegment {
@@ -78,6 +99,11 @@ struct EntraideView: View {
                                 .padding(.horizontal, OffriiTheme.spacingBase)
                                 .padding(.bottom, 2)
 
+                            // Eligibility banner
+                            if !isEligible {
+                                eligibilityBanner
+                            }
+
                             categoryChipsBar
                             statsBar
                         }
@@ -93,9 +119,13 @@ struct EntraideView: View {
                 }
             }
 
-            // FAB
-            if selectedSegment == 0 || selectedSegment == 1 {
+            // FAB (hidden when account too recent, shows alert when email not verified)
+            if (selectedSegment == 0 || selectedSegment == 1) && !isAccountTooRecent {
                 OffriiFloatingActionButton(icon: "plus") {
+                    if !isEmailVerified {
+                        showEligibilityAlert = true
+                        return
+                    }
                     let activeCount = myNeedsViewModel.wishes.filter {
                         $0.status == .open || $0.status == .matched || $0.status == .pending
                     }.count
@@ -179,6 +209,18 @@ struct EntraideView: View {
             Button(NSLocalizedString("common.ok", comment: ""), role: .cancel) {}
         } message: {
             Text(NSLocalizedString("entraide.wishLimit.message", comment: ""))
+        }
+        .alert(
+            NSLocalizedString("entraide.eligibility.emailNotVerified", comment: ""),
+            isPresented: $showEligibilityAlert
+        ) {
+            Button(NSLocalizedString("entraide.eligibility.resend", comment: "")) {
+                Task {
+                    try? await UserService.shared.resendVerification()
+                    OffriiHaptics.success()
+                }
+            }
+            Button(NSLocalizedString("common.cancel", comment: ""), role: .cancel) {}
         }
         .task {
             await viewModel.loadWishes()
@@ -299,6 +341,41 @@ struct EntraideView: View {
     private func applySort() {
         viewModel.sortField = sortField
         viewModel.sortOrder = sortOrder
+    }
+
+    // MARK: - Eligibility Banner
+
+    private var eligibilityBanner: some View {
+        HStack(spacing: OffriiTheme.spacingSM) {
+            Image(systemName: isAccountTooRecent ? "clock" : "envelope.badge")
+                .font(.system(size: 14))
+                .foregroundColor(OffriiTheme.warning)
+
+            Text(eligibilityMessage)
+                .font(OffriiTypography.caption)
+                .foregroundColor(OffriiTheme.text)
+
+            Spacer()
+
+            if !isAccountTooRecent && !isEmailVerified {
+                Button {
+                    Task {
+                        try? await UserService.shared.resendVerification()
+                        OffriiHaptics.success()
+                    }
+                } label: {
+                    Text(NSLocalizedString("entraide.eligibility.resend", comment: ""))
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(OffriiTheme.primary)
+                }
+            }
+        }
+        .padding(OffriiTheme.spacingSM)
+        .padding(.horizontal, OffriiTheme.spacingXS)
+        .background(OffriiTheme.warning.opacity(0.08))
+        .cornerRadius(OffriiTheme.cornerRadiusMD)
+        .padding(.horizontal, OffriiTheme.spacingBase)
+        .padding(.vertical, OffriiTheme.spacingXS)
     }
 
 }

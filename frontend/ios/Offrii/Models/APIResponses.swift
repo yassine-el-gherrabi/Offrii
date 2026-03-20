@@ -25,6 +25,7 @@ struct UserProfileResponse: Codable {
     let reminderTime: String?
     let timezone: String?
     let locale: String?
+    let emailVerified: Bool?
     let createdAt: Date
     let updatedAt: Date?
 
@@ -34,6 +35,7 @@ struct UserProfileResponse: Codable {
         case avatarUrl = "avatar_url"
         case reminderFreq = "reminder_freq"
         case reminderTime = "reminder_time"
+        case emailVerified = "email_verified"
         case createdAt = "created_at"
         case updatedAt = "updated_at"
     }
@@ -46,6 +48,7 @@ struct UserProfileResponse: Codable {
             reminderTime: reminderTime ?? "09:00",
             timezone: timezone ?? TimeZone.current.identifier,
             locale: locale ?? Locale.current.language.languageCode?.identifier ?? "fr",
+            emailVerified: emailVerified,
             createdAt: createdAt, updatedAt: updatedAt ?? createdAt
         )
     }

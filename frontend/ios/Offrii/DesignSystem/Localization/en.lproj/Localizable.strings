@@ -383,6 +383,11 @@
 "entraide.action.reopenSuccess" = "Your need is being re-reviewed.";
 "entraide.wishLimit.title" = "Limit reached";
 "entraide.wishLimit.message" = "You already have 3 active needs. Close or wait for one to be fulfilled before creating a new one.";
+"entraide.eligibility.tooRecent" = "Your account is too recent to participate in Entraide.";
+"entraide.eligibility.emailNotVerified" = "Verify your email to participate in Entraide.";
+"entraide.eligibility.resend" = "Resend link";
+"entraide.eligibility.emailSent" = "Verification email sent!";
+"entraide.eligibility.alreadyVerified" = "Your email is already verified.";
 "entraide.report.inappropriate" = "Inappropriate";
 "entraide.report.spam" = "Spam";
 "entraide.report.scam" = "Scam";

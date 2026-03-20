@@ -78,6 +78,10 @@ struct AppleAuthBody: Encodable {
     }
 }
 
+struct VerifyEmailBody: Encodable {
+    let token: String
+}
+
 // MARK: - Item Body Types
 
 struct CreateItemBody: Encodable {

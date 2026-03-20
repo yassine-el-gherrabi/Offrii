@@ -75,6 +75,7 @@ use rest_api::utils::jwt::JwtKeys;
 struct SpyEmailService {
     last_code: Arc<StdMutex<Option<String>>>,
     welcome_sent: Arc<StdMutex<Vec<String>>>,
+    verification_sent: Arc<StdMutex<Vec<(String, String)>>>,
 }
 
 #[async_trait::async_trait]
@@ -90,6 +91,14 @@ impl EmailService for SpyEmailService {
         _display_name: Option<&str>,
     ) -> Result<(), AppError> {
         self.welcome_sent.lock().unwrap().push(to.to_string());
+        Ok(())
+    }
+
+    async fn send_verification_email(&self, to: &str, token: &str) -> Result<(), AppError> {
+        self.verification_sent
+            .lock()
+            .unwrap()
+            .push((to.to_string(), token.to_string()));
         Ok(())
     }
 }
@@ -168,9 +177,11 @@ impl TestApp {
 
         let last_reset_code = Arc::new(StdMutex::new(None));
         let welcome_sent = Arc::new(StdMutex::new(Vec::new()));
+        let verification_sent = Arc::new(StdMutex::new(Vec::new()));
         let email_service: Arc<dyn EmailService> = Arc::new(SpyEmailService {
             last_code: last_reset_code.clone(),
             welcome_sent: welcome_sent.clone(),
+            verification_sent: verification_sent.clone(),
         });
 
         let oauth_verifier = Arc::new(OAuthVerifier::new(

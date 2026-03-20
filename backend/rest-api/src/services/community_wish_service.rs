@@ -301,6 +301,20 @@ impl PgCommunityWishService {
         }
     }
 
+    async fn check_email_verified(&self, user_id: Uuid) -> Result<(), AppError> {
+        let verified: bool = sqlx::query_scalar("SELECT email_verified FROM users WHERE id = $1")
+            .bind(user_id)
+            .fetch_optional(&self.pool)
+            .await
+            .map_err(|e| AppError::Internal(e.into()))?
+            .ok_or_else(|| AppError::NotFound("user not found".into()))?;
+
+        if !verified {
+            return Err(AppError::Forbidden("email verification required".into()));
+        }
+        Ok(())
+    }
+
     async fn check_account_age(&self, user_id: Uuid) -> Result<(), AppError> {
         let created_at = self
             .user_repo
@@ -371,6 +385,8 @@ impl traits::CommunityWishService for PgCommunityWishService {
     ) -> Result<MyWishResponse, AppError> {
         // Guard: account age
         self.check_account_age(user_id).await?;
+        // Guard: email verified
+        self.check_email_verified(user_id).await?;
 
         // Guard: max active wishes
         let active_count = self
@@ -942,6 +958,7 @@ impl traits::CommunityWishService for PgCommunityWishService {
     #[tracing::instrument(skip(self))]
     async fn offer_wish(&self, wish_id: Uuid, donor_id: Uuid) -> Result<(), AppError> {
         self.check_account_age(donor_id).await?;
+        self.check_email_verified(donor_id).await?;
 
         let wish = self
             .wish_repo
@@ -1136,6 +1153,7 @@ impl traits::CommunityWishService for PgCommunityWishService {
         details: Option<&str>,
     ) -> Result<(), AppError> {
         self.check_account_age(reporter_id).await?;
+        self.check_email_verified(reporter_id).await?;
 
         let wish = self
             .wish_repo
