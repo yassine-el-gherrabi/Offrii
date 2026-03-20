@@ -30,10 +30,13 @@ struct ItemRow: View {
                             .foregroundColor(OffriiTheme.textMuted)
                     }
 
-                    Text(item.priorityLabel)
-                        .font(OffriiTypography.caption)
-                        .fontWeight(.medium)
-                        .foregroundColor(priorityColor)
+                    HStack(spacing: -1) {
+                        ForEach(0..<item.priority, id: \.self) { _ in
+                            Image(systemName: "flame.fill")
+                                .font(.system(size: 10))
+                        }
+                    }
+                    .foregroundColor(priorityColor)
                 }
             }
 

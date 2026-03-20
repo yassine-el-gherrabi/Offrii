@@ -66,9 +66,13 @@ struct WishlistPreviewSection: View {
                     .foregroundColor(OffriiTheme.text)
                     .lineLimit(1)
 
-                Text(item.priorityLabel)
-                    .font(OffriiTypography.caption)
-                    .foregroundColor(priorityColor(for: item.priority))
+                HStack(spacing: -1) {
+                    ForEach(0..<item.priority, id: \.self) { _ in
+                        Image(systemName: "flame.fill")
+                            .font(.system(size: 10))
+                    }
+                }
+                .foregroundColor(priorityColor(for: item.priority))
             }
 
             Spacer()

@@ -37,7 +37,7 @@ struct ItemDetailView: View {
                             if let catName = viewModel.categoryName {
                                 chipLabel(catName, bgColor: OffriiTheme.primary.opacity(0.1), fgColor: OffriiTheme.primary)
                             }
-                            chipLabel(item.priorityLabel, bgColor: priorityColor(item.priority).opacity(0.1), fgColor: priorityColor(item.priority))
+                            flameChip(item.priority)
                         }
                         .padding(.horizontal, OffriiTheme.spacingLG)
                         .padding(.top, OffriiTheme.spacingSM)
@@ -205,6 +205,20 @@ struct ItemDetailView: View {
         case 3: return OffriiTheme.primary
         default: return OffriiTheme.primary.opacity(0.7)
         }
+    }
+
+    private func flameChip(_ priority: Int) -> some View {
+        HStack(spacing: -1) {
+            ForEach(0..<priority, id: \.self) { _ in
+                Image(systemName: "flame.fill")
+                    .font(.system(size: 11))
+            }
+        }
+        .foregroundColor(priorityColor(priority))
+        .padding(.horizontal, OffriiTheme.spacingSM)
+        .padding(.vertical, OffriiTheme.spacingXS)
+        .background(priorityColor(priority).opacity(0.1))
+        .cornerRadius(OffriiTheme.cornerRadiusSM)
     }
 
     private func formatPrice(_ price: Decimal) -> String {
