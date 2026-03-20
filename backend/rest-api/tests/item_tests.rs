@@ -1939,3 +1939,253 @@ async fn sort_created_at_no_secondary_sort() {
     assert_eq!(items[0]["name"], "New");
     assert_eq!(items[1]["name"], "Old");
 }
+
+// ═══════════════════════════════════════════════════════════════════════
+// shared_circles includes rule-based shares (all/categories)
+// ═══════════════════════════════════════════════════════════════════════
+
+#[tokio::test]
+async fn shared_circles_includes_rule_all() {
+    let app = TestApp::new().await;
+    let token = app
+        .setup_user_token("rule-all@test.com", TEST_PASSWORD)
+        .await;
+
+    // Create an item
+    let item = app
+        .create_item(&token, &serde_json::json!({ "name": "RuleAllItem" }))
+        .await;
+    let item_id = item["id"].as_str().unwrap();
+
+    // Create a circle
+    let (_, circle) = app
+        .post_json_with_auth(
+            "/circles",
+            &serde_json::json!({ "name": "AllCircle" }),
+            &token,
+        )
+        .await;
+    let circle_id = circle["id"].as_str().unwrap();
+
+    // Set share rule to "all" (no circle_items record created)
+    let (status, _) = app
+        .put_json_with_auth(
+            &format!("/circles/{circle_id}/share-rule"),
+            &serde_json::json!({ "share_mode": "all" }),
+            &token,
+        )
+        .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+
+    // Get item — shared_circles should include the circle
+    let (_, body) = app
+        .get_with_auth(&format!("/items/{item_id}"), &token)
+        .await;
+    let circles = body["shared_circles"].as_array().unwrap();
+    assert!(
+        circles.iter().any(|c| c["id"].as_str() == Some(circle_id)),
+        "shared_circles must include circle with rule 'all'"
+    );
+}
+
+#[tokio::test]
+async fn shared_circles_includes_rule_categories() {
+    let app = TestApp::new().await;
+    let token = app
+        .setup_user_token("rule-cat@test.com", TEST_PASSWORD)
+        .await;
+
+    // Get a category
+    let (_, cats) = app.get_with_auth("/categories", &token).await;
+    let cat_id = cats.as_array().unwrap()[0]["id"]
+        .as_str()
+        .unwrap()
+        .to_string();
+
+    // Create item in that category
+    let item = app
+        .create_item(
+            &token,
+            &serde_json::json!({ "name": "CatItem", "category_id": cat_id }),
+        )
+        .await;
+    let item_id = item["id"].as_str().unwrap();
+
+    // Create circle + set category rule
+    let (_, circle) = app
+        .post_json_with_auth(
+            "/circles",
+            &serde_json::json!({ "name": "CatCircle" }),
+            &token,
+        )
+        .await;
+    let circle_id = circle["id"].as_str().unwrap();
+
+    let (status, _) = app
+        .put_json_with_auth(
+            &format!("/circles/{circle_id}/share-rule"),
+            &serde_json::json!({ "share_mode": "categories", "category_ids": [cat_id] }),
+            &token,
+        )
+        .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+
+    // Item should show circle in shared_circles
+    let (_, body) = app
+        .get_with_auth(&format!("/items/{item_id}"), &token)
+        .await;
+    let circles = body["shared_circles"].as_array().unwrap();
+    assert!(
+        circles.iter().any(|c| c["id"].as_str() == Some(circle_id)),
+        "shared_circles must include circle with matching category rule"
+    );
+}
+
+#[tokio::test]
+async fn shared_circles_excludes_non_matching_category() {
+    let app = TestApp::new().await;
+    let token = app
+        .setup_user_token("rule-nocat@test.com", TEST_PASSWORD)
+        .await;
+
+    // Create item WITHOUT category
+    let item = app
+        .create_item(&token, &serde_json::json!({ "name": "NoCatItem" }))
+        .await;
+    let item_id = item["id"].as_str().unwrap();
+
+    // Get a category (item doesn't have it)
+    let (_, cats) = app.get_with_auth("/categories", &token).await;
+    let cat_id = cats.as_array().unwrap()[0]["id"]
+        .as_str()
+        .unwrap()
+        .to_string();
+
+    // Create circle with category rule
+    let (_, circle) = app
+        .post_json_with_auth(
+            "/circles",
+            &serde_json::json!({ "name": "MismatchCircle" }),
+            &token,
+        )
+        .await;
+    let circle_id = circle["id"].as_str().unwrap();
+
+    let (status, _) = app
+        .put_json_with_auth(
+            &format!("/circles/{circle_id}/share-rule"),
+            &serde_json::json!({ "share_mode": "categories", "category_ids": [cat_id] }),
+            &token,
+        )
+        .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+
+    // Item should NOT show this circle (category doesn't match)
+    let (_, body) = app
+        .get_with_auth(&format!("/items/{item_id}"), &token)
+        .await;
+    let circles = body["shared_circles"].as_array().unwrap();
+    assert!(
+        !circles.iter().any(|c| c["id"].as_str() == Some(circle_id)),
+        "shared_circles must NOT include circle when category doesn't match"
+    );
+}
+
+#[tokio::test]
+async fn shared_circles_private_item_excluded_from_rules() {
+    let app = TestApp::new().await;
+    let token = app
+        .setup_user_token("rule-priv@test.com", TEST_PASSWORD)
+        .await;
+
+    // Create a private item
+    let item = app
+        .create_item(
+            &token,
+            &serde_json::json!({ "name": "PrivItem", "is_private": true }),
+        )
+        .await;
+    let item_id = item["id"].as_str().unwrap();
+
+    // Create circle with rule "all"
+    let (_, circle) = app
+        .post_json_with_auth(
+            "/circles",
+            &serde_json::json!({ "name": "PrivCircle" }),
+            &token,
+        )
+        .await;
+    let circle_id = circle["id"].as_str().unwrap();
+
+    let (status, _) = app
+        .put_json_with_auth(
+            &format!("/circles/{circle_id}/share-rule"),
+            &serde_json::json!({ "share_mode": "all" }),
+            &token,
+        )
+        .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+
+    // Private item should NOT show circle
+    let (_, body) = app
+        .get_with_auth(&format!("/items/{item_id}"), &token)
+        .await;
+    let circles = body["shared_circles"].as_array().unwrap();
+    assert!(
+        !circles.iter().any(|c| c["id"].as_str() == Some(circle_id)),
+        "private items must NOT show rule-based circles"
+    );
+}
+
+#[tokio::test]
+async fn shared_circles_no_duplicate_when_both_rule_and_selection() {
+    let app = TestApp::new().await;
+    let token = app
+        .setup_user_token("rule-dup@test.com", TEST_PASSWORD)
+        .await;
+
+    let item = app
+        .create_item(&token, &serde_json::json!({ "name": "DupItem" }))
+        .await;
+    let item_id = item["id"].as_str().unwrap();
+
+    // Create circle
+    let (_, circle) = app
+        .post_json_with_auth(
+            "/circles",
+            &serde_json::json!({ "name": "DupCircle" }),
+            &token,
+        )
+        .await;
+    let circle_id = circle["id"].as_str().unwrap();
+
+    // Share via circle_items (selection)
+    app.post_json_with_auth(
+        &format!("/circles/{circle_id}/items"),
+        &serde_json::json!({ "item_id": item_id }),
+        &token,
+    )
+    .await;
+
+    // Also set rule "all"
+    app.put_json_with_auth(
+        &format!("/circles/{circle_id}/share-rule"),
+        &serde_json::json!({ "share_mode": "all" }),
+        &token,
+    )
+    .await;
+
+    // Should appear only ONCE in shared_circles
+    let (_, body) = app
+        .get_with_auth(&format!("/items/{item_id}"), &token)
+        .await;
+    let circles = body["shared_circles"].as_array().unwrap();
+    let count = circles
+        .iter()
+        .filter(|c| c["id"].as_str() == Some(circle_id))
+        .count();
+    assert_eq!(
+        count, 1,
+        "circle must appear only once even with both rule and selection"
+    );
+}

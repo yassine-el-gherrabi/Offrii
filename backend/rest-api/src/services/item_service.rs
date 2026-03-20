@@ -122,11 +122,13 @@ impl PgItemService {
     }
 
     /// Enrich a list of ItemResponses with shared circle info.
-    async fn enrich_with_circles(&self, items: &mut [ItemResponse]) {
+    async fn enrich_with_circles(&self, items: &mut [ItemResponse], user_id: Uuid) {
         if items.is_empty() {
             return;
         }
         let item_ids: Vec<Uuid> = items.iter().map(|i| i.id).collect();
+
+        // 1. Explicit circle_items shares (selection mode)
         let circle_map = self
             .circle_item_repo
             .list_circle_names_for_items(&item_ids)
@@ -144,6 +146,58 @@ impl PgItemService {
                         image_url: image_url.clone(),
                     })
                     .collect();
+            }
+        }
+
+        // 2. Rule-based shares (all/categories modes) — add circles not already present
+        #[allow(clippy::type_complexity)]
+        let rule_circles: Vec<(Uuid, String, bool, Option<String>, String, Vec<Uuid>)> =
+            sqlx::query_as(
+                "SELECT c.id, \
+                   CASE WHEN c.name IS NOT NULL THEN c.name \
+                        ELSE COALESCE(u.display_name, u.username, '') \
+                   END AS name, \
+                   c.is_direct, c.image_url, \
+                   r.share_mode, r.category_ids \
+                 FROM circle_share_rules r \
+                 JOIN circles c ON c.id = r.circle_id \
+                 LEFT JOIN circle_members cm ON cm.circle_id = c.id AND cm.user_id != r.user_id AND c.is_direct = true \
+                 LEFT JOIN users u ON u.id = cm.user_id \
+                 WHERE r.user_id = $1 AND r.share_mode IN ('all', 'categories')",
+            )
+            .bind(user_id)
+            .fetch_all(&self.pool)
+            .await
+            .unwrap_or_default();
+
+        for item in items.iter_mut() {
+            if item.is_private {
+                continue; // private items never shared via rules
+            }
+            for (cid, cname, is_direct, img, mode, cat_ids) in &rule_circles {
+                // Skip if already added via circle_items
+                if item.shared_circles.iter().any(|sc| sc.id == *cid) {
+                    continue;
+                }
+                let matches = match mode.as_str() {
+                    "all" => true,
+                    "categories" => {
+                        if let Some(item_cat) = item.category_id {
+                            cat_ids.contains(&item_cat)
+                        } else {
+                            false
+                        }
+                    }
+                    _ => false,
+                };
+                if matches {
+                    item.shared_circles.push(SharedCircleInfo {
+                        id: *cid,
+                        name: cname.clone(),
+                        is_direct: *is_direct,
+                        image_url: img.clone(),
+                    });
+                }
             }
         }
     }
@@ -260,7 +314,7 @@ impl traits::ItemService for PgItemService {
             .ok_or_else(|| AppError::NotFound("item not found".into()))?;
 
         let mut resp = ItemResponse::from(item);
-        self.enrich_with_circles(std::slice::from_mut(&mut resp))
+        self.enrich_with_circles(std::slice::from_mut(&mut resp), user_id)
             .await;
         Ok(resp)
     }
@@ -344,7 +398,7 @@ impl traits::ItemService for PgItemService {
 
         let mut item_responses: Vec<ItemResponse> =
             items.into_iter().map(ItemResponse::from).collect();
-        self.enrich_with_circles(&mut item_responses).await;
+        self.enrich_with_circles(&mut item_responses, user_id).await;
 
         let response = PaginatedResponse::new(item_responses, total, page, limit);
 
