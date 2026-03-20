@@ -367,7 +367,7 @@ struct WishlistShareSheet: View {
         let ruleMode = shareRules[circle.id]?.shareMode
 
         if ruleMode == "all" {
-            Label(NSLocalizedString("share.ruleAll", comment: ""), systemImage: "checkmark.seal.fill")
+            Label(NSLocalizedString("share.ruleAll", comment: ""), systemImage: "checkmark.circle.fill")
                 .font(OffriiTypography.caption)
                 .foregroundColor(OffriiTheme.primary)
         } else if ruleMode == "categories", let catCount = shareRules[circle.id]?.categoryCount {
@@ -421,7 +421,7 @@ struct WishlistShareSheet: View {
                 Spacer()
 
                 if isRuleAll {
-                    Image(systemName: "checkmark.seal.fill")
+                    Image(systemName: "checkmark.circle.fill")
                         .font(.system(size: 22))
                         .foregroundColor(OffriiTheme.primary)
                 } else {
