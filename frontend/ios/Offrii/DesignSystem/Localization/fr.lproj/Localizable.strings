@@ -364,6 +364,11 @@
 "entraide.fulfill.celebration" = "Merci !\nCe geste a été enregistré.";
 "entraide.onboarding.title" = "Bienvenue dans l'Entraide";
 "entraide.onboarding.body" = "Ici, les membres de la communauté partagent leurs besoins. Proposez votre aide ou publiez un besoin. Tout est modéré pour votre sécurité.";
+"entraide.welcome.title" = "L'Entraide Offrii";
+"entraide.welcome.point1" = "Publie un besoin et laisse la communauté te donner un coup de main";
+"entraide.welcome.point2" = "Propose ton aide quand tu vois un besoin auquel tu peux répondre";
+"entraide.welcome.point3" = "Chaque demande est modérée pour la sécurité de tous";
+"entraide.welcome.cta" = "C'est compris !";
 "entraide.action.withdrawSuccess" = "Vous vous êtes retiré";
 "entraide.action.confirmSuccess" = "Besoin confirmé ! Merci";
 "entraide.action.offer" = "Proposer mon aide";
@@ -517,6 +522,8 @@
 "progress.step.reminders.sub" = "Pour ne rien oublier";
 "progress.step.pushNotifications" = "Active les notifications";
 "progress.step.pushNotifications.sub" = "Sois alerté quand quelqu'un réserve une envie";
+"progress.emailSent.title" = "Email envoyé";
+"progress.emailSent.message" = "Un email de vérification a été envoyé à ton adresse. Vérifie ta boîte de réception.";
 "progress.step.firstNeed" = "Découvre l'entraide";
 "progress.step.firstNeed.sub" = "Jette un oeil à ce que la communauté partage";
 

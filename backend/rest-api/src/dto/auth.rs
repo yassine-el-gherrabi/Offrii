@@ -131,6 +131,7 @@ pub struct UserResponse {
     pub email: String,
     pub username: String,
     pub display_name: Option<String>,
+    pub username_customized: bool,
     pub email_verified: bool,
     pub created_at: DateTime<Utc>,
 }
@@ -142,6 +143,7 @@ impl From<&User> for UserResponse {
             email: u.email.clone(),
             username: u.username.clone(),
             display_name: u.display_name.clone(),
+            username_customized: u.username_customized,
             email_verified: u.email_verified,
             created_at: u.created_at,
         }

@@ -19,6 +19,7 @@ struct EntraideView: View {
     @State private var resendError: String?
     @State private var sortField = "created_at"
     @State private var sortOrder = "desc"
+    @State private var showWelcomeSheet = false
 
     private var isAccountTooRecent: Bool {
         guard let user = authManager.currentUser else { return true }
@@ -226,7 +227,17 @@ struct EntraideView: View {
             await viewModel.loadWishes()
             await viewModel.loadMyOffers()
             await myNeedsViewModel.loadMyWishes()
-            UserDefaults.standard.set(true, forKey: "entraide.hasVisited")
+            if let userId = authManager.currentUser?.id.uuidString {
+                let key = "entraide.hasVisited.\(userId)"
+                if !UserDefaults.standard.bool(forKey: key) {
+                    showWelcomeSheet = true
+                }
+                UserDefaults.standard.set(true, forKey: key)
+            }
+        }
+        .sheet(isPresented: $showWelcomeSheet) {
+            EntraideWelcomeSheet()
+                .presentationDetents([.medium])
         }
     }
 

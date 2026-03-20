@@ -18,6 +18,7 @@ pub struct User {
     pub utc_reminder_hour: i16,
     pub locale: String,
     pub token_version: i32,
+    pub username_customized: bool,
     pub avatar_url: Option<String>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,

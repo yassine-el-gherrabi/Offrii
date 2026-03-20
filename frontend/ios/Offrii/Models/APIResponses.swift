@@ -26,6 +26,7 @@ struct UserProfileResponse: Codable {
     let timezone: String?
     let locale: String?
     let emailVerified: Bool?
+    let usernameCustomized: Bool?
     let createdAt: Date
     let updatedAt: Date?
 
@@ -36,6 +37,7 @@ struct UserProfileResponse: Codable {
         case reminderFreq = "reminder_freq"
         case reminderTime = "reminder_time"
         case emailVerified = "email_verified"
+        case usernameCustomized = "username_customized"
         case createdAt = "created_at"
         case updatedAt = "updated_at"
     }
@@ -49,6 +51,7 @@ struct UserProfileResponse: Codable {
             timezone: timezone ?? TimeZone.current.identifier,
             locale: locale ?? Locale.current.language.languageCode?.identifier ?? "fr",
             emailVerified: emailVerified,
+            usernameCustomized: usernameCustomized,
             createdAt: createdAt, updatedAt: updatedAt ?? createdAt
         )
     }

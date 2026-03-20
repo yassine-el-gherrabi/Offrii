@@ -72,9 +72,11 @@ struct HomeView: View {
 
                 // Section 1: Profile progress (hidden while loading, hidden at 100%)
                 if !vm.isLoading && vm.profileProgress.percentage < 100 {
-                    ProfileProgressCard(progress: vm.profileProgress)
-                        .transition(.opacity.combined(with: .move(edge: .top)))
-                        .animation(OffriiAnimation.defaultSpring, value: vm.profileProgress.percentage)
+                    ProfileProgressCard(progress: vm.profileProgress) {
+                        Task { await vm.load(authManager: authManager) }
+                    }
+                    .transition(.opacity.combined(with: .move(edge: .top)))
+                    .animation(OffriiAnimation.defaultSpring, value: vm.profileProgress.percentage)
                 }
 
                 // Section 2: Stats chips

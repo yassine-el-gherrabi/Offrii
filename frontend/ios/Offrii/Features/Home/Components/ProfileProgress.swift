@@ -133,24 +133,27 @@ struct ProfileProgress {
     static func compute(user: User?, totalItems: Int) async -> ProfileProgress {
         var progress = ProfileProgress()
         guard let user else { return progress }
+        let userId = user.id.uuidString
 
         // Identity
         progress.update(id: "displayName", completed: user.displayName != nil && !(user.displayName ?? "").isEmpty)
-        progress.update(id: "username", completed: !user.username.isEmpty && user.username != user.email)
+        progress.update(id: "username", completed: user.usernameCustomized ?? false)
         progress.update(id: "avatar", completed: user.avatarUrl != nil && !(user.avatarUrl ?? "").isEmpty)
         progress.update(id: "emailVerified", completed: user.emailVerified ?? false)
 
         // Wishlist
         progress.update(id: "firstItem", completed: totalItems > 0)
         let shareRules = (try? await CircleService.shared.listMyShareRules()) ?? []
-        progress.update(id: "shareList", completed: shareRules.contains { $0.shareMode != "none" })
+        let shareLinks: [ShareLinkResponse] = (try? await APIClient.shared.request(.listShareLinks)) ?? []
+        let hasShared = shareRules.contains { $0.shareMode != "none" } || !shareLinks.isEmpty
+        progress.update(id: "shareList", completed: hasShared)
 
         // Social
         let friendCount = (try? await FriendService.shared.listFriends())?.count ?? 0
         progress.update(id: "firstFriend", completed: friendCount > 0)
         let circleCount = (try? await CircleService.shared.listCircles())?.count ?? 0
         progress.update(id: "firstCircle", completed: circleCount > 0)
-        progress.update(id: "firstNeed", completed: UserDefaults.standard.bool(forKey: "entraide.hasVisited"))
+        progress.update(id: "firstNeed", completed: UserDefaults.standard.bool(forKey: "entraide.hasVisited.\(userId)"))
 
         // Settings
         let center = UNUserNotificationCenter.current()

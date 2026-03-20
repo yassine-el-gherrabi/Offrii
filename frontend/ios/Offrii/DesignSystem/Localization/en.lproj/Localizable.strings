@@ -364,6 +364,11 @@
 "entraide.fulfill.celebration" = "Thank you!\nThis gesture has been recorded.";
 "entraide.onboarding.title" = "Welcome to Mutual Aid";
 "entraide.onboarding.body" = "Here, community members share their needs. You can offer your help or publish a need. Everything is moderated for your safety.";
+"entraide.welcome.title" = "Community Help";
+"entraide.welcome.point1" = "Post a need and let the community lend you a hand";
+"entraide.welcome.point2" = "Offer your help when you see a need you can answer";
+"entraide.welcome.point3" = "Every request is moderated for everyone's safety";
+"entraide.welcome.cta" = "Got it!";
 "entraide.action.withdrawSuccess" = "You have withdrawn";
 "entraide.action.confirmSuccess" = "Wish confirmed! Thank you";
 "entraide.action.offer" = "Offer help";
@@ -517,6 +522,8 @@
 "progress.step.reminders.sub" = "So you don't forget anything";
 "progress.step.pushNotifications" = "Enable notifications";
 "progress.step.pushNotifications.sub" = "Get alerted when someone claims a wish";
+"progress.emailSent.title" = "Email sent";
+"progress.emailSent.message" = "A verification email has been sent to your address. Check your inbox.";
 "progress.step.firstNeed" = "Discover community help";
 "progress.step.firstNeed.sub" = "See what the community is sharing";
 

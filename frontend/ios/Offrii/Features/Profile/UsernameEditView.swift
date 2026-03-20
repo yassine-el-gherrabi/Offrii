@@ -3,6 +3,7 @@ import SwiftUI
 struct UsernameEditView: View {
     @Bindable var viewModel: ProfileViewModel
     @Environment(\.dismiss) private var dismiss
+    @Environment(AuthManager.self) private var authManager
     @State private var newUsername = ""
     @State private var isSaving = false
     @State private var errorMessage: String?
@@ -61,6 +62,7 @@ struct UsernameEditView: View {
         errorMessage = nil
         do {
             try await viewModel.updateUsername(newUsername)
+            try? await authManager.loadCurrentUser()
             dismiss()
         } catch let error as APIError {
             if case .conflict = error {

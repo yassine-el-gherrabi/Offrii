@@ -28,6 +28,7 @@
 		90DB1C562F63676B00EB59C4 /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = P10000000000000000000002 /* GoogleSignIn */; };
 		9819CC8EE7964F14CDE7D48F /* StackedAvatarsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F19D296A0047D817CD0475CC /* StackedAvatarsView.swift */; };
 		99AD360522789939E56AB458 /* CircleDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9EEDF827539742DBA3A5617E /* CircleDetailView.swift */; };
+		9A65CB628704AE94A2B50EDF /* EntraideWelcomeSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6D3A2D5966D4871A6174673A /* EntraideWelcomeSheet.swift */; };
 		9BE2E54145DD2F357A4186FC /* ProfileProgressCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7CD43FCFA25254BFA5826718 /* ProfileProgressCard.swift */; };
 		9D14A9A3E27EC6245F34EEA6 /* MessageBubble.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58F0F5B130F191CB76DB83CC /* MessageBubble.swift */; };
 		9E5A06B3602ED34AAE5C175B /* CommunityWish.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E8B0D51A42018F6E1949DC4 /* CommunityWish.swift */; };
@@ -197,6 +198,7 @@
 		647F61CB6950B77626E4ACDB /* WishlistPreviewSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WishlistPreviewSection.swift; sourceTree = "<group>"; };
 		64A31455759F0D2673A3A174 /* EntraideViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EntraideViewModel.swift; sourceTree = "<group>"; };
 		6ACFAD24E9E205201275BF6E /* CircleDetailViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CircleDetailViewModel.swift; sourceTree = "<group>"; };
+		6D3A2D5966D4871A6174673A /* EntraideWelcomeSheet.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = EntraideWelcomeSheet.swift; path = EntraideWelcomeSheet.swift; sourceTree = "<group>"; };
 		70A76EF6B88A42F8839A31BB /* EditShareLinkSheet.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = EditShareLinkSheet.swift; sourceTree = "<group>"; };
 		76631281854337CE0C72D6BD /* ProfileProgress.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileProgress.swift; sourceTree = "<group>"; };
 		7CD43FCFA25254BFA5826718 /* ProfileProgressCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileProgressCard.swift; sourceTree = "<group>"; };
@@ -744,6 +746,7 @@
 				5729A67B6A84DC629D5E0E70 /* CreateWishSheet.swift */,
 				DD62B53D9E28CE73279B751F /* ReportWishSheet.swift */,
 				A8A2D4B4151E04BA716C8555 /* WishDetailSheet.swift */,
+				6D3A2D5966D4871A6174673A /* EntraideWelcomeSheet.swift */,
 			);
 			path = Entraide;
 			sourceTree = "<group>";
@@ -1007,6 +1010,7 @@
 				C1B9B86A09EA918CC24D05F6 /* HomeQuickActionsSection.swift in Sources */,
 				F572C543BC737EB8D0DA1481 /* HomeActivitySection.swift in Sources */,
 				A0F0F25FC61C6A7224742FDA /* ProfileProgressSheet.swift in Sources */,
+				9A65CB628704AE94A2B50EDF /* EntraideWelcomeSheet.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

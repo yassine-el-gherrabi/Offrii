@@ -690,3 +690,85 @@ async fn update_profile_avatar_url_too_long_400() {
     assert_eq!(status, StatusCode::BAD_REQUEST);
     assert_error(&body, "BAD_REQUEST");
 }
+
+// ── username_customized tests ───────────────────────────────────────
+
+#[tokio::test]
+async fn new_user_has_username_customized_false() {
+    let app = TestApp::new().await;
+    let token = app
+        .setup_user_token("newuser@example.com", TEST_PASSWORD)
+        .await;
+
+    let (status, body) = app.get_with_auth("/users/me", &token).await;
+
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(
+        body["username_customized"], false,
+        "auto-generated username should have username_customized = false"
+    );
+}
+
+#[tokio::test]
+async fn update_username_sets_username_customized_true() {
+    let app = TestApp::new().await;
+    let token = app
+        .setup_user_token("customize@example.com", TEST_PASSWORD)
+        .await;
+
+    // Verify starts as false
+    let (_, body) = app.get_with_auth("/users/me", &token).await;
+    assert_eq!(body["username_customized"], false);
+
+    // Update username
+    let patch = serde_json::json!({ "username": "mycustomname" });
+    let (status, body) = app.patch_json_with_auth("/users/me", &patch, &token).await;
+
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(body["username"], "mycustomname");
+    assert_eq!(
+        body["username_customized"], true,
+        "username_customized should be true after explicit username update"
+    );
+
+    // Verify persists via GET
+    let (status, body) = app.get_with_auth("/users/me", &token).await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(body["username_customized"], true);
+}
+
+#[tokio::test]
+async fn username_customized_in_auth_response() {
+    let app = TestApp::new().await;
+
+    // Register new user
+    let register_body = serde_json::json!({
+        "email": "authresp@example.com",
+        "password": TEST_PASSWORD,
+    });
+    let (status, body) = app.post_json("/auth/register", &register_body).await;
+
+    assert_eq!(status, StatusCode::CREATED);
+    assert_eq!(
+        body["user"]["username_customized"], false,
+        "auth response should include username_customized = false for new user"
+    );
+}
+
+#[tokio::test]
+async fn non_username_update_does_not_set_customized() {
+    let app = TestApp::new().await;
+    let token = app
+        .setup_user_token("nochange@example.com", TEST_PASSWORD)
+        .await;
+
+    // Update display_name only (not username)
+    let patch = serde_json::json!({ "display_name": "Just a name" });
+    let (status, body) = app.patch_json_with_auth("/users/me", &patch, &token).await;
+
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(
+        body["username_customized"], false,
+        "updating display_name should not set username_customized"
+    );
+}

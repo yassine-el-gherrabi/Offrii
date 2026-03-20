@@ -4,6 +4,7 @@ import SwiftUI
 
 struct ProfileProgressCard: View {
     let progress: ProfileProgress
+    var onRefreshNeeded: (() -> Void)?
     @State private var showDetail = false
 
     var body: some View {
@@ -80,7 +81,9 @@ struct ProfileProgressCard: View {
                 )
             }
             .buttonStyle(.plain)
-            .sheet(isPresented: $showDetail) {
+            .sheet(isPresented: $showDetail, onDismiss: {
+                onRefreshNeeded?()
+            }) {
                 ProfileProgressSheet(progress: progress)
                     .presentationDetents([.large])
             }

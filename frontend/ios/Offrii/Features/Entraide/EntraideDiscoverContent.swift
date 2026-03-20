@@ -8,7 +8,6 @@ struct EntraideDiscoverContent: View {
     @Binding var showCreateSheet: Bool
     @Binding var reportWishId: UUID?
     var searchQuery: String
-    @AppStorage("entraide.onboarding.dismissed") private var onboardingDismissed = false
     @State private var recentFulfilled: [CommunityWish] = []
     @State private var wishToOffer: UUID?
 
@@ -39,38 +38,6 @@ struct EntraideDiscoverContent: View {
             }
         } else {
             LazyVStack(spacing: OffriiTheme.spacingSM) {
-                // Onboarding card (first visit only)
-                if !onboardingDismissed {
-                    VStack(alignment: .leading, spacing: OffriiTheme.spacingSM) {
-                        HStack {
-                            Image(systemName: "hand.wave.fill")
-                                .font(.system(size: 20))
-                                .foregroundColor(OffriiTheme.primary)
-                            Text(NSLocalizedString("entraide.onboarding.title", comment: ""))
-                                .font(OffriiTypography.headline)
-                                .foregroundColor(OffriiTheme.text)
-                            Spacer()
-                            Button {
-                                withAnimation { onboardingDismissed = true }
-                            } label: {
-                                Image(systemName: "xmark")
-                                    .font(.system(size: 12, weight: .semibold))
-                                    .foregroundColor(OffriiTheme.textMuted)
-                            }
-                        }
-                        Text(NSLocalizedString("entraide.onboarding.body", comment: ""))
-                            .font(OffriiTypography.caption)
-                            .foregroundColor(OffriiTheme.textSecondary)
-                    }
-                    .padding(OffriiTheme.spacingBase)
-                    .background(OffriiTheme.primary.opacity(0.05))
-                    .cornerRadius(OffriiTheme.cornerRadiusLG)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: OffriiTheme.cornerRadiusLG)
-                            .strokeBorder(OffriiTheme.primary.opacity(0.2), lineWidth: 1)
-                    )
-                }
-
                 // Recently fulfilled section
                 if !recentFulfilled.isEmpty {
                     VStack(alignment: .leading, spacing: OffriiTheme.spacingSM) {

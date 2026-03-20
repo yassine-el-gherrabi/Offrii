@@ -11,7 +11,8 @@ use crate::traits;
 const USER_COLS: &str = "id, email, username, password_hash, display_name, \
                          oauth_provider, oauth_provider_id, email_verified, \
                          reminder_freq, reminder_time, timezone, \
-                         utc_reminder_hour, locale, token_version, avatar_url, \
+                         utc_reminder_hour, locale, token_version, \
+                         username_customized, avatar_url, \
                          created_at, updated_at";
 
 // ── Concrete implementation ──────────────────────────────────────────
@@ -269,6 +270,8 @@ pub(crate) async fn update_profile(
     if let Some(v) = username {
         separated.push("username = ");
         separated.push_bind_unseparated(v);
+        separated.push("username_customized = ");
+        separated.push_bind_unseparated(true);
     }
     if let Some(v) = reminder_freq {
         separated.push("reminder_freq = ");

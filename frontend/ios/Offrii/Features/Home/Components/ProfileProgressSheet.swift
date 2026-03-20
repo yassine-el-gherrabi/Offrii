@@ -4,10 +4,14 @@ import UserNotifications
 // MARK: - ProfileProgressSheet
 
 struct ProfileProgressSheet: View {
-    let progress: ProfileProgress
+    @State private var progress: ProfileProgress
     @Environment(\.dismiss) private var dismiss
     @Environment(AuthManager.self) private var authManager
     @Environment(AppRouter.self) private var router
+
+    init(progress: ProfileProgress) {
+        _progress = State(initialValue: progress)
+    }
 
     // Sheet states for each action
     @State private var showAddWish = false
@@ -19,6 +23,12 @@ struct ProfileProgressSheet: View {
     @State private var showAvatarPhotoPicker = false
     @State private var selectedAvatarImage: UIImage?
     @State private var isUploadingAvatar = false
+    @State private var showEditDisplayName = false
+    @State private var editedDisplayName = ""
+    @State private var showEditUsername = false
+    @State private var showEmailSentConfirmation = false
+    @State private var emailCooldown = false
+    @State private var emailCooldownSeconds = 0
 
     private var groupedSteps: [(ProfileProgressStep.StepGroup, [ProfileProgressStep])] {
         var groups: [(ProfileProgressStep.StepGroup, [ProfileProgressStep])] = []
@@ -116,7 +126,7 @@ struct ProfileProgressSheet: View {
                 }
             }
         }
-        .sheet(isPresented: $showAddWish) {
+        .sheet(isPresented: $showAddWish, onDismiss: { refreshProgress() }) {
             QuickAddSheet { name, price, categoryId, priority, imageUrl, links, isPrivate in
                 _ = try? await ItemService.shared.createItem(
                     name: name, estimatedPrice: price, priority: priority,
@@ -126,14 +136,14 @@ struct ProfileProgressSheet: View {
                 return true
             }
         }
-        .sheet(isPresented: $showCreateCircle) {
+        .sheet(isPresented: $showCreateCircle, onDismiss: { refreshProgress() }) {
             CreateCircleSheet { _ in }
                 .presentationDetents([.medium])
         }
-        .sheet(isPresented: $showAddFriend) {
+        .sheet(isPresented: $showAddFriend, onDismiss: { refreshProgress() }) {
             AddFriendSheet {}
         }
-        .sheet(isPresented: $showShareSheet) {
+        .sheet(isPresented: $showShareSheet, onDismiss: { refreshProgress() }) {
             WishlistShareSheet(
                 items: [],
                 selectedItemIds: [],
@@ -142,7 +152,7 @@ struct ProfileProgressSheet: View {
             )
             .presentationDetents([.large])
         }
-        .sheet(isPresented: $showPublishNeed) {
+        .sheet(isPresented: $showPublishNeed, onDismiss: { refreshProgress() }) {
             CreateWishSheet()
                 .presentationDetents([.large])
         }
@@ -194,7 +204,41 @@ struct ProfileProgressSheet: View {
             ),
             matching: .images
         )
+        .alert(
+            NSLocalizedString("profile.displayName.edit", comment: ""),
+            isPresented: $showEditDisplayName
+        ) {
+            TextField(
+                NSLocalizedString("profile.displayName", comment: ""),
+                text: $editedDisplayName
+            )
+            Button(NSLocalizedString("common.cancel", comment: ""), role: .cancel) {}
+            Button(NSLocalizedString("common.save", comment: "")) {
+                Task { await saveDisplayName() }
+            }
+        }
+        .sheet(isPresented: $showEditUsername, onDismiss: { refreshProgress() }) {
+            NavigationStack {
+                UsernameEditView(viewModel: usernameViewModel)
+                    .environment(authManager)
+            }
+            .task {
+                await usernameViewModel.loadProfile()
+            }
+        }
+        .alert(
+            NSLocalizedString("progress.emailSent.title", comment: ""),
+            isPresented: $showEmailSentConfirmation
+        ) {
+            Button(NSLocalizedString("common.ok", comment: ""), role: .cancel) {}
+        } message: {
+            Text(NSLocalizedString("progress.emailSent.message", comment: ""))
+        }
     }
+
+    // MARK: - Username ViewModel (for inline editing)
+
+    @State private var usernameViewModel = ProfileViewModel()
 
     // MARK: - Step Row
 
@@ -210,6 +254,12 @@ struct ProfileProgressSheet: View {
                     Image(systemName: "checkmark.circle.fill")
                         .font(.system(size: 22))
                         .foregroundColor(OffriiTheme.primary)
+                        .transition(.scale.combined(with: .opacity))
+                } else if step.id == "avatar" && isUploadingAvatar {
+                    ProgressView()
+                        .tint(OffriiTheme.primary)
+                        .frame(width: 22, height: 22)
+                        .transition(.opacity)
                 } else {
                     Image(systemName: step.icon)
                         .font(.system(size: 14))
@@ -235,9 +285,15 @@ struct ProfileProgressSheet: View {
                 Spacer()
 
                 if !step.isCompleted {
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 11, weight: .semibold))
-                        .foregroundColor(OffriiTheme.textMuted)
+                    if step.id == "emailVerified" && emailCooldown {
+                        Text("\(emailCooldownSeconds)s")
+                            .font(.system(size: 12, weight: .medium).monospacedDigit())
+                            .foregroundColor(OffriiTheme.textMuted)
+                    } else {
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundColor(OffriiTheme.textMuted)
+                    }
                 }
             }
             .padding(.vertical, OffriiTheme.spacingXS)
@@ -252,45 +308,95 @@ struct ProfileProgressSheet: View {
     @State private var showPublishNeed = false
     @State private var showWishLimitAlert = false
 
+    private func refreshProgress() {
+        Task {
+            try? await authManager.loadCurrentUser()
+            let totalItems = (try? await ItemService.shared.listItems(page: 1, perPage: 1))?.total ?? 0
+            progress = await ProfileProgress.compute(
+                user: authManager.currentUser,
+                totalItems: totalItems
+            )
+        }
+    }
+
     private func handleStepTap(_ step: ProfileProgressStep) {
         switch step.id {
-        case "displayName", "username":
-            dismiss()
-        case "avatar":
-            showAvatarSourceSheet = true
-        case "firstItem":
-            showAddWish = true
-        case "shareList":
-            showShareSheet = true
-        case "firstFriend":
-            showAddFriend = true
-        case "firstCircle":
-            showCreateCircle = true
-        case "pushNotifications":
-            Task {
-                let center = UNUserNotificationCenter.current()
-                let settings = await center.notificationSettings()
-                if settings.authorizationStatus == .notDetermined {
-                    let granted = (try? await center.requestAuthorization(options: [.alert, .badge, .sound])) ?? false
-                    if granted {
-                        await MainActor.run { UIApplication.shared.registerForRemoteNotifications() }
-                    }
-                } else {
-                    if let url = URL(string: UIApplication.openSettingsURLString) {
-                        await MainActor.run { UIApplication.shared.open(url) }
-                    }
+        case "displayName":
+            editedDisplayName = authManager.currentUser?.displayName ?? ""
+            showEditDisplayName = true
+        case "username":      showEditUsername = true
+        case "avatar":        showAvatarSourceSheet = true
+        case "emailVerified": handleEmailVerification()
+        case "firstItem":     showAddWish = true
+        case "shareList":     showShareSheet = true
+        case "firstFriend":   showAddFriend = true
+        case "firstCircle":   showCreateCircle = true
+        case "firstNeed":     router.selectedTab = .entraide; dismiss()
+        case "pushNotifications": handlePushNotification()
+        default: break
+        }
+    }
+
+    private func handleEmailVerification() {
+        guard !emailCooldown else { return }
+        Task {
+            do {
+                try await UserService.shared.resendVerification()
+                OffriiHaptics.success()
+                showEmailSentConfirmation = true
+                startEmailCooldown(seconds: 60)
+            } catch let error as APIError {
+                if case .tooManyRequests = error {
+                    startEmailCooldown(seconds: 60)
+                }
+            } catch {}
+        }
+    }
+
+    private func handlePushNotification() {
+        Task {
+            let center = UNUserNotificationCenter.current()
+            let settings = await center.notificationSettings()
+            if settings.authorizationStatus == .notDetermined {
+                let granted = (try? await center.requestAuthorization(options: [.alert, .badge, .sound])) ?? false
+                if granted {
+                    await MainActor.run { UIApplication.shared.registerForRemoteNotifications() }
+                }
+                refreshProgress()
+            } else {
+                if let url = URL(string: UIApplication.openSettingsURLString) {
+                    await MainActor.run { UIApplication.shared.open(url) }
                 }
             }
-        case "emailVerified":
-            Task {
-                try? await UserService.shared.resendVerification()
-                OffriiHaptics.success()
+        }
+    }
+
+    private func saveDisplayName() async {
+        let trimmed = editedDisplayName.trimmingCharacters(in: .whitespaces)
+        guard !trimmed.isEmpty else { return }
+        do {
+            let body = UpdateProfileBody(
+                displayName: trimmed, username: nil, avatarUrl: nil,
+                reminderFreq: nil, reminderTime: nil, timezone: nil, locale: nil
+            )
+            _ = try await APIClient.shared.request(.updateProfile(body)) as UserProfileResponse
+            try? await authManager.loadCurrentUser()
+            refreshProgress()
+            OffriiHaptics.success()
+        } catch {}
+    }
+
+    // MARK: - Email Cooldown
+
+    private func startEmailCooldown(seconds: Int) {
+        emailCooldown = true
+        emailCooldownSeconds = seconds
+        Task {
+            while emailCooldownSeconds > 0 {
+                try? await Task.sleep(for: .seconds(1))
+                emailCooldownSeconds -= 1
             }
-        case "firstNeed":
-            router.selectedTab = .entraide
-            dismiss()
-        default:
-            break
+            emailCooldown = false
         }
     }
 
@@ -316,6 +422,7 @@ struct ProfileProgressSheet: View {
             try? await authManager.loadCurrentUser()
             selectedAvatarImage = nil
             OffriiHaptics.success()
+            refreshProgress()
         } catch {
             selectedAvatarImage = nil
         }
