@@ -119,6 +119,13 @@ jobs:
             echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
             docker compose -p offrii-staging -f docker-compose.staging.yml pull staging-backend
 
+            # Run migrations before deploy
+            echo "Running database migrations..."
+            docker compose -p offrii-staging -f docker-compose.staging.yml --env-file .env.staging run --rm --no-deps staging-backend migrate || {
+              echo "Migration failed — aborting deploy"
+              exit 1
+            }
+
             # Deploy staging
             docker compose -p offrii-staging -f docker-compose.staging.yml --env-file .env.staging up -d --no-build
 

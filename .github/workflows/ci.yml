@@ -65,6 +65,11 @@ jobs:
           wait
       - name: Run tests with coverage
         run: cargo llvm-cov nextest --workspace --fail-under-lines 75 --ignore-filename-regex "(main|migrate)\.rs$"
+      - name: Security audit (advisory only)
+        continue-on-error: true
+        run: |
+          cargo install cargo-audit --quiet
+          cargo audit 2>&1 || echo "::warning::Security vulnerabilities found — check cargo audit output above"
 
   ios:
     needs: detect-changes
@@ -99,6 +104,14 @@ jobs:
         run: brew install swiftlint
       - name: Lint
         run: swiftlint lint --strict Offrii/
+      - name: Check TODOs/FIXMEs (advisory)
+        continue-on-error: true
+        run: |
+          count=$(grep -rn "TODO\|FIXME\|HACK" Offrii/ --include="*.swift" | wc -l | tr -d ' ')
+          if [ "$count" -gt 0 ]; then
+            echo "::warning::Found $count TODO/FIXME/HACK comments in Swift code:"
+            grep -rn "TODO\|FIXME\|HACK" Offrii/ --include="*.swift" | head -20
+          fi
       - name: Build
         run: |
           set -o pipefail

@@ -134,6 +134,13 @@ jobs:
             # Store current image for rollback
             CURRENT_IMAGE=$(docker inspect --format='{{.Image}}' offrii-backend 2>/dev/null || echo "")
 
+            # Run migrations before deploy (fails fast if schema change breaks)
+            echo "Running database migrations..."
+            docker compose -f docker-compose.yml -f docker-compose.prod.yml run --rm --no-deps backend migrate || {
+              echo "Migration failed — aborting deploy"
+              exit 1
+            }
+
             # Deploy
             docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --no-build
 
