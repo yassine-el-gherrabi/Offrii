@@ -143,7 +143,7 @@ async fn register_with_username_and_display_name() {
     let app = TestApp::new().await;
 
     let body = serde_json::json!({
-        "identifier": TEST_EMAIL,
+        "email": TEST_EMAIL,
         "password": TEST_PASSWORD,
         "display_name": "Alice",
         "username": "custom_user"
@@ -1346,7 +1346,7 @@ async fn register_sends_welcome_email() {
     let app = TestApp::new().await;
 
     let body = serde_json::json!({
-        "identifier": TEST_EMAIL,
+        "email": TEST_EMAIL,
         "password": TEST_PASSWORD,
     });
     let (status, _) = app.post_json("/auth/register", &body).await;
@@ -1365,7 +1365,7 @@ async fn register_sends_welcome_email_with_display_name() {
     let app = TestApp::new().await;
 
     let body = serde_json::json!({
-        "identifier": TEST_EMAIL,
+        "email": TEST_EMAIL,
         "password": TEST_PASSWORD,
         "display_name": "Marie",
     });
