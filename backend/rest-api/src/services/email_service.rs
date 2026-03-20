@@ -224,4 +224,33 @@ Si vous n'avez pas créé de compte Offrii, ignorez cet email.
 
         Ok(())
     }
+
+    async fn send_password_changed_email(&self, to: &str) -> Result<(), AppError> {
+        let body = r#"<h1 style="margin:0 0 8px;font-size:22px;font-weight:700;color:#1a1a2e;">
+Mot de passe modifié
+</h1>
+<p style="margin:0 0 16px;font-size:15px;color:#6b7280;line-height:1.6;">
+Votre mot de passe Offrii a été modifié avec succès.
+</p>
+<p style="margin:0 0 0;font-size:13px;color:#9ca3af;line-height:1.5;">
+Si vous n'êtes pas à l'origine de ce changement, contactez-nous immédiatement à
+<a href="mailto:yassineelgherrabi@gmail.com" style="color:#FF6B6B;text-decoration:underline;">yassineelgherrabi@gmail.com</a>
+</p>"#;
+
+        let html = email_template(body);
+        let email = CreateEmailBaseOptions::new(
+            &self.from,
+            [to],
+            "\u{1f512} Mot de passe modifié — Offrii",
+        )
+        .with_html(&html);
+
+        self.client
+            .emails
+            .send(email)
+            .await
+            .map_err(|e| AppError::Internal(anyhow::anyhow!("email send failed: {e}")))?;
+
+        Ok(())
+    }
 }

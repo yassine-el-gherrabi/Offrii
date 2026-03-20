@@ -471,6 +471,15 @@ impl traits::AuthService for PgAuthService {
         // 5. Invalidate all tokens (force re-login everywhere)
         self.invalidate_all_tokens(user_id).await?;
 
+        // 6. Notify user (fire-and-forget)
+        let email_svc = self.email_service.clone();
+        let to = user.email.clone();
+        tokio::spawn(async move {
+            if let Err(e) = email_svc.send_password_changed_email(&to).await {
+                tracing::warn!(error = %e, "failed to send password changed email");
+            }
+        });
+
         Ok(())
     }
 
@@ -749,6 +758,15 @@ impl traits::AuthService for PgAuthService {
 
         // Invalidate all tokens
         self.invalidate_all_tokens(user.id).await?;
+
+        // Notify user (fire-and-forget)
+        let email_svc = self.email_service.clone();
+        let to = user.email.clone();
+        tokio::spawn(async move {
+            if let Err(e) = email_svc.send_password_changed_email(&to).await {
+                tracing::warn!(error = %e, "failed to send password changed email");
+            }
+        });
 
         Ok(())
     }

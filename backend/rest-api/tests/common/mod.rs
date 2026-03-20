@@ -101,6 +101,10 @@ impl EmailService for SpyEmailService {
             .push((to.to_string(), token.to_string()));
         Ok(())
     }
+
+    async fn send_password_changed_email(&self, _to: &str) -> Result<(), AppError> {
+        Ok(())
+    }
 }
 
 #[allow(dead_code)]
