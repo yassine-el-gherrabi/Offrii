@@ -41,6 +41,18 @@
 		}
 	}
 
+	# Rate limit: messages 20 req/min/IP
+	rate_limit {
+		zone messages_zone {
+			match {
+				path /community/wishes/*/messages
+			}
+			key    {remote_host}
+			events 20
+			window 1m
+		}
+	}
+
 	# Rate limit: global 100 req/min/IP
 	rate_limit {
 		zone global_zone {

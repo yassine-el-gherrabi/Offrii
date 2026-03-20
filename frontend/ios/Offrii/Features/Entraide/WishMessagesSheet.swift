@@ -10,6 +10,7 @@ struct WishMessagesSheet: View {
     @State private var messageText = ""
     @State private var isLoading = false
     @State private var isSending = false
+    @State private var sendCooldown = false
     @State private var currentPage = 1
     @State private var hasMorePages = false
     @State private var pollingTask: Task<Void, Never>?
@@ -130,14 +131,14 @@ struct WishMessagesSheet: View {
                         .font(.system(size: 32))
                         .foregroundColor(
                             messageText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                                || isMessageOverLimit
+                                || isMessageOverLimit || sendCooldown
                                 ? OffriiTheme.textMuted
                                 : OffriiTheme.primary
                         )
                 }
                 .disabled(
                     messageText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                        || isMessageOverLimit || isSending
+                        || isMessageOverLimit || isSending || sendCooldown
                 )
             }
 
@@ -194,6 +195,11 @@ struct WishMessagesSheet: View {
             messageText = ""
             lastActivityTime = Date()
             OffriiHaptics.tap()
+
+            // 2s cooldown to prevent spam
+            sendCooldown = true
+            try? await Task.sleep(for: .seconds(2))
+            sendCooldown = false
         } catch {}
         isSending = false
     }
