@@ -1,7 +1,7 @@
 # Offrii Server Setup — Hetzner CX32
 
 **Server**: Hetzner Cloud CX32 (4 vCPU, 8GB RAM, 80GB NVMe)
-**IP**: 167.235.193.237
+**IP**: <SERVER_IP>
 **OS**: Ubuntu 24.04 LTS
 **Location**: Falkenstein, Germany
 **Created**: 2026-03-20
@@ -11,7 +11,7 @@
 ## Step 1: First SSH Connection (as root)
 
 ```bash
-ssh root@167.235.193.237
+ssh root@<SERVER_IP>
 ```
 
 ## Step 2: Create deploy user
@@ -110,7 +110,7 @@ chown -R deploy:deploy /opt/offrii
 
 ```bash
 # Test deploy user SSH (from local machine)
-ssh deploy@167.235.193.237
+ssh deploy@<SERVER_IP>
 
 # Test docker
 docker run --rm hello-world
@@ -142,24 +142,24 @@ fail2ban-client status sshd
 ## Post-Setup: DNS Records
 
 Add A records at your DNS provider:
-- `api.offrii.com` → 167.235.193.237
-- `staging.offrii.com` → 167.235.193.237
-- `grafana.offrii.com` → 167.235.193.237
+- `api.offrii.com` → <SERVER_IP>
+- `staging.offrii.com` → <SERVER_IP>
+- `grafana.offrii.com` → <SERVER_IP>
 
 ## Post-Setup: Copy Secrets
 
 ```bash
 # From local machine
-scp .env deploy@167.235.193.237:/opt/offrii/.env
-scp jwt-keys/private.pem deploy@167.235.193.237:/opt/offrii/secrets/jwt_private.pem
-scp jwt-keys/public.pem deploy@167.235.193.237:/opt/offrii/secrets/jwt_public.pem
-scp apns-keys/AuthKey.p8 deploy@167.235.193.237:/opt/offrii/secrets/apns_key.p8
+scp .env deploy@<SERVER_IP>:/opt/offrii/.env
+scp jwt-keys/private.pem deploy@<SERVER_IP>:/opt/offrii/secrets/jwt_private.pem
+scp jwt-keys/public.pem deploy@<SERVER_IP>:/opt/offrii/secrets/jwt_public.pem
+scp apns-keys/AuthKey.p8 deploy@<SERVER_IP>:/opt/offrii/secrets/apns_key.p8
 ```
 
 ## Post-Setup: Deploy
 
 ```bash
-ssh deploy@167.235.193.237
+ssh deploy@<SERVER_IP>
 cd /opt/offrii
 docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 ```
