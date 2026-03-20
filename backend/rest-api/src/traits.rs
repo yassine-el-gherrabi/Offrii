@@ -257,6 +257,12 @@ pub trait EmailService: Send + Sync {
         to: &str,
         display_name: Option<&str>,
     ) -> Result<(), AppError>;
+    async fn send_welcome_and_verify_email(
+        &self,
+        to: &str,
+        display_name: Option<&str>,
+        token: &str,
+    ) -> Result<(), AppError>;
     async fn send_verification_email(&self, to: &str, token: &str) -> Result<(), AppError>;
     async fn send_password_changed_email(&self, to: &str) -> Result<(), AppError>;
 }

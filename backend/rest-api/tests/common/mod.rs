@@ -94,6 +94,20 @@ impl EmailService for SpyEmailService {
         Ok(())
     }
 
+    async fn send_welcome_and_verify_email(
+        &self,
+        to: &str,
+        _display_name: Option<&str>,
+        token: &str,
+    ) -> Result<(), AppError> {
+        self.welcome_sent.lock().unwrap().push(to.to_string());
+        self.verification_sent
+            .lock()
+            .unwrap()
+            .push((to.to_string(), token.to_string()));
+        Ok(())
+    }
+
     async fn send_verification_email(&self, to: &str, token: &str) -> Result<(), AppError> {
         self.verification_sent
             .lock()

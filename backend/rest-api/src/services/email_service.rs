@@ -152,30 +152,83 @@ Votre compte est prêt. Voici ce que vous pouvez faire sur Offrii :
 </p>
 <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
 <tr><td style="padding:8px 0;font-size:15px;color:#1a1a2e;">
-<span style="font-size:20px;">🎁</span>&nbsp;&nbsp;<strong>Envies</strong> — Créez votre liste et gardez une trace de tout ce qui vous fait envie
+<strong>Envies</strong> — Créez votre liste et gardez une trace de tout ce qui vous fait envie
 </td></tr>
 <tr><td style="padding:8px 0;font-size:15px;color:#1a1a2e;">
-<span style="font-size:20px;">👥</span>&nbsp;&nbsp;<strong>Proches</strong> — Partagez vos envies avec vos amis et votre famille
+<strong>Proches</strong> — Partagez vos envies avec vos amis et votre famille
 </td></tr>
 <tr><td style="padding:8px 0;font-size:15px;color:#1a1a2e;">
-<span style="font-size:20px;">🤝</span>&nbsp;&nbsp;<strong>Entraide</strong> — Publiez un besoin ou proposez votre aide à la communauté
+<strong>Entraide</strong> — Publiez un besoin ou proposez votre aide à la communauté
 </td></tr>
 </table>
-{cta}
 <p style="margin:20px 0 0;font-size:13px;color:#9ca3af;text-align:center;">
-À très vite sur Offrii !
+A très vite sur Offrii !
 </p>"#,
-            cta = cta_button(
-                "Ouvrir Offrii",
-                "https://apps.apple.com/app/offrii/id0000000000"
-            )
         );
 
         let html = email_template(&body);
         let subject = if name == "là" {
-            "Bienvenue sur Offrii !".to_string()
+            "Bienvenue sur Offrii".to_string()
         } else {
-            format!("Bienvenue sur Offrii, {name} !")
+            format!("Bienvenue sur Offrii, {name}")
+        };
+        let email = CreateEmailBaseOptions::new(&self.from, [to], &subject).with_html(&html);
+
+        self.client
+            .emails
+            .send(email)
+            .await
+            .map_err(|e| AppError::Internal(anyhow::anyhow!("email send failed: {e}")))?;
+
+        Ok(())
+    }
+
+    async fn send_welcome_and_verify_email(
+        &self,
+        to: &str,
+        display_name: Option<&str>,
+        token: &str,
+    ) -> Result<(), AppError> {
+        let name = display_name.unwrap_or("là");
+        let verification_url = format!("{}/auth/verify-email?token={token}", self.base_url);
+
+        let body = format!(
+            r#"<h1 style="margin:0 0 8px;font-size:22px;font-weight:700;color:#1a1a2e;">
+Bienvenue {name} !
+</h1>
+<p style="margin:0 0 24px;font-size:15px;color:#6b7280;line-height:1.6;">
+Votre compte est prêt. Confirmez votre adresse email pour accéder à toutes les fonctionnalités.
+</p>
+{cta}
+<p style="margin:24px 0 0;font-size:15px;color:#6b7280;line-height:1.6;">
+Voici ce que vous pouvez faire sur Offrii :
+</p>
+<table role="presentation" cellpadding="0" cellspacing="0" width="100%">
+<tr><td style="padding:8px 0;font-size:15px;color:#1a1a2e;">
+<strong>Envies</strong> — Créez votre liste et gardez une trace de tout ce qui vous fait envie
+</td></tr>
+<tr><td style="padding:8px 0;font-size:15px;color:#1a1a2e;">
+<strong>Proches</strong> — Partagez vos envies avec vos amis et votre famille
+</td></tr>
+<tr><td style="padding:8px 0;font-size:15px;color:#1a1a2e;">
+<strong>Entraide</strong> — Publiez un besoin ou proposez votre aide à la communauté
+</td></tr>
+</table>
+<p style="margin:20px 0 0;font-size:13px;color:#9ca3af;line-height:1.5;text-align:center;">
+Ou copiez ce lien dans votre navigateur :<br>
+<a href="{verification_url}" style="color:#FF6B6B;text-decoration:underline;word-break:break-all;font-size:12px;">{verification_url}</a>
+</p>
+<p style="margin:8px 0 0;font-size:13px;color:#9ca3af;line-height:1.5;">
+Ce lien expire dans <strong>24 heures</strong>.
+</p>"#,
+            cta = cta_button("Vérifier mon email", &verification_url)
+        );
+
+        let html = email_template(&body);
+        let subject = if name == "là" {
+            "Bienvenue sur Offrii — Vérifiez votre email".to_string()
+        } else {
+            format!("Bienvenue {name} — Vérifiez votre email")
         };
         let email = CreateEmailBaseOptions::new(&self.from, [to], &subject).with_html(&html);
 
@@ -211,12 +264,8 @@ Si vous n'avez pas créé de compte Offrii, ignorez cet email.
         );
 
         let html = email_template(&body);
-        let email = CreateEmailBaseOptions::new(
-            &self.from,
-            [to],
-            "\u{2709}\u{fe0f} Vérifiez votre email — Offrii",
-        )
-        .with_html(&html);
+        let email = CreateEmailBaseOptions::new(&self.from, [to], "Vérifiez votre email — Offrii")
+            .with_html(&html);
 
         self.client
             .emails
@@ -236,16 +285,12 @@ Votre mot de passe Offrii a été modifié avec succès.
 </p>
 <p style="margin:0 0 0;font-size:13px;color:#9ca3af;line-height:1.5;">
 Si vous n'êtes pas à l'origine de ce changement, contactez-nous immédiatement à
-<a href="mailto:yassineelgherrabi@gmail.com" style="color:#FF6B6B;text-decoration:underline;">yassineelgherrabi@gmail.com</a>
+<a href="mailto:contact@offrii.com" style="color:#FF6B6B;text-decoration:underline;">contact@offrii.com</a>
 </p>"#;
 
         let html = email_template(body);
-        let email = CreateEmailBaseOptions::new(
-            &self.from,
-            [to],
-            "\u{1f512} Mot de passe modifié — Offrii",
-        )
-        .with_html(&html);
+        let email = CreateEmailBaseOptions::new(&self.from, [to], "Mot de passe modifié — Offrii")
+            .with_html(&html);
 
         self.client
             .emails

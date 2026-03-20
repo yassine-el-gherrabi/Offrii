@@ -207,17 +207,7 @@ impl traits::AuthService for PgAuthService {
             .await
             .map_err(|e| AppError::Internal(e.into()))?;
 
-        // Send welcome email asynchronously (non-blocking, fire-and-forget)
-        let email_svc = self.email_service.clone();
-        let to = email.clone();
-        let name = display_name.map(|s| s.to_string());
-        tokio::spawn(async move {
-            if let Err(e) = email_svc.send_welcome_email(&to, name.as_deref()).await {
-                tracing::error!("failed to send welcome email: {e}");
-            }
-        });
-
-        // Generate email verification token and send verification email
+        // Generate email verification token and send single welcome+verification email
         let verification_token = generate_verification_token();
         sqlx::query("INSERT INTO email_verification_tokens (user_id, token) VALUES ($1, $2)")
             .bind(user.id)
@@ -229,9 +219,13 @@ impl traits::AuthService for PgAuthService {
         let email_svc = self.email_service.clone();
         let to = email.clone();
         let token = verification_token.clone();
+        let name = display_name.map(|s| s.to_string());
         tokio::spawn(async move {
-            if let Err(e) = email_svc.send_verification_email(&to, &token).await {
-                tracing::error!("failed to send verification email: {e}");
+            if let Err(e) = email_svc
+                .send_welcome_and_verify_email(&to, name.as_deref(), &token)
+                .await
+            {
+                tracing::error!("failed to send welcome+verification email: {e}");
             }
         });
 

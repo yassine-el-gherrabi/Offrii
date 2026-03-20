@@ -275,23 +275,37 @@ async fn verify_email_get(
 }
 
 fn verify_email_page(title: &str, message: &str, success: bool) -> String {
-    let color = if success { "#22c55e" } else { "#ef4444" };
+    let color = if success { "#FF6B6B" } else { "#ef4444" };
     let icon = if success { "&#10003;" } else { "&#10007;" };
+    let logo_url = "https://cdn.offrii.com/branding/logo-1024.png";
     format!(
         r#"<!DOCTYPE html>
 <html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>{title} — Offrii</title>
 <style>
-body{{font-family:-apple-system,system-ui,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;background:#fafafa;}}
-.card{{text-align:center;padding:48px 32px;max-width:400px;background:#fff;border-radius:16px;box-shadow:0 4px 24px rgba(0,0,0,0.08);}}
-.icon{{font-size:48px;color:{color};margin-bottom:16px;}}
-h1{{font-size:22px;color:#1a1a2e;margin:0 0 12px;}}
+body{{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;background:#FFFAF9;-webkit-font-smoothing:antialiased;}}
+.container{{text-align:center;padding:48px 32px;max-width:420px;}}
+.logo{{width:56px;height:56px;border-radius:14px;margin-bottom:8px;}}
+.brand{{font-size:20px;font-weight:700;color:#FF6B6B;letter-spacing:-0.02em;margin-bottom:32px;}}
+.card{{text-align:center;padding:40px 32px;background:#fff;border-radius:16px;box-shadow:0 4px 24px rgba(0,0,0,0.06);}}
+.icon{{display:inline-flex;align-items:center;justify-content:center;width:64px;height:64px;border-radius:50%;background:{color}1a;font-size:32px;color:{color};margin-bottom:20px;}}
+h1{{font-size:22px;font-weight:700;color:#1a1a2e;margin:0 0 12px;}}
 p{{font-size:15px;color:#6b7280;line-height:1.6;margin:0;}}
+.footer{{margin-top:24px;font-size:12px;color:#9ca3af;}}
+.footer a{{color:#9ca3af;text-decoration:underline;}}
 </style></head><body>
+<div class="container">
+<img src="{logo_url}" alt="Offrii" class="logo" />
+<div class="brand">Offrii</div>
 <div class="card">
 <div class="icon">{icon}</div>
 <h1>{title}</h1>
 <p>{message}</p>
+</div>
+<div class="footer">
+<span style="color:#FF6B6B;font-weight:600;">Offrii</span> — Offre, partage, fais plaisir.<br>
+<a href="https://offrii.com">offrii.com</a>
+</div>
 </div></body></html>"#
     )
 }
