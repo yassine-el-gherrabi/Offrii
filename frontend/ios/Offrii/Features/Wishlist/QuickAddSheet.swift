@@ -64,9 +64,9 @@ struct QuickAddSheet: View {
                             .foregroundColor(OffriiTheme.textMuted)
 
                         HStack(spacing: OffriiTheme.spacingSM) {
-                            priorityButton(level: 1, label: NSLocalizedString("priority.low", comment: ""), color: OffriiTheme.textMuted)
-                            priorityButton(level: 2, label: NSLocalizedString("priority.medium", comment: ""), color: OffriiTheme.accent)
-                            priorityButton(level: 3, label: NSLocalizedString("priority.high", comment: ""), color: OffriiTheme.danger)
+                            priorityButton(level: 1, label: NSLocalizedString("priority.low", comment: ""), dots: 1, opacity: 0.4)
+                            priorityButton(level: 2, label: NSLocalizedString("priority.medium", comment: ""), dots: 2, opacity: 0.7)
+                            priorityButton(level: 3, label: NSLocalizedString("priority.high", comment: ""), dots: 3, opacity: 1.0)
                         }
                     }
 
@@ -156,17 +156,20 @@ struct QuickAddSheet: View {
         .presentationDetents([.medium, .large])
     }
 
-    private func priorityButton(level: Int, label: String, color: Color) -> some View {
+    private func priorityButton(level: Int, label: String, dots: Int, opacity: Double) -> some View {
         let isSelected = priority == level
+        let color = OffriiTheme.primary.opacity(opacity)
         return Button {
             OffriiHaptics.selection()
             priority = level
         } label: {
-            HStack(spacing: 4) {
-                if level >= 2 {
-                    Circle()
-                        .fill(color)
-                        .frame(width: 8, height: 8)
+            HStack(spacing: 3) {
+                HStack(spacing: 2) {
+                    ForEach(0..<dots, id: \.self) { _ in
+                        Circle()
+                            .fill(isSelected ? .white : color)
+                            .frame(width: 6, height: 6)
+                    }
                 }
                 Text(label)
                     .font(OffriiTypography.footnote)
@@ -175,7 +178,7 @@ struct QuickAddSheet: View {
             .foregroundColor(isSelected ? .white : OffriiTheme.textSecondary)
             .padding(.horizontal, OffriiTheme.spacingMD)
             .padding(.vertical, OffriiTheme.spacingSM)
-            .background(isSelected ? color : OffriiTheme.surface)
+            .background(isSelected ? OffriiTheme.primary.opacity(opacity) : OffriiTheme.surface)
             .cornerRadius(OffriiTheme.cornerRadiusSM)
         }
         .buttonStyle(.plain)

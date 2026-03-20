@@ -91,9 +91,9 @@ struct WishlistPreviewSection: View {
 
     private func priorityColor(for priority: Int) -> Color {
         switch priority {
-        case 1: return OffriiTheme.textMuted
-        case 3: return OffriiTheme.danger
-        default: return OffriiTheme.accent
+        case 1: return OffriiTheme.primary.opacity(0.4)
+        case 3: return OffriiTheme.primary
+        default: return OffriiTheme.primary.opacity(0.7)
         }
     }
 
