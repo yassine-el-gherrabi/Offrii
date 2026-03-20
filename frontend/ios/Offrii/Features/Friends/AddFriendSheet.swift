@@ -143,14 +143,21 @@ struct AddFriendSheet: View {
         let trimmed = query.trimmingCharacters(in: .whitespaces)
         guard trimmed.count >= 1 else {
             results = []
+            error = nil
+            return
+        }
+        guard trimmed.count <= 50 else {
+            results = []
             return
         }
 
         isSearching = true
+        error = nil
         do {
             results = try await FriendService.shared.searchUsers(query: trimmed)
         } catch {
-            self.error = error.localizedDescription
+            // Don't show raw backend errors for search
+            results = []
         }
         isSearching = false
     }
