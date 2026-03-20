@@ -493,11 +493,9 @@ impl traits::AuthService for PgAuthService {
                 .query_async(&mut conn)
                 .await;
 
-            // If SET NX failed (key already exists), rate limit
+            // If SET NX failed (key already exists), silently return Ok (no email enumeration)
             if set.is_err() || !set.unwrap_or(false) {
-                return Err(AppError::TooManyRequests(
-                    "please wait before requesting another code".into(),
-                ));
+                return Ok(());
             }
 
             // Resend rate limit: max 3 per 5 minutes
@@ -515,9 +513,7 @@ impl traits::AuthService for PgAuthService {
                     .await;
             }
             if resend_5m > 3 {
-                return Err(AppError::TooManyRequests(
-                    "too many reset attempts, please try again later".into(),
-                ));
+                return Ok(());
             }
 
             // Resend rate limit: max 10 per day
@@ -535,9 +531,7 @@ impl traits::AuthService for PgAuthService {
                     .await;
             }
             if resend_daily > 10 {
-                return Err(AppError::TooManyRequests(
-                    "daily reset limit reached, please try again tomorrow".into(),
-                ));
+                return Ok(());
             }
         }
 
