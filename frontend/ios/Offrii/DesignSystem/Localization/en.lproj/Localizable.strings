@@ -387,6 +387,7 @@
 "entraide.eligibility.emailNotVerified" = "Verify your email to participate in Entraide.";
 "entraide.eligibility.resend" = "Resend link";
 "entraide.eligibility.emailSent" = "Verification email sent!";
+"entraide.eligibility.checkSpam" = "Email sent! Check your inbox and spam folder.";
 "entraide.eligibility.alreadyVerified" = "Your email is already verified.";
 "entraide.report.inappropriate" = "Inappropriate";
 "entraide.report.spam" = "Spam";

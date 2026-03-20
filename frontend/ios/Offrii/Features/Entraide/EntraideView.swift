@@ -15,6 +15,8 @@ struct EntraideView: View {
     @State private var showWishLimitAlert = false
     @State private var showEligibilityAlert = false
     @State private var resendCooldown = false
+    @State private var resendCountdown = 0
+    @State private var resendError: String?
     @State private var sortField = "created_at"
     @State private var sortOrder = "desc"
 
@@ -344,28 +346,49 @@ struct EntraideView: View {
     // MARK: - Eligibility Banner
 
     private var eligibilityBanner: some View {
-        HStack(spacing: OffriiTheme.spacingSM) {
-            Image(systemName: isAccountTooRecent ? "clock" : "envelope.badge")
-                .font(.system(size: 14))
-                .foregroundColor(OffriiTheme.primary)
+        VStack(spacing: OffriiTheme.spacingSM) {
+            HStack(spacing: OffriiTheme.spacingSM) {
+                Image(systemName: isAccountTooRecent ? "clock" : "envelope.badge")
+                    .font(.system(size: 14))
+                    .foregroundColor(OffriiTheme.primary)
 
-            Text(eligibilityMessage)
-                .font(OffriiTypography.caption)
-                .foregroundColor(OffriiTheme.text)
+                Text(eligibilityMessage)
+                    .font(OffriiTypography.caption)
+                    .foregroundColor(OffriiTheme.text)
 
-            Spacer()
+                Spacer()
 
-            if !isAccountTooRecent && !isEmailVerified {
-                Button {
-                    Task { await resendVerificationWithCooldown() }
-                } label: {
-                    Text(resendCooldown
-                        ? NSLocalizedString("entraide.eligibility.emailSent", comment: "")
-                        : NSLocalizedString("entraide.eligibility.resend", comment: ""))
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundColor(resendCooldown ? OffriiTheme.textMuted : OffriiTheme.primary)
+                if !isAccountTooRecent && !isEmailVerified {
+                    Button {
+                        Task { await resendVerificationWithCooldown() }
+                    } label: {
+                        if resendCooldown {
+                            Text("\(resendCountdown)s")
+                                .font(.system(size: 12, weight: .medium).monospacedDigit())
+                                .foregroundColor(OffriiTheme.textMuted)
+                        } else {
+                            Text(NSLocalizedString("entraide.eligibility.resend", comment: ""))
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundColor(OffriiTheme.primary)
+                        }
+                    }
+                    .disabled(resendCooldown)
                 }
-                .disabled(resendCooldown)
+            }
+
+            // Success/error feedback
+            if resendCooldown && resendCountdown > 50 {
+                Text(NSLocalizedString("entraide.eligibility.checkSpam", comment: ""))
+                    .font(.system(size: 11))
+                    .foregroundColor(OffriiTheme.textSecondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+
+            if let resendError {
+                Text(resendError)
+                    .font(.system(size: 11))
+                    .foregroundColor(OffriiTheme.danger)
+                    .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
         .padding(OffriiTheme.spacingSM)
@@ -380,20 +403,34 @@ struct EntraideView: View {
 
     private func resendVerificationWithCooldown() async {
         guard !resendCooldown else { return }
+        resendError = nil
         do {
             try await UserService.shared.resendVerification()
             OffriiHaptics.success()
-            resendCooldown = true
-            try? await Task.sleep(for: .seconds(60))
-            resendCooldown = false
+            startCooldown(seconds: 60)
         } catch let error as APIError {
             if case .tooManyRequests = error {
-                // Backend rate limit hit — activate frontend cooldown too
-                resendCooldown = true
-                try? await Task.sleep(for: .seconds(60))
-                resendCooldown = false
+                startCooldown(seconds: 60)
+            } else {
+                resendError = error.localizedDescription
+                OffriiHaptics.error()
             }
-        } catch {}
+        } catch {
+            resendError = error.localizedDescription
+            OffriiHaptics.error()
+        }
+    }
+
+    private func startCooldown(seconds: Int) {
+        resendCooldown = true
+        resendCountdown = seconds
+        Task {
+            while resendCountdown > 0 {
+                try? await Task.sleep(for: .seconds(1))
+                resendCountdown -= 1
+            }
+            resendCooldown = false
+        }
     }
 
 }
