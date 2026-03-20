@@ -194,20 +194,20 @@ impl PgCommunityWishService {
                 Some(ModerationResult::Approved) => (
                     WishStatus::Open,
                     None,
-                    "Souhait publié !".to_string(),
-                    "Votre souhait est maintenant visible sur le mur d'entraide.".to_string(),
+                    "Besoin publié !".to_string(),
+                    "Votre besoin est maintenant visible sur le mur d'entraide.".to_string(),
                 ),
                 Some(ModerationResult::Flagged { reason }) => (
                     WishStatus::Flagged,
                     Some(reason),
-                    "Souhait en révision".to_string(),
-                    "Votre souhait est en cours de révision par notre équipe.".to_string(),
+                    "Besoin en révision".to_string(),
+                    "Votre besoin est en cours de révision par notre équipe.".to_string(),
                 ),
                 None => (
                     WishStatus::Flagged,
                     Some("moderation service unavailable after retries".to_string()),
-                    "Souhait en révision".to_string(),
-                    "Votre souhait est en cours de révision par notre équipe.".to_string(),
+                    "Besoin en révision".to_string(),
+                    "Votre besoin est en cours de révision par notre équipe.".to_string(),
                 ),
             };
 
@@ -808,8 +808,8 @@ impl traits::CommunityWishService for PgCommunityWishService {
         {
             self.notify_user(
                 donor_id,
-                "Souhait fermé".into(),
-                "L'auteur a fermé son souhait.".into(),
+                "Besoin fermé".into(),
+                "L'auteur a fermé son besoin.".into(),
                 "wish_closed",
                 Some(wish_id),
                 Some(user_id),
@@ -1205,8 +1205,8 @@ impl traits::CommunityWishService for PgCommunityWishService {
             // Notify owner
             self.notify_user(
                 wish.owner_id,
-                "Souhait signalé".into(),
-                "Votre souhait a été signalé par la communauté et est en cours de révision.".into(),
+                "Besoin signalé".into(),
+                "Votre besoin a été signalé par la communauté et est en cours de révision.".into(),
                 "wish_reported",
                 Some(wish_id),
                 None,
@@ -1317,8 +1317,8 @@ impl traits::CommunityWishService for PgCommunityWishService {
 
         self.notify_user(
             wish.owner_id,
-            "Souhait approuvé".into(),
-            "Votre souhait a été approuvé et est maintenant visible.".into(),
+            "Besoin approuvé".into(),
+            "Votre besoin a été approuvé et est maintenant visible.".into(),
             "wish_approved",
             Some(wish_id),
             None,
@@ -1353,8 +1353,8 @@ impl traits::CommunityWishService for PgCommunityWishService {
 
         self.notify_user(
             wish.owner_id,
-            "Souhait refusé".into(),
-            "Votre souhait n'a pas été retenu par notre équipe.".into(),
+            "Besoin refusé".into(),
+            "Votre besoin n'a pas été retenu par notre équipe.".into(),
             "wish_rejected",
             Some(wish_id),
             None,

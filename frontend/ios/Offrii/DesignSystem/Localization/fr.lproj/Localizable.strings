@@ -284,8 +284,8 @@
 /* Entraide */
 "entraide.title" = "Entraide";
 "entraide.subtitle" = "Des gestes simples, des impacts réels";
-"entraide.empty" = "Aucun souhait pour le moment";
-"entraide.emptySubtitle" = "Soyez le premier à publier un souhait";
+"entraide.empty" = "Aucun besoin pour le moment";
+"entraide.emptySubtitle" = "Soyez le premier à publier un besoin";
 "entraide.anonymous" = "Anonyme";
 "entraide.countSingular" = "besoin";
 "entraide.countPlural" = "besoins";
@@ -318,7 +318,7 @@
 "entraide.status.rejected" = "Rejeté";
 
 /* Entraide - Création */
-"entraide.create.title" = "Publier un souhait";
+"entraide.create.title" = "Publier un besoin";
 "entraide.create.titleLabel" = "Titre";
 "entraide.create.titlePlaceholder" = "De quoi avez-vous besoin ?";
 "entraide.create.descriptionLabel" = "Description (optionnel)";
@@ -333,26 +333,26 @@
 /* Entraide - Détail */
 "entraide.detail.matchedBy" = "Pris en charge par %@";
 "entraide.detail.alreadyMatched" = "Quelqu'un s'en occupe déjà";
-"entraide.detail.fulfilled" = "Ce souhait a été offert !";
+"entraide.detail.fulfilled" = "Ce besoin a été comblé !";
 "entraide.detail.fulfilledThanks" = "Offert ! Merci pour votre générosité";
 
 /* Entraide - Actions */
-"entraide.action.close" = "Fermer le souhait";
-"entraide.action.delete" = "Supprimer le souhait";
-"entraide.close.confirmTitle" = "Fermer ce souhait ?";
-"entraide.close.confirmMessage" = "Votre souhait ne sera plus visible. Vous pourrez toujours le voir dans votre historique.";
-"entraide.delete.confirmTitle" = "Supprimer ce souhait ?";
-"entraide.delete.confirmMessage" = "Cette action est irréversible. Le souhait et tous les messages associés seront définitivement supprimés.";
+"entraide.action.close" = "Fermer le besoin";
+"entraide.action.delete" = "Supprimer le besoin";
+"entraide.close.confirmTitle" = "Fermer ce besoin ?";
+"entraide.close.confirmMessage" = "Votre besoin ne sera plus visible. Vous pourrez toujours le voir dans votre historique.";
+"entraide.delete.confirmTitle" = "Supprimer ce besoin ?";
+"entraide.delete.confirmMessage" = "Cette action est irréversible. Le besoin et tous les messages associés seront définitivement supprimés.";
 "entraide.action.confirm" = "Confirmer la réception";
 "entraide.action.reject" = "Rejeter l'offre";
 "entraide.action.withdraw" = "Se retirer";
 "entraide.action.messages" = "Messages";
 "entraide.action.offerSuccess" = "Merci pour votre générosité !";
-"entraide.action.closeSuccess" = "Souhait fermé.";
+"entraide.action.closeSuccess" = "Besoin fermé.";
 "entraide.action.rejectSuccess" = "Offre déclinée.";
-"entraide.action.deleteSuccess" = "Souhait supprimé.";
+"entraide.action.deleteSuccess" = "Besoin supprimé.";
 "entraide.action.edit" = "Modifier";
-"entraide.edit.title" = "Modifier le souhait";
+"entraide.edit.title" = "Modifier le besoin";
 "entraide.edit.submit" = "Enregistrer";
 "entraide.edit.warningTitle" = "Re-modération nécessaire";
 "entraide.edit.warningMessage" = "Votre besoin modifié sera vérifié par notre modération avant d'être visible à nouveau.";
@@ -361,9 +361,9 @@
 "entraide.fulfill.confirmMessage" = "Confirmer que %@ vous a aidé ?";
 "entraide.fulfill.celebration" = "Merci !\nCe geste a été enregistré.";
 "entraide.onboarding.title" = "Bienvenue dans l'Entraide";
-"entraide.onboarding.body" = "Ici, les membres de la communauté partagent leurs besoins. Proposez votre aide ou publiez un souhait. Tout est modéré pour votre sécurité.";
+"entraide.onboarding.body" = "Ici, les membres de la communauté partagent leurs besoins. Proposez votre aide ou publiez un besoin. Tout est modéré pour votre sécurité.";
 "entraide.action.withdrawSuccess" = "Vous vous êtes retiré";
-"entraide.action.confirmSuccess" = "Souhait confirmé ! Merci";
+"entraide.action.confirmSuccess" = "Besoin confirmé ! Merci";
 "entraide.action.offer" = "Proposer mon aide";
 "entraide.action.report" = "Signaler";
 "entraide.action.viewDetail" = "Voir le détail";
@@ -376,11 +376,11 @@
 "entraide.messages.emptySubtitle" = "Envoyez le premier message pour démarrer la conversation.";
 
 /* Entraide - Signalement */
-"entraide.report.title" = "Signaler ce souhait";
+"entraide.report.title" = "Signaler ce besoin";
 "entraide.report.subtitle" = "Choisissez la raison du signalement";
 "entraide.report.submit" = "Envoyer le signalement";
 "entraide.report.success" = "Merci pour votre signalement. Notre équipe va examiner ce besoin.";
-"entraide.action.reopenSuccess" = "Votre souhait est en cours de re-vérification.";
+"entraide.action.reopenSuccess" = "Votre besoin est en cours de re-vérification.";
 "entraide.wishLimit.title" = "Limite atteinte";
 "entraide.wishLimit.message" = "Vous avez déjà 3 besoins actifs. Fermez-en un ou attendez qu'un soit comblé avant d'en publier un nouveau.";
 "entraide.report.inappropriate" = "Inapproprié";
@@ -388,10 +388,10 @@
 "entraide.report.scam" = "Arnaque";
 "entraide.report.other" = "Autre";
 
-/* Entraide - Mes souhaits */
-"entraide.myWishes.title" = "Mes souhaits";
-"entraide.myWishes.empty" = "Aucun souhait";
-"entraide.myWishes.emptySubtitle" = "Vous n'avez pas encore publié de souhait";
+/* Entraide - Mes besoins */
+"entraide.myWishes.title" = "Mes besoins";
+"entraide.myWishes.empty" = "Aucun besoin";
+"entraide.myWishes.emptySubtitle" = "Vous n'avez pas encore publié de besoin";
 "entraide.myWishes.reports" = "%d signalement(s)";
 
 /* Profile - Community */
@@ -415,7 +415,7 @@
 "tip.wishlist.swipe" = "Glisse à gauche pour supprimer, à droite pour marquer reçu";
 "tip.circles.create" = "Crée un cercle pour partager ta wishlist avec tes proches";
 "tip.circles.share" = "Invite des amis pour qu'ils voient et réservent tes envies";
-"tip.entraide.browse" = "Filtre les souhaits par catégorie pour trouver qui aider";
+"tip.entraide.browse" = "Filtre les besoins par catégorie pour trouver qui aider";
 "tip.entraide.offer" = "Propose ton aide. Tu pourras envoyer un message à la personne";
 "tip.profile.username" = "Choisis un username pour que tes amis te trouvent";
 "tip.profile.reminders" = "Active les rappels pour ne jamais oublier l'envie d'un ami";
@@ -480,7 +480,7 @@
 "entraide.messages.loadMore" = "Charger les messages précédents";
 "entraide.report.otherPlaceholder" = "Décrivez le problème...";
 "entraide.report.detailsPlaceholder" = "Précisez (optionnel)...";
-"entraide.report.alreadyReported" = "Vous avez déjà signalé ce souhait.";
+"entraide.report.alreadyReported" = "Vous avez déjà signalé ce besoin.";
 "entraide.block.promptTitle" = "Masquer ce besoin ?";
 "entraide.block.promptMessage" = "Vous ne verrez plus ce besoin dans votre fil.";
 "entraide.block.confirm" = "Masquer";

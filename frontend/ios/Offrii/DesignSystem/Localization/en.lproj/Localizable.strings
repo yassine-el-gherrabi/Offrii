@@ -284,12 +284,12 @@
 /* Entraide */
 "entraide.title" = "Community";
 "entraide.subtitle" = "Simple gestures, real impact";
-"entraide.empty" = "No wishes yet";
-"entraide.emptySubtitle" = "Be the first to publish a wish";
+"entraide.empty" = "No needs yet";
+"entraide.emptySubtitle" = "Be the first to publish a need";
 "entraide.anonymous" = "Anonymous";
-"entraide.countSingular" = "wish";
-"entraide.countPlural" = "wishes";
-"entraide.search.placeholder" = "Search wishes...";
+"entraide.countSingular" = "need";
+"entraide.countPlural" = "needs";
+"entraide.search.placeholder" = "Search needs...";
 "entraide.sort.newest" = "Newest";
 "entraide.sort.oldest" = "Oldest";
 "entraide.sort.date" = "Date";
@@ -318,7 +318,7 @@
 "entraide.status.rejected" = "Rejected";
 
 /* Entraide - Creation */
-"entraide.create.title" = "Publish a wish";
+"entraide.create.title" = "Publish a need";
 "entraide.create.titleLabel" = "Title";
 "entraide.create.titlePlaceholder" = "What do you need?";
 "entraide.create.descriptionLabel" = "Description (optional)";
@@ -333,16 +333,16 @@
 /* Entraide - Detail */
 "entraide.detail.matchedBy" = "Taken care of by %@";
 "entraide.detail.alreadyMatched" = "Someone is already on it";
-"entraide.detail.fulfilled" = "This wish has been fulfilled!";
+"entraide.detail.fulfilled" = "This need has been fulfilled!";
 "entraide.detail.fulfilledThanks" = "Fulfilled! Thank you for your generosity";
 
 /* Entraide - Actions */
-"entraide.action.close" = "Close wish";
-"entraide.action.delete" = "Delete wish";
-"entraide.close.confirmTitle" = "Close this wish?";
-"entraide.close.confirmMessage" = "Your wish will no longer be visible. You can still see it in your history.";
-"entraide.delete.confirmTitle" = "Delete this wish?";
-"entraide.delete.confirmMessage" = "This action is irreversible. The wish and all associated messages will be permanently deleted.";
+"entraide.action.close" = "Close need";
+"entraide.action.delete" = "Delete need";
+"entraide.close.confirmTitle" = "Close this need?";
+"entraide.close.confirmMessage" = "Your need will no longer be visible. You can still see it in your history.";
+"entraide.delete.confirmTitle" = "Delete this need?";
+"entraide.delete.confirmMessage" = "This action is irreversible. The need and all associated messages will be permanently deleted.";
 "entraide.action.confirm" = "Confirm received";
 "entraide.action.reject" = "Reject offer";
 "entraide.action.withdraw" = "Withdraw";
@@ -352,16 +352,16 @@
 "entraide.action.rejectSuccess" = "Offer declined.";
 "entraide.action.deleteSuccess" = "Wish deleted.";
 "entraide.action.edit" = "Edit";
-"entraide.edit.title" = "Edit wish";
+"entraide.edit.title" = "Edit need";
 "entraide.edit.submit" = "Save changes";
 "entraide.edit.warningTitle" = "Re-moderation required";
-"entraide.edit.warningMessage" = "Your modified wish will be reviewed by our moderation before being visible again.";
+"entraide.edit.warningMessage" = "Your modified need will be reviewed by our moderation before being visible again.";
 "entraide.edit.warningConfirm" = "Save anyway";
 "entraide.fulfill.confirmTitle" = "Confirm help received?";
 "entraide.fulfill.confirmMessage" = "Confirm that %@ helped you?";
 "entraide.fulfill.celebration" = "Thank you!\nThis gesture has been recorded.";
 "entraide.onboarding.title" = "Welcome to Mutual Aid";
-"entraide.onboarding.body" = "Here, community members share their needs. You can offer your help or publish a wish. Everything is moderated for your safety.";
+"entraide.onboarding.body" = "Here, community members share their needs. You can offer your help or publish a need. Everything is moderated for your safety.";
 "entraide.action.withdrawSuccess" = "You have withdrawn";
 "entraide.action.confirmSuccess" = "Wish confirmed! Thank you";
 "entraide.action.offer" = "Offer help";
@@ -376,22 +376,22 @@
 "entraide.messages.emptySubtitle" = "Send the first message to start the conversation.";
 
 /* Entraide - Report */
-"entraide.report.title" = "Report this wish";
+"entraide.report.title" = "Report this need";
 "entraide.report.subtitle" = "Choose the reason for reporting";
 "entraide.report.submit" = "Submit report";
-"entraide.report.success" = "Thank you for your report. Our team will review this wish.";
-"entraide.action.reopenSuccess" = "Your wish is being re-reviewed.";
+"entraide.report.success" = "Thank you for your report. Our team will review this need.";
+"entraide.action.reopenSuccess" = "Your need is being re-reviewed.";
 "entraide.wishLimit.title" = "Limit reached";
-"entraide.wishLimit.message" = "You already have 3 active wishes. Close or wait for one to be fulfilled before creating a new one.";
+"entraide.wishLimit.message" = "You already have 3 active needs. Close or wait for one to be fulfilled before creating a new one.";
 "entraide.report.inappropriate" = "Inappropriate";
 "entraide.report.spam" = "Spam";
 "entraide.report.scam" = "Scam";
 "entraide.report.other" = "Other";
 
-/* Entraide - My wishes */
-"entraide.myWishes.title" = "My wishes";
-"entraide.myWishes.empty" = "No wishes";
-"entraide.myWishes.emptySubtitle" = "You haven't published any wishes yet";
+/* Entraide - My needs */
+"entraide.myWishes.title" = "My needs";
+"entraide.myWishes.empty" = "No needs";
+"entraide.myWishes.emptySubtitle" = "You haven't published any needs yet";
 "entraide.myWishes.reports" = "%d report(s)";
 
 /* Profile - Community */
@@ -415,7 +415,7 @@
 "tip.wishlist.swipe" = "Swipe left to delete, right to mark received";
 "tip.circles.create" = "Create a circle to share your wishlist with loved ones";
 "tip.circles.share" = "Invite friends so they can see and reserve your wishes";
-"tip.entraide.browse" = "Filter wishes by category to find who to help";
+"tip.entraide.browse" = "Filter needs by category to find who to help";
 "tip.entraide.offer" = "Offer your help. You can message the person";
 "tip.profile.username" = "Choose a username so friends can find you";
 "tip.profile.reminders" = "Enable reminders to never forget a friend's wish";
@@ -473,16 +473,16 @@
 "entraide.offer.confirmTitle" = "Offer your help?";
 "entraide.offer.confirmAction" = "Confirm";
 "entraide.offer.confirmMessage" = "You will be connected with the author to help them. You can exchange via messages.";
-"entraide.offer.alreadyMatched" = "Someone has already offered to help for this wish.";
+"entraide.offer.alreadyMatched" = "Someone has already offered to help for this need.";
 "entraide.offer.messagePlaceholder" = "Leave a message (optional)";
 "entraide.aging.waiting" = "Still waiting for help";
 "entraide.recentFulfilled.title" = "Recently fulfilled";
 "entraide.messages.loadMore" = "Load older messages";
 "entraide.report.otherPlaceholder" = "Please describe the issue...";
 "entraide.report.detailsPlaceholder" = "Add details (optional)...";
-"entraide.report.alreadyReported" = "You have already reported this wish.";
-"entraide.block.promptTitle" = "Hide this wish?";
-"entraide.block.promptMessage" = "You won't see this wish in your feed anymore.";
+"entraide.report.alreadyReported" = "You have already reported this need.";
+"entraide.block.promptTitle" = "Hide this need?";
+"entraide.block.promptMessage" = "You won't see this need in your feed anymore.";
 "entraide.block.confirm" = "Hide";
 "entraide.block.decline" = "No thanks";
 
