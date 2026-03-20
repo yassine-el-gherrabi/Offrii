@@ -84,6 +84,13 @@ struct WishMessagesSheet: View {
                 }
                 .padding(OffriiTheme.spacingBase)
             }
+            .onAppear {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                    if let lastId = messages.last?.id {
+                        proxy.scrollTo(lastId, anchor: .bottom)
+                    }
+                }
+            }
             .onChange(of: messages.count) { _, _ in
                 if let lastId = messages.last?.id {
                     withAnimation {
