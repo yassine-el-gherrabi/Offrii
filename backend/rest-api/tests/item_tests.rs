@@ -35,19 +35,11 @@ async fn create_item_full_201() {
     let app = TestApp::new().await;
     let token = app.setup_user_token(TEST_EMAIL, TEST_PASSWORD).await;
 
-    // Get a category for full test
-    let user_id: uuid::Uuid =
-        sqlx::query_scalar::<_, uuid::Uuid>("SELECT id FROM users WHERE email = $1")
-            .bind(TEST_EMAIL)
-            .fetch_one(&app.db)
-            .await
-            .unwrap();
-    let cat_id: uuid::Uuid =
-        sqlx::query_scalar("SELECT id FROM categories WHERE user_id = $1 LIMIT 1")
-            .bind(user_id)
-            .fetch_one(&app.db)
-            .await
-            .unwrap();
+    // Get a global category for full test
+    let cat_id: uuid::Uuid = sqlx::query_scalar("SELECT id FROM categories LIMIT 1")
+        .fetch_one(&app.db)
+        .await
+        .unwrap();
 
     let body = serde_json::json!({
         "name": "MacBook Pro",
@@ -184,35 +176,19 @@ async fn create_item_nonexistent_category_400() {
 }
 
 #[tokio::test]
-async fn create_item_other_users_category_400() {
+async fn create_item_invalid_category_400() {
     let app = TestApp::new().await;
-    let _token1 = app
-        .setup_user_token("catowner@example.com", TEST_PASSWORD)
-        .await;
-    let token2 = app
+    let token = app
         .setup_user_token("catthief@example.com", TEST_PASSWORD)
         .await;
 
-    // Get user1's category
-    let user1_id: uuid::Uuid =
-        sqlx::query_scalar::<_, uuid::Uuid>("SELECT id FROM users WHERE email = $1")
-            .bind("catowner@example.com")
-            .fetch_one(&app.db)
-            .await
-            .unwrap();
-    let user1_cat: uuid::Uuid =
-        sqlx::query_scalar("SELECT id FROM categories WHERE user_id = $1 LIMIT 1")
-            .bind(user1_id)
-            .fetch_one(&app.db)
-            .await
-            .unwrap();
-
-    // User2 tries to use user1's category
+    // Try to use a non-existent category UUID
+    let fake_cat = uuid::Uuid::new_v4();
     let body = serde_json::json!({
         "name": "test",
-        "category_id": user1_cat.to_string(),
+        "category_id": fake_cat.to_string(),
     });
-    let (status, resp) = app.post_json_with_auth("/items", &body, &token2).await;
+    let (status, resp) = app.post_json_with_auth("/items", &body, &token).await;
 
     assert_eq!(status, StatusCode::BAD_REQUEST);
     assert_error(&resp, "BAD_REQUEST");
@@ -446,19 +422,10 @@ async fn list_items_filter_category() {
     let app = TestApp::new().await;
     let token = app.setup_user_token(TEST_EMAIL, TEST_PASSWORD).await;
 
-    let user_id: uuid::Uuid =
-        sqlx::query_scalar::<_, uuid::Uuid>("SELECT id FROM users WHERE email = $1")
-            .bind(TEST_EMAIL)
-            .fetch_one(&app.db)
-            .await
-            .unwrap();
-
-    let cat_id: uuid::Uuid =
-        sqlx::query_scalar("SELECT id FROM categories WHERE user_id = $1 LIMIT 1")
-            .bind(user_id)
-            .fetch_one(&app.db)
-            .await
-            .unwrap();
+    let cat_id: uuid::Uuid = sqlx::query_scalar("SELECT id FROM categories LIMIT 1")
+        .fetch_one(&app.db)
+        .await
+        .unwrap();
 
     app.create_item(
         &token,
