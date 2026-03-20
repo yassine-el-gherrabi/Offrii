@@ -133,7 +133,7 @@ struct ProfileProgress {
     var hasFirstCircle: Bool { steps.first { $0.id == "firstCircle" }?.isCompleted ?? false }
     var hasFirstFriend: Bool { steps.first { $0.id == "firstFriend" }?.isCompleted ?? false }
     var hasSharedList: Bool { steps.first { $0.id == "shareList" }?.isCompleted ?? false }
-    var hasReminders: Bool { steps.first { $0.id == "reminders" }?.isCompleted ?? false }
+    var hasReminders: Bool { false } // Legacy — reminders feature removed
 }
 
 // MARK: - Quick Start Action (legacy, kept for compatibility)

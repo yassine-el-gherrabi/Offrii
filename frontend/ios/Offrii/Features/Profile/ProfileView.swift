@@ -92,53 +92,48 @@ struct ProfileView: View {
                         }
                     }
 
-                    // Section 5: Préférences
+                    // Section 5: Notifications
                     profileSection(
-                        title: NSLocalizedString("profile.preferences", comment: ""),
-                        icon: "gearshape.fill"
+                        title: NSLocalizedString("profile.notifications", comment: ""),
+                        icon: "bell.fill"
+                    ) {
+                        Button {
+                            handlePushNotificationTap()
+                        } label: {
+                            profileRow(
+                                title: NSLocalizedString("profile.notifications.push", comment: ""),
+                                value: pushEnabled
+                                    ? NSLocalizedString("profile.notifications.on", comment: "")
+                                    : NSLocalizedString("profile.notifications.off", comment: "")
+                            )
+                        }
+                    }
+
+                    // Section 6: Mes engagements
+                    profileSection(
+                        title: NSLocalizedString("profile.myCommitments", comment: ""),
+                        icon: "heart.circle.fill"
                     ) {
                         VStack(spacing: 0) {
-                            // Reminders
                             NavigationLink {
-                                ReminderSettingsView()
-                                    .environment(authManager)
+                                ReservationsListView()
                             } label: {
                                 profileRow(
-                                    title: NSLocalizedString("profile.reminders", comment: ""),
-                                    value: viewModel.reminderFreqLabel
+                                    title: NSLocalizedString("profile.commitments.reservations", comment: ""),
+                                    value: nil
                                 )
                             }
 
                             Divider().padding(.leading, OffriiTheme.spacingBase)
 
-                            // Push notifications
-                            Button {
-                                handlePushNotificationTap()
+                            NavigationLink {
+                                EntraideView()
                             } label: {
                                 profileRow(
-                                    title: pushEnabled
-                                        ? NSLocalizedString("profile.notifications.enabled", comment: "")
-                                        : NSLocalizedString("profile.notifications.openSettings", comment: ""),
+                                    title: NSLocalizedString("profile.commitments.entraide", comment: ""),
                                     value: nil
                                 )
                             }
-                        }
-                    }
-
-                    // Section 6: Mes réservations
-                    profileSection(
-                        title: NSLocalizedString("profile.myReservations", comment: ""),
-                        icon: "gift.fill"
-                    ) {
-                        NavigationLink {
-                            ReservationsListView()
-                                .navigationTitle(NSLocalizedString("profile.myReservations", comment: ""))
-                                .navigationBarTitleDisplayMode(.inline)
-                        } label: {
-                            profileRow(
-                                title: NSLocalizedString("profile.myReservations", comment: ""),
-                                value: nil
-                            )
                         }
                     }
 
@@ -491,7 +486,6 @@ struct ProfileView: View {
         profileProgress.update(id: "username", completed: !user.username.isEmpty && user.username != user.email)
         profileProgress.update(id: "displayName", completed: user.displayName != nil && !(user.displayName ?? "").isEmpty)
         profileProgress.update(id: "avatar", completed: user.avatarUrl != nil && !(user.avatarUrl ?? "").isEmpty)
-        profileProgress.update(id: "reminders", completed: user.reminderFreq != "never")
 
         if let items = try? await ItemService.shared.listItems(page: 1, perPage: 1) {
             profileProgress.update(id: "firstItem", completed: items.total > 0)

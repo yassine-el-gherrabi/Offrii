@@ -775,8 +775,13 @@
 "profile.navTitle" = "Profile";
 "profile.memberSince" = "Member since %@";
 "profile.myAccount" = "My account";
-"profile.preferences" = "Preferences";
-"profile.myReservations" = "My reservations";
+"profile.notifications" = "Notifications";
+"profile.notifications.push" = "Push notifications";
+"profile.notifications.on" = "Enabled";
+"profile.notifications.off" = "Disabled";
+"profile.myCommitments" = "My commitments";
+"profile.commitments.reservations" = "Reservations for loved ones";
+"profile.commitments.entraide" = "My community help commitments";
 "profile.dataPrivacy" = "Data & privacy";
 "profile.displayName" = "Display name";
 "profile.displayName.edit" = "Edit display name";
