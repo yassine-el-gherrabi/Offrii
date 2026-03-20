@@ -770,3 +770,22 @@
 "imagePicker.takePhoto" = "Take a photo";
 "imagePicker.chooseFromGallery" = "Choose from gallery";
 "imagePicker.removePhoto" = "Remove photo";
+
+/* Profile - Redesign */
+"profile.navTitle" = "Profile";
+"profile.memberSince" = "Member since %@";
+"profile.myAccount" = "My account";
+"profile.preferences" = "Preferences";
+"profile.myReservations" = "My reservations";
+"profile.dataPrivacy" = "Data & privacy";
+"profile.displayName" = "Display name";
+"profile.displayName.edit" = "Edit display name";
+"profile.photo" = "Profile photo";
+"profile.email" = "Email";
+"profile.emailVerified" = "Verified";
+"profile.emailNotVerified" = "Not verified";
+"profile.version" = "Offrii v%@";
+"profile.stats.wishes" = "Wishes";
+"profile.stats.received" = "Received";
+"profile.stats.circles" = "Circles";
+"profile.stats.friends" = "Friends";

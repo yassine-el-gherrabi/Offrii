@@ -11,6 +11,19 @@ final class ProfileViewModel {
     var reminderTime = "09:00"
     var isLoggingOut = false
     var loadError: String?
+    var createdAt: Date?
+    var emailVerified: Bool?
+
+    // Stats
+    var totalItems = 0
+    var receivedItems = 0
+    var circlesCount = 0
+    var friendsCount = 0
+
+    // Display name editing
+    var isEditingDisplayName = false
+    var editedDisplayName = ""
+    var isSavingDisplayName = false
 
     var avatarUrl: URL? {
         guard let str = avatarUrlString else { return nil }
@@ -35,6 +48,32 @@ final class ProfileViewModel {
         }
     }
 
+    var memberSinceText: String {
+        guard let date = createdAt else { return "" }
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMMM yyyy"
+        formatter.locale = Locale.current
+        let dateStr = formatter.string(from: date)
+        return String(format: NSLocalizedString("profile.memberSince", comment: ""), dateStr)
+    }
+
+    var truncatedEmail: String {
+        guard email.count > 24 else { return email }
+        let parts = email.split(separator: "@")
+        guard parts.count == 2 else { return String(email.prefix(24)) + "..." }
+        let local = parts[0]
+        let domain = parts[1]
+        let maxLocal = max(4, 24 - Int(domain.count) - 4) // 4 for @...
+        if local.count > maxLocal {
+            return String(local.prefix(maxLocal)) + "...@" + domain
+        }
+        return email
+    }
+
+    var appVersion: String {
+        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?"
+    }
+
     func loadProfile() async {
         loadError = nil
         do {
@@ -45,13 +84,43 @@ final class ProfileViewModel {
             avatarUrlString = profile.avatarUrl
             reminderFreq = profile.reminderFreq ?? "never"
             reminderTime = profile.reminderTime ?? "09:00"
+            createdAt = profile.createdAt
+            emailVerified = profile.emailVerified
         } catch {
             loadError = NSLocalizedString("error.loadProfileFailed", comment: "")
+        }
+
+        // Load stats in parallel
+        await loadStats()
+    }
+
+    func loadStats() async {
+        async let itemsResult = ItemService.shared.listItems(page: 1, perPage: 1)
+        async let receivedResult = ItemService.shared.listItems(status: "purchased", page: 1, perPage: 1)
+        async let circlesResult = CircleService.shared.listCircles()
+        async let friendsResult = FriendService.shared.listFriends()
+
+        if let items = try? await itemsResult {
+            totalItems = items.total
+        }
+        if let received = try? await receivedResult {
+            receivedItems = received.total
+        }
+        if let circles = try? await circlesResult {
+            circlesCount = circles.count
+        }
+        if let friends = try? await friendsResult {
+            friendsCount = friends.count
         }
     }
 
     func updateUsername(_ newUsername: String) async throws {
         let profile = try await UserService.shared.updateProfile(username: newUsername)
         username = profile.username
+    }
+
+    func updateDisplayName(_ newName: String) async throws {
+        let profile = try await UserService.shared.updateProfile(displayName: newName)
+        displayName = profile.displayName ?? ""
     }
 }

@@ -7,7 +7,7 @@ use crate::traits;
 
 // ── Brand constants ─────────────────────────────────────────────────
 
-const LOGO_URL: &str = "https://pub-83ca22acc7354445815c6b4e152ba243.r2.dev/branding/logo-1024.png";
+const LOGO_URL: &str = "https://cdn.offrii.com/branding/logo-1024.png";
 
 /// Wraps email body content in the Offrii branded template.
 /// Table-based layout for maximum email client compatibility.
