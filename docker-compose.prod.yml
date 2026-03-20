@@ -36,7 +36,7 @@ services:
           memory: 256M
 
   backend:
-    image: ghcr.io/yassinelechef/offrii-api:${TAG:-latest}
+    image: ghcr.io/yassine-el-gherrabi/offrii-api:${TAG:-latest}
     # image takes precedence over build from base; deploy uses --no-build
     environment:
       DATABASE_URL: postgres://${POSTGRES_USER:-offrii}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-offrii}
@@ -63,7 +63,7 @@ services:
     volumes:
       - /opt/offrii/secrets/jwt_private.pem:/run/secrets/jwt_private_key:ro
       - /opt/offrii/secrets/jwt_public.pem:/run/secrets/jwt_public_key:ro
-      - /opt/offrii/secrets/AuthKey.p8:/run/secrets/apns_key:ro
+      - /opt/offrii/secrets/apns_key.p8:/run/secrets/apns_key:ro
     deploy:
       resources:
         limits:
