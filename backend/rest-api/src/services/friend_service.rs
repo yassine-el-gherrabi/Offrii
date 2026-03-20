@@ -120,7 +120,7 @@ impl traits::FriendService for PgFriendService {
         let pattern = format!("{query}%");
         let rows: Vec<(String, Option<String>, bool, bool)> = sqlx::query_as(
             "SELECT u.username, u.display_name, \
-               EXISTS(SELECT 1 FROM friends f WHERE \
+               EXISTS(SELECT 1 FROM friendships f WHERE \
                  (f.user_id = $2 AND f.friend_id = u.id) OR \
                  (f.user_id = u.id AND f.friend_id = $2)) AS is_friend, \
                EXISTS(SELECT 1 FROM friend_requests fr WHERE \
