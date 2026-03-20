@@ -259,11 +259,11 @@ async fn migration_001_creates_users_table() {
 async fn migration_002_creates_categories_table() {
     let mdb = MigrationDb::new().await;
 
+    // After hardcode_categories migration, user_id column is dropped
     assert!(mdb.table_exists("categories").await);
-    assert_eq!(mdb.column_count("categories").await, 7);
+    assert_eq!(mdb.column_count("categories").await, 6);
 
     mdb.assert_not_null("categories", "id").await;
-    mdb.assert_nullable("categories", "user_id").await;
     mdb.assert_not_null("categories", "name").await;
     mdb.assert_nullable("categories", "icon").await;
     mdb.assert_not_null("categories", "is_default").await;
@@ -282,12 +282,8 @@ async fn migration_002_creates_categories_table() {
         "expected default 0, got {default:?}"
     );
 
-    // FK user_id → users.id
-    assert!(mdb.fk_exists("categories", "user_id").await);
-
-    // Partial unique indexes
-    assert!(mdb.index_exists("uq_categories_user_name").await);
-    assert!(mdb.index_exists("uq_categories_default_name").await);
+    // Both category indexes dropped: uq_categories_user_name by hardcode migration,
+    // uq_categories_default_name implicitly when user_id column was dropped (index referenced it)
 }
 
 // ===========================================================================
@@ -415,17 +411,16 @@ async fn migration_005_creates_circles_and_members() {
 async fn migration_006_seeds_default_categories() {
     let mdb = MigrationDb::new().await;
 
-    let count: (i64,) = sqlx::query_as(
-        "SELECT COUNT(*) FROM categories WHERE user_id IS NULL AND is_default = true",
-    )
-    .fetch_one(&mdb.db)
-    .await
-    .unwrap();
+    // After hardcode migration, all categories are global (no user_id column)
+    let count: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM categories WHERE is_default = true")
+        .fetch_one(&mdb.db)
+        .await
+        .unwrap();
     assert_eq!(count.0, 6, "expected 6 default categories");
 
     let names: Vec<(String, String)> = sqlx::query_as(
         "SELECT name, icon FROM categories
-         WHERE user_id IS NULL AND is_default = true
+         WHERE is_default = true
          ORDER BY position",
     )
     .fetch_all(&mdb.db)
@@ -555,13 +550,10 @@ async fn triggers_behave_correctly() {
     assert!(after.0 > before.0, "updated_at should change after UPDATE");
 
     // -- items: INSERT with status='purchased' → purchased_at auto-set -------
-    let cat_id: (sqlx::types::Uuid,) = sqlx::query_as(
-        "INSERT INTO categories (user_id, name) VALUES ($1, 'Test Cat') RETURNING id",
-    )
-    .bind(uid)
-    .fetch_one(&mdb.db)
-    .await
-    .unwrap();
+    let cat_id: (sqlx::types::Uuid,) = sqlx::query_as("SELECT id FROM categories LIMIT 1")
+        .fetch_one(&mdb.db)
+        .await
+        .unwrap();
 
     let item: (sqlx::types::Uuid, Option<chrono::DateTime<chrono::Utc>>) = sqlx::query_as(
         "INSERT INTO items (user_id, name, category_id, status)
