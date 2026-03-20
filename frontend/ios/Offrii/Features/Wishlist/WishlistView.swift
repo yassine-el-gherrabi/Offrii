@@ -1,3 +1,4 @@
+// swiftlint:disable file_length
 import SwiftUI
 
 // swiftlint:disable:next type_body_length
@@ -13,6 +14,7 @@ struct WishlistView: View {
     @State private var showBatchDeleteConfirm = false
     @State private var itemToDelete: Item?
     @State private var shareItemId: UUID?
+    @State private var itemToMakePrivate: Item?
 
     private let gridColumns = [
         GridItem(.flexible(), spacing: OffriiTheme.spacingSM),
@@ -182,6 +184,30 @@ struct WishlistView: View {
             }
         } message: {
             Text(NSLocalizedString("wishlist.delete.message", comment: ""))
+        }
+        .alert(
+            NSLocalizedString("wishlist.privateWarning.title", comment: ""),
+            isPresented: Binding(
+                get: { itemToMakePrivate != nil },
+                set: { if !$0 { itemToMakePrivate = nil } }
+            )
+        ) {
+            Button(NSLocalizedString("wishlist.private", comment: "")) {
+                if let item = itemToMakePrivate {
+                    Task {
+                        _ = try? await ItemService.shared.updateItem(
+                            id: item.id, isPrivate: true
+                        )
+                        await viewModel.loadItems()
+                    }
+                }
+                itemToMakePrivate = nil
+            }
+            Button(NSLocalizedString("common.cancel", comment: ""), role: .cancel) {
+                itemToMakePrivate = nil
+            }
+        } message: {
+            Text(NSLocalizedString("wishlist.privateWarning.message", comment: ""))
         }
         .task {
             await viewModel.loadCategories()
@@ -410,11 +436,15 @@ struct WishlistView: View {
                             }
 
                             Button {
-                                Task {
-                                    _ = try? await ItemService.shared.updateItem(
-                                        id: item.id, isPrivate: !item.isPrivate
-                                    )
-                                    await viewModel.loadItems()
+                                if !item.isPrivate && !item.sharedCircles.isEmpty {
+                                    itemToMakePrivate = item
+                                } else {
+                                    Task {
+                                        _ = try? await ItemService.shared.updateItem(
+                                            id: item.id, isPrivate: !item.isPrivate
+                                        )
+                                        await viewModel.loadItems()
+                                    }
                                 }
                             } label: {
                                 Label(
