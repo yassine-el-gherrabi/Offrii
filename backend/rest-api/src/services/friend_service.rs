@@ -121,8 +121,7 @@ impl traits::FriendService for PgFriendService {
         let rows: Vec<(String, Option<String>, bool, bool)> = sqlx::query_as(
             "SELECT u.username, u.display_name, \
                EXISTS(SELECT 1 FROM friendships f WHERE \
-                 (f.user_id = $2 AND f.friend_id = u.id) OR \
-                 (f.user_id = u.id AND f.friend_id = $2)) AS is_friend, \
+                 (f.user_a_id = LEAST($2, u.id) AND f.user_b_id = GREATEST($2, u.id))) AS is_friend, \
                EXISTS(SELECT 1 FROM friend_requests fr WHERE \
                  ((fr.from_user_id = $2 AND fr.to_user_id = u.id) OR \
                   (fr.from_user_id = u.id AND fr.to_user_id = $2)) \
