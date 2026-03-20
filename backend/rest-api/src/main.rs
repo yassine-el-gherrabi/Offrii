@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use axum::Router;
 use axum::http::{Method, header};
+use axum::response::IntoResponse;
 use axum::routing::get;
 use tokio::net::TcpListener;
 use tokio_cron_scheduler::{Job, JobScheduler};
@@ -308,6 +309,8 @@ async fn main() -> anyhow::Result<()> {
         .nest("/shared", shared::router())
         .nest("/circles", circles::router())
         .route("/join/{token}", get(circles::join_page))
+        .route("/favicon.png", get(serve_favicon))
+        .route("/favicon.ico", get(serve_favicon))
         .nest("/me", friends::router())
         .nest("/users", friends::search_router())
         .nest("/community/wishes", community_wishes::router())
@@ -368,4 +371,16 @@ async fn security_headers(
         "max-age=31536000; includeSubDomains".parse().unwrap(),
     );
     resp
+}
+
+/// Serve the Offrii favicon as a static PNG.
+async fn serve_favicon() -> impl IntoResponse {
+    const FAVICON_PNG: &[u8] = include_bytes!("../assets/favicon-32x32.png");
+    (
+        [
+            (header::CONTENT_TYPE, "image/png"),
+            (header::CACHE_CONTROL, "public, max-age=604800"),
+        ],
+        FAVICON_PNG,
+    )
 }
