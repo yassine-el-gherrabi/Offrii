@@ -544,12 +544,12 @@ fn render_shared_view_html(
         .items
         .iter()
         .find_map(|i| i.image_url.as_ref().or(i.og_image_url.as_ref()));
-    if let Some(img) = og_image {
-        h.push_str(&format!(
-            "<meta property=\"og:image\" content=\"{}\">",
-            html_escape(img)
-        ));
-    }
+    let og_img = og_image.map(|i| html_escape(i)).unwrap_or_else(|| {
+        "https://pub-83ca22acc7354445815c6b4e152ba243.r2.dev/branding/opengraph.png".to_string()
+    });
+    h.push_str(&format!(
+        "<meta property=\"og:image\" content=\"{og_img}\">",
+    ));
     h.push_str("<meta property=\"og:type\" content=\"website\"><meta name=\"theme-color\" content=\"#FF6B6B\">");
     // Favicon
     h.push_str("<link rel=\"icon\" type=\"image/png\" sizes=\"32x32\" href=\"/favicon.png\"><link rel=\"icon\" type=\"image/x-icon\" href=\"/favicon.ico\">");

@@ -572,6 +572,13 @@ h1{{font-size:1.3rem;font-weight:700;margin-bottom:8px;color:#1a1a1a}}
             )
         },
     )
+    .replace(
+        "</head>",
+        "<meta property=\"og:image\" content=\"https://pub-83ca22acc7354445815c6b4e152ba243.r2.dev/branding/opengraph.png\">\
+         <meta property=\"og:type\" content=\"website\">\
+         <meta name=\"theme-color\" content=\"#FF6B6B\">\
+         </head>",
+    )
 }
 
 fn render_join_error_html(headers: &HeaderMap) -> String {
