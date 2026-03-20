@@ -14,6 +14,7 @@ struct EntraideView: View {
     @State private var searchQuery = ""
     @State private var showWishLimitAlert = false
     @State private var showEligibilityAlert = false
+    @State private var resendCooldown = false
     @State private var sortField = "created_at"
     @State private var sortOrder = "desc"
 
@@ -215,10 +216,7 @@ struct EntraideView: View {
             isPresented: $showEligibilityAlert
         ) {
             Button(NSLocalizedString("entraide.eligibility.resend", comment: "")) {
-                Task {
-                    try? await UserService.shared.resendVerification()
-                    OffriiHaptics.success()
-                }
+                Task { await resendVerificationWithCooldown() }
             }
             Button(NSLocalizedString("common.cancel", comment: ""), role: .cancel) {}
         }
@@ -349,7 +347,7 @@ struct EntraideView: View {
         HStack(spacing: OffriiTheme.spacingSM) {
             Image(systemName: isAccountTooRecent ? "clock" : "envelope.badge")
                 .font(.system(size: 14))
-                .foregroundColor(OffriiTheme.warning)
+                .foregroundColor(OffriiTheme.primary)
 
             Text(eligibilityMessage)
                 .font(OffriiTypography.caption)
@@ -359,23 +357,36 @@ struct EntraideView: View {
 
             if !isAccountTooRecent && !isEmailVerified {
                 Button {
-                    Task {
-                        try? await UserService.shared.resendVerification()
-                        OffriiHaptics.success()
-                    }
+                    Task { await resendVerificationWithCooldown() }
                 } label: {
-                    Text(NSLocalizedString("entraide.eligibility.resend", comment: ""))
+                    Text(resendCooldown
+                        ? NSLocalizedString("entraide.eligibility.emailSent", comment: "")
+                        : NSLocalizedString("entraide.eligibility.resend", comment: ""))
                         .font(.system(size: 12, weight: .semibold))
-                        .foregroundColor(OffriiTheme.primary)
+                        .foregroundColor(resendCooldown ? OffriiTheme.textMuted : OffriiTheme.primary)
                 }
+                .disabled(resendCooldown)
             }
         }
         .padding(OffriiTheme.spacingSM)
         .padding(.horizontal, OffriiTheme.spacingXS)
-        .background(OffriiTheme.warning.opacity(0.08))
+        .background(OffriiTheme.primary.opacity(0.08))
         .cornerRadius(OffriiTheme.cornerRadiusMD)
         .padding(.horizontal, OffriiTheme.spacingBase)
         .padding(.vertical, OffriiTheme.spacingXS)
+    }
+
+    // MARK: - Resend Verification
+
+    private func resendVerificationWithCooldown() async {
+        guard !resendCooldown else { return }
+        do {
+            try await UserService.shared.resendVerification()
+            OffriiHaptics.success()
+            resendCooldown = true
+            try? await Task.sleep(for: .seconds(60))
+            resendCooldown = false
+        } catch {}
     }
 
 }
