@@ -226,6 +226,7 @@ struct EntraideView: View {
             await viewModel.loadWishes()
             await viewModel.loadMyOffers()
             await myNeedsViewModel.loadMyWishes()
+            UserDefaults.standard.set(true, forKey: "entraide.hasVisited")
         }
     }
 

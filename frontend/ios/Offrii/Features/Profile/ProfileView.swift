@@ -361,18 +361,22 @@ struct ProfileView: View {
 
     private func computeProfileProgress() async {
         guard let user = authManager.currentUser else { return }
-        profileProgress.hasUsername = !user.username.isEmpty && user.username != user.email
-        profileProgress.hasDisplayName = user.displayName != nil && !(user.displayName ?? "").isEmpty
-        profileProgress.hasReminders = user.reminderFreq != "never"
+        profileProgress.update(id: "username", completed: !user.username.isEmpty && user.username != user.email)
+        profileProgress.update(id: "displayName", completed: user.displayName != nil && !(user.displayName ?? "").isEmpty)
+        profileProgress.update(id: "avatar", completed: user.avatarUrl != nil && !(user.avatarUrl ?? "").isEmpty)
+        profileProgress.update(id: "reminders", completed: user.reminderFreq != "never")
 
         if let items = try? await ItemService.shared.listItems(page: 1, perPage: 1) {
-            profileProgress.hasFirstItem = items.total > 0
+            profileProgress.update(id: "firstItem", completed: items.total > 0)
         }
         if let circles = try? await CircleService.shared.listCircles() {
-            profileProgress.hasFirstCircle = !circles.isEmpty
+            profileProgress.update(id: "firstCircle", completed: !circles.isEmpty)
         }
         if let friends = try? await FriendService.shared.listFriends() {
-            profileProgress.hasFirstFriend = !friends.isEmpty
+            profileProgress.update(id: "firstFriend", completed: !friends.isEmpty)
+        }
+        if let rules = try? await CircleService.shared.listMyShareRules() {
+            profileProgress.update(id: "shareList", completed: rules.contains { $0.shareMode != "none" })
         }
     }
 

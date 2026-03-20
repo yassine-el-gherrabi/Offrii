@@ -439,10 +439,24 @@
 "circles.detail.noActivitySubtitle" = "Activity will appear when members interact";
 
 /* Home */
+"home.navTitle" = "Home";
 "home.greeting" = "Hello %@!";
 "home.greetingDefault" = "Hello!";
+"home.subtitle.claimed" = "%d gifts on the way";
+"home.subtitle.shared" = "Your loved ones can see %d of your wishes";
+"home.subtitle.hasItems" = "%d wishes in your list";
+"home.subtitle.empty" = "Add your first wish to get started";
 
-/* Quick Start */
+/* Stats */
+"home.stats.wishes" = "Wishes";
+"home.stats.claimed" = "Claimed";
+"home.stats.shared" = "Shared";
+"home.stats.received" = "Received";
+
+/* Quick Actions */
+"home.quickActions.title" = "Quick actions";
+
+/* Quick Start (legacy) */
 "home.quickStart.title" = "Your first steps";
 "home.quickStart.addWish" = "Add your first wish";
 "home.quickStart.createCircle" = "Create a circle";
@@ -451,8 +465,13 @@
 "home.quickStart.completed" = "Done!";
 
 /* Wishlist Preview */
-"home.wishlistPreview.title" = "My wishes";
+"home.wishlistPreview.title" = "Recent wishes";
 "home.wishlistPreview.seeAll" = "See all";
+"home.wishlistGrid.addWish" = "Add";
+
+/* Activity */
+"home.activity.title" = "What's new?";
+"home.activity.seeAll" = "See all";
 
 /* Community Spotlight */
 "home.community.title" = "Community help";
@@ -472,6 +491,34 @@
 /* Profile Progress */
 "progress.title" = "Profile %d%% complete";
 "progress.nextStep" = "Next: %@";
+"progress.detail.title" = "Your Offrii Profile";
+"progress.detail.outOf" = "of";
+"progress.group.identity" = "Identity";
+"progress.group.wishlist" = "Your list";
+"progress.group.social" = "Your people";
+"progress.group.settings" = "Settings";
+"progress.step.displayName" = "Choose a display name";
+"progress.step.displayName.sub" = "So your friends recognize you";
+"progress.step.username" = "Choose a @username";
+"progress.step.username.sub" = "So friends can find you";
+"progress.step.avatar" = "Add a profile photo";
+"progress.step.avatar.sub" = "Put a face on your profile";
+"progress.step.emailVerified" = "Verify your email";
+"progress.step.emailVerified.sub" = "Check your inbox to confirm";
+"progress.step.firstItem" = "Add your first wish";
+"progress.step.firstItem.sub" = "An item, an idea, a wish";
+"progress.step.shareList" = "Share your list";
+"progress.step.shareList.sub" = "So your loved ones know what to get you";
+"progress.step.firstFriend" = "Add a friend";
+"progress.step.firstFriend.sub" = "Search by username";
+"progress.step.firstCircle" = "Create a circle";
+"progress.step.firstCircle.sub" = "Family, friends, colleagues...";
+"progress.step.reminders" = "Enable reminders";
+"progress.step.reminders.sub" = "So you don't forget anything";
+"progress.step.pushNotifications" = "Enable notifications";
+"progress.step.pushNotifications.sub" = "Get alerted when someone claims a wish";
+"progress.step.firstNeed" = "Discover community help";
+"progress.step.firstNeed.sub" = "See what the community is sharing";
 
 /* Entraide - Segments */
 "entraide.segment.discover" = "Discover";

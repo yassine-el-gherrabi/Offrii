@@ -4,8 +4,18 @@ import SwiftUI
 
 struct HomeView: View {
     @State private var vm = HomeViewModel()
-    @State private var showProfile = false
+    @State private var showNotificationCenter = false
+    @State private var selectedItemId: UUID?
+    @State private var showQuickAdd = false
     @Environment(AuthManager.self) private var authManager
+    @Environment(AppRouter.self) private var router
+
+    private let gridColumns = [
+        GridItem(.flexible(), spacing: OffriiTheme.spacingSM),
+        GridItem(.flexible(), spacing: OffriiTheme.spacingSM)
+    ]
+
+    // MARK: - Greeting
 
     private var greeting: String {
         if let name = authManager.currentUser?.displayName, !name.isEmpty {
@@ -14,54 +24,221 @@ struct HomeView: View {
         return NSLocalizedString("home.greetingDefault", comment: "")
     }
 
+    private var subtitleText: String {
+        if vm.stats.claimedItems > 0 {
+            return String(
+                format: NSLocalizedString("home.subtitle.claimed", comment: ""),
+                vm.stats.claimedItems
+            )
+        }
+        if vm.stats.sharedItems > 0 {
+            return String(
+                format: NSLocalizedString("home.subtitle.shared", comment: ""),
+                vm.stats.sharedItems
+            )
+        }
+        if vm.stats.totalItems > 0 {
+            return String(
+                format: NSLocalizedString("home.subtitle.hasItems", comment: ""),
+                vm.stats.totalItems
+            )
+        }
+        return NSLocalizedString("home.subtitle.empty", comment: "")
+    }
+
+    private var subtitleIcon: String {
+        if vm.stats.claimedItems > 0 { return "gift.fill" }
+        if vm.stats.sharedItems > 0 { return "person.2.fill" }
+        if vm.stats.totalItems > 0 { return "heart.fill" }
+        return "plus.circle"
+    }
+
+    // MARK: - Body
+
     var body: some View {
-        ZStack {
-            OffriiTheme.background.ignoresSafeArea()
+        ScrollView {
+            VStack(spacing: OffriiTheme.spacingLG) {
+                // Contextual subtitle under the greeting
+                HStack(spacing: 6) {
+                    Image(systemName: subtitleIcon)
+                        .font(.system(size: 13))
+                        .foregroundColor(OffriiTheme.primary)
+                    Text(subtitleText)
+                        .font(.system(size: 15))
+                        .foregroundColor(OffriiTheme.textSecondary)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.top, -OffriiTheme.spacingSM)
 
-            ScrollView {
-                VStack(spacing: 0) {
-                    // Header
-                    SectionHeader(
-                        title: greeting,
-                        variant: .home
-                    ) {
-                        NavigationLink(destination: ProfileView()) {
-                            ProfileAvatarButton(
-                                initials: ProfileAvatarButton.initials(from: authManager.currentUser?.displayName),
-                                avatarUrl: authManager.currentUser?.avatarUrl.flatMap { URL(string: $0) }
-                            )
+                // Section 1: Profile progress (hidden while loading, hidden at 100%)
+                if !vm.isLoading && vm.profileProgress.percentage < 100 {
+                    ProfileProgressCard(progress: vm.profileProgress)
+                        .transition(.opacity.combined(with: .move(edge: .top)))
+                        .animation(OffriiAnimation.defaultSpring, value: vm.profileProgress.percentage)
+                }
+
+                // Section 2: Stats chips
+                HomeStatsCard(stats: vm.stats)
+
+                // Section 3: Wishlist grid preview (content first!)
+                wishlistGridSection
+
+                // Section 4: Quick actions (secondary, below content)
+                HomeQuickActionsSection()
+
+                // Section 5: Activity feed
+                if !vm.sanitizedNotifications.isEmpty {
+                    HomeActivitySection(notifications: vm.sanitizedNotifications)
+                }
+
+                // Section 6: Community spotlight
+                CommunitySpotlightSection(wishes: vm.communityWishes)
+            }
+            .padding(.horizontal, OffriiTheme.spacingBase)
+            .padding(.top, OffriiTheme.spacingBase)
+            .padding(.bottom, OffriiTheme.spacingXXL)
+        }
+        .background(OffriiTheme.background.ignoresSafeArea())
+        .navigationTitle(greeting)
+        .navigationBarTitleDisplayMode(.large)
+        .toolbar {
+            ToolbarItemGroup(placement: .topBarTrailing) {
+                Button {
+                    showNotificationCenter = true
+                } label: {
+                    Image(systemName: "bell.fill")
+                        .font(.system(size: 18))
+                        .foregroundColor(OffriiTheme.primary)
+                        .overlay(alignment: .topTrailing) {
+                            if vm.unreadNotificationCount > 0 {
+                                Text("\(min(vm.unreadNotificationCount, 99))")
+                                    .font(.system(size: 9, weight: .bold))
+                                    .foregroundColor(.white)
+                                    .padding(3)
+                                    .background(OffriiTheme.danger)
+                                    .clipShape(Circle())
+                                    .offset(x: 8, y: -6)
+                            }
                         }
-                    }
+                }
 
-                    VStack(spacing: OffriiTheme.spacingLG) {
-                        // Section 1: Progress or Summary
-                        if vm.isNewUser || vm.profileProgress.percentage < 100 {
-                            ProfileProgressCard(progress: vm.profileProgress)
-                        } else {
-                            HomeSummaryCard(stats: vm.stats)
-                        }
-
-                        // Section 2: Quick Start (new user)
-                        if vm.isNewUser {
-                            QuickStartSection(completedActions: vm.completedActions)
-                        }
-
-                        // Section 3: Wishlist preview (established user)
-                        if !vm.isNewUser && !vm.recentItems.isEmpty {
-                            WishlistPreviewSection(items: vm.recentItems)
-                        }
-
-                        // Section 4: Community spotlight (always)
-                        CommunitySpotlightSection(wishes: vm.communityWishes)
-                    }
-                    .padding(.horizontal, OffriiTheme.spacingBase)
-                    .padding(.top, OffriiTheme.spacingBase)
-                    .padding(.bottom, OffriiTheme.spacingXXL)
+                NavigationLink(destination: ProfileView()) {
+                    ProfileAvatarButton(
+                        initials: ProfileAvatarButton.initials(from: authManager.currentUser?.displayName),
+                        avatarUrl: authManager.currentUser?.avatarUrl.flatMap { URL(string: $0) }
+                    )
                 }
             }
         }
-        .navigationBarHidden(true)
+        .sheet(isPresented: $showNotificationCenter) {
+            NotificationCenterView()
+        }
+        .sheet(item: $selectedItemId, onDismiss: {
+            Task { await vm.load(authManager: authManager) }
+        }) { itemId in
+            ItemDetailSheet(itemId: itemId)
+                .environment(authManager)
+                .presentationDetents([.medium, .large])
+        }
+        .sheet(isPresented: $showQuickAdd, onDismiss: {
+            Task { await vm.load(authManager: authManager) }
+        }) {
+            QuickAddSheet { name, price, categoryId, priority, imageUrl, links, isPrivate in
+                _ = try? await ItemService.shared.createItem(
+                    name: name,
+                    estimatedPrice: price,
+                    priority: priority,
+                    categoryId: categoryId,
+                    imageUrl: imageUrl,
+                    links: links,
+                    isPrivate: isPrivate
+                )
+                return true
+            }
+        }
         .task { await vm.load(authManager: authManager) }
         .refreshable { await vm.load(authManager: authManager) }
+    }
+
+    // MARK: - Wishlist Grid Section
+
+    @ViewBuilder
+    private var wishlistGridSection: some View {
+        VStack(alignment: .leading, spacing: OffriiTheme.spacingSM) {
+            // Title + "Voir tout"
+            HStack {
+                Text(NSLocalizedString("home.wishlistPreview.title", comment: ""))
+                    .font(OffriiTypography.headline)
+                    .foregroundColor(OffriiTheme.text)
+
+                Spacer()
+
+                Button {
+                    router.selectedTab = .envies
+                } label: {
+                    HStack(spacing: OffriiTheme.spacingXXS) {
+                        Text(NSLocalizedString("home.wishlistPreview.seeAll", comment: ""))
+                            .font(OffriiTypography.subheadline)
+                        Image(systemName: "arrow.right")
+                            .font(.system(size: 12))
+                    }
+                    .foregroundColor(OffriiTheme.primary)
+                }
+            }
+
+            if vm.isLoading && vm.recentItems.isEmpty {
+                LazyVGrid(columns: gridColumns, spacing: OffriiTheme.spacingSM) {
+                    ForEach(0..<4, id: \.self) { _ in SkeletonGridCard() }
+                }
+            } else if vm.recentItems.isEmpty {
+                LazyVGrid(columns: gridColumns, spacing: OffriiTheme.spacingSM) {
+                    ghostAddCard
+                }
+            } else {
+                LazyVGrid(columns: gridColumns, spacing: OffriiTheme.spacingSM) {
+                    ForEach(vm.recentItems.prefix(4)) { item in
+                        WishlistGridCard(
+                            item: item,
+                            category: vm.category(for: item.categoryId)
+                        ) {
+                            selectedItemId = item.id
+                        }
+                    }
+
+                    if vm.recentItems.count < 4 {
+                        ghostAddCard
+                    }
+                }
+            }
+        }
+    }
+
+    // MARK: - Ghost Add Card
+
+    private var ghostAddCard: some View {
+        Button {
+            showQuickAdd = true
+        } label: {
+            VStack(spacing: OffriiTheme.spacingSM) {
+                Spacer()
+                Image(systemName: "plus")
+                    .font(.system(size: 28, weight: .light))
+                    .foregroundColor(OffriiTheme.textMuted)
+                Text(NSLocalizedString("home.wishlistGrid.addWish", comment: ""))
+                    .font(OffriiTypography.caption)
+                    .foregroundColor(OffriiTheme.textMuted)
+                Spacer()
+            }
+            .frame(maxWidth: .infinity)
+            .frame(height: 186)
+            .background(OffriiTheme.card)
+            .cornerRadius(OffriiTheme.cornerRadiusLG)
+            .overlay(
+                RoundedRectangle(cornerRadius: OffriiTheme.cornerRadiusLG)
+                    .strokeBorder(style: StrokeStyle(lineWidth: 1.5, dash: [8, 4]))
+                    .foregroundColor(OffriiTheme.border)
+            )
+        }
+        .buttonStyle(.plain)
     }
 }

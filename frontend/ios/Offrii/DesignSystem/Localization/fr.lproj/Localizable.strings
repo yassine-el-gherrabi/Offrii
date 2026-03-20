@@ -439,10 +439,24 @@
 "circles.detail.noActivitySubtitle" = "L'activité apparaîtra quand les membres interagiront";
 
 /* Accueil */
+"home.navTitle" = "Accueil";
 "home.greeting" = "Bonjour %@ !";
 "home.greetingDefault" = "Bonjour !";
+"home.subtitle.claimed" = "%d cadeaux en route";
+"home.subtitle.shared" = "Tes proches voient %d de tes envies";
+"home.subtitle.hasItems" = "%d envies dans ta liste";
+"home.subtitle.empty" = "Ajoute ta première envie pour commencer";
 
-/* Premiers pas */
+/* Stats */
+"home.stats.wishes" = "Envies";
+"home.stats.claimed" = "Réservées";
+"home.stats.shared" = "Partagées";
+"home.stats.received" = "Reçues";
+
+/* Actions rapides */
+"home.quickActions.title" = "Actions rapides";
+
+/* Premiers pas (legacy) */
 "home.quickStart.title" = "Tes premiers pas";
 "home.quickStart.addWish" = "Ajoute ton 1er souhait";
 "home.quickStart.createCircle" = "Crée un cercle";
@@ -451,8 +465,13 @@
 "home.quickStart.completed" = "Fait !";
 
 /* Aperçu liste */
-"home.wishlistPreview.title" = "Mes souhaits";
+"home.wishlistPreview.title" = "Mes envies récentes";
 "home.wishlistPreview.seeAll" = "Voir tout";
+"home.wishlistGrid.addWish" = "Ajouter";
+
+/* Activité */
+"home.activity.title" = "Quoi de neuf ?";
+"home.activity.seeAll" = "Tout voir";
 
 /* Communauté spotlight */
 "home.community.title" = "Coup de main";
@@ -472,6 +491,34 @@
 /* Progression profil */
 "progress.title" = "Profil complet à %d%%";
 "progress.nextStep" = "Prochaine étape : %@";
+"progress.detail.title" = "Ton profil Offrii";
+"progress.detail.outOf" = "sur";
+"progress.group.identity" = "Identité";
+"progress.group.wishlist" = "Ta liste";
+"progress.group.social" = "Tes proches";
+"progress.group.settings" = "Paramètres";
+"progress.step.displayName" = "Choisis un prénom";
+"progress.step.displayName.sub" = "Pour que tes proches te reconnaissent";
+"progress.step.username" = "Choisis un @pseudo";
+"progress.step.username.sub" = "Pour que tes amis te trouvent";
+"progress.step.avatar" = "Ajoute une photo de profil";
+"progress.step.avatar.sub" = "Mets un visage sur ton profil";
+"progress.step.emailVerified" = "Vérifie ton email";
+"progress.step.emailVerified.sub" = "Consulte ta boîte mail pour confirmer";
+"progress.step.firstItem" = "Ajoute ta première envie";
+"progress.step.firstItem.sub" = "Un objet, une idée, un souhait";
+"progress.step.shareList" = "Partage ta liste";
+"progress.step.shareList.sub" = "Pour que tes proches sachent quoi t'offrir";
+"progress.step.firstFriend" = "Ajoute un ami";
+"progress.step.firstFriend.sub" = "Recherche par nom d'utilisateur";
+"progress.step.firstCircle" = "Crée un cercle";
+"progress.step.firstCircle.sub" = "Famille, amis, collègues...";
+"progress.step.reminders" = "Active les rappels";
+"progress.step.reminders.sub" = "Pour ne rien oublier";
+"progress.step.pushNotifications" = "Active les notifications";
+"progress.step.pushNotifications.sub" = "Sois alerté quand quelqu'un réserve une envie";
+"progress.step.firstNeed" = "Découvre l'entraide";
+"progress.step.firstNeed.sub" = "Jette un oeil à ce que la communauté partage";
 
 /* Entraide - Segments */
 "entraide.segment.discover" = "Découvrir";

@@ -7,37 +7,18 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		AA00000000000000000002A0 /* SortMenuView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00000000000000000002A1 /* SortMenuView.swift */; };
-		AA00000000000000000001A0 /* EntraideDiscoverContent.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00000000000000000001A1 /* EntraideDiscoverContent.swift */; };
-		AA00000000000000000001A2 /* EntraideMyNeedsContent.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00000000000000000001A3 /* EntraideMyNeedsContent.swift */; };
-		AA00000000000000000001A4 /* EntraideMyNeedsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00000000000000000001A5 /* EntraideMyNeedsViewModel.swift */; };
-		AA00000000000000000001A6 /* EntraideMyOffersContent.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00000000000000000001A7 /* EntraideMyOffersContent.swift */; };
-		AA00000000000000000001A8 /* EntraideWishCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00000000000000000001A9 /* EntraideWishCard.swift */; };
-		AA00000000000000000001AA /* WishMessagesSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00000000000000000001AB /* WishMessagesSheet.swift */; };
 		0638910913C06604578BE696 /* CircleActivityFeed.swift in Sources */ = {isa = PBXBuildFile; fileRef = FCAB52FA02BBFD4399C16A7E /* CircleActivityFeed.swift */; };
-		CC00000000000000000000A3 /* ContactPickerRepresentable.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000A3 /* ContactPickerRepresentable.swift */; };
-		CC00000000000000000000A4 /* InviteContactsSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000A4 /* InviteContactsSheet.swift */; };
-		CC00000000000000000000A5 /* EditCircleSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000A5 /* EditCircleSheet.swift */; };
 		0C40392769386148C2161636 /* AddFriendSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00A795E6C64A02C75791ABC0 /* AddFriendSheet.swift */; };
-		DD00000000000000000000F1 /* FriendsListContent.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000F2 /* FriendsListContent.swift */; };
-		DD00000000000000000000F3 /* CirclesQuickActionSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000F4 /* CirclesQuickActionSheet.swift */; };
-		DD00000000000000000000F7 /* CircleShareRuleSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000F8 /* CircleShareRuleSheet.swift */; };
 		103EEE9EB1A6E8CF566004BD /* CircleModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D046AFC11C42380646B6BC6 /* CircleModels.swift */; };
-		16ADBEF5AC5D0893411CD376 /* HomeSummaryCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7199E774F0E4246F8EBCCBF4 /* HomeSummaryCard.swift */; };
 		171E6E467404F9AA5CD7E54E /* WishlistShareSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 301C3BFC0822927FEB8DA28B /* WishlistShareSheet.swift */; };
 		23FA9072F7BDBF70352D1FA0 /* ReportWishSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD62B53D9E28CE73279B751F /* ReportWishSheet.swift */; };
 		249F82836FB8810148FEA28A /* AvatarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2CC946E23E60A612A2F1640C /* AvatarView.swift */; };
 		321B1A5FCD094D16E6F36A9C /* WishlistPreviewSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 647F61CB6950B77626E4ACDB /* WishlistPreviewSection.swift */; };
-
 		41FB56C5232340B03F9A8E6D /* InviteFriendsSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2226B543C70CC51CA48162BB /* InviteFriendsSheet.swift */; };
 		4B1A9B7C129CB3C414C47584 /* QuickCreateSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6DE51F114489FF7F830B2B0 /* QuickCreateSheet.swift */; };
 		501DB52B7E67850D825F04C2 /* AvatarStack.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7281077E11D157F1F2FBE53 /* AvatarStack.swift */; };
 		645301E175CAAC334C76C2AF /* WishDetailSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8A2D4B4151E04BA716C8555 /* WishDetailSheet.swift */; };
 		69F0C2B5DDE535B06575C6CD /* CirclesListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE2967E84D0AD47134A0925A /* CirclesListView.swift */; };
-		CC00000000000000000000C2 /* ReservationsListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000C2 /* ReservationsListView.swift */; };
-		CC00000000000000000000D1 /* AppNotification.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000D1 /* AppNotification.swift */; };
-		CC00000000000000000000D2 /* NotificationCenterService.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000D2 /* NotificationCenterService.swift */; };
-		CC00000000000000000000D3 /* NotificationCenterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000D3 /* NotificationCenterView.swift */; };
 		7883478350B7C046ABEFF52E /* CircleService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DC960665D0FCEE00400F773 /* CircleService.swift */; };
 		798ABA96D107D82F3F8E6B20 /* CreateCircleSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9CB58C031CA34EDF11A6C318 /* CreateCircleSheet.swift */; };
 		821D5BB6CF94B930F802F6E1 /* ProfileProgress.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76631281854337CE0C72D6BD /* ProfileProgress.swift */; };
@@ -45,20 +26,26 @@
 		8E9D80D59CDEA2E765571C00 /* WishDetailViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12CD4CA251235E5ADD02FE90 /* WishDetailViewModel.swift */; };
 		9082DA2F2F6622E1002BBF41 /* BlurView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9082DA2E2F6622E1002BBF41 /* BlurView.swift */; };
 		90DB1C562F63676B00EB59C4 /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = P10000000000000000000002 /* GoogleSignIn */; };
-		CC00000000000000000000C1 /* NukeUI in Frameworks */ = {isa = PBXBuildFile; productRef = P10000000000000000000003 /* NukeUI */; };
 		9819CC8EE7964F14CDE7D48F /* StackedAvatarsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F19D296A0047D817CD0475CC /* StackedAvatarsView.swift */; };
 		99AD360522789939E56AB458 /* CircleDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9EEDF827539742DBA3A5617E /* CircleDetailView.swift */; };
 		9BE2E54145DD2F357A4186FC /* ProfileProgressCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7CD43FCFA25254BFA5826718 /* ProfileProgressCard.swift */; };
 		9D14A9A3E27EC6245F34EEA6 /* MessageBubble.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58F0F5B130F191CB76DB83CC /* MessageBubble.swift */; };
 		9E5A06B3602ED34AAE5C175B /* CommunityWish.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E8B0D51A42018F6E1949DC4 /* CommunityWish.swift */; };
+		A0F0F25FC61C6A7224742FDA /* ProfileProgressSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2882B031F9A19E4E82811AB /* ProfileProgressSheet.swift */; };
 		A31119D38454629060B236B1 /* CategoryStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 219F8494CAFE618EE9E0981E /* CategoryStyle.swift */; };
 		A72A4D980594FA3993E6945A /* UIImage+Compress.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61C863A588B3142B27D0456B /* UIImage+Compress.swift */; };
 		A78D6DF4E941FAAC152F11D6 /* HomeViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1421F430C8534068A90062B7 /* HomeViewModel.swift */; };
 		A913ED170790FA4CCDE27BCF /* CreateWishSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5729A67B6A84DC629D5E0E70 /* CreateWishSheet.swift */; };
+		AA00000000000000000001A0 /* EntraideDiscoverContent.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00000000000000000001A1 /* EntraideDiscoverContent.swift */; };
+		AA00000000000000000001A2 /* EntraideMyNeedsContent.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00000000000000000001A3 /* EntraideMyNeedsContent.swift */; };
+		AA00000000000000000001A4 /* EntraideMyNeedsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00000000000000000001A5 /* EntraideMyNeedsViewModel.swift */; };
+		AA00000000000000000001A6 /* EntraideMyOffersContent.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00000000000000000001A7 /* EntraideMyOffersContent.swift */; };
+		AA00000000000000000001A8 /* EntraideWishCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00000000000000000001A9 /* EntraideWishCard.swift */; };
+		AA00000000000000000001AA /* WishMessagesSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00000000000000000001AB /* WishMessagesSheet.swift */; };
+		AA00000000000000000002A0 /* SortMenuView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00000000000000000002A1 /* SortMenuView.swift */; };
 		AE0AF7503251F0A3A13160E4 /* WishlistGridCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C88D7AEFC9F4D0A12FB273A /* WishlistGridCard.swift */; };
 		B10000000000000000000001 /* OffriiApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000001 /* OffriiApp.swift */; };
 		B10000000000000000000002 /* AuthManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000002 /* AuthManager.swift */; };
-		B10000000000000000000052 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000052 /* AppDelegate.swift */; };
 		B10000000000000000000003 /* KeychainService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000003 /* KeychainService.swift */; };
 		B10000000000000000000004 /* Color+Hex.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000004 /* Color+Hex.swift */; };
 		B10000000000000000000005 /* AppRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000005 /* AppRouter.swift */; };
@@ -74,7 +61,6 @@
 		B10000000000000000000016 /* Typography.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000016 /* Typography.swift */; };
 		B10000000000000000000017 /* AuthViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000017 /* AuthViewModel.swift */; };
 		B10000000000000000000018 /* ForgotPasswordView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000018 /* ForgotPasswordView.swift */; };
-		DD00000000000000000000F5 /* AuthView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000F6 /* AuthView.swift */; };
 		B10000000000000000000021 /* CategoryPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000021 /* CategoryPickerView.swift */; };
 		B10000000000000000000022 /* LegalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000022 /* LegalView.swift */; };
 		B10000000000000000000025 /* ComingSoonView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000025 /* ComingSoonView.swift */; };
@@ -102,6 +88,7 @@
 		B10000000000000000000049 /* UsernameEditView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000049 /* UsernameEditView.swift */; };
 		B10000000000000000000050 /* APIRequestBodies.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000050 /* APIRequestBodies.swift */; };
 		B10000000000000000000051 /* SSOService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000051 /* SSOService.swift */; };
+		B10000000000000000000052 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000052 /* AppDelegate.swift */; };
 		B17E171DC12780453143CCF3 /* OffriiGridCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0822596525E78FF89DE7A719 /* OffriiGridCard.swift */; };
 		B1POSTAUTH0000000000001 /* PostAuthSetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1POSTAUTH0000000000001 /* PostAuthSetupView.swift */; };
 		B1SPLASH000000000000001 /* SplashView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1SPLASH000000000000001 /* SplashView.swift */; };
@@ -116,7 +103,6 @@
 		B30000000000000000000005 /* ProfileViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000005 /* ProfileViewModelTests.swift */; };
 		B30000000000000000000006 /* WishlistViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000006 /* WishlistViewModelTests.swift */; };
 		B40000000000000000000001 /* KeychainAccess in Frameworks */ = {isa = PBXBuildFile; productRef = P10000000000000000000001 /* KeychainAccess */; };
-
 		B747C7A63F234CF4323C22D4 /* ItemDetailSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2CC1BDA19FAA9BEFBA0592C /* ItemDetailSheet.swift */; };
 		BB0000000000000000000001 /* Spacing.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000001 /* Spacing.swift */; };
 		BB0000000000000000000002 /* Radius.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000002 /* Radius.swift */; };
@@ -135,21 +121,36 @@
 		BB0000000000000000000015 /* OnboardingTipManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000015 /* OnboardingTipManager.swift */; };
 		BB0000000000000000000016 /* ProfileAvatarButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000016 /* ProfileAvatarButton.swift */; };
 		BB23760E3BC7BFB013565463 /* QuickStartSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 56DABF9DABE57B94481D649C /* QuickStartSection.swift */; };
+		C1B9B86A09EA918CC24D05F6 /* HomeQuickActionsSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98D9DF54EC2279EB16B28717 /* HomeQuickActionsSection.swift */; };
 		C796CD19A417931261A7E2F1 /* EditShareLinkSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70A76EF6B88A42F8839A31BB /* EditShareLinkSheet.swift */; };
 		C7E6192D9D3421D777B77CCA /* EntraideView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55B3E30B5B5D30A718724250 /* EntraideView.swift */; };
 		C9FD30768637251C31774210 /* EntraideViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64A31455759F0D2673A3A174 /* EntraideViewModel.swift */; };
 		C9FDAB37002F7F13541560D8 /* WishMessageService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91C64971504DD02B8707432F /* WishMessageService.swift */; };
+		CC00000000000000000000A3 /* ContactPickerRepresentable.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000A3 /* ContactPickerRepresentable.swift */; };
+		CC00000000000000000000A4 /* InviteContactsSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000A4 /* InviteContactsSheet.swift */; };
+		CC00000000000000000000A5 /* EditCircleSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000A5 /* EditCircleSheet.swift */; };
+		CC00000000000000000000B1 /* CameraImagePicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000B1 /* CameraImagePicker.swift */; };
+		CC00000000000000000000B2 /* CircleAvatarBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000B2 /* CircleAvatarBadge.swift */; };
+		CC00000000000000000000C1 /* NukeUI in Frameworks */ = {isa = PBXBuildFile; productRef = P10000000000000000000003 /* NukeUI */; };
+		CC00000000000000000000C2 /* ReservationsListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000C2 /* ReservationsListView.swift */; };
+		CC00000000000000000000D1 /* AppNotification.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000D1 /* AppNotification.swift */; };
+		CC00000000000000000000D2 /* NotificationCenterService.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000D2 /* NotificationCenterService.swift */; };
+		CC00000000000000000000D3 /* NotificationCenterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000D3 /* NotificationCenterView.swift */; };
 		CCFE591C12EB737AB6E26AE8 /* StatusDot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A4B79A7570DE22D99C36030 /* StatusDot.swift */; };
 		CF0E285AAF14E9E693D4F508 /* CircleDetailViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6ACFAD24E9E205201275BF6E /* CircleDetailViewModel.swift */; };
 		D650FB03CE091B982E86B409 /* Friend.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1B347536FB260D73A7FBFDF /* Friend.swift */; };
+		D6F7F62DCF58D6C58EF906B6 /* HomeStatsCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BF3018C1C8860C7B2A01A04 /* HomeStatsCard.swift */; };
 		DCDE694A3072FA09B565E7F8 /* ItemPickerSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7E917FC45488E57E7AD36D5 /* ItemPickerSheet.swift */; };
+		DD00000000000000000000F1 /* FriendsListContent.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000F2 /* FriendsListContent.swift */; };
+		DD00000000000000000000F3 /* CirclesQuickActionSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000F4 /* CirclesQuickActionSheet.swift */; };
+		DD00000000000000000000F5 /* AuthView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000F6 /* AuthView.swift */; };
+		DD00000000000000000000F7 /* CircleShareRuleSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000F8 /* CircleShareRuleSheet.swift */; };
 		E821CC665B486A06DF8BD00B /* ShareToCircleSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03A39F274A017FFE24AC4AEF /* ShareToCircleSheet.swift */; };
 		EAABD595FD4B3882BD638113 /* ShareItemSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = D409F2C427B9090D267F9378 /* ShareItemSheet.swift */; };
 		EF76599AE8AB37282DDF6439 /* FriendService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C600B057F0DED66541E7F7BB /* FriendService.swift */; };
 		F27C9B0D6C7A7E219CAF33AF /* OffriiImagePicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9CB316F85359D88A55A099C /* OffriiImagePicker.swift */; };
-		CC00000000000000000000B1 /* CameraImagePicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000B1 /* CameraImagePicker.swift */; };
-		CC00000000000000000000B2 /* CircleAvatarBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000B2 /* CircleAvatarBadge.swift */; };
 		F4A9A7E85D68A0AF3CCCD530 /* CircleCardRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B683101570004796AF55C19 /* CircleCardRow.swift */; };
+		F572C543BC737EB8D0DA1481 /* HomeActivitySection.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1FB82C694BEE3C873ED6D71 /* HomeActivitySection.swift */; };
 		F6CD535260ACFC5BF37C9137 /* CommunitySpotlightSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1772A7431B394CB8D2A8C4C7 /* CommunitySpotlightSection.swift */; };
 		F85194CFE70A765319036B44 /* CommunityWishService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 90512D0B2BB0D0B2F6631406 /* CommunityWishService.swift */; };
 		FBC28A2C90CDB099F344CCA7 /* CirclesViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A29A587E01A7D534AFC630E4 /* CirclesViewModel.swift */; };
@@ -170,16 +171,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		AA00000000000000000002A1 /* SortMenuView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SortMenuView.swift; sourceTree = "<group>"; };
-		AA00000000000000000001A1 /* EntraideDiscoverContent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EntraideDiscoverContent.swift; sourceTree = "<group>"; };
-		AA00000000000000000001A3 /* EntraideMyNeedsContent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EntraideMyNeedsContent.swift; sourceTree = "<group>"; };
-		AA00000000000000000001A5 /* EntraideMyNeedsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EntraideMyNeedsViewModel.swift; sourceTree = "<group>"; };
-		AA00000000000000000001A7 /* EntraideMyOffersContent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EntraideMyOffersContent.swift; sourceTree = "<group>"; };
-		AA00000000000000000001A9 /* EntraideWishCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EntraideWishCard.swift; sourceTree = "<group>"; };
-		AA00000000000000000001AB /* WishMessagesSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WishMessagesSheet.swift; sourceTree = "<group>"; };
 		00A795E6C64A02C75791ABC0 /* AddFriendSheet.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AddFriendSheet.swift; sourceTree = "<group>"; };
-		DD00000000000000000000F2 /* FriendsListContent.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FriendsListContent.swift; sourceTree = "<group>"; };
-
 		03A39F274A017FFE24AC4AEF /* ShareToCircleSheet.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ShareToCircleSheet.swift; sourceTree = "<group>"; };
 		0822596525E78FF89DE7A719 /* OffriiGridCard.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OffriiGridCard.swift; sourceTree = "<group>"; };
 		0A4B79A7570DE22D99C36030 /* StatusDot.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = StatusDot.swift; sourceTree = "<group>"; };
@@ -199,13 +191,13 @@
 		56DABF9DABE57B94481D649C /* QuickStartSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickStartSection.swift; sourceTree = "<group>"; };
 		5729A67B6A84DC629D5E0E70 /* CreateWishSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateWishSheet.swift; sourceTree = "<group>"; };
 		58F0F5B130F191CB76DB83CC /* MessageBubble.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageBubble.swift; sourceTree = "<group>"; };
+		5BF3018C1C8860C7B2A01A04 /* HomeStatsCard.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = HomeStatsCard.swift; path = HomeStatsCard.swift; sourceTree = "<group>"; };
 		5C88D7AEFC9F4D0A12FB273A /* WishlistGridCard.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WishlistGridCard.swift; sourceTree = "<group>"; };
 		61C863A588B3142B27D0456B /* UIImage+Compress.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "UIImage+Compress.swift"; sourceTree = "<group>"; };
 		647F61CB6950B77626E4ACDB /* WishlistPreviewSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WishlistPreviewSection.swift; sourceTree = "<group>"; };
 		64A31455759F0D2673A3A174 /* EntraideViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EntraideViewModel.swift; sourceTree = "<group>"; };
 		6ACFAD24E9E205201275BF6E /* CircleDetailViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CircleDetailViewModel.swift; sourceTree = "<group>"; };
 		70A76EF6B88A42F8839A31BB /* EditShareLinkSheet.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = EditShareLinkSheet.swift; sourceTree = "<group>"; };
-		7199E774F0E4246F8EBCCBF4 /* HomeSummaryCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeSummaryCard.swift; sourceTree = "<group>"; };
 		76631281854337CE0C72D6BD /* ProfileProgress.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileProgress.swift; sourceTree = "<group>"; };
 		7CD43FCFA25254BFA5826718 /* ProfileProgressCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileProgressCard.swift; sourceTree = "<group>"; };
 		8B683101570004796AF55C19 /* CircleCardRow.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CircleCardRow.swift; sourceTree = "<group>"; };
@@ -213,11 +205,11 @@
 		90512D0B2BB0D0B2F6631406 /* CommunityWishService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommunityWishService.swift; sourceTree = "<group>"; };
 		9082DA2E2F6622E1002BBF41 /* BlurView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BlurView.swift; sourceTree = "<group>"; };
 		91C64971504DD02B8707432F /* WishMessageService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WishMessageService.swift; sourceTree = "<group>"; };
+		98D9DF54EC2279EB16B28717 /* HomeQuickActionsSection.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = HomeQuickActionsSection.swift; path = HomeQuickActionsSection.swift; sourceTree = "<group>"; };
 		9CB58C031CA34EDF11A6C318 /* CreateCircleSheet.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CreateCircleSheet.swift; sourceTree = "<group>"; };
 		9EEDF827539742DBA3A5617E /* CircleDetailView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CircleDetailView.swift; sourceTree = "<group>"; };
 		A10000000000000000000001 /* OffriiApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OffriiApp.swift; sourceTree = "<group>"; };
 		A10000000000000000000002 /* AuthManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthManager.swift; sourceTree = "<group>"; };
-		A10000000000000000000052 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		A10000000000000000000003 /* KeychainService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainService.swift; sourceTree = "<group>"; };
 		A10000000000000000000004 /* Color+Hex.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Color+Hex.swift"; sourceTree = "<group>"; };
 		A10000000000000000000005 /* AppRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppRouter.swift; sourceTree = "<group>"; };
@@ -233,7 +225,6 @@
 		A10000000000000000000016 /* Typography.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Typography.swift; sourceTree = "<group>"; };
 		A10000000000000000000017 /* AuthViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthViewModel.swift; sourceTree = "<group>"; };
 		A10000000000000000000018 /* ForgotPasswordView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ForgotPasswordView.swift; sourceTree = "<group>"; };
-		DD00000000000000000000F6 /* AuthView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AuthView.swift; sourceTree = "<group>"; };
 		A10000000000000000000021 /* CategoryPickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategoryPickerView.swift; sourceTree = "<group>"; };
 		A10000000000000000000022 /* LegalView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LegalView.swift; sourceTree = "<group>"; };
 		A10000000000000000000025 /* ComingSoonView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComingSoonView.swift; sourceTree = "<group>"; };
@@ -261,6 +252,7 @@
 		A10000000000000000000049 /* UsernameEditView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsernameEditView.swift; sourceTree = "<group>"; };
 		A10000000000000000000050 /* APIRequestBodies.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIRequestBodies.swift; sourceTree = "<group>"; };
 		A10000000000000000000051 /* SSOService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SSOService.swift; sourceTree = "<group>"; };
+		A10000000000000000000052 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		A1POSTAUTH0000000000001 /* PostAuthSetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PostAuthSetupView.swift; sourceTree = "<group>"; };
 		A1SPLASH000000000000001 /* SplashView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplashView.swift; sourceTree = "<group>"; };
 		A1WELCOME00000000000001 /* WelcomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WelcomeView.swift; sourceTree = "<group>"; };
@@ -277,7 +269,6 @@
 		A30000000000000000000006 /* WishlistViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WishlistViewModelTests.swift; sourceTree = "<group>"; };
 		A40000000000000000000001 /* Offrii.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Offrii.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A40000000000000000000002 /* OffriiTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = OffriiTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-
 		A8A2D4B4151E04BA716C8555 /* WishDetailSheet.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WishDetailSheet.swift; sourceTree = "<group>"; };
 		AA0000000000000000000001 /* Spacing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Spacing.swift; sourceTree = "<group>"; };
 		AA0000000000000000000002 /* Radius.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Radius.swift; sourceTree = "<group>"; };
@@ -295,29 +286,39 @@
 		AA0000000000000000000014 /* OffriiSpinner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OffriiSpinner.swift; sourceTree = "<group>"; };
 		AA0000000000000000000015 /* OnboardingTipManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingTipManager.swift; sourceTree = "<group>"; };
 		AA0000000000000000000016 /* ProfileAvatarButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileAvatarButton.swift; sourceTree = "<group>"; };
-
-		DD00000000000000000000A3 /* ContactPickerRepresentable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContactPickerRepresentable.swift; sourceTree = "<group>"; };
-		DD00000000000000000000A4 /* InviteContactsSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InviteContactsSheet.swift; sourceTree = "<group>"; };
-		DD00000000000000000000A5 /* EditCircleSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditCircleSheet.swift; sourceTree = "<group>"; };
+		AA00000000000000000001A1 /* EntraideDiscoverContent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EntraideDiscoverContent.swift; sourceTree = "<group>"; };
+		AA00000000000000000001A3 /* EntraideMyNeedsContent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EntraideMyNeedsContent.swift; sourceTree = "<group>"; };
+		AA00000000000000000001A5 /* EntraideMyNeedsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EntraideMyNeedsViewModel.swift; sourceTree = "<group>"; };
+		AA00000000000000000001A7 /* EntraideMyOffersContent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EntraideMyOffersContent.swift; sourceTree = "<group>"; };
+		AA00000000000000000001A9 /* EntraideWishCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EntraideWishCard.swift; sourceTree = "<group>"; };
+		AA00000000000000000001AB /* WishMessagesSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WishMessagesSheet.swift; sourceTree = "<group>"; };
+		AA00000000000000000002A1 /* SortMenuView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SortMenuView.swift; sourceTree = "<group>"; };
 		B6DE51F114489FF7F830B2B0 /* QuickCreateSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickCreateSheet.swift; sourceTree = "<group>"; };
 		C600B057F0DED66541E7F7BB /* FriendService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FriendService.swift; sourceTree = "<group>"; };
 		C9CB316F85359D88A55A099C /* OffriiImagePicker.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OffriiImagePicker.swift; sourceTree = "<group>"; };
-		DD00000000000000000000B1 /* CameraImagePicker.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CameraImagePicker.swift; sourceTree = "<group>"; };
-		DD00000000000000000000B2 /* CircleAvatarBadge.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CircleAvatarBadge.swift; sourceTree = "<group>"; };
 		D409F2C427B9090D267F9378 /* ShareItemSheet.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ShareItemSheet.swift; sourceTree = "<group>"; };
 		D7E917FC45488E57E7AD36D5 /* ItemPickerSheet.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ItemPickerSheet.swift; sourceTree = "<group>"; };
-		DD62B53D9E28CE73279B751F /* ReportWishSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReportWishSheet.swift; sourceTree = "<group>"; };
-		DE2967E84D0AD47134A0925A /* CirclesListView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CirclesListView.swift; sourceTree = "<group>"; };
+		DD00000000000000000000A3 /* ContactPickerRepresentable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContactPickerRepresentable.swift; sourceTree = "<group>"; };
+		DD00000000000000000000A4 /* InviteContactsSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InviteContactsSheet.swift; sourceTree = "<group>"; };
+		DD00000000000000000000A5 /* EditCircleSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditCircleSheet.swift; sourceTree = "<group>"; };
+		DD00000000000000000000B1 /* CameraImagePicker.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CameraImagePicker.swift; sourceTree = "<group>"; };
+		DD00000000000000000000B2 /* CircleAvatarBadge.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CircleAvatarBadge.swift; sourceTree = "<group>"; };
 		DD00000000000000000000C2 /* ReservationsListView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ReservationsListView.swift; sourceTree = "<group>"; };
 		DD00000000000000000000D1 /* AppNotification.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppNotification.swift; sourceTree = "<group>"; };
 		DD00000000000000000000D2 /* NotificationCenterService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NotificationCenterService.swift; sourceTree = "<group>"; };
 		DD00000000000000000000D3 /* NotificationCenterView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NotificationCenterView.swift; sourceTree = "<group>"; };
+		DD00000000000000000000F2 /* FriendsListContent.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FriendsListContent.swift; sourceTree = "<group>"; };
+		DD00000000000000000000F4 /* CirclesQuickActionSheet.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CirclesQuickActionSheet.swift; sourceTree = "<group>"; };
+		DD00000000000000000000F6 /* AuthView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AuthView.swift; sourceTree = "<group>"; };
+		DD00000000000000000000F8 /* CircleShareRuleSheet.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CircleShareRuleSheet.swift; sourceTree = "<group>"; };
+		DD62B53D9E28CE73279B751F /* ReportWishSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReportWishSheet.swift; sourceTree = "<group>"; };
+		DE2967E84D0AD47134A0925A /* CirclesListView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CirclesListView.swift; sourceTree = "<group>"; };
+		E2882B031F9A19E4E82811AB /* ProfileProgressSheet.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ProfileProgressSheet.swift; path = ProfileProgressSheet.swift; sourceTree = "<group>"; };
 		F19D296A0047D817CD0475CC /* StackedAvatarsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = StackedAvatarsView.swift; sourceTree = "<group>"; };
 		F1B347536FB260D73A7FBFDF /* Friend.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Friend.swift; sourceTree = "<group>"; };
+		F1FB82C694BEE3C873ED6D71 /* HomeActivitySection.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = HomeActivitySection.swift; path = HomeActivitySection.swift; sourceTree = "<group>"; };
 		F7281077E11D157F1F2FBE53 /* AvatarStack.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AvatarStack.swift; sourceTree = "<group>"; };
 		FCAB52FA02BBFD4399C16A7E /* CircleActivityFeed.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CircleActivityFeed.swift; sourceTree = "<group>"; };
-		DD00000000000000000000F4 /* CirclesQuickActionSheet.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CirclesQuickActionSheet.swift; sourceTree = "<group>"; };
-		DD00000000000000000000F8 /* CircleShareRuleSheet.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CircleShareRuleSheet.swift; sourceTree = "<group>"; };
 		FF0000000000000000000002 /* ShinyIcon.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShinyIcon.swift; sourceTree = "<group>"; };
 		FF0000000000000000000004 /* OTPField.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OTPField.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -353,7 +354,6 @@
 				6ACFAD24E9E205201275BF6E /* CircleDetailViewModel.swift */,
 				9CB58C031CA34EDF11A6C318 /* CreateCircleSheet.swift */,
 				2226B543C70CC51CA48162BB /* InviteFriendsSheet.swift */,
-
 				DD00000000000000000000A3 /* ContactPickerRepresentable.swift */,
 				DD00000000000000000000A4 /* InviteContactsSheet.swift */,
 				DD00000000000000000000A5 /* EditCircleSheet.swift */,
@@ -363,14 +363,6 @@
 				DD00000000000000000000F8 /* CircleShareRuleSheet.swift */,
 			);
 			path = Circles;
-			sourceTree = "<group>";
-		};
-		DD00000000000000000000E0 /* Notifications */ = {
-			isa = PBXGroup;
-			children = (
-				DD00000000000000000000D3 /* NotificationCenterView.swift */,
-			);
-			path = Notifications;
 			sourceTree = "<group>";
 		};
 		4C50F0D971CD9FDC3A0D259D /* Friends */ = {
@@ -396,11 +388,14 @@
 			isa = PBXGroup;
 			children = (
 				1772A7431B394CB8D2A8C4C7 /* CommunitySpotlightSection.swift */,
-				7199E774F0E4246F8EBCCBF4 /* HomeSummaryCard.swift */,
 				76631281854337CE0C72D6BD /* ProfileProgress.swift */,
 				7CD43FCFA25254BFA5826718 /* ProfileProgressCard.swift */,
 				56DABF9DABE57B94481D649C /* QuickStartSection.swift */,
 				647F61CB6950B77626E4ACDB /* WishlistPreviewSection.swift */,
+				5BF3018C1C8860C7B2A01A04 /* HomeStatsCard.swift */,
+				98D9DF54EC2279EB16B28717 /* HomeQuickActionsSection.swift */,
+				F1FB82C694BEE3C873ED6D71 /* HomeActivitySection.swift */,
+				E2882B031F9A19E4E82811AB /* ProfileProgressSheet.swift */,
 			);
 			path = Components;
 			sourceTree = "<group>";
@@ -753,6 +748,14 @@
 			path = Entraide;
 			sourceTree = "<group>";
 		};
+		DD00000000000000000000E0 /* Notifications */ = {
+			isa = PBXGroup;
+			children = (
+				DD00000000000000000000D3 /* NotificationCenterView.swift */,
+			);
+			path = Notifications;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -933,7 +936,6 @@
 				CF0E285AAF14E9E693D4F508 /* CircleDetailViewModel.swift in Sources */,
 				798ABA96D107D82F3F8E6B20 /* CreateCircleSheet.swift in Sources */,
 				41FB56C5232340B03F9A8E6D /* InviteFriendsSheet.swift in Sources */,
-
 				CC00000000000000000000A3 /* ContactPickerRepresentable.swift in Sources */,
 				CC00000000000000000000A4 /* InviteContactsSheet.swift in Sources */,
 				CC00000000000000000000A5 /* EditCircleSheet.swift in Sources */,
@@ -975,7 +977,6 @@
 				FFD97E5231302E4645E690FB /* HomeView.swift in Sources */,
 				A78D6DF4E941FAAC152F11D6 /* HomeViewModel.swift in Sources */,
 				F6CD535260ACFC5BF37C9137 /* CommunitySpotlightSection.swift in Sources */,
-				16ADBEF5AC5D0893411CD376 /* HomeSummaryCard.swift in Sources */,
 				821D5BB6CF94B930F802F6E1 /* ProfileProgress.swift in Sources */,
 				9BE2E54145DD2F357A4186FC /* ProfileProgressCard.swift in Sources */,
 				BB23760E3BC7BFB013565463 /* QuickStartSection.swift in Sources */,
@@ -1002,6 +1003,10 @@
 				EAABD595FD4B3882BD638113 /* ShareItemSheet.swift in Sources */,
 				DCDE694A3072FA09B565E7F8 /* ItemPickerSheet.swift in Sources */,
 				C796CD19A417931261A7E2F1 /* EditShareLinkSheet.swift in Sources */,
+				D6F7F62DCF58D6C58EF906B6 /* HomeStatsCard.swift in Sources */,
+				C1B9B86A09EA918CC24D05F6 /* HomeQuickActionsSection.swift in Sources */,
+				F572C543BC737EB8D0DA1481 /* HomeActivitySection.swift in Sources */,
+				A0F0F25FC61C6A7224742FDA /* ProfileProgressSheet.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
