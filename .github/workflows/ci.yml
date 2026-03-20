@@ -131,7 +131,7 @@ jobs:
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
             | xcpretty
-      - name: Test
+      - name: Test with coverage
         run: |
           set -o pipefail
           xcodebuild test \
@@ -139,6 +139,20 @@ jobs:
             -scheme Offrii \
             -destination 'platform=iOS Simulator,name=iPhone 16,OS=latest' \
             -configuration Debug \
+            -enableCodeCoverage YES \
+            -resultBundlePath TestResults \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
             | xcpretty
+      - name: Coverage report (advisory)
+        continue-on-error: true
+        run: |
+          xcrun xccov view --report TestResults.xcresult --json 2>/dev/null | \
+            python3 -c "
+          import sys, json
+          data = json.load(sys.stdin)
+          targets = [t for t in data.get('targets', []) if 'Offrii' in t.get('name', '')]
+          for t in targets:
+              pct = t.get('lineCoverage', 0) * 100
+              print(f\"Coverage {t['name']}: {pct:.1f}%\")
+          " || echo "::warning::Could not parse coverage results"

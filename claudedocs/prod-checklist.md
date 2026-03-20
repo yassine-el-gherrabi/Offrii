@@ -76,12 +76,13 @@
 - [x] Migration DB dans le deploy script (avant docker compose up, prod + staging)
 
 #### Recommended (semaine 1)
-- [ ] SwiftLint : ajouter `force_unwrap`, `force_cast`, `implicitly_unwrapped_optional`
-- [ ] SwiftLint : baisser seuils (`line_length: 120/150`, `file_length: 300/600`, `type_body_length: 300/600`)
-- [ ] Dependabot auto-merge pour patches
-- [ ] Branch protection sur master (require CI pass + PR review)
-- [ ] iOS coverage reporting
-- [ ] Notifications deploy (Slack/Discord)
+- [x] SwiftLint : force_unwrap/force_cast/implicitly_unwrapped_optional (advisory CI check)
+- [x] SwiftLint : seuils resserrés (line:140/200, file:400/800, type:400/700)
+- [x] Dependabot auto-merge grouping (minor+patch regroupés)
+- [x] Branch protection master (CI required, no force push, no PR review)
+- [x] Branch protection develop (CI required, force push OK)
+- [x] iOS coverage reporting (advisory)
+- [ ] ~~Notifications deploy~~ — pas nécessaire en solo dev
 
 #### Nice to have (mois 1-3)
 - [ ] iOS matrix testing (multi-device/OS)

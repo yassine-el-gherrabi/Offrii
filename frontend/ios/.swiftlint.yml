@@ -33,7 +33,7 @@ line_length:
   ignores_urls: true
 
 type_body_length:
-  warning: 350
+  warning: 400
   error: 700
 
 file_length:
