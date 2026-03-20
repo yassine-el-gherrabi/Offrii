@@ -543,6 +543,7 @@
 "entraide.messages.loadMore" = "Charger les messages précédents";
 "entraide.report.otherPlaceholder" = "Décrivez le problème...";
 "entraide.report.detailsPlaceholder" = "Précisez (optionnel)...";
+"entraide.report.detailsRequired" = "Précisez la raison...";
 "entraide.report.alreadyReported" = "Vous avez déjà signalé ce besoin.";
 "entraide.block.promptTitle" = "Masquer ce besoin ?";
 "entraide.block.promptMessage" = "Vous ne verrez plus ce besoin dans votre fil.";

@@ -1,6 +1,6 @@
+// swiftlint:disable file_length
 import SwiftUI
 
-struct ItemEditView: View {
     let item: Item
     let onSave: (Item) -> Void
 

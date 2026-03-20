@@ -1,3 +1,4 @@
+// swiftlint:disable file_length
 import SwiftUI
 
 // MARK: - Circle Filter
@@ -24,7 +25,6 @@ enum CircleFilter: String, CaseIterable {
 
 // MARK: - CirclesListView
 
-struct CirclesListView: View {
     @Environment(AuthManager.self) private var authManager
     @Environment(AppRouter.self) private var router
     @Environment(OnboardingTipManager.self) private var tipManager

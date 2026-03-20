@@ -485,34 +485,14 @@ impl traits::CommunityWishService for PgCommunityWishService {
 
         let wishes = self
             .wish_repo
-            .list_open(category, limit, offset)
+            .list_open(category, limit, offset, caller_id)
             .await
             .map_err(AppError::Internal)?;
         let total = self
             .wish_repo
-            .count_open(category)
+            .count_open(category, caller_id)
             .await
             .map_err(AppError::Internal)?;
-
-        // Filter out blocked wishes for authenticated users
-        let (wishes, total) = if let Some(uid) = caller_id {
-            let blocked_ids: Vec<(Uuid,)> =
-                sqlx::query_as("SELECT wish_id FROM wish_blocks WHERE user_id = $1")
-                    .bind(uid)
-                    .fetch_all(&self.pool)
-                    .await
-                    .map_err(|e| AppError::Internal(e.into()))?;
-            let blocked_set: std::collections::HashSet<Uuid> =
-                blocked_ids.into_iter().map(|r| r.0).collect();
-            let filtered: Vec<_> = wishes
-                .into_iter()
-                .filter(|w| !blocked_set.contains(&w.id))
-                .collect();
-            let removed = total - filtered.len() as i64;
-            (filtered, total - removed)
-        } else {
-            (wishes, total)
-        };
 
         // Batch-fetch owner display names (dedup to reduce query size)
         let owner_ids: Vec<Uuid> = wishes
@@ -969,6 +949,18 @@ impl traits::CommunityWishService for PgCommunityWishService {
 
         if wish.owner_id == donor_id {
             return Err(AppError::BadRequest("cannot offer on your own wish".into()));
+        }
+
+        // Prevent offering help on a wish the user has reported
+        let has_reported = self
+            .report_repo
+            .has_reported(wish_id, donor_id)
+            .await
+            .map_err(AppError::Internal)?;
+        if has_reported {
+            return Err(AppError::BadRequest(
+                "cannot offer help on a wish you have reported".into(),
+            ));
         }
 
         let status = WishStatus::parse(&wish.status)

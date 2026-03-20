@@ -112,6 +112,14 @@ jobs:
             echo "::warning::Found $count TODO/FIXME/HACK comments in Swift code:"
             grep -rn "TODO\|FIXME\|HACK" Offrii/ --include="*.swift" | head -20
           fi
+      - name: Check unsafe unwraps (advisory)
+        continue-on-error: true
+        run: |
+          count=$(grep -rn ' as! \| \.self!\|[^?]!' Offrii/ --include="*.swift" | grep -v '// swiftlint:disable' | grep -v 'iboutlet\|ibaction' -i | wc -l | tr -d ' ')
+          if [ "$count" -gt 0 ]; then
+            echo "::warning::Found $count force unwrap/cast occurrences — consider using safe alternatives:"
+            grep -rn ' as! \|\.self!' Offrii/ --include="*.swift" | head -20
+          fi
       - name: Build
         run: |
           set -o pipefail

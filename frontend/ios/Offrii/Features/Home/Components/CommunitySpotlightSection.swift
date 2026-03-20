@@ -4,6 +4,7 @@ import SwiftUI
 
 struct CommunitySpotlightSection: View {
     let wishes: [CommunityWish]
+    @Binding var selectedWishId: UUID?
 
     var body: some View {
         VStack(alignment: .leading, spacing: OffriiTheme.spacingSM) {
@@ -37,8 +38,10 @@ struct CommunitySpotlightSection: View {
                 .padding(.vertical, OffriiTheme.spacingBase)
             } else {
                 VStack(spacing: OffriiTheme.spacingSM) {
-                    ForEach(wishes.prefix(2)) { wish in
-                        EntraideWishCard(wish: wish)
+                    ForEach(wishes) { wish in
+                        EntraideWishCard(wish: wish) {
+                            selectedWishId = wish.id
+                        }
                     }
                 }
             }

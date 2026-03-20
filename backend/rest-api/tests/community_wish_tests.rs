@@ -4347,3 +4347,185 @@ async fn user_profile_unverified_shows_false() {
         "newly registered user must have email_verified = false"
     );
 }
+
+// ═══════════════════════════════════════════════════════════════════════
+// Cat. 25: Block filtering in pagination (Bug fix)
+// ═══════════════════════════════════════════════════════════════════════
+
+#[tokio::test]
+async fn blocked_wish_excluded_from_list_results() {
+    let app = TestApp::new().await;
+    let owner_token = setup_aged_user(&app, "owner@test.com").await;
+    let blocker_token = setup_aged_user(&app, "blocker@test.com").await;
+    let wish_id = create_open_wish(&app, &owner_token).await;
+
+    // Block the wish
+    let (status, _) = app
+        .post_with_auth(
+            &format!("/community/wishes/{wish_id}/block"),
+            &blocker_token,
+        )
+        .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+
+    // Blocker should see 0 wishes and total=0
+    let (status, body) = app.get_with_auth("/community/wishes", &blocker_token).await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(body["data"].as_array().unwrap().len(), 0);
+    assert_eq!(body["pagination"]["total"].as_i64(), Some(0));
+}
+
+#[tokio::test]
+async fn blocked_wishes_pagination_still_returns_results() {
+    let app = TestApp::new().await;
+
+    // Create 3 wishes from 3 different users
+    let mut wish_ids = Vec::new();
+    for i in 0..3 {
+        let email = format!("owner{i}@test.com");
+        let token = setup_aged_user(&app, &email).await;
+        let body = json!({
+            "title": format!("Wish {i}"),
+            "category": "other",
+            "is_anonymous": true,
+        });
+        let (s, r) = app
+            .post_json_with_auth("/community/wishes", &body, &token)
+            .await;
+        assert_eq!(s, StatusCode::CREATED);
+        let wid = Uuid::parse_str(r["id"].as_str().unwrap()).unwrap();
+        wait_for_wish_status(&app, wid, "open").await;
+        wish_ids.push(wid);
+    }
+
+    let blocker_token = setup_aged_user(&app, "blocker@test.com").await;
+
+    // Block 2 of the 3 wishes
+    for wid in &wish_ids[..2] {
+        let (s, _) = app
+            .post_with_auth(&format!("/community/wishes/{wid}/block"), &blocker_token)
+            .await;
+        assert_eq!(s, StatusCode::NO_CONTENT);
+    }
+
+    // With limit=3 (same as total), blocker should still see 1 wish
+    let (status, body) = app
+        .get_with_auth("/community/wishes?limit=3&page=1", &blocker_token)
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(body["data"].as_array().unwrap().len(), 1);
+    assert_eq!(body["pagination"]["total"].as_i64(), Some(1));
+}
+
+#[tokio::test]
+async fn blocked_wish_count_excluded_from_total() {
+    let app = TestApp::new().await;
+
+    // Create 2 wishes from 2 different users
+    let t1 = setup_aged_user(&app, "owner1@test.com").await;
+    let w1 = create_open_wish(&app, &t1).await;
+
+    let t2 = setup_aged_user(&app, "owner2@test.com").await;
+    let w2 = create_open_wish(&app, &t2).await;
+    let _ = w2; // used only for count
+
+    let blocker_token = setup_aged_user(&app, "blocker@test.com").await;
+
+    // Block wish 1
+    let (s, _) = app
+        .post_with_auth(&format!("/community/wishes/{w1}/block"), &blocker_token)
+        .await;
+    assert_eq!(s, StatusCode::NO_CONTENT);
+
+    // Total should be 1 (not 2)
+    let (status, body) = app.get_with_auth("/community/wishes", &blocker_token).await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(body["pagination"]["total"].as_i64(), Some(1));
+    assert_eq!(body["data"].as_array().unwrap().len(), 1);
+}
+
+#[tokio::test]
+async fn unauthenticated_user_sees_all_wishes_including_blocked() {
+    let app = TestApp::new().await;
+    let owner_token = setup_aged_user(&app, "owner@test.com").await;
+    let blocker_token = setup_aged_user(&app, "blocker@test.com").await;
+    let wish_id = create_open_wish(&app, &owner_token).await;
+
+    // Block the wish
+    let (s, _) = app
+        .post_with_auth(
+            &format!("/community/wishes/{wish_id}/block"),
+            &blocker_token,
+        )
+        .await;
+    assert_eq!(s, StatusCode::NO_CONTENT);
+
+    // Unauthenticated user should still see the wish
+    let (status, body) = app.get_no_auth("/community/wishes").await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(body["data"].as_array().unwrap().len(), 1);
+    assert_eq!(body["pagination"]["total"].as_i64(), Some(1));
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// Cat. 26: Offer after report guard (Bug fix)
+// ═══════════════════════════════════════════════════════════════════════
+
+#[tokio::test]
+async fn offer_wish_after_report_rejected_400() {
+    let app = TestApp::new().await;
+    let owner_token = setup_aged_user(&app, "owner@test.com").await;
+    let reporter_token = setup_aged_user(&app, "reporter@test.com").await;
+    let wish_id = create_open_wish(&app, &owner_token).await;
+
+    // Report the wish first
+    let body = json!({ "reason": "spam" });
+    let (status, _) = app
+        .post_json_with_auth(
+            &format!("/community/wishes/{wish_id}/report"),
+            &body,
+            &reporter_token,
+        )
+        .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+
+    // Now try to offer help — should be rejected
+    let (status, resp) = app
+        .post_with_auth(
+            &format!("/community/wishes/{wish_id}/offer"),
+            &reporter_token,
+        )
+        .await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    assert_error(&resp, "BAD_REQUEST");
+    assert!(
+        resp["message"].as_str().unwrap_or("").contains("reported"),
+        "error message should mention reporting: {resp}"
+    );
+}
+
+#[tokio::test]
+async fn offer_wish_without_report_still_works_204() {
+    let app = TestApp::new().await;
+    let owner_token = setup_aged_user(&app, "owner@test.com").await;
+    let donor_token = setup_aged_user(&app, "donor@test.com").await;
+    let wish_id = create_open_wish(&app, &owner_token).await;
+
+    // A different user reported the wish, but donor did not
+    let reporter_token = setup_aged_user(&app, "reporter@test.com").await;
+    let body = json!({ "reason": "spam" });
+    let (status, _) = app
+        .post_json_with_auth(
+            &format!("/community/wishes/{wish_id}/report"),
+            &body,
+            &reporter_token,
+        )
+        .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+
+    // Donor (who did NOT report) should still be able to offer
+    let (status, _) = app
+        .post_with_auth(&format!("/community/wishes/{wish_id}/offer"), &donor_token)
+        .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+}

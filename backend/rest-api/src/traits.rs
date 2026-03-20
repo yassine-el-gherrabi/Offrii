@@ -887,9 +887,10 @@ pub trait CommunityWishRepo: Send + Sync {
         category: Option<&str>,
         limit: i64,
         offset: i64,
+        caller_id: Option<Uuid>,
     ) -> Result<Vec<CommunityWish>>;
 
-    async fn count_open(&self, category: Option<&str>) -> Result<i64>;
+    async fn count_open(&self, category: Option<&str>, caller_id: Option<Uuid>) -> Result<i64>;
 
     async fn list_by_owner(&self, owner_id: Uuid) -> Result<Vec<CommunityWish>>;
     async fn list_by_donor(&self, donor_id: Uuid) -> Result<Vec<CommunityWish>>;

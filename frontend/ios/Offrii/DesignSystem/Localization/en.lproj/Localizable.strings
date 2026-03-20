@@ -543,6 +543,7 @@
 "entraide.messages.loadMore" = "Load older messages";
 "entraide.report.otherPlaceholder" = "Please describe the issue...";
 "entraide.report.detailsPlaceholder" = "Add details (optional)...";
+"entraide.report.detailsRequired" = "Please describe the reason...";
 "entraide.report.alreadyReported" = "You have already reported this need.";
 "entraide.block.promptTitle" = "Hide this need?";
 "entraide.block.promptMessage" = "You won't see this need in your feed anymore.";

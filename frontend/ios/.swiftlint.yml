@@ -27,18 +27,18 @@ opt_in_rules:
   - private_over_fileprivate
 
 line_length:
-  warning: 150
+  warning: 140
   error: 200
   ignores_comments: true
   ignores_urls: true
 
 type_body_length:
-  warning: 400
-  error: 900
+  warning: 350
+  error: 700
 
 file_length:
-  warning: 500
-  error: 1000
+  warning: 400
+  error: 800
 
 function_body_length:
   warning: 60

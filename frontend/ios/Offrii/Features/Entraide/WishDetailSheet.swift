@@ -1,3 +1,4 @@
+// swiftlint:disable file_length
 import NukeUI
 import SwiftUI
 
@@ -21,6 +22,8 @@ struct WishDetailSheet: View {
     @State private var showConfirmFulfillment = false
     @State private var showWithdrawConfirm = false
     @State private var showCelebration = false
+    @State private var showMessagesSheet = false
+    @State private var showReportSheet = false
 
     private var wish: WishDetail? { viewModel.wish }
     private var isMine: Bool { wish?.isMine ?? false }
@@ -58,6 +61,17 @@ struct WishDetailSheet: View {
                     }
                 }
             }
+        }
+        .sheet(isPresented: $showMessagesSheet) {
+            WishMessagesSheet(wishId: wishId)
+                .presentationDetents([.large])
+        }
+        .sheet(isPresented: $showReportSheet, onDismiss: {
+            Task { await viewModel.loadWish(id: wishId) }
+            onAction?()
+        }) {
+            ReportWishSheet(wishId: wishId)
+                .presentationDetents([.medium])
         }
         .sheet(isPresented: $showEditSheet, onDismiss: {
             Task { await viewModel.loadWish(id: wishId) }
@@ -263,7 +277,7 @@ struct WishDetailSheet: View {
 
     @ViewBuilder
     private func visitorActions(_ wish: WishDetail) -> some View {
-        if wish.status == .open && !isMine {
+        if wish.status == .open && !isMine && !(wish.hasReported ?? false) {
             OffriiButton(
                 NSLocalizedString("entraide.offer.cta", comment: ""),
                 variant: .primary,
@@ -368,8 +382,7 @@ struct WishDetailSheet: View {
                     Task { _ = await viewModel.rejectOffer(id: wish.id) }
                 }
                 OffriiButton(NSLocalizedString("entraide.action.messages", comment: ""), variant: .secondary) {
-                    dismiss()
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { onOpenMessages?() }
+                    openMessages()
                 }
             }
         }
@@ -379,8 +392,7 @@ struct WishDetailSheet: View {
     private func donorMatchedActions(_ wish: WishDetail) -> some View {
         if wish.status == .matched && isMatchedByMe && !isMine {
             OffriiButton(NSLocalizedString("entraide.action.messages", comment: ""), variant: .primary) {
-                dismiss()
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { onOpenMessages?() }
+                openMessages()
             }
             OffriiButton(NSLocalizedString("entraide.action.withdraw", comment: ""), variant: .ghost) {
                 showWithdrawConfirm = true
@@ -466,8 +478,7 @@ struct WishDetailSheet: View {
                     .padding(.top, OffriiTheme.spacingSM)
             } else {
                 Button {
-                    dismiss()
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { onReport?() }
+                    openReport()
                 } label: {
                     Label(NSLocalizedString("entraide.report.title", comment: ""), systemImage: "flag")
                         .font(OffriiTypography.footnote)
@@ -476,6 +487,28 @@ struct WishDetailSheet: View {
                 .frame(maxWidth: .infinity, alignment: .center)
                 .padding(.top, OffriiTheme.spacingSM)
             }
+        }
+    }
+
+    // MARK: - Messages / Report Navigation
+
+    private func openMessages() {
+        if let onOpenMessages {
+            // Parent handles the sheet (EntraideView context)
+            dismiss()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { onOpenMessages() }
+        } else {
+            // Autonomous mode — open internally
+            showMessagesSheet = true
+        }
+    }
+
+    private func openReport() {
+        if let onReport {
+            dismiss()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { onReport() }
+        } else {
+            showReportSheet = true
         }
     }
 

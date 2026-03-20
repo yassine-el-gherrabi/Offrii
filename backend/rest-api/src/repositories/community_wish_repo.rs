@@ -60,12 +60,13 @@ impl traits::CommunityWishRepo for PgCommunityWishRepo {
         category: Option<&str>,
         limit: i64,
         offset: i64,
+        caller_id: Option<Uuid>,
     ) -> Result<Vec<CommunityWish>> {
-        list_open(&self.pool, category, limit, offset).await
+        list_open(&self.pool, category, limit, offset, caller_id).await
     }
 
-    async fn count_open(&self, category: Option<&str>) -> Result<i64> {
-        count_open(&self.pool, category).await
+    async fn count_open(&self, category: Option<&str>, caller_id: Option<Uuid>) -> Result<i64> {
+        count_open(&self.pool, category, caller_id).await
     }
 
     async fn list_by_owner(&self, owner_id: Uuid) -> Result<Vec<CommunityWish>> {
@@ -208,50 +209,117 @@ pub(crate) async fn list_open(
     category: Option<&str>,
     limit: i64,
     offset: i64,
+    caller_id: Option<Uuid>,
 ) -> Result<Vec<CommunityWish>> {
-    let sql = if category.is_some() {
-        format!(
+    let block_clause = if caller_id.is_some() {
+        "AND id NOT IN (SELECT wish_id FROM wish_blocks WHERE user_id = "
+    } else {
+        ""
+    };
+
+    let sql = match (category.is_some(), caller_id.is_some()) {
+        (true, true) => format!(
+            "SELECT {WISH_COLS} FROM community_wishes \
+             WHERE status = 'open' AND category = $1 \
+             {block_clause}$4) \
+             ORDER BY created_at DESC LIMIT $2 OFFSET $3"
+        ),
+        (true, false) => format!(
             "SELECT {WISH_COLS} FROM community_wishes \
              WHERE status = 'open' AND category = $1 \
              ORDER BY created_at DESC LIMIT $2 OFFSET $3"
-        )
-    } else {
-        format!(
+        ),
+        (false, true) => format!(
+            "SELECT {WISH_COLS} FROM community_wishes \
+             WHERE status = 'open' \
+             {block_clause}$3) \
+             ORDER BY created_at DESC LIMIT $1 OFFSET $2"
+        ),
+        (false, false) => format!(
             "SELECT {WISH_COLS} FROM community_wishes \
              WHERE status = 'open' \
              ORDER BY created_at DESC LIMIT $1 OFFSET $2"
-        )
+        ),
     };
 
-    let wishes = if let Some(cat) = category {
-        sqlx::query_as::<_, CommunityWish>(&sql)
-            .bind(cat)
-            .bind(limit)
-            .bind(offset)
-            .fetch_all(exec)
-            .await?
-    } else {
-        sqlx::query_as::<_, CommunityWish>(&sql)
-            .bind(limit)
-            .bind(offset)
-            .fetch_all(exec)
-            .await?
+    let wishes = match (category, caller_id) {
+        (Some(cat), Some(uid)) => {
+            sqlx::query_as::<_, CommunityWish>(&sql)
+                .bind(cat)
+                .bind(limit)
+                .bind(offset)
+                .bind(uid)
+                .fetch_all(exec)
+                .await?
+        }
+        (Some(cat), None) => {
+            sqlx::query_as::<_, CommunityWish>(&sql)
+                .bind(cat)
+                .bind(limit)
+                .bind(offset)
+                .fetch_all(exec)
+                .await?
+        }
+        (None, Some(uid)) => {
+            sqlx::query_as::<_, CommunityWish>(&sql)
+                .bind(limit)
+                .bind(offset)
+                .bind(uid)
+                .fetch_all(exec)
+                .await?
+        }
+        (None, None) => {
+            sqlx::query_as::<_, CommunityWish>(&sql)
+                .bind(limit)
+                .bind(offset)
+                .fetch_all(exec)
+                .await?
+        }
     };
     Ok(wishes)
 }
 
-pub(crate) async fn count_open(exec: impl PgExecutor<'_>, category: Option<&str>) -> Result<i64> {
-    let count: (i64,) = if let Some(cat) = category {
-        sqlx::query_as(
-            "SELECT COUNT(*) FROM community_wishes WHERE status = 'open' AND category = $1",
-        )
-        .bind(cat)
-        .fetch_one(exec)
-        .await?
-    } else {
-        sqlx::query_as("SELECT COUNT(*) FROM community_wishes WHERE status = 'open'")
+pub(crate) async fn count_open(
+    exec: impl PgExecutor<'_>,
+    category: Option<&str>,
+    caller_id: Option<Uuid>,
+) -> Result<i64> {
+    let count: (i64,) = match (category, caller_id) {
+        (Some(cat), Some(uid)) => {
+            sqlx::query_as(
+                "SELECT COUNT(*) FROM community_wishes \
+                 WHERE status = 'open' AND category = $1 \
+                 AND id NOT IN (SELECT wish_id FROM wish_blocks WHERE user_id = $2)",
+            )
+            .bind(cat)
+            .bind(uid)
             .fetch_one(exec)
             .await?
+        }
+        (Some(cat), None) => {
+            sqlx::query_as(
+                "SELECT COUNT(*) FROM community_wishes \
+                 WHERE status = 'open' AND category = $1",
+            )
+            .bind(cat)
+            .fetch_one(exec)
+            .await?
+        }
+        (None, Some(uid)) => {
+            sqlx::query_as(
+                "SELECT COUNT(*) FROM community_wishes \
+                 WHERE status = 'open' \
+                 AND id NOT IN (SELECT wish_id FROM wish_blocks WHERE user_id = $1)",
+            )
+            .bind(uid)
+            .fetch_one(exec)
+            .await?
+        }
+        (None, None) => {
+            sqlx::query_as("SELECT COUNT(*) FROM community_wishes WHERE status = 'open'")
+                .fetch_one(exec)
+                .await?
+        }
     };
     Ok(count.0)
 }

@@ -6,6 +6,7 @@ struct HomeView: View {
     @State private var vm = HomeViewModel()
     @State private var showNotificationCenter = false
     @State private var selectedItemId: UUID?
+    @State private var selectedWishId: UUID?
     @State private var showQuickAdd = false
     @Environment(AuthManager.self) private var authManager
     @Environment(AppRouter.self) private var router
@@ -94,7 +95,7 @@ struct HomeView: View {
                 }
 
                 // Section 6: Community spotlight
-                CommunitySpotlightSection(wishes: vm.communityWishes)
+                CommunitySpotlightSection(wishes: vm.communityWishes, selectedWishId: $selectedWishId)
             }
             .padding(.horizontal, OffriiTheme.spacingBase)
             .padding(.top, OffriiTheme.spacingBase)
@@ -134,6 +135,13 @@ struct HomeView: View {
         }
         .sheet(isPresented: $showNotificationCenter) {
             NotificationCenterView()
+        }
+        .sheet(item: $selectedWishId, onDismiss: {
+            Task { await vm.load(authManager: authManager) }
+        }) { wishId in
+            WishDetailSheet(wishId: wishId)
+                .environment(authManager)
+                .presentationDetents([.medium, .large])
         }
         .sheet(item: $selectedItemId, onDismiss: {
             Task { await vm.load(authManager: authManager) }

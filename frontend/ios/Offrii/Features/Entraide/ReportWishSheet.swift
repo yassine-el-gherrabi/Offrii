@@ -54,7 +54,9 @@ struct ReportWishSheet: View {
 
                 if selectedReason != nil {
                     TextField(
-                        NSLocalizedString("entraide.report.detailsPlaceholder", comment: ""),
+                        selectedReason == .other
+                            ? NSLocalizedString("entraide.report.detailsRequired", comment: "")
+                            : NSLocalizedString("entraide.report.detailsPlaceholder", comment: ""),
                         text: $details,
                         axis: .vertical
                     )
