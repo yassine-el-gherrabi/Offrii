@@ -35,12 +35,12 @@ async fn register_success_201() {
         "username should start with a letter: {username}"
     );
 
-    // Verify 6 default categories were copied
-    let count: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM categories WHERE user_id IS NOT NULL")
+    // Verify default categories exist (global, not per-user)
+    let count: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM categories")
         .fetch_one(&app.db)
         .await
         .unwrap();
-    assert_eq!(count.0, 6);
+    assert!(count.0 >= 6, "expected at least 6 default categories");
 }
 
 #[tokio::test]
