@@ -206,7 +206,7 @@ async fn unclaim_via_share(
     Ok(StatusCode::NO_CONTENT)
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, utoipa::ToSchema)]
 struct WebClaimRequest {
     name: String,
 }
@@ -236,7 +236,7 @@ async fn web_claim_via_share(
         .into_response())
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, utoipa::ToSchema)]
 struct WebUnclaimRequest {
     web_claim_token: Uuid,
 }

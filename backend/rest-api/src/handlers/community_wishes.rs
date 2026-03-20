@@ -38,6 +38,16 @@ pub fn router() -> Router<AppState> {
         .route("/{id}/block", post(block_wish).delete(unblock_wish))
 }
 
+#[utoipa::path(
+    post,
+    path = "/community/wishes",
+    request_body = CreateWishRequest,
+    responses(
+        (status = 201, body = MyWishResponse),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "Entraide"
+)]
 #[tracing::instrument(skip(state))]
 async fn create_wish(
     State(state): State<AppState>,
@@ -60,6 +70,15 @@ async fn create_wish(
     Ok((StatusCode::CREATED, Json(response)))
 }
 
+#[utoipa::path(
+    get,
+    path = "/community/wishes",
+    params(ListWishesQuery),
+    responses(
+        (status = 200, description = "Paginated response"),
+    ),
+    tag = "Entraide"
+)]
 #[tracing::instrument(skip(state))]
 async fn list_wishes(
     State(state): State<AppState>,
@@ -76,6 +95,16 @@ async fn list_wishes(
     Ok(Json(response))
 }
 
+#[utoipa::path(
+    get,
+    path = "/community/wishes/{id}",
+    params(("id" = Uuid, Path, description = "Wish ID")),
+    responses(
+        (status = 200, body = WishDetailResponse),
+        (status = 404, description = "Wish not found"),
+    ),
+    tag = "Entraide"
+)]
 #[tracing::instrument(skip(state))]
 async fn get_wish(
     State(state): State<AppState>,
@@ -87,6 +116,15 @@ async fn get_wish(
     Ok(Json(response))
 }
 
+#[utoipa::path(
+    get,
+    path = "/community/wishes/mine",
+    responses(
+        (status = 200, body = Vec<MyWishResponse>),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "Entraide"
+)]
 #[tracing::instrument(skip(state))]
 async fn list_my_wishes(
     State(state): State<AppState>,
@@ -99,6 +137,15 @@ async fn list_my_wishes(
     Ok(Json(response))
 }
 
+#[utoipa::path(
+    get,
+    path = "/community/wishes/my-offers",
+    responses(
+        (status = 200, body = Vec<WishResponse>),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "Entraide"
+)]
 #[tracing::instrument(skip(state))]
 async fn list_my_offers(
     State(state): State<AppState>,
@@ -111,6 +158,14 @@ async fn list_my_offers(
     Ok(Json(response))
 }
 
+#[utoipa::path(
+    get,
+    path = "/community/wishes/recent-fulfilled",
+    responses(
+        (status = 200, body = Vec<WishResponse>),
+    ),
+    tag = "Entraide"
+)]
 #[tracing::instrument(skip(state))]
 async fn list_recent_fulfilled(
     State(state): State<AppState>,
@@ -145,6 +200,17 @@ async fn list_recent_fulfilled(
     Ok(Json(responses))
 }
 
+#[utoipa::path(
+    patch,
+    path = "/community/wishes/{id}",
+    params(("id" = Uuid, Path, description = "Wish ID")),
+    request_body = UpdateWishRequest,
+    responses(
+        (status = 200, body = MyWishResponse),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "Entraide"
+)]
 #[tracing::instrument(skip(state))]
 async fn update_wish(
     State(state): State<AppState>,
@@ -168,6 +234,16 @@ async fn update_wish(
     Ok(Json(response))
 }
 
+#[utoipa::path(
+    post,
+    path = "/community/wishes/{id}/close",
+    params(("id" = Uuid, Path, description = "Wish ID")),
+    responses(
+        (status = 204, description = "Wish closed"),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "Entraide"
+)]
 #[tracing::instrument(skip(state))]
 async fn close_wish(
     State(state): State<AppState>,
@@ -181,6 +257,16 @@ async fn close_wish(
     Ok(StatusCode::NO_CONTENT)
 }
 
+#[utoipa::path(
+    delete,
+    path = "/community/wishes/{id}",
+    params(("id" = Uuid, Path, description = "Wish ID")),
+    responses(
+        (status = 204, description = "Wish deleted"),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "Entraide"
+)]
 #[tracing::instrument(skip(state))]
 async fn delete_wish(
     State(state): State<AppState>,
@@ -194,6 +280,16 @@ async fn delete_wish(
     Ok(StatusCode::NO_CONTENT)
 }
 
+#[utoipa::path(
+    post,
+    path = "/community/wishes/{id}/reopen",
+    params(("id" = Uuid, Path, description = "Wish ID")),
+    responses(
+        (status = 204, description = "Wish reopened"),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "Entraide"
+)]
 #[tracing::instrument(skip(state))]
 async fn reopen_wish(
     State(state): State<AppState>,
@@ -207,6 +303,16 @@ async fn reopen_wish(
     Ok(StatusCode::NO_CONTENT)
 }
 
+#[utoipa::path(
+    post,
+    path = "/community/wishes/{id}/offer",
+    params(("id" = Uuid, Path, description = "Wish ID")),
+    responses(
+        (status = 204, description = "Offer placed"),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "Entraide"
+)]
 #[tracing::instrument(skip(state))]
 async fn offer_wish(
     State(state): State<AppState>,
@@ -220,6 +326,16 @@ async fn offer_wish(
     Ok(StatusCode::NO_CONTENT)
 }
 
+#[utoipa::path(
+    delete,
+    path = "/community/wishes/{id}/offer",
+    params(("id" = Uuid, Path, description = "Wish ID")),
+    responses(
+        (status = 204, description = "Offer withdrawn"),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "Entraide"
+)]
 #[tracing::instrument(skip(state))]
 async fn withdraw_offer(
     State(state): State<AppState>,
@@ -233,6 +349,16 @@ async fn withdraw_offer(
     Ok(StatusCode::NO_CONTENT)
 }
 
+#[utoipa::path(
+    post,
+    path = "/community/wishes/{id}/reject",
+    params(("id" = Uuid, Path, description = "Wish ID")),
+    responses(
+        (status = 204, description = "Offer rejected"),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "Entraide"
+)]
 #[tracing::instrument(skip(state))]
 async fn reject_offer(
     State(state): State<AppState>,
@@ -246,6 +372,16 @@ async fn reject_offer(
     Ok(StatusCode::NO_CONTENT)
 }
 
+#[utoipa::path(
+    post,
+    path = "/community/wishes/{id}/confirm",
+    params(("id" = Uuid, Path, description = "Wish ID")),
+    responses(
+        (status = 204, description = "Wish confirmed as fulfilled"),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "Entraide"
+)]
 #[tracing::instrument(skip(state))]
 async fn confirm_wish(
     State(state): State<AppState>,
@@ -259,6 +395,17 @@ async fn confirm_wish(
     Ok(StatusCode::NO_CONTENT)
 }
 
+#[utoipa::path(
+    post,
+    path = "/community/wishes/{id}/report",
+    params(("id" = Uuid, Path, description = "Wish ID")),
+    request_body = ReportWishRequest,
+    responses(
+        (status = 204, description = "Wish reported"),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "Entraide"
+)]
 #[tracing::instrument(skip(state))]
 async fn report_wish(
     State(state): State<AppState>,
@@ -282,6 +429,16 @@ async fn report_wish(
     Ok(StatusCode::NO_CONTENT)
 }
 
+#[utoipa::path(
+    post,
+    path = "/community/wishes/{id}/block",
+    params(("id" = Uuid, Path, description = "Wish ID")),
+    responses(
+        (status = 204, description = "Wish blocked"),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "Entraide"
+)]
 #[tracing::instrument(skip(state))]
 async fn block_wish(
     State(state): State<AppState>,
@@ -295,6 +452,16 @@ async fn block_wish(
     Ok(StatusCode::NO_CONTENT)
 }
 
+#[utoipa::path(
+    delete,
+    path = "/community/wishes/{id}/block",
+    params(("id" = Uuid, Path, description = "Wish ID")),
+    responses(
+        (status = 204, description = "Wish unblocked"),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "Entraide"
+)]
 #[tracing::instrument(skip(state))]
 async fn unblock_wish(
     State(state): State<AppState>,

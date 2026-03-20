@@ -7,7 +7,7 @@ use crate::models::PushToken;
 
 // ── Request DTOs ─────────────────────────────────────────────────────
 
-#[derive(Debug, Deserialize, Validate)]
+#[derive(Debug, Deserialize, Validate, utoipa::ToSchema)]
 pub struct RegisterPushTokenRequest {
     #[validate(custom(function = "validate_apns_token"))]
     pub token: String,
@@ -37,7 +37,7 @@ fn validate_platform(platform: &str) -> Result<(), validator::ValidationError> {
 
 // ── Response DTOs ────────────────────────────────────────────────────
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, utoipa::ToSchema)]
 pub struct PushTokenResponse {
     pub id: Uuid,
     pub token: String,

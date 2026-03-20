@@ -5,13 +5,13 @@ use validator::Validate;
 
 // ── Request DTOs ─────────────────────────────────────────────────────
 
-#[derive(Debug, Deserialize, Validate)]
+#[derive(Debug, Deserialize, Validate, utoipa::ToSchema, utoipa::IntoParams)]
 pub struct SendMessageRequest {
     #[validate(length(min = 1, max = 2000, message = "message must be 1-2000 characters"))]
     pub body: String,
 }
 
-#[derive(Debug, Deserialize, Validate)]
+#[derive(Debug, Deserialize, Validate, utoipa::ToSchema, utoipa::IntoParams)]
 pub struct ListMessagesQuery {
     #[validate(range(min = 1, max = 100, message = "limit must be 1-100"))]
     pub limit: Option<i64>,
@@ -21,7 +21,7 @@ pub struct ListMessagesQuery {
 
 // ── Response DTOs ────────────────────────────────────────────────────
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, utoipa::ToSchema)]
 pub struct MessageResponse {
     pub id: Uuid,
     pub sender_display_name: String,

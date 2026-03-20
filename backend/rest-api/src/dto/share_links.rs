@@ -7,7 +7,7 @@ use crate::models::ShareLink;
 
 // ── Response DTOs ────────────────────────────────────────────────────
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
 pub struct ShareLinkResponse {
     pub id: Uuid,
     pub token: String,
@@ -15,6 +15,7 @@ pub struct ShareLinkResponse {
     pub label: Option<String>,
     pub permissions: String,
     pub scope: String,
+    #[schema(value_type = Option<Object>)]
     pub scope_data: Option<serde_json::Value>,
     pub is_active: bool,
     pub created_at: DateTime<Utc>,
@@ -39,7 +40,7 @@ impl ShareLinkResponse {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
 pub struct ShareLinkListItem {
     pub id: Uuid,
     pub token: String,
@@ -69,7 +70,7 @@ impl ShareLinkListItem {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
 pub struct SharedViewResponse {
     pub user_username: String,
     pub user_display_name: Option<String>,
@@ -80,16 +81,17 @@ pub struct SharedViewResponse {
 
 // ── Request DTOs ─────────────────────────────────────────────────────
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, utoipa::ToSchema)]
 pub struct CreateShareLinkRequest {
     pub expires_at: Option<DateTime<Utc>>,
     pub label: Option<String>,
     pub permissions: Option<String>,
     pub scope: Option<String>,
+    #[schema(value_type = Option<Object>)]
     pub scope_data: Option<serde_json::Value>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, utoipa::ToSchema)]
 pub struct UpdateShareLinkRequest {
     pub label: Option<String>,
     pub is_active: Option<bool>,

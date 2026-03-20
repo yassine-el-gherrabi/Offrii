@@ -34,6 +34,16 @@ pub fn router() -> Router<AppState> {
         .route("/apple", post(apple_auth))
 }
 
+#[utoipa::path(
+    post,
+    path = "/auth/register",
+    request_body = RegisterRequest,
+    responses(
+        (status = 201, body = AuthResponse),
+        (status = 400, description = "Validation error"),
+    ),
+    tag = "Auth"
+)]
 #[tracing::instrument(skip(state, req))]
 async fn register(
     State(state): State<AppState>,
@@ -54,6 +64,17 @@ async fn register(
     Ok((StatusCode::CREATED, Json(response)))
 }
 
+#[utoipa::path(
+    post,
+    path = "/auth/login",
+    request_body = LoginRequest,
+    responses(
+        (status = 200, body = AuthResponse),
+        (status = 400, description = "Validation error"),
+        (status = 401, description = "Invalid credentials"),
+    ),
+    tag = "Auth"
+)]
 #[tracing::instrument(skip(state, req))]
 async fn login(
     State(state): State<AppState>,
@@ -66,6 +87,17 @@ async fn login(
     Ok(Json(response))
 }
 
+#[utoipa::path(
+    post,
+    path = "/auth/refresh",
+    request_body = RefreshRequest,
+    responses(
+        (status = 200, body = RefreshResponse),
+        (status = 400, description = "Validation error"),
+        (status = 401, description = "Invalid refresh token"),
+    ),
+    tag = "Auth"
+)]
 #[tracing::instrument(skip(state, req))]
 async fn refresh(
     State(state): State<AppState>,
@@ -78,6 +110,15 @@ async fn refresh(
     Ok(Json(response))
 }
 
+#[utoipa::path(
+    post,
+    path = "/auth/logout",
+    responses(
+        (status = 204, description = "Logged out"),
+    ),
+    tag = "Auth",
+    security(("bearer_auth" = [])),
+)]
 #[tracing::instrument(skip(state, auth_user))]
 async fn logout(
     State(state): State<AppState>,
@@ -91,6 +132,17 @@ async fn logout(
     Ok(StatusCode::NO_CONTENT)
 }
 
+#[utoipa::path(
+    post,
+    path = "/auth/change-password",
+    request_body = ChangePasswordRequest,
+    responses(
+        (status = 204, description = "Password changed"),
+        (status = 400, description = "Validation error"),
+    ),
+    tag = "Auth",
+    security(("bearer_auth" = [])),
+)]
 #[tracing::instrument(skip(state, auth_user, req))]
 async fn change_password(
     State(state): State<AppState>,
@@ -107,6 +159,16 @@ async fn change_password(
     Ok(StatusCode::NO_CONTENT)
 }
 
+#[utoipa::path(
+    post,
+    path = "/auth/forgot-password",
+    request_body = ForgotPasswordRequest,
+    responses(
+        (status = 200, description = "Reset code sent"),
+        (status = 400, description = "Validation error"),
+    ),
+    tag = "Auth"
+)]
 #[tracing::instrument(skip(state, req))]
 async fn forgot_password(
     State(state): State<AppState>,
@@ -119,6 +181,16 @@ async fn forgot_password(
     Ok(StatusCode::OK)
 }
 
+#[utoipa::path(
+    post,
+    path = "/auth/verify-reset-code",
+    request_body = VerifyResetCodeRequest,
+    responses(
+        (status = 200, description = "Code valid"),
+        (status = 400, description = "Validation error"),
+    ),
+    tag = "Auth"
+)]
 #[tracing::instrument(skip(state, req))]
 async fn verify_reset_code(
     State(state): State<AppState>,
@@ -131,6 +203,16 @@ async fn verify_reset_code(
     Ok(StatusCode::OK)
 }
 
+#[utoipa::path(
+    post,
+    path = "/auth/reset-password",
+    request_body = ResetPasswordRequest,
+    responses(
+        (status = 204, description = "Password reset"),
+        (status = 400, description = "Validation error"),
+    ),
+    tag = "Auth"
+)]
 #[tracing::instrument(skip(state, req))]
 async fn reset_password(
     State(state): State<AppState>,
@@ -146,6 +228,16 @@ async fn reset_password(
     Ok(StatusCode::NO_CONTENT)
 }
 
+#[utoipa::path(
+    post,
+    path = "/auth/verify-email",
+    request_body = VerifyEmailRequest,
+    responses(
+        (status = 200, description = "Email verified"),
+        (status = 400, description = "Validation error"),
+    ),
+    tag = "Auth"
+)]
 #[tracing::instrument(skip(state, req))]
 async fn verify_email(
     State(state): State<AppState>,
@@ -158,6 +250,15 @@ async fn verify_email(
     Ok(StatusCode::OK)
 }
 
+#[utoipa::path(
+    post,
+    path = "/auth/resend-verification",
+    responses(
+        (status = 204, description = "Verification email resent"),
+    ),
+    tag = "Auth",
+    security(("bearer_auth" = [])),
+)]
 #[tracing::instrument(skip(state, auth_user))]
 async fn resend_verification(
     State(state): State<AppState>,
@@ -168,6 +269,17 @@ async fn resend_verification(
     Ok(StatusCode::NO_CONTENT)
 }
 
+#[utoipa::path(
+    post,
+    path = "/auth/google",
+    request_body = GoogleAuthRequest,
+    responses(
+        (status = 200, body = AuthResponse, description = "Existing user logged in"),
+        (status = 201, body = AuthResponse, description = "New user created"),
+        (status = 400, description = "Validation error"),
+    ),
+    tag = "Auth"
+)]
 #[tracing::instrument(skip(state, req))]
 async fn google_auth(
     State(state): State<AppState>,
@@ -188,6 +300,17 @@ async fn google_auth(
     Ok((status, Json(response)))
 }
 
+#[utoipa::path(
+    post,
+    path = "/auth/apple",
+    request_body = AppleAuthRequest,
+    responses(
+        (status = 200, body = AuthResponse, description = "Existing user logged in"),
+        (status = 201, body = AuthResponse, description = "New user created"),
+        (status = 400, description = "Validation error"),
+    ),
+    tag = "Auth"
+)]
 #[tracing::instrument(skip(state, req))]
 async fn apple_auth(
     State(state): State<AppState>,

@@ -12,12 +12,12 @@ use crate::middleware::AuthUser;
 /// Maximum upload size: 5 MB
 const MAX_UPLOAD_BYTES: usize = 5 * 1024 * 1024;
 
-#[derive(Serialize)]
+#[derive(Serialize, utoipa::ToSchema)]
 pub struct UploadResponse {
     pub url: String,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, utoipa::ToSchema)]
 pub struct UploadQuery {
     #[serde(rename = "type")]
     pub upload_type: Option<String>,
@@ -27,6 +27,20 @@ pub fn router() -> Router<AppState> {
     Router::new().route("/image", post(upload_image))
 }
 
+#[utoipa::path(
+    post,
+    path = "/upload/image",
+    params(
+        ("type" = Option<String>, Query, description = "Upload type: item, avatar, or circle"),
+    ),
+    request_body(content_type = "multipart/form-data"),
+    responses(
+        (status = 201, body = UploadResponse),
+        (status = 400, description = "Invalid upload"),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "Upload"
+)]
 #[tracing::instrument(skip(state, multipart))]
 async fn upload_image(
     State(state): State<AppState>,

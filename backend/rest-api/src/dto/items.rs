@@ -8,7 +8,7 @@ use crate::models::Item;
 
 // ── Request DTOs ─────────────────────────────────────────────────────
 
-#[derive(Debug, Deserialize, Validate)]
+#[derive(Debug, Deserialize, Validate, utoipa::ToSchema, utoipa::IntoParams)]
 pub struct CreateItemRequest {
     #[validate(length(
         min = 1,
@@ -21,6 +21,7 @@ pub struct CreateItemRequest {
     /// Single URL — backward compat. If `links` is also provided, `links` takes precedence.
     #[validate(length(max = 2048, message = "url must be at most 2048 characters"))]
     pub url: Option<String>,
+
     pub estimated_price: Option<Decimal>,
     pub priority: Option<i16>,
     pub category_id: Option<Uuid>,
@@ -60,7 +61,7 @@ impl CreateItemRequest {
     }
 }
 
-#[derive(Debug, Deserialize, Validate)]
+#[derive(Debug, Deserialize, Validate, utoipa::ToSchema, utoipa::IntoParams)]
 pub struct UpdateItemRequest {
     #[validate(length(
         min = 1,
@@ -73,6 +74,7 @@ pub struct UpdateItemRequest {
     /// Single URL — backward compat.
     #[validate(length(max = 2048, message = "url must be at most 2048 characters"))]
     pub url: Option<String>,
+
     pub estimated_price: Option<Decimal>,
     pub priority: Option<i16>,
     pub category_id: Option<Uuid>,
@@ -108,7 +110,7 @@ impl UpdateItemRequest {
     }
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, utoipa::ToSchema, utoipa::IntoParams)]
 pub struct ListItemsQuery {
     pub status: Option<String>,
     pub category_id: Option<Uuid>,
@@ -136,20 +138,21 @@ impl ListItemsQuery {
     }
 }
 
-#[derive(Debug, Deserialize, Validate)]
+#[derive(Debug, Deserialize, Validate, utoipa::ToSchema, utoipa::IntoParams)]
 pub struct BatchDeleteRequest {
     pub ids: Vec<Uuid>,
 }
 
 // ── Response DTOs ────────────────────────────────────────────────────
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
 pub struct ItemResponse {
     pub id: Uuid,
     pub name: String,
     pub description: Option<String>,
     /// Backward compat: first link or legacy url.
     pub url: Option<String>,
+
     pub estimated_price: Option<Decimal>,
     pub priority: i16,
     pub category_id: Option<Uuid>,
@@ -172,7 +175,7 @@ pub struct ItemResponse {
     pub claimed_name: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
 pub struct SharedCircleInfo {
     pub id: Uuid,
     pub name: String,

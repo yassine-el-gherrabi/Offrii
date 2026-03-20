@@ -11,6 +11,15 @@ pub fn router() -> Router<AppState> {
     Router::new().route("/", get(list_categories))
 }
 
+#[utoipa::path(
+    get,
+    path = "/categories",
+    responses(
+        (status = 200, body = Vec<CategoryResponse>),
+    ),
+    tag = "Categories",
+    security(("bearer_auth" = [])),
+)]
 #[tracing::instrument(skip(state))]
 async fn list_categories(
     State(state): State<AppState>,

@@ -20,6 +20,16 @@ pub fn router() -> Router<AppState> {
         .route("/{token}", delete(unregister_token))
 }
 
+#[utoipa::path(
+    post,
+    path = "/push-tokens",
+    request_body = RegisterPushTokenRequest,
+    responses(
+        (status = 201, body = PushTokenResponse),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "PushTokens"
+)]
 #[tracing::instrument(skip(state, auth_user, req))]
 async fn register_token(
     State(state): State<AppState>,
@@ -34,6 +44,16 @@ async fn register_token(
     Ok((StatusCode::CREATED, Json(response)))
 }
 
+#[utoipa::path(
+    delete,
+    path = "/push-tokens/{token}",
+    params(("token" = String, Path, description = "Push token to unregister")),
+    responses(
+        (status = 204, description = "Token unregistered"),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "PushTokens"
+)]
 #[tracing::instrument(skip(state, auth_user))]
 async fn unregister_token(
     State(state): State<AppState>,

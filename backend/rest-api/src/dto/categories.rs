@@ -6,7 +6,7 @@ use crate::models::Category;
 
 // ── Response DTOs ────────────────────────────────────────────────────
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
 pub struct CategoryResponse {
     pub id: Uuid,
     pub name: String,

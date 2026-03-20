@@ -4,7 +4,7 @@ use uuid::Uuid;
 
 use crate::models::Notification;
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, utoipa::ToSchema)]
 pub struct NotificationResponse {
     pub id: Uuid,
     #[serde(rename = "type")]
@@ -38,7 +38,7 @@ impl NotificationResponse {
     }
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, utoipa::ToSchema)]
 pub struct UnreadCountResponse {
     pub count: i64,
 }

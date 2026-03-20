@@ -4,7 +4,7 @@ pub const DEFAULT_PAGE: i64 = 1;
 pub const DEFAULT_LIMIT: i64 = 20;
 pub const MAX_LIMIT: i64 = 100;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
 pub struct PaginationMeta {
     pub total: i64,
     pub page: i64,

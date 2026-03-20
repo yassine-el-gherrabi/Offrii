@@ -11,10 +11,27 @@ use crate::dto::health::HealthResponse;
 
 const HEALTH_CHECK_TIMEOUT: Duration = Duration::from_secs(5);
 
+#[utoipa::path(
+    get,
+    path = "/health/live",
+    responses(
+        (status = 200, description = "Service is alive"),
+    ),
+    tag = "Health"
+)]
 pub async fn health_live() -> impl IntoResponse {
     Json(serde_json::json!({"status": "ok"}))
 }
 
+#[utoipa::path(
+    get,
+    path = "/health",
+    responses(
+        (status = 200, body = HealthResponse, description = "All systems healthy"),
+        (status = 503, body = HealthResponse, description = "Service degraded"),
+    ),
+    tag = "Health"
+)]
 #[tracing::instrument(skip(state))]
 pub async fn health_check(State(state): State<AppState>) -> (StatusCode, Json<HealthResponse>) {
     let db_ok = timeout(HEALTH_CHECK_TIMEOUT, state.health.check_db())

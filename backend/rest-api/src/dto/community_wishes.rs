@@ -5,7 +5,7 @@ use validator::Validate;
 
 // ── Request DTOs ─────────────────────────────────────────────────────
 
-#[derive(Debug, Deserialize, Validate)]
+#[derive(Debug, Deserialize, Validate, utoipa::ToSchema, utoipa::IntoParams)]
 pub struct CreateWishRequest {
     #[validate(length(min = 1, max = 255, message = "title must be 1-255 characters"))]
     pub title: String,
@@ -21,7 +21,7 @@ pub struct CreateWishRequest {
     pub links: Option<Vec<String>>,
 }
 
-#[derive(Debug, Deserialize, Validate)]
+#[derive(Debug, Deserialize, Validate, utoipa::ToSchema, utoipa::IntoParams)]
 pub struct UpdateWishRequest {
     #[validate(length(min = 1, max = 255, message = "title must be 1-255 characters"))]
     pub title: Option<String>,
@@ -35,7 +35,7 @@ pub struct UpdateWishRequest {
     pub links: Option<Vec<String>>,
 }
 
-#[derive(Debug, Deserialize, Validate)]
+#[derive(Debug, Deserialize, Validate, utoipa::ToSchema, utoipa::IntoParams)]
 pub struct ListWishesQuery {
     pub category: Option<String>,
     #[validate(range(min = 1, max = 100, message = "limit must be 1-100"))]
@@ -44,12 +44,12 @@ pub struct ListWishesQuery {
     pub page: Option<i64>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, utoipa::ToSchema, utoipa::IntoParams)]
 pub struct BlockWishRequest {
     // empty body — just POST to /{id}/block
 }
 
-#[derive(Debug, Deserialize, Validate)]
+#[derive(Debug, Deserialize, Validate, utoipa::ToSchema, utoipa::IntoParams)]
 pub struct ReportWishRequest {
     #[validate(custom(function = "validate_report_reason"))]
     pub reason: Option<String>,
@@ -59,7 +59,7 @@ pub struct ReportWishRequest {
 
 // ── Response DTOs ────────────────────────────────────────────────────
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
 pub struct WishResponse {
     pub id: Uuid,
     pub display_name: Option<String>,
@@ -75,7 +75,7 @@ pub struct WishResponse {
     pub created_at: DateTime<Utc>,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, utoipa::ToSchema)]
 pub struct WishDetailResponse {
     pub id: Uuid,
     pub display_name: Option<String>,
@@ -94,7 +94,7 @@ pub struct WishDetailResponse {
     pub created_at: DateTime<Utc>,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, utoipa::ToSchema)]
 pub struct MyWishResponse {
     pub id: Uuid,
     pub title: String,
@@ -114,7 +114,7 @@ pub struct MyWishResponse {
     pub closed_at: Option<DateTime<Utc>>,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, utoipa::ToSchema)]
 pub struct AdminWishResponse {
     pub id: Uuid,
     pub owner_id: Uuid,

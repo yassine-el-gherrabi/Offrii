@@ -25,6 +25,19 @@ struct ListQuery {
     limit: Option<i64>,
 }
 
+#[utoipa::path(
+    get,
+    path = "/me/notifications",
+    params(
+        ("page" = Option<i64>, Query, description = "Page number"),
+        ("limit" = Option<i64>, Query, description = "Items per page"),
+    ),
+    responses(
+        (status = 200, description = "Paginated response"),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "Notifications"
+)]
 async fn list_notifications(
     State(state): State<AppState>,
     auth_user: AuthUser,
@@ -79,6 +92,15 @@ async fn list_notifications(
     Ok(Json(PaginatedResponse::new(responses, total, page, limit)))
 }
 
+#[utoipa::path(
+    post,
+    path = "/me/notifications/read",
+    responses(
+        (status = 204, description = "All notifications marked as read"),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "Notifications"
+)]
 async fn mark_all_read(
     State(state): State<AppState>,
     auth_user: AuthUser,
@@ -92,6 +114,16 @@ async fn mark_all_read(
     Ok(StatusCode::NO_CONTENT)
 }
 
+#[utoipa::path(
+    post,
+    path = "/me/notifications/{id}/read",
+    params(("id" = Uuid, Path, description = "Notification ID")),
+    responses(
+        (status = 204, description = "Notification marked as read"),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "Notifications"
+)]
 async fn mark_read(
     State(state): State<AppState>,
     auth_user: AuthUser,
@@ -106,6 +138,17 @@ async fn mark_read(
     Ok(StatusCode::NO_CONTENT)
 }
 
+#[utoipa::path(
+    delete,
+    path = "/me/notifications/{id}",
+    params(("id" = Uuid, Path, description = "Notification ID")),
+    responses(
+        (status = 204, description = "Notification deleted"),
+        (status = 404, description = "Notification not found"),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "Notifications"
+)]
 async fn delete_notification(
     State(state): State<AppState>,
     auth_user: AuthUser,
@@ -124,6 +167,15 @@ async fn delete_notification(
     Ok(StatusCode::NO_CONTENT)
 }
 
+#[utoipa::path(
+    get,
+    path = "/me/notifications/unread-count",
+    responses(
+        (status = 200, body = UnreadCountResponse),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "Notifications"
+)]
 async fn unread_count(
     State(state): State<AppState>,
     auth_user: AuthUser,

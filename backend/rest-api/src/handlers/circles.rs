@@ -8,9 +8,10 @@ use validator::Validate;
 
 use crate::AppState;
 use crate::dto::circles::{
-    AddMemberRequest, CircleDetailResponse, CircleEventResponse, CircleItemResponse,
-    CircleResponse, CreateCircleRequest, CreateInviteRequest, FeedQuery, InviteResponse,
-    JoinResponse, ReservationResponse, ShareItemRequest, TransferOwnershipRequest,
+    AddMemberRequest, BatchShareRequest, CircleDetailResponse, CircleEventResponse,
+    CircleItemResponse, CircleResponse, CircleShareRuleSummary, CreateCircleRequest,
+    CreateInviteRequest, FeedQuery, InviteResponse, JoinResponse, ReservationResponse,
+    SetShareRuleRequest, ShareItemRequest, ShareRuleResponse, TransferOwnershipRequest,
     UpdateCircleRequest,
 };
 use crate::dto::pagination::{PaginatedResponse, normalize_pagination};
@@ -49,6 +50,16 @@ pub fn router() -> Router<AppState> {
         .route("/my-share-rules", get(list_my_share_rules))
 }
 
+#[utoipa::path(
+    post,
+    path = "/circles",
+    request_body = CreateCircleRequest,
+    responses(
+        (status = 201, body = CircleResponse),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "Circles"
+)]
 #[tracing::instrument(skip(state))]
 async fn create_circle(
     State(state): State<AppState>,
@@ -63,6 +74,15 @@ async fn create_circle(
     Ok((StatusCode::CREATED, Json(response)))
 }
 
+#[utoipa::path(
+    get,
+    path = "/circles",
+    responses(
+        (status = 200, body = Vec<CircleResponse>),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "Circles"
+)]
 #[tracing::instrument(skip(state))]
 async fn list_circles(
     State(state): State<AppState>,
@@ -72,6 +92,17 @@ async fn list_circles(
     Ok(Json(response))
 }
 
+#[utoipa::path(
+    get,
+    path = "/circles/{id}",
+    params(("id" = Uuid, Path, description = "Circle ID")),
+    responses(
+        (status = 200, body = CircleDetailResponse),
+        (status = 404, description = "Circle not found"),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "Circles"
+)]
 #[tracing::instrument(skip(state))]
 async fn get_circle(
     State(state): State<AppState>,
@@ -82,6 +113,17 @@ async fn get_circle(
     Ok(Json(response))
 }
 
+#[utoipa::path(
+    patch,
+    path = "/circles/{id}",
+    params(("id" = Uuid, Path, description = "Circle ID")),
+    request_body = UpdateCircleRequest,
+    responses(
+        (status = 200, body = CircleResponse),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "Circles"
+)]
 #[tracing::instrument(skip(state))]
 async fn update_circle(
     State(state): State<AppState>,
@@ -125,6 +167,16 @@ async fn update_circle(
     Ok(Json(response))
 }
 
+#[utoipa::path(
+    delete,
+    path = "/circles/{id}",
+    params(("id" = Uuid, Path, description = "Circle ID")),
+    responses(
+        (status = 204, description = "Circle deleted"),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "Circles"
+)]
 #[tracing::instrument(skip(state))]
 async fn delete_circle(
     State(state): State<AppState>,
@@ -135,6 +187,16 @@ async fn delete_circle(
     Ok(StatusCode::NO_CONTENT)
 }
 
+#[utoipa::path(
+    post,
+    path = "/circles/direct/{user_id}",
+    params(("user_id" = Uuid, Path, description = "Target user ID")),
+    responses(
+        (status = 201, body = CircleResponse),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "Circles"
+)]
 #[tracing::instrument(skip(state))]
 async fn create_direct_circle(
     State(state): State<AppState>,
@@ -148,6 +210,17 @@ async fn create_direct_circle(
     Ok((StatusCode::CREATED, Json(response)))
 }
 
+#[utoipa::path(
+    post,
+    path = "/circles/{id}/members",
+    params(("id" = Uuid, Path, description = "Circle ID")),
+    request_body = AddMemberRequest,
+    responses(
+        (status = 201, description = "Member added"),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "Circles"
+)]
 #[tracing::instrument(skip(state))]
 async fn add_member(
     State(state): State<AppState>,
@@ -162,6 +235,17 @@ async fn add_member(
     Ok(StatusCode::CREATED)
 }
 
+#[utoipa::path(
+    post,
+    path = "/circles/{id}/invite",
+    params(("id" = Uuid, Path, description = "Circle ID")),
+    request_body(content = Option<CreateInviteRequest>),
+    responses(
+        (status = 201, body = InviteResponse),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "Circles"
+)]
 #[tracing::instrument(skip(state))]
 async fn create_invite(
     State(state): State<AppState>,
@@ -181,6 +265,16 @@ async fn create_invite(
     Ok((StatusCode::CREATED, Json(response)))
 }
 
+#[utoipa::path(
+    post,
+    path = "/circles/join/{token}",
+    params(("token" = String, Path, description = "Invite token")),
+    responses(
+        (status = 200, body = JoinResponse),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "Circles"
+)]
 #[tracing::instrument(skip(state))]
 async fn join_via_invite(
     State(state): State<AppState>,
@@ -194,6 +288,19 @@ async fn join_via_invite(
     Ok(Json(response))
 }
 
+#[utoipa::path(
+    delete,
+    path = "/circles/{id}/members/{uid}",
+    params(
+        ("id" = Uuid, Path, description = "Circle ID"),
+        ("uid" = Uuid, Path, description = "User ID to remove"),
+    ),
+    responses(
+        (status = 204, description = "Member removed"),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "Circles"
+)]
 #[tracing::instrument(skip(state))]
 async fn remove_member(
     State(state): State<AppState>,
@@ -207,6 +314,16 @@ async fn remove_member(
     Ok(StatusCode::NO_CONTENT)
 }
 
+#[utoipa::path(
+    get,
+    path = "/circles/{id}/invites",
+    params(("id" = Uuid, Path, description = "Circle ID")),
+    responses(
+        (status = 200, body = Vec<InviteResponse>),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "Circles"
+)]
 #[tracing::instrument(skip(state))]
 async fn list_invites(
     State(state): State<AppState>,
@@ -224,6 +341,19 @@ async fn list_invites(
     Ok(Json(response))
 }
 
+#[utoipa::path(
+    delete,
+    path = "/circles/{id}/invites/{iid}",
+    params(
+        ("id" = Uuid, Path, description = "Circle ID"),
+        ("iid" = Uuid, Path, description = "Invite ID"),
+    ),
+    responses(
+        (status = 204, description = "Invite revoked"),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "Circles"
+)]
 #[tracing::instrument(skip(state))]
 async fn revoke_invite(
     State(state): State<AppState>,
@@ -237,6 +367,17 @@ async fn revoke_invite(
     Ok(StatusCode::NO_CONTENT)
 }
 
+#[utoipa::path(
+    post,
+    path = "/circles/{id}/items",
+    params(("id" = Uuid, Path, description = "Circle ID")),
+    request_body = ShareItemRequest,
+    responses(
+        (status = 204, description = "Item shared"),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "Circles"
+)]
 #[tracing::instrument(skip(state))]
 async fn share_item(
     State(state): State<AppState>,
@@ -251,6 +392,17 @@ async fn share_item(
     Ok(StatusCode::NO_CONTENT)
 }
 
+#[utoipa::path(
+    post,
+    path = "/circles/{id}/items/batch",
+    params(("id" = Uuid, Path, description = "Circle ID")),
+    request_body = BatchShareRequest,
+    responses(
+        (status = 204, description = "Items shared in batch"),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "Circles"
+)]
 #[tracing::instrument(skip(state))]
 async fn batch_share_items(
     State(state): State<AppState>,
@@ -265,6 +417,16 @@ async fn batch_share_items(
     Ok(StatusCode::NO_CONTENT)
 }
 
+#[utoipa::path(
+    get,
+    path = "/circles/{id}/share-rule",
+    params(("id" = Uuid, Path, description = "Circle ID")),
+    responses(
+        (status = 200, body = ShareRuleResponse),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "Circles"
+)]
 #[tracing::instrument(skip(state))]
 async fn get_share_rule(
     State(state): State<AppState>,
@@ -305,6 +467,17 @@ async fn get_share_rule(
     }
 }
 
+#[utoipa::path(
+    put,
+    path = "/circles/{id}/share-rule",
+    params(("id" = Uuid, Path, description = "Circle ID")),
+    request_body = SetShareRuleRequest,
+    responses(
+        (status = 204, description = "Share rule updated"),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "Circles"
+)]
 #[tracing::instrument(skip(state))]
 async fn set_share_rule(
     State(state): State<AppState>,
@@ -361,6 +534,16 @@ async fn set_share_rule(
     Ok(StatusCode::NO_CONTENT)
 }
 
+#[utoipa::path(
+    get,
+    path = "/circles/{id}/items",
+    params(("id" = Uuid, Path, description = "Circle ID")),
+    responses(
+        (status = 200, body = Vec<CircleItemResponse>),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "Circles"
+)]
 #[tracing::instrument(skip(state))]
 async fn list_circle_items(
     State(state): State<AppState>,
@@ -374,6 +557,19 @@ async fn list_circle_items(
     Ok(Json(response))
 }
 
+#[utoipa::path(
+    get,
+    path = "/circles/{id}/items/{iid}",
+    params(
+        ("id" = Uuid, Path, description = "Circle ID"),
+        ("iid" = Uuid, Path, description = "Item ID"),
+    ),
+    responses(
+        (status = 200, body = CircleItemResponse),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "Circles"
+)]
 #[tracing::instrument(skip(state))]
 async fn get_circle_item(
     State(state): State<AppState>,
@@ -387,6 +583,19 @@ async fn get_circle_item(
     Ok(Json(item))
 }
 
+#[utoipa::path(
+    delete,
+    path = "/circles/{id}/items/{iid}",
+    params(
+        ("id" = Uuid, Path, description = "Circle ID"),
+        ("iid" = Uuid, Path, description = "Item ID"),
+    ),
+    responses(
+        (status = 204, description = "Item unshared"),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "Circles"
+)]
 #[tracing::instrument(skip(state))]
 async fn unshare_item(
     State(state): State<AppState>,
@@ -400,6 +609,16 @@ async fn unshare_item(
     Ok(StatusCode::NO_CONTENT)
 }
 
+#[utoipa::path(
+    get,
+    path = "/circles/{id}/feed",
+    params(("id" = Uuid, Path, description = "Circle ID")),
+    responses(
+        (status = 200, description = "Paginated response"),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "Circles"
+)]
 #[tracing::instrument(skip(state))]
 async fn get_feed(
     State(state): State<AppState>,
@@ -415,6 +634,17 @@ async fn get_feed(
     Ok(Json(response))
 }
 
+#[utoipa::path(
+    post,
+    path = "/circles/{id}/transfer",
+    params(("id" = Uuid, Path, description = "Circle ID")),
+    request_body = TransferOwnershipRequest,
+    responses(
+        (status = 204, description = "Ownership transferred"),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "Circles"
+)]
 #[tracing::instrument(skip(state))]
 async fn transfer_ownership(
     State(state): State<AppState>,
@@ -429,6 +659,15 @@ async fn transfer_ownership(
     Ok(StatusCode::NO_CONTENT)
 }
 
+#[utoipa::path(
+    get,
+    path = "/circles/my-reservations",
+    responses(
+        (status = 200, body = Vec<ReservationResponse>),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "Circles"
+)]
 #[tracing::instrument(skip(state))]
 async fn list_reservations(
     State(state): State<AppState>,
@@ -438,6 +677,15 @@ async fn list_reservations(
     Ok(Json(reservations))
 }
 
+#[utoipa::path(
+    get,
+    path = "/circles/my-share-rules",
+    responses(
+        (status = 200, body = Vec<CircleShareRuleSummary>),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "Circles"
+)]
 async fn list_my_share_rules(
     State(state): State<AppState>,
     auth_user: AuthUser,

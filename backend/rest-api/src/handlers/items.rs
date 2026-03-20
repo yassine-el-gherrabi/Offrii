@@ -30,6 +30,17 @@ pub fn router() -> Router<AppState> {
         .route("/{id}/web-claim", axum::routing::delete(owner_unclaim_web))
 }
 
+#[utoipa::path(
+    post,
+    path = "/items",
+    request_body = CreateItemRequest,
+    responses(
+        (status = 201, body = ItemResponse),
+        (status = 400, description = "Validation error"),
+    ),
+    tag = "Items",
+    security(("bearer_auth" = [])),
+)]
 #[tracing::instrument(skip(state, req))]
 async fn create_item(
     State(state): State<AppState>,
@@ -60,6 +71,16 @@ async fn create_item(
     Ok((StatusCode::CREATED, Json(response)))
 }
 
+#[utoipa::path(
+    get,
+    path = "/items",
+    params(ListItemsQuery),
+    responses(
+        (status = 200, description = "Paginated response"),
+    ),
+    tag = "Items",
+    security(("bearer_auth" = [])),
+)]
 #[tracing::instrument(skip(state))]
 async fn list_items(
     State(state): State<AppState>,
@@ -71,6 +92,17 @@ async fn list_items(
     Ok(Json(response))
 }
 
+#[utoipa::path(
+    get,
+    path = "/items/{id}",
+    params(("id" = Uuid, Path, description = "Item ID")),
+    responses(
+        (status = 200, body = ItemResponse),
+        (status = 404, description = "Item not found"),
+    ),
+    tag = "Items",
+    security(("bearer_auth" = [])),
+)]
 #[tracing::instrument(skip(state))]
 async fn get_item(
     State(state): State<AppState>,
@@ -82,6 +114,19 @@ async fn get_item(
     Ok(Json(response))
 }
 
+#[utoipa::path(
+    put,
+    path = "/items/{id}",
+    params(("id" = Uuid, Path, description = "Item ID")),
+    request_body = UpdateItemRequest,
+    responses(
+        (status = 200, body = ItemResponse),
+        (status = 400, description = "Validation error"),
+        (status = 404, description = "Item not found"),
+    ),
+    tag = "Items",
+    security(("bearer_auth" = [])),
+)]
 #[tracing::instrument(skip(state, req))]
 async fn update_item(
     State(state): State<AppState>,
@@ -152,6 +197,17 @@ async fn update_item(
     Ok(Json(response))
 }
 
+#[utoipa::path(
+    delete,
+    path = "/items/{id}",
+    params(("id" = Uuid, Path, description = "Item ID")),
+    responses(
+        (status = 204, description = "Item deleted"),
+        (status = 404, description = "Item not found"),
+    ),
+    tag = "Items",
+    security(("bearer_auth" = [])),
+)]
 #[tracing::instrument(skip(state))]
 async fn delete_item(
     State(state): State<AppState>,
@@ -173,6 +229,17 @@ async fn delete_item(
     Ok(StatusCode::NO_CONTENT)
 }
 
+#[utoipa::path(
+    post,
+    path = "/items/{id}/claim",
+    params(("id" = Uuid, Path, description = "Item ID")),
+    responses(
+        (status = 204, description = "Item claimed"),
+        (status = 404, description = "Item not found"),
+    ),
+    tag = "Items",
+    security(("bearer_auth" = [])),
+)]
 #[tracing::instrument(skip(state))]
 async fn claim_item(
     State(state): State<AppState>,
@@ -189,6 +256,17 @@ async fn claim_item(
     Ok(StatusCode::NO_CONTENT)
 }
 
+#[utoipa::path(
+    delete,
+    path = "/items/{id}/claim",
+    params(("id" = Uuid, Path, description = "Item ID")),
+    responses(
+        (status = 204, description = "Claim removed"),
+        (status = 404, description = "Item not found"),
+    ),
+    tag = "Items",
+    security(("bearer_auth" = [])),
+)]
 #[tracing::instrument(skip(state))]
 async fn unclaim_item(
     State(state): State<AppState>,
@@ -206,6 +284,17 @@ async fn unclaim_item(
 }
 
 /// Owner removes a web claim from their own item.
+#[utoipa::path(
+    delete,
+    path = "/items/{id}/web-claim",
+    params(("id" = Uuid, Path, description = "Item ID")),
+    responses(
+        (status = 204, description = "Web claim removed"),
+        (status = 404, description = "Item not found"),
+    ),
+    tag = "Items",
+    security(("bearer_auth" = [])),
+)]
 #[tracing::instrument(skip(state))]
 async fn owner_unclaim_web(
     State(state): State<AppState>,
@@ -219,6 +308,17 @@ async fn owner_unclaim_web(
     Ok(StatusCode::NO_CONTENT)
 }
 
+#[utoipa::path(
+    post,
+    path = "/items/batch-delete",
+    request_body = BatchDeleteRequest,
+    responses(
+        (status = 204, description = "Items deleted"),
+        (status = 400, description = "Validation error"),
+    ),
+    tag = "Items",
+    security(("bearer_auth" = [])),
+)]
 #[tracing::instrument(skip(state, req))]
 async fn batch_delete(
     State(state): State<AppState>,

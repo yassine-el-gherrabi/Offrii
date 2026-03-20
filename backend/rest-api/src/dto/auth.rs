@@ -7,7 +7,7 @@ use crate::models::User;
 
 // ── Request DTOs ─────────────────────────────────────────────────────
 
-#[derive(Debug, Deserialize, Validate)]
+#[derive(Debug, Deserialize, Validate, utoipa::ToSchema)]
 pub struct RegisterRequest {
     #[validate(email(message = "invalid email address"))]
     pub email: String,
@@ -27,7 +27,7 @@ pub struct RegisterRequest {
     pub username: Option<String>,
 }
 
-#[derive(Debug, Deserialize, Validate)]
+#[derive(Debug, Deserialize, Validate, utoipa::ToSchema)]
 pub struct LoginRequest {
     #[validate(length(min = 1, message = "email or username is required"))]
     pub identifier: String,
@@ -35,13 +35,13 @@ pub struct LoginRequest {
     pub password: String,
 }
 
-#[derive(Debug, Deserialize, Validate)]
+#[derive(Debug, Deserialize, Validate, utoipa::ToSchema)]
 pub struct RefreshRequest {
     #[validate(length(min = 1, message = "refresh_token is required"))]
     pub refresh_token: String,
 }
 
-#[derive(Debug, Deserialize, Validate)]
+#[derive(Debug, Deserialize, Validate, utoipa::ToSchema)]
 pub struct ChangePasswordRequest {
     #[validate(length(min = 1, message = "current password is required"))]
     pub current_password: String,
@@ -53,13 +53,13 @@ pub struct ChangePasswordRequest {
     pub new_password: String,
 }
 
-#[derive(Debug, Deserialize, Validate)]
+#[derive(Debug, Deserialize, Validate, utoipa::ToSchema)]
 pub struct ForgotPasswordRequest {
     #[validate(email(message = "invalid email address"))]
     pub email: String,
 }
 
-#[derive(Debug, Deserialize, Validate)]
+#[derive(Debug, Deserialize, Validate, utoipa::ToSchema)]
 pub struct ResetPasswordRequest {
     #[validate(email(message = "invalid email address"))]
     pub email: String,
@@ -73,7 +73,7 @@ pub struct ResetPasswordRequest {
     pub new_password: String,
 }
 
-#[derive(Debug, Deserialize, Validate)]
+#[derive(Debug, Deserialize, Validate, utoipa::ToSchema)]
 pub struct VerifyResetCodeRequest {
     #[validate(email(message = "invalid email address"))]
     pub email: String,
@@ -81,20 +81,20 @@ pub struct VerifyResetCodeRequest {
     pub code: String,
 }
 
-#[derive(Debug, Deserialize, Validate)]
+#[derive(Debug, Deserialize, Validate, utoipa::ToSchema)]
 pub struct VerifyEmailRequest {
     #[validate(length(min = 1, max = 64, message = "token is required"))]
     pub token: String,
 }
 
-#[derive(Debug, Deserialize, Validate)]
+#[derive(Debug, Deserialize, Validate, utoipa::ToSchema)]
 pub struct GoogleAuthRequest {
     #[validate(length(min = 1, message = "id_token is required"))]
     pub id_token: String,
     pub display_name: Option<String>,
 }
 
-#[derive(Debug, Deserialize, Validate)]
+#[derive(Debug, Deserialize, Validate, utoipa::ToSchema)]
 pub struct AppleAuthRequest {
     #[validate(length(min = 1, message = "id_token is required"))]
     pub id_token: String,
@@ -103,7 +103,7 @@ pub struct AppleAuthRequest {
 
 // ── Response DTOs ────────────────────────────────────────────────────
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, utoipa::ToSchema)]
 pub struct TokenPair {
     pub access_token: String,
     pub refresh_token: String,
@@ -111,21 +111,21 @@ pub struct TokenPair {
     pub expires_in: u64,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, utoipa::ToSchema)]
 pub struct AuthResponse {
     pub tokens: TokenPair,
     pub user: UserResponse,
     pub is_new_user: bool,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, utoipa::ToSchema)]
 pub struct RefreshResponse {
     pub tokens: TokenPair,
 }
 
 // ── User response DTO ───────────────────────────────────────────────
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, utoipa::ToSchema)]
 pub struct UserResponse {
     pub id: Uuid,
     pub email: String,

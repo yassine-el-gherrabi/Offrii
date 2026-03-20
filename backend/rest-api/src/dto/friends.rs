@@ -5,13 +5,13 @@ use validator::Validate;
 
 // ── Request DTOs ─────────────────────────────────────────────────────
 
-#[derive(Debug, Deserialize, Validate)]
+#[derive(Debug, Deserialize, Validate, utoipa::ToSchema, utoipa::IntoParams)]
 pub struct SendFriendRequestBody {
     #[validate(length(min = 1, max = 50, message = "username must be 1-50 characters"))]
     pub username: String,
 }
 
-#[derive(Debug, Deserialize, Validate)]
+#[derive(Debug, Deserialize, Validate, utoipa::ToSchema, utoipa::IntoParams)]
 pub struct UserSearchQuery {
     #[validate(length(min = 1, max = 50, message = "query must be 1-50 characters"))]
     pub q: String,
@@ -19,7 +19,7 @@ pub struct UserSearchQuery {
 
 // ── Response DTOs ────────────────────────────────────────────────────
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, utoipa::ToSchema)]
 pub struct FriendRequestResponse {
     pub id: Uuid,
     pub from_user_id: Uuid,
@@ -29,7 +29,7 @@ pub struct FriendRequestResponse {
     pub created_at: DateTime<Utc>,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, utoipa::ToSchema)]
 pub struct SentFriendRequestResponse {
     pub id: Uuid,
     pub to_user_id: Uuid,
@@ -39,7 +39,7 @@ pub struct SentFriendRequestResponse {
     pub created_at: DateTime<Utc>,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, utoipa::ToSchema)]
 pub struct FriendResponse {
     pub user_id: Uuid,
     pub username: String,
@@ -48,7 +48,7 @@ pub struct FriendResponse {
     pub shared_item_count: i64,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, utoipa::ToSchema)]
 pub struct UserSearchResult {
     pub username: String,
     pub display_name: Option<String>,

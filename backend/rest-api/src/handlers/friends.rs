@@ -33,6 +33,17 @@ pub fn search_router() -> Router<AppState> {
     Router::new().route("/search", get(search_users))
 }
 
+#[utoipa::path(
+    get,
+    path = "/users/search",
+    params(UserSearchQuery),
+    responses(
+        (status = 200, body = Vec<UserSearchResult>),
+        (status = 400, description = "Validation error"),
+    ),
+    tag = "Friends",
+    security(("bearer_auth" = [])),
+)]
 #[tracing::instrument(skip(state))]
 async fn search_users(
     State(state): State<AppState>,
@@ -44,6 +55,17 @@ async fn search_users(
     Ok(Json(results))
 }
 
+#[utoipa::path(
+    post,
+    path = "/me/friend-requests",
+    request_body = SendFriendRequestBody,
+    responses(
+        (status = 201, body = FriendRequestResponse),
+        (status = 400, description = "Validation error"),
+    ),
+    tag = "Friends",
+    security(("bearer_auth" = [])),
+)]
 #[tracing::instrument(skip(state))]
 async fn send_request(
     State(state): State<AppState>,
@@ -58,6 +80,15 @@ async fn send_request(
     Ok((StatusCode::CREATED, Json(response)))
 }
 
+#[utoipa::path(
+    get,
+    path = "/me/friend-requests",
+    responses(
+        (status = 200, body = Vec<FriendRequestResponse>),
+    ),
+    tag = "Friends",
+    security(("bearer_auth" = [])),
+)]
 #[tracing::instrument(skip(state))]
 async fn list_pending(
     State(state): State<AppState>,
@@ -70,6 +101,15 @@ async fn list_pending(
     Ok(Json(responses))
 }
 
+#[utoipa::path(
+    get,
+    path = "/me/friend-requests/sent",
+    responses(
+        (status = 200, body = Vec<SentFriendRequestResponse>),
+    ),
+    tag = "Friends",
+    security(("bearer_auth" = [])),
+)]
 #[tracing::instrument(skip(state))]
 async fn list_sent(
     State(state): State<AppState>,
@@ -79,6 +119,17 @@ async fn list_sent(
     Ok(Json(responses))
 }
 
+#[utoipa::path(
+    delete,
+    path = "/me/friend-requests/{id}/cancel",
+    params(("id" = Uuid, Path, description = "Friend request ID")),
+    responses(
+        (status = 204, description = "Request cancelled"),
+        (status = 404, description = "Request not found"),
+    ),
+    tag = "Friends",
+    security(("bearer_auth" = [])),
+)]
 #[tracing::instrument(skip(state))]
 async fn cancel_request(
     State(state): State<AppState>,
@@ -89,6 +140,17 @@ async fn cancel_request(
     Ok(StatusCode::NO_CONTENT)
 }
 
+#[utoipa::path(
+    post,
+    path = "/me/friend-requests/{id}/accept",
+    params(("id" = Uuid, Path, description = "Friend request ID")),
+    responses(
+        (status = 200, body = FriendResponse),
+        (status = 404, description = "Request not found"),
+    ),
+    tag = "Friends",
+    security(("bearer_auth" = [])),
+)]
 #[tracing::instrument(skip(state))]
 async fn accept_request(
     State(state): State<AppState>,
@@ -99,6 +161,17 @@ async fn accept_request(
     Ok(Json(response))
 }
 
+#[utoipa::path(
+    delete,
+    path = "/me/friend-requests/{id}",
+    params(("id" = Uuid, Path, description = "Friend request ID")),
+    responses(
+        (status = 204, description = "Request declined"),
+        (status = 404, description = "Request not found"),
+    ),
+    tag = "Friends",
+    security(("bearer_auth" = [])),
+)]
 #[tracing::instrument(skip(state))]
 async fn decline_request(
     State(state): State<AppState>,
@@ -109,6 +182,15 @@ async fn decline_request(
     Ok(StatusCode::NO_CONTENT)
 }
 
+#[utoipa::path(
+    get,
+    path = "/me/friends",
+    responses(
+        (status = 200, body = Vec<FriendResponse>),
+    ),
+    tag = "Friends",
+    security(("bearer_auth" = [])),
+)]
 #[tracing::instrument(skip(state))]
 async fn list_friends(
     State(state): State<AppState>,
@@ -118,6 +200,17 @@ async fn list_friends(
     Ok(Json(responses))
 }
 
+#[utoipa::path(
+    delete,
+    path = "/me/friends/{user_id}",
+    params(("user_id" = Uuid, Path, description = "Friend's user ID")),
+    responses(
+        (status = 204, description = "Friend removed"),
+        (status = 404, description = "Friend not found"),
+    ),
+    tag = "Friends",
+    security(("bearer_auth" = [])),
+)]
 #[tracing::instrument(skip(state))]
 async fn remove_friend(
     State(state): State<AppState>,

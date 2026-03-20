@@ -20,6 +20,16 @@ pub fn router() -> Router<AppState> {
         )
 }
 
+#[utoipa::path(
+    post,
+    path = "/share-links",
+    request_body(content = Option<CreateShareLinkRequest>),
+    responses(
+        (status = 201, body = ShareLinkResponse),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "ShareLinks"
+)]
 #[tracing::instrument(skip(state))]
 async fn create_share_link(
     State(state): State<AppState>,
@@ -46,6 +56,15 @@ async fn create_share_link(
     Ok((StatusCode::CREATED, Json(response)))
 }
 
+#[utoipa::path(
+    get,
+    path = "/share-links",
+    responses(
+        (status = 200, body = Vec<ShareLinkListItem>),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "ShareLinks"
+)]
 #[tracing::instrument(skip(state))]
 async fn list_share_links(
     State(state): State<AppState>,
@@ -59,6 +78,16 @@ async fn list_share_links(
     Ok(Json(response))
 }
 
+#[utoipa::path(
+    delete,
+    path = "/share-links/{id}",
+    params(("id" = Uuid, Path, description = "Share link ID")),
+    responses(
+        (status = 204, description = "Share link deleted"),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "ShareLinks"
+)]
 #[tracing::instrument(skip(state))]
 async fn delete_share_link(
     State(state): State<AppState>,
@@ -73,6 +102,17 @@ async fn delete_share_link(
     Ok(StatusCode::NO_CONTENT)
 }
 
+#[utoipa::path(
+    patch,
+    path = "/share-links/{id}",
+    params(("id" = Uuid, Path, description = "Share link ID")),
+    request_body = UpdateShareLinkRequest,
+    responses(
+        (status = 200, body = ShareLinkResponse),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "ShareLinks"
+)]
 #[tracing::instrument(skip(state))]
 async fn update_share_link(
     State(state): State<AppState>,

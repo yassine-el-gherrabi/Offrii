@@ -11,7 +11,7 @@ use crate::dto::pagination::{PaginatedResponse, normalize_pagination};
 use crate::errors::AppError;
 use crate::middleware::AdminUser;
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, utoipa::IntoParams)]
 struct ListFlaggedQuery {
     limit: Option<i64>,
     page: Option<i64>,
@@ -24,6 +24,19 @@ pub fn router() -> Router<AppState> {
         .route("/wishes/{id}/reject", post(reject_wish))
 }
 
+#[utoipa::path(
+    get,
+    path = "/admin/wishes/pending",
+    params(
+        ("page" = Option<i64>, Query, description = "Page number"),
+        ("limit" = Option<i64>, Query, description = "Items per page"),
+    ),
+    responses(
+        (status = 200, description = "Paginated response"),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "Admin"
+)]
 #[tracing::instrument(skip(state))]
 async fn list_pending(
     State(state): State<AppState>,
@@ -38,6 +51,16 @@ async fn list_pending(
     Ok(Json(response))
 }
 
+#[utoipa::path(
+    post,
+    path = "/admin/wishes/{id}/approve",
+    params(("id" = Uuid, Path, description = "Wish ID")),
+    responses(
+        (status = 204, description = "Wish approved"),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "Admin"
+)]
 #[tracing::instrument(skip(state))]
 async fn approve_wish(
     State(state): State<AppState>,
@@ -48,6 +71,16 @@ async fn approve_wish(
     Ok(StatusCode::NO_CONTENT)
 }
 
+#[utoipa::path(
+    post,
+    path = "/admin/wishes/{id}/reject",
+    params(("id" = Uuid, Path, description = "Wish ID")),
+    responses(
+        (status = 204, description = "Wish rejected"),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "Admin"
+)]
 #[tracing::instrument(skip(state))]
 async fn reject_wish(
     State(state): State<AppState>,

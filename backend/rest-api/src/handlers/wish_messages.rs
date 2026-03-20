@@ -23,6 +23,17 @@ pub fn router() -> Router<AppState> {
     )
 }
 
+#[utoipa::path(
+    post,
+    path = "/community/wishes/{wish_id}/messages",
+    params(("wish_id" = Uuid, Path, description = "Wish ID")),
+    request_body = SendMessageRequest,
+    responses(
+        (status = 201, body = MessageResponse),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "Messages"
+)]
 #[tracing::instrument(skip(state))]
 async fn send_message(
     State(state): State<AppState>,
@@ -38,6 +49,19 @@ async fn send_message(
     Ok((StatusCode::CREATED, Json(response)))
 }
 
+#[utoipa::path(
+    get,
+    path = "/community/wishes/{wish_id}/messages",
+    params(
+        ("wish_id" = Uuid, Path, description = "Wish ID"),
+        ListMessagesQuery,
+    ),
+    responses(
+        (status = 200, description = "Paginated response"),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "Messages"
+)]
 #[tracing::instrument(skip(state))]
 async fn list_messages(
     State(state): State<AppState>,

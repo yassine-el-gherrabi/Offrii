@@ -9,7 +9,7 @@ use crate::models::User;
 
 // ── Request DTOs ─────────────────────────────────────────────────────
 
-#[derive(Debug, Deserialize, Validate)]
+#[derive(Debug, Deserialize, Validate, utoipa::ToSchema)]
 pub struct UpdateProfileRequest {
     #[validate(length(max = 100, message = "display name must be at most 100 characters"))]
     pub display_name: Option<String>,
@@ -30,7 +30,7 @@ pub struct UpdateProfileRequest {
 
 // ── Response DTOs ────────────────────────────────────────────────────
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, utoipa::ToSchema)]
 pub struct UserProfileResponse {
     pub id: Uuid,
     pub email: String,
@@ -45,7 +45,7 @@ pub struct UserProfileResponse {
     pub created_at: DateTime<Utc>,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, utoipa::ToSchema)]
 pub struct UserDataExport {
     pub profile: UserProfileResponse,
     pub items: Vec<ItemResponse>,

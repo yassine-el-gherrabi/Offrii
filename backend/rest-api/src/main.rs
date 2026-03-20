@@ -11,6 +11,8 @@ use tower_http::trace::TraceLayer;
 use tracing_subscriber::EnvFilter;
 use tracing_subscriber::layer::SubscriberExt as _;
 use tracing_subscriber::util::SubscriberInitExt as _;
+use utoipa::OpenApi;
+use utoipa_swagger_ui::SwaggerUi;
 
 use rest_api::AppState;
 use rest_api::config::app::Config;
@@ -334,7 +336,11 @@ async fn main() -> anyhow::Result<()> {
                 .allow_headers([header::AUTHORIZATION, header::CONTENT_TYPE, header::ACCEPT]),
         )
         .layer(axum::middleware::from_fn(security_headers))
-        .with_state(state);
+        .with_state(state)
+        .merge(SwaggerUi::new("/docs").url(
+            "/api-doc/openapi.json",
+            rest_api::openapi::ApiDoc::openapi(),
+        ));
 
     // CRON scheduler: run reminder job every hour at minute 0
     let sched = JobScheduler::new().await?;

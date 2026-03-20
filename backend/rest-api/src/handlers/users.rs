@@ -25,6 +25,15 @@ pub fn router() -> Router<AppState> {
         .route("/me/export", get(export_data))
 }
 
+#[utoipa::path(
+    get,
+    path = "/users/me",
+    responses(
+        (status = 200, body = UserProfileResponse),
+    ),
+    tag = "Users",
+    security(("bearer_auth" = [])),
+)]
 #[tracing::instrument(skip(state, auth_user))]
 async fn get_profile(
     State(state): State<AppState>,
@@ -34,6 +43,17 @@ async fn get_profile(
     Ok(Json(response))
 }
 
+#[utoipa::path(
+    patch,
+    path = "/users/me",
+    request_body = UpdateProfileRequest,
+    responses(
+        (status = 200, body = UserProfileResponse),
+        (status = 400, description = "Validation error"),
+    ),
+    tag = "Users",
+    security(("bearer_auth" = [])),
+)]
 #[tracing::instrument(skip(state, auth_user, req))]
 async fn update_profile(
     State(state): State<AppState>,
@@ -67,6 +87,15 @@ async fn update_profile(
     Ok(Json(response))
 }
 
+#[utoipa::path(
+    get,
+    path = "/users/me/export",
+    responses(
+        (status = 200, body = UserDataExport),
+    ),
+    tag = "Users",
+    security(("bearer_auth" = [])),
+)]
 #[tracing::instrument(skip(state, auth_user))]
 async fn export_data(
     State(state): State<AppState>,
@@ -76,6 +105,15 @@ async fn export_data(
     Ok(Json(data))
 }
 
+#[utoipa::path(
+    delete,
+    path = "/users/me",
+    responses(
+        (status = 204, description = "Account deleted"),
+    ),
+    tag = "Users",
+    security(("bearer_auth" = [])),
+)]
 #[tracing::instrument(skip(state, auth_user))]
 async fn delete_account(
     State(state): State<AppState>,
