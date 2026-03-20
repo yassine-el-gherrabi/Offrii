@@ -173,9 +173,15 @@ struct WishlistShareSheet: View {
 
             // All
             scopeRadio(.all, icon: "list.bullet", label: NSLocalizedString("share.scopeAll", comment: ""))
+            if scope == .all {
+                dynamicHint
+            }
 
             // Category (multi-select)
             scopeRadio(.category, icon: "tag.fill", label: NSLocalizedString("share.scopeCategories", comment: ""))
+            if scope == .category {
+                dynamicHint
+            }
 
             if scope == .category && !categories.isEmpty {
                 categoryChips
@@ -269,6 +275,17 @@ struct WishlistShareSheet: View {
             }
         }
         .buttonStyle(.plain)
+    }
+
+    private var dynamicHint: some View {
+        HStack(spacing: 4) {
+            Image(systemName: "arrow.triangle.2.circlepath")
+                .font(.system(size: 10))
+            Text(NSLocalizedString("shareRule.dynamicHint", comment: ""))
+                .font(OffriiTypography.caption)
+        }
+        .foregroundColor(OffriiTheme.textMuted)
+        .padding(.leading, 34)
     }
 
     /// Resolve item IDs based on current scope.
