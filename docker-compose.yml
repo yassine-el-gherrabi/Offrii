@@ -56,6 +56,7 @@ services:
       APNS_BUNDLE_ID: ${APNS_BUNDLE_ID:-com.offrii.app}
       APNS_SANDBOX: ${APNS_SANDBOX:-true}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      SEED_DEV_DATA: ${SEED_DEV_DATA:-false}
     depends_on:
       postgres:
         condition: service_healthy

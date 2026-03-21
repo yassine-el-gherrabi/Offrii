@@ -1,10 +1,10 @@
 FROM rust:1.93-slim-bookworm
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    pkg-config libssl-dev curl && rm -rf /var/lib/apt/lists/*
+    pkg-config libssl-dev curl postgresql-client && rm -rf /var/lib/apt/lists/*
 
 RUN cargo install cargo-watch
 
 WORKDIR /app
 
-CMD ["sh", "-c", "cargo run --bin migrate && cargo watch -x 'run --bin rest-api'"]
+CMD ["sh", "-c", "cargo run --bin migrate && if [ \"${SEED_DEV_DATA:-}\" = \"true\" ]; then echo 'Seeding dev data...' && psql \"$DATABASE_URL\" -f /app/rest-api/fixtures/dev_seed.sql && echo 'Dev data seeded.'; fi && cargo watch -x 'run --bin rest-api'"]

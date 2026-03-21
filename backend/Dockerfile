@@ -24,7 +24,7 @@ RUN cargo build --release --workspace
 FROM debian:bookworm-slim
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    ca-certificates curl && rm -rf /var/lib/apt/lists/*
+    ca-certificates curl postgresql-client && rm -rf /var/lib/apt/lists/*
 
 RUN groupadd --gid 1000 appuser \
     && useradd --uid 1000 --gid appuser --shell /bin/false appuser
@@ -33,6 +33,8 @@ COPY --from=builder /build/target/release/rest-api /usr/local/bin/rest-api
 COPY --from=builder /build/target/release/migrate  /usr/local/bin/migrate
 COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
+COPY rest-api/fixtures/ /app/fixtures/
 
 WORKDIR /app
 USER appuser
