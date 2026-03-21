@@ -198,36 +198,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c08606f8c3cbf4ce6ec8e28fb0014a2c086708fe954eaa885384a6165172e7e8"
 
 [[package]]
-name = "aws-config"
-version = "1.8.15"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "11493b0bad143270fb8ad284a096dd529ba91924c5409adeac856cc1bf047dbc"
-dependencies = [
- "aws-credential-types",
- "aws-runtime",
- "aws-sdk-sso",
- "aws-sdk-ssooidc",
- "aws-sdk-sts",
- "aws-smithy-async",
- "aws-smithy-http 0.63.6",
- "aws-smithy-json 0.62.5",
- "aws-smithy-runtime",
- "aws-smithy-runtime-api",
- "aws-smithy-types",
- "aws-types",
- "bytes",
- "fastrand",
- "hex",
- "http 1.4.0",
- "sha1",
- "time",
- "tokio",
- "tracing",
- "url",
- "zeroize",
-]
-
-[[package]]
 name = "aws-credential-types"
 version = "1.2.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -302,7 +272,7 @@ dependencies = [
  "aws-smithy-checksums",
  "aws-smithy-eventstream",
  "aws-smithy-http 0.62.6",
- "aws-smithy-json 0.61.9",
+ "aws-smithy-json",
  "aws-smithy-runtime",
  "aws-smithy-runtime-api",
  "aws-smithy-types",
@@ -321,79 +291,6 @@ dependencies = [
  "sha2",
  "tracing",
  "url",
-]
-
-[[package]]
-name = "aws-sdk-sso"
-version = "1.96.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f64a6eded248c6b453966e915d32aeddb48ea63ad17932682774eb026fbef5b1"
-dependencies = [
- "aws-credential-types",
- "aws-runtime",
- "aws-smithy-async",
- "aws-smithy-http 0.63.6",
- "aws-smithy-json 0.62.5",
- "aws-smithy-observability",
- "aws-smithy-runtime",
- "aws-smithy-runtime-api",
- "aws-smithy-types",
- "aws-types",
- "bytes",
- "fastrand",
- "http 0.2.12",
- "http 1.4.0",
- "regex-lite",
- "tracing",
-]
-
-[[package]]
-name = "aws-sdk-ssooidc"
-version = "1.98.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "db96d720d3c622fcbe08bae1c4b04a72ce6257d8b0584cb5418da00ae20a344f"
-dependencies = [
- "aws-credential-types",
- "aws-runtime",
- "aws-smithy-async",
- "aws-smithy-http 0.63.6",
- "aws-smithy-json 0.62.5",
- "aws-smithy-observability",
- "aws-smithy-runtime",
- "aws-smithy-runtime-api",
- "aws-smithy-types",
- "aws-types",
- "bytes",
- "fastrand",
- "http 0.2.12",
- "http 1.4.0",
- "regex-lite",
- "tracing",
-]
-
-[[package]]
-name = "aws-sdk-sts"
-version = "1.100.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fafbdda43b93f57f699c5dfe8328db590b967b8a820a13ccdd6687355dfcc7ca"
-dependencies = [
- "aws-credential-types",
- "aws-runtime",
- "aws-smithy-async",
- "aws-smithy-http 0.63.6",
- "aws-smithy-json 0.62.5",
- "aws-smithy-observability",
- "aws-smithy-query",
- "aws-smithy-runtime",
- "aws-smithy-runtime-api",
- "aws-smithy-types",
- "aws-smithy-xml",
- "aws-types",
- "fastrand",
- "http 0.2.12",
- "http 1.4.0",
- "regex-lite",
- "tracing",
 ]
 
 [[package]]
@@ -549,31 +446,12 @@ dependencies = [
 ]
 
 [[package]]
-name = "aws-smithy-json"
-version = "0.62.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9648b0bb82a2eedd844052c6ad2a1a822d1f8e3adee5fbf668366717e428856a"
-dependencies = [
- "aws-smithy-types",
-]
-
-[[package]]
 name = "aws-smithy-observability"
 version = "0.2.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a06c2315d173edbf1920da8ba3a7189695827002e4c0fc961973ab1c54abca9c"
 dependencies = [
  "aws-smithy-runtime-api",
-]
-
-[[package]]
-name = "aws-smithy-query"
-version = "0.60.15"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1a56d79744fb3edb5d722ef79d86081e121d3b9422cb209eb03aea6aa4f21ebd"
-dependencies = [
- "aws-smithy-types",
- "urlencoding",
 ]
 
 [[package]]
@@ -3812,7 +3690,6 @@ dependencies = [
  "anyhow",
  "argon2",
  "async-trait",
- "aws-config",
  "aws-sdk-s3",
  "axum",
  "axum-extra",
@@ -5486,12 +5363,6 @@ dependencies = [
  "serde",
  "serde_derive",
 ]
-
-[[package]]
-name = "urlencoding"
-version = "2.1.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "daf8dba3b7eb870caf1ddeed7bc9d2a049f3cfdfae7cb521b087cc33ae4c49da"
 
 [[package]]
 name = "utf-8"
