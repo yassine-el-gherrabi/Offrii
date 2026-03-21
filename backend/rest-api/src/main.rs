@@ -357,11 +357,15 @@ async fn main() -> anyhow::Result<()> {
                 .allow_headers([header::AUTHORIZATION, header::CONTENT_TYPE, header::ACCEPT]),
         )
         .layer(axum::middleware::from_fn(security_headers))
-        .with_state(state)
-        .merge(SwaggerUi::new("/docs").url(
-            "/api-doc/openapi.json",
-            rest_api::openapi::ApiDoc::openapi(),
-        ))
+        .with_state(state);
+
+    #[cfg(debug_assertions)]
+    let app = app.merge(SwaggerUi::new("/docs").url(
+        "/api-doc/openapi.json",
+        rest_api::openapi::ApiDoc::openapi(),
+    ));
+
+    let app = app
         // /metrics is merged after CORS so it is NOT behind the CORS layer.
         .route("/metrics", get(|| async move { metric_handle.render() }))
         // Prometheus middleware wraps the entire router (outermost layer).

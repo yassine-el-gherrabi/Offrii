@@ -125,11 +125,6 @@ staging.offrii.com {
 		}
 	}
 
-	# Basic auth — generate hash with: caddy hash-password
-	basicauth {
-		staging {$STAGING_BASIC_AUTH_HASH}
-	}
-
 	# Block /metrics from external access (Prometheus uses Docker internal network)
 	@staging_metrics path /metrics
 	respond @staging_metrics 404

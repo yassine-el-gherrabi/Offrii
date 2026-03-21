@@ -110,9 +110,9 @@ jobs:
             ENVEOF
             chmod 600 /opt/offrii/.env.staging
 
-            # Decode key files (shared with prod)
-            echo '${{ secrets.JWT_PRIVATE_KEY_BASE64 }}' | base64 -d > /opt/offrii/secrets/jwt_private.pem
-            echo '${{ secrets.JWT_PUBLIC_KEY_BASE64 }}' | base64 -d > /opt/offrii/secrets/jwt_public.pem
+            # Decode key files (staging uses separate JWT keys from prod)
+            echo '${{ secrets.JWT_PRIVATE_KEY_BASE64_STAGING }}' | base64 -d > /opt/offrii/secrets/jwt_private.pem
+            echo '${{ secrets.JWT_PUBLIC_KEY_BASE64_STAGING }}' | base64 -d > /opt/offrii/secrets/jwt_public.pem
             echo '${{ secrets.APNS_KEY_BASE64 }}' | base64 -d > /opt/offrii/secrets/apns_key.p8
             chmod 600 /opt/offrii/secrets/*
 

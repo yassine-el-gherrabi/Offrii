@@ -46,7 +46,7 @@ services:
           memory: 128M
 
   staging-backend:
-    image: ghcr.io/yassinelechef/offrii-api:staging
+    image: ghcr.io/yassine-el-gherrabi/offrii-api:staging
     container_name: offrii-staging-backend
     restart: unless-stopped
     environment:
