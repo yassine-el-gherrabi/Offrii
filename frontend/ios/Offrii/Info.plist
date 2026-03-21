@@ -23,6 +23,10 @@
 			<string>Offrii Deep Link</string>
 		</dict>
 	</array>
+	<key>API_BASE_URL</key>
+	<string>$(API_BASE_URL)</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>NSCameraUsageDescription</key>
 	<string>Offrii utilise l'appareil photo pour prendre une photo de profil ou une image pour vos envies.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
