@@ -22,7 +22,10 @@ pub fn router() -> Router<AppState> {
     Router::new()
         .route("/", get(list_items).post(create_item))
         .route("/batch-delete", axum::routing::post(batch_delete))
-        .route("/{id}", get(get_item).put(update_item).delete(delete_item))
+        .route(
+            "/{id}",
+            get(get_item).patch(update_item).delete(delete_item),
+        )
         .route(
             "/{id}/claim",
             axum::routing::post(claim_item).delete(unclaim_item),
@@ -58,7 +61,6 @@ async fn create_item(
             auth_user.user_id,
             &req.name,
             req.description.as_deref(),
-            req.url.as_deref(),
             req.estimated_price,
             req.priority,
             req.category_id,
@@ -115,7 +117,7 @@ async fn get_item(
 }
 
 #[utoipa::path(
-    put,
+    patch,
     path = "/items/{id}",
     params(("id" = Uuid, Path, description = "Item ID")),
     request_body = UpdateItemRequest,
@@ -158,7 +160,6 @@ async fn update_item(
             auth_user.user_id,
             req.name.as_deref(),
             req.description.as_deref(),
-            req.url.as_deref(),
             req.estimated_price,
             req.priority,
             req.category_id.map(Some),
@@ -361,7 +362,6 @@ mod tests {
         CreateItemRequest {
             name: name.into(),
             description: None,
-            url: None,
             estimated_price: None,
             priority: None,
             category_id: None,
@@ -408,25 +408,10 @@ mod tests {
     }
 
     #[test]
-    fn create_accepts_2048_char_url() {
-        let mut req = make_create("x");
-        req.url = Some("a".repeat(2048));
-        assert!(req.validate().is_ok());
-    }
-
-    #[test]
-    fn create_rejects_2049_char_url() {
-        let mut req = make_create("x");
-        req.url = Some("a".repeat(2049));
-        assert!(req.validate().is_err());
-    }
-
-    #[test]
     fn create_accepts_all_optional_fields() {
         let req = CreateItemRequest {
             name: "test".into(),
             description: Some("desc".into()),
-            url: Some("https://example.com".into()),
             estimated_price: Some(Decimal::from_str("9.99").unwrap()),
             priority: Some(1),
             category_id: Some(Uuid::new_v4()),
@@ -456,17 +441,14 @@ mod tests {
     }
 
     #[test]
-    fn create_resolved_links_from_url() {
-        let mut req = make_create("test");
-        req.url = Some("https://example.com".into());
-        let resolved = req.resolved_links();
-        assert_eq!(resolved, Some(vec!["https://example.com".to_string()]));
+    fn create_resolved_links_returns_none_without_links() {
+        let req = make_create("test");
+        assert_eq!(req.resolved_links(), None);
     }
 
     #[test]
-    fn create_resolved_links_prefers_links_over_url() {
+    fn create_resolved_links_returns_provided_links() {
         let mut req = make_create("test");
-        req.url = Some("https://old.com".into());
         req.links = Some(vec!["https://new.com".into()]);
         let resolved = req.resolved_links();
         assert_eq!(resolved, Some(vec!["https://new.com".to_string()]));
@@ -478,7 +460,6 @@ mod tests {
         UpdateItemRequest {
             name: None,
             description: None,
-            url: None,
             estimated_price: None,
             priority: None,
             category_id: None,

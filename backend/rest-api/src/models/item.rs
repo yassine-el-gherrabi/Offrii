@@ -9,7 +9,6 @@ pub struct Item {
     pub user_id: Uuid,
     pub name: String,
     pub description: Option<String>,
-    pub url: Option<String>,
     pub estimated_price: Option<Decimal>,
     pub priority: i16,
     pub category_id: Option<Uuid>,

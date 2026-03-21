@@ -299,7 +299,7 @@ extension APIEndpoint {
         case .listItems:        return .GET
         case .createItem:       return .POST
         case .getItem:          return .GET
-        case .updateItem:       return .PUT
+        case .updateItem:       return .PATCH
         case .deleteItem:       return .DELETE
         case .claimItem:        return .POST
         case .unclaimItem:      return .DELETE

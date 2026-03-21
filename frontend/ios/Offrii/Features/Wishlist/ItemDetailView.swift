@@ -67,11 +67,11 @@ struct ItemDetailView: View {
                                     )
                                 }
 
-                                if let url = item.url, !url.isEmpty {
+                                if let links = item.links, let first = links.first, !first.isEmpty {
                                     detailRow(
                                         icon: "link",
                                         title: NSLocalizedString("item.url", comment: ""),
-                                        value: url,
+                                        value: first,
                                         isLink: true
                                     )
                                 }

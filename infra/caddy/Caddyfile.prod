@@ -63,6 +63,10 @@ api.offrii.com {
 		}
 	}
 
+	# Block /metrics from external access (Prometheus uses Docker internal network)
+	@metrics path /metrics
+	respond @metrics 404
+
 	reverse_proxy backend:3000 {
 		health_uri      /health/ready
 		health_interval 30s
@@ -125,6 +129,10 @@ staging.offrii.com {
 	basicauth {
 		staging {$STAGING_BASIC_AUTH_HASH}
 	}
+
+	# Block /metrics from external access (Prometheus uses Docker internal network)
+	@staging_metrics path /metrics
+	respond @staging_metrics 404
 
 	reverse_proxy staging-backend:3001 {
 		health_uri      /health/ready

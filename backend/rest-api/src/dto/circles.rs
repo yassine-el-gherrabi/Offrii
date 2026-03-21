@@ -134,7 +134,6 @@ pub struct CircleItemResponse {
     pub id: Uuid,
     pub name: String,
     pub description: Option<String>,
-    pub url: Option<String>,
 
     pub estimated_price: Option<rust_decimal::Decimal>,
     pub priority: i16,

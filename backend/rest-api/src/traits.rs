@@ -127,7 +127,6 @@ pub trait ItemRepo: Send + Sync {
         user_id: Uuid,
         name: &str,
         description: Option<&str>,
-        url: Option<&str>,
         estimated_price: Option<rust_decimal::Decimal>,
         priority: i16,
         category_id: Option<Uuid>,
@@ -162,7 +161,6 @@ pub trait ItemRepo: Send + Sync {
         user_id: Uuid,
         name: Option<&str>,
         description: Option<&str>,
-        url: Option<&str>,
         estimated_price: Option<rust_decimal::Decimal>,
         priority: Option<i16>,
         category_id: Option<Option<Uuid>>,
@@ -275,6 +273,8 @@ pub trait EmailService: Send + Sync {
         to: &str,
         new_email: &str,
     ) -> Result<(), AppError>;
+
+    async fn send_inactivity_warning(&self, to: &str) -> Result<(), AppError>;
 }
 
 #[async_trait]
@@ -285,9 +285,17 @@ pub trait AuthService: Send + Sync {
         password: &str,
         display_name: Option<&str>,
         username: Option<&str>,
+        ip: &str,
+        user_agent: &str,
     ) -> Result<AuthResponse, AppError>;
 
-    async fn login(&self, identifier: &str, password: &str) -> Result<AuthResponse, AppError>;
+    async fn login(
+        &self,
+        identifier: &str,
+        password: &str,
+        ip: &str,
+        user_agent: &str,
+    ) -> Result<AuthResponse, AppError>;
 
     async fn refresh(&self, raw_refresh_token: &str) -> Result<RefreshResponse, AppError>;
 
@@ -318,6 +326,8 @@ pub trait AuthService: Send + Sync {
         provider: &str,
         id_token: &str,
         display_name: Option<&str>,
+        ip: &str,
+        user_agent: &str,
     ) -> Result<AuthResponse, AppError>;
 
     async fn verify_email(&self, token: &str) -> Result<(), AppError>;
@@ -337,7 +347,6 @@ pub trait ItemService: Send + Sync {
         user_id: Uuid,
         name: &str,
         description: Option<&str>,
-        url: Option<&str>,
         estimated_price: Option<rust_decimal::Decimal>,
         priority: Option<i16>,
         category_id: Option<Uuid>,
@@ -360,7 +369,6 @@ pub trait ItemService: Send + Sync {
         user_id: Uuid,
         name: Option<&str>,
         description: Option<&str>,
-        url: Option<&str>,
         estimated_price: Option<rust_decimal::Decimal>,
         priority: Option<i16>,
         category_id: Option<Option<Uuid>>,

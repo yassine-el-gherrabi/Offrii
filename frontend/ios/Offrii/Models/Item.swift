@@ -4,7 +4,6 @@ struct Item: Codable, Identifiable, Equatable {
     let id: UUID
     let name: String
     let description: String?
-    let url: String?
     let estimatedPrice: Decimal?
     let priority: Int
     let categoryId: UUID?
@@ -24,7 +23,7 @@ struct Item: Codable, Identifiable, Equatable {
     let claimedName: String?
 
     enum CodingKeys: String, CodingKey {
-        case id, name, description, url, priority, status, links
+        case id, name, description, priority, status, links
         case estimatedPrice = "estimated_price"
         case categoryId = "category_id"
         case purchasedAt = "purchased_at"
@@ -46,7 +45,6 @@ struct Item: Codable, Identifiable, Equatable {
         id = try container.decode(UUID.self, forKey: .id)
         name = try container.decode(String.self, forKey: .name)
         description = try container.decodeIfPresent(String.self, forKey: .description)
-        url = try container.decodeIfPresent(String.self, forKey: .url)
         priority = try container.decode(Int.self, forKey: .priority)
         categoryId = try container.decodeIfPresent(UUID.self, forKey: .categoryId)
         status = try container.decode(String.self, forKey: .status)
@@ -73,7 +71,7 @@ struct Item: Codable, Identifiable, Equatable {
     }
 
     init(
-        id: UUID, name: String, description: String?, url: String?,
+        id: UUID, name: String, description: String?,
         estimatedPrice: Decimal?, priority: Int, categoryId: UUID?,
         status: String, purchasedAt: Date?, createdAt: Date, updatedAt: Date,
         isClaimed: Bool, imageUrl: String?, links: [String]?,
@@ -82,7 +80,7 @@ struct Item: Codable, Identifiable, Equatable {
         claimedVia: String?, claimedName: String?
     ) {
         self.id = id; self.name = name; self.description = description
-        self.url = url; self.estimatedPrice = estimatedPrice
+        self.estimatedPrice = estimatedPrice
         self.priority = priority; self.categoryId = categoryId
         self.status = status; self.purchasedAt = purchasedAt
         self.createdAt = createdAt; self.updatedAt = updatedAt
@@ -129,7 +127,6 @@ struct Item: Codable, Identifiable, Equatable {
             id: ci.id,
             name: ci.name,
             description: ci.description,
-            url: ci.url,
             estimatedPrice: ci.estimatedPrice,
             priority: Int(ci.priority),
             categoryId: ci.categoryId,

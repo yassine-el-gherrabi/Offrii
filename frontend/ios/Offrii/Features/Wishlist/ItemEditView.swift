@@ -35,7 +35,7 @@ struct ItemEditView: View {
         self.onSave = onSave
         _name = State(initialValue: item.name)
         _description = State(initialValue: item.description ?? "")
-        _links = State(initialValue: item.links ?? (item.url.map { [$0] } ?? [""]))
+        _links = State(initialValue: item.links ?? [""])
         _estimatedPrice = State(initialValue: item.estimatedPrice.map { "\($0)" } ?? "")
         _priority = State(initialValue: item.priority)
         _categoryId = State(initialValue: item.categoryId)

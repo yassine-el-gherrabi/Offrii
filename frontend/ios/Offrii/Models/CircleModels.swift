@@ -43,7 +43,6 @@ struct CircleItemResponse: Codable, Identifiable {
     let id: UUID
     let name: String
     let description: String?
-    let url: String?
     let estimatedPrice: Decimal?
     let priority: Int16
     let categoryId: UUID?
@@ -62,7 +61,7 @@ struct CircleItemResponse: Codable, Identifiable {
     let sharedByAvatarUrl: String?
 
     enum CodingKeys: String, CodingKey {
-        case id, name, description, url, priority, status, links
+        case id, name, description, priority, status, links
         case estimatedPrice = "estimated_price"
         case categoryId = "category_id"
         case categoryIcon = "category_icon"
@@ -83,7 +82,6 @@ struct CircleItemResponse: Codable, Identifiable {
         id = try container.decode(UUID.self, forKey: .id)
         name = try container.decode(String.self, forKey: .name)
         description = try container.decodeIfPresent(String.self, forKey: .description)
-        url = try container.decodeIfPresent(String.self, forKey: .url)
         priority = try container.decode(Int16.self, forKey: .priority)
         categoryId = try container.decodeIfPresent(UUID.self, forKey: .categoryId)
         categoryIcon = try container.decodeIfPresent(String.self, forKey: .categoryIcon)

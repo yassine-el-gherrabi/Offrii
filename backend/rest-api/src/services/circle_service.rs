@@ -517,7 +517,6 @@ impl PgCircleService {
                     id: item.id,
                     name: item.name,
                     description: item.description,
-                    url: item.url,
                     estimated_price: item.estimated_price,
                     priority: item.priority,
                     category_id: item.category_id,

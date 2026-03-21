@@ -236,7 +236,6 @@ impl traits::ItemService for PgItemService {
         user_id: Uuid,
         name: &str,
         description: Option<&str>,
-        url: Option<&str>,
         estimated_price: Option<Decimal>,
         priority: Option<i16>,
         category_id: Option<Uuid>,
@@ -267,7 +266,6 @@ impl traits::ItemService for PgItemService {
                 user_id,
                 name,
                 description,
-                url,
                 estimated_price,
                 priority,
                 category_id,
@@ -430,7 +428,6 @@ impl traits::ItemService for PgItemService {
         user_id: Uuid,
         name: Option<&str>,
         description: Option<&str>,
-        url: Option<&str>,
         estimated_price: Option<Decimal>,
         priority: Option<i16>,
         category_id: Option<Option<Uuid>>,
@@ -469,7 +466,6 @@ impl traits::ItemService for PgItemService {
         // Check at least one field is being updated
         let has_update = name.is_some()
             || description.is_some()
-            || url.is_some()
             || estimated_price.is_some()
             || priority.is_some()
             || category_id.is_some()
@@ -489,7 +485,6 @@ impl traits::ItemService for PgItemService {
                 user_id,
                 name,
                 description,
-                url,
                 estimated_price,
                 priority,
                 category_id,

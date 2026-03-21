@@ -18,9 +18,6 @@ pub struct CreateItemRequest {
     pub name: String,
     #[validate(length(max = 5000, message = "description must be at most 5000 characters"))]
     pub description: Option<String>,
-    /// Single URL — backward compat. If `links` is also provided, `links` takes precedence.
-    #[validate(length(max = 2048, message = "url must be at most 2048 characters"))]
-    pub url: Option<String>,
 
     pub estimated_price: Option<Decimal>,
     pub priority: Option<i16>,
@@ -32,7 +29,7 @@ pub struct CreateItemRequest {
 }
 
 impl CreateItemRequest {
-    /// Resolve links: if `links` is provided use it, else wrap `url` into a vec.
+    /// Resolve links: use `links` if provided and non-empty.
     pub fn resolved_links(&self) -> Option<Vec<String>> {
         if let Some(ref links) = self.links {
             if links.is_empty() {
@@ -41,7 +38,7 @@ impl CreateItemRequest {
                 Some(links.clone())
             }
         } else {
-            self.url.as_ref().map(|u| vec![u.clone()])
+            None
         }
     }
 
@@ -79,9 +76,6 @@ pub struct UpdateItemRequest {
     pub name: Option<String>,
     #[validate(length(max = 5000, message = "description must be at most 5000 characters"))]
     pub description: Option<String>,
-    /// Single URL — backward compat.
-    #[validate(length(max = 2048, message = "url must be at most 2048 characters"))]
-    pub url: Option<String>,
 
     pub estimated_price: Option<Decimal>,
     pub priority: Option<i16>,
@@ -94,13 +88,9 @@ pub struct UpdateItemRequest {
 }
 
 impl UpdateItemRequest {
-    /// Resolve links: if `links` is provided use it, else wrap `url` if present.
+    /// Resolve links: use `links` if provided.
     pub fn resolved_links(&self) -> Option<Vec<String>> {
-        if let Some(ref links) = self.links {
-            Some(links.clone())
-        } else {
-            self.url.as_ref().map(|u| vec![u.clone()])
-        }
+        self.links.clone()
     }
 
     pub fn validate_links(&self) -> Result<(), String> {
@@ -166,8 +156,6 @@ pub struct ItemResponse {
     pub id: Uuid,
     pub name: String,
     pub description: Option<String>,
-    /// Backward compat: first link or legacy url.
-    pub url: Option<String>,
 
     pub estimated_price: Option<Decimal>,
     pub priority: i16,
@@ -201,18 +189,10 @@ pub struct SharedCircleInfo {
 
 impl From<Item> for ItemResponse {
     fn from(i: Item) -> Self {
-        // url backward compat: use links[0] if available, else legacy url
-        let url = i
-            .links
-            .as_ref()
-            .and_then(|l| l.first().cloned())
-            .or(i.url.clone());
-
         Self {
             id: i.id,
             name: i.name,
             description: i.description,
-            url,
             estimated_price: i.estimated_price,
             priority: i.priority,
             category_id: i.category_id,

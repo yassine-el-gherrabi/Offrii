@@ -9,7 +9,7 @@ use crate::models::Item;
 use crate::traits;
 
 /// Shared column list for all item queries (avoids duplication).
-const ITEM_COLS: &str = "id, user_id, name, description, url, estimated_price, \
+const ITEM_COLS: &str = "id, user_id, name, description, estimated_price, \
                          priority, category_id, status, purchased_at, created_at, updated_at, \
                          claimed_by, claimed_at, image_url, links, og_image_url, og_title, og_site_name, \
                          is_private, claimed_via, claimed_name, claimed_via_link_id, web_claim_token";
@@ -33,7 +33,6 @@ impl traits::ItemRepo for PgItemRepo {
         user_id: Uuid,
         name: &str,
         description: Option<&str>,
-        url: Option<&str>,
         estimated_price: Option<Decimal>,
         priority: i16,
         category_id: Option<Uuid>,
@@ -46,7 +45,6 @@ impl traits::ItemRepo for PgItemRepo {
             user_id,
             name,
             description,
-            url,
             estimated_price,
             priority,
             category_id,
@@ -99,7 +97,6 @@ impl traits::ItemRepo for PgItemRepo {
         user_id: Uuid,
         name: Option<&str>,
         description: Option<&str>,
-        url: Option<&str>,
         estimated_price: Option<Decimal>,
         priority: Option<i16>,
         category_id: Option<Option<Uuid>>,
@@ -114,7 +111,6 @@ impl traits::ItemRepo for PgItemRepo {
             user_id,
             name,
             description,
-            url,
             estimated_price,
             priority,
             category_id,
@@ -194,7 +190,6 @@ pub(crate) async fn create(
     user_id: Uuid,
     name: &str,
     description: Option<&str>,
-    url: Option<&str>,
     estimated_price: Option<Decimal>,
     priority: i16,
     category_id: Option<Uuid>,
@@ -203,15 +198,14 @@ pub(crate) async fn create(
     is_private: bool,
 ) -> Result<Item> {
     let sql = format!(
-        "INSERT INTO items (user_id, name, description, url, estimated_price, priority, category_id, image_url, links, is_private) \
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) \
+        "INSERT INTO items (user_id, name, description, estimated_price, priority, category_id, image_url, links, is_private) \
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) \
          RETURNING {ITEM_COLS}"
     );
     let item = sqlx::query_as::<_, Item>(&sql)
         .bind(user_id)
         .bind(name)
         .bind(description)
-        .bind(url)
         .bind(estimated_price)
         .bind(priority)
         .bind(category_id)
@@ -334,7 +328,6 @@ pub(crate) async fn update(
     user_id: Uuid,
     name: Option<&str>,
     description: Option<&str>,
-    url: Option<&str>,
     estimated_price: Option<Decimal>,
     priority: Option<i16>,
     category_id: Option<Option<Uuid>>,
@@ -354,10 +347,6 @@ pub(crate) async fn update(
     if let Some(d) = description {
         separated.push("description = ");
         separated.push_bind_unseparated(d);
-    }
-    if let Some(u) = url {
-        separated.push("url = ");
-        separated.push_bind_unseparated(u);
     }
     if let Some(p) = estimated_price {
         separated.push("estimated_price = ");

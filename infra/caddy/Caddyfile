@@ -62,6 +62,10 @@
 		}
 	}
 
+	# Block /metrics from external access (Prometheus uses Docker internal network)
+	@metrics path /metrics
+	respond @metrics 404
+
 	# Reverse proxy to backend
 	reverse_proxy backend:3000 {
 		health_uri      /health/ready
