@@ -167,6 +167,7 @@ struct NotificationCenterView: View {
                 )
             }
             OffriiHaptics.success()
+            NotificationCenter.default.post(name: .notificationsRead, object: nil)
         } catch {}
     }
 }

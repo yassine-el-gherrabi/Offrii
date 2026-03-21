@@ -3,6 +3,7 @@ import os
 
 extension Notification.Name {
     static let authSessionExpired = Notification.Name("authSessionExpired")
+    static let notificationsRead = Notification.Name("notificationsRead")
 }
 
 // MARK: - API Client

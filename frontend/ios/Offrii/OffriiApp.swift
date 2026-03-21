@@ -99,6 +99,9 @@ struct MainTabView: View {
             })
         }
         .ignoresSafeArea(.keyboard)
+        .onReceive(NotificationCenter.default.publisher(for: .notificationsRead)) { _ in
+            unreadNotifCount = 0
+        }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
             Task {
                 let center = UNUserNotificationCenter.current()
