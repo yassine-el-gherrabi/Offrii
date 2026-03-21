@@ -1,0 +1,102 @@
+# Local monitoring override — adds monitoring stack to the dev compose
+# Usage: docker compose -f docker-compose.yml -f docker-compose.local-monitoring.yml up -d
+
+services:
+  prometheus:
+    image: prom/prometheus:v3.3.0
+    container_name: offrii-prometheus
+    restart: unless-stopped
+    volumes:
+      - ./infra/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.retention.time=15d
+      - --storage.tsdb.path=/prometheus
+      - --web.enable-lifecycle
+    networks:
+      - offrii-net
+
+  loki:
+    image: grafana/loki:3.5.0
+    container_name: offrii-loki
+    restart: unless-stopped
+    volumes:
+      - ./infra/monitoring/loki.yml:/etc/loki/local-config.yaml:ro
+      - loki_data:/loki
+    command: -config.file=/etc/loki/local-config.yaml
+    networks:
+      - offrii-net
+
+  grafana:
+    image: grafana/grafana:11.6.0
+    container_name: offrii-grafana
+    restart: unless-stopped
+    ports:
+      - "3001:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./infra/monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./infra/monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    depends_on:
+      - prometheus
+      - loki
+    networks:
+      - offrii-net
+
+  promtail:
+    image: grafana/promtail:3.5.0
+    container_name: offrii-promtail
+    restart: unless-stopped
+    volumes:
+      - ./infra/monitoring/promtail.yml:/etc/promtail/config.yml:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    command: -config.file=/etc/promtail/config.yml
+    networks:
+      - offrii-net
+
+  node-exporter:
+    image: prom/node-exporter:v1.9.0
+    container_name: offrii-node-exporter
+    restart: unless-stopped
+    command:
+      - --path.rootfs=/host
+      - --collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)
+    volumes:
+      - /:/host:ro,rslave
+    pid: host
+    networks:
+      - offrii-net
+
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:v0.16.0
+    container_name: offrii-postgres-exporter
+    restart: unless-stopped
+    environment:
+      DATA_SOURCE_NAME: "postgresql://${POSTGRES_USER:-offrii}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-offrii}?sslmode=disable"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - offrii-net
+
+  redis-exporter:
+    image: oliver006/redis_exporter:v1.67.0
+    container_name: offrii-redis-exporter
+    restart: unless-stopped
+    environment:
+      REDIS_ADDR: "redis://redis:6379"
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - offrii-net
+
+volumes:
+  prometheus_data:
+  loki_data:
+  grafana_data:
