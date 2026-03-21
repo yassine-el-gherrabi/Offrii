@@ -343,13 +343,15 @@ struct ItemEditView: View {
                         autocapitalization: .never
                     )
 
-                    if links.count > 1 {
-                        Button {
+                    Button {
+                        if links.count > 1 {
                             links.remove(at: index)
-                        } label: {
-                            Image(systemName: "xmark.circle.fill")
-                                .foregroundColor(OffriiTheme.textMuted)
+                        } else {
+                            links[index] = ""
                         }
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundColor(OffriiTheme.textMuted)
                     }
                 }
             }
@@ -412,7 +414,7 @@ struct ItemEditView: View {
                 priority: priority,
                 categoryId: categoryId,
                 imageUrl: imageUrl,
-                links: trimmedLinks.isEmpty ? nil : trimmedLinks,
+                links: trimmedLinks,
                 isPrivate: isPrivate
             )
             onSave(updated)
