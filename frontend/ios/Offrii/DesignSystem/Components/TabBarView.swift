@@ -41,6 +41,7 @@ enum TabItem: Int, CaseIterable, Identifiable {
 
 struct TabBarView: View {
     @Binding var selectedTab: TabItem
+    var unreadCount: Int = 0
     var onCreateTap: () -> Void
     @Namespace private var tabNamespace
 
@@ -118,6 +119,17 @@ struct TabBarView: View {
                 Image(systemName: tab.iconName)
                     .font(.system(size: 22))
                     .foregroundColor(tabColor(for: tab))
+                    .overlay(alignment: .topTrailing) {
+                        if tab == .home && unreadCount > 0 {
+                            Text("\(min(unreadCount, 99))")
+                                .font(.system(size: 9, weight: .bold))
+                                .foregroundColor(.white)
+                                .padding(3)
+                                .background(OffriiTheme.danger)
+                                .clipShape(Circle())
+                                .offset(x: 8, y: -6)
+                        }
+                    }
 
                 Text(tab.label)
                     .font(OffriiTypography.caption2)

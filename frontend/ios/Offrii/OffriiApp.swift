@@ -66,6 +66,7 @@ struct MainTabView: View {
     @State private var joinResult: String?
     @State private var joinError: String?
     @State private var circlesPath = NavigationPath()
+    @State private var unreadNotifCount: Int = 0
 
     var body: some View {
         VStack(spacing: 0) {
@@ -93,7 +94,7 @@ struct MainTabView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-            TabBarView(selectedTab: $selectedTab, onCreateTap: {
+            TabBarView(selectedTab: $selectedTab, unreadCount: unreadNotifCount, onCreateTap: {
                 showCreateSheet = true
             })
         }
@@ -111,6 +112,8 @@ struct MainTabView: View {
                 await AppDelegate.refreshBadgeCount()
                 // Refresh current user (picks up email verification, etc.)
                 try? await authManager.loadCurrentUser()
+                // Refresh notification badge
+                unreadNotifCount = (try? await NotificationCenterService.shared.unreadCount()) ?? 0
             }
         }
         .task {
@@ -121,6 +124,7 @@ struct MainTabView: View {
                     UIApplication.shared.registerForRemoteNotifications()
                 }
             }
+            unreadNotifCount = (try? await NotificationCenterService.shared.unreadCount()) ?? 0
         }
         .sheet(isPresented: $showCreateSheet) {
             QuickCreateSheet()
