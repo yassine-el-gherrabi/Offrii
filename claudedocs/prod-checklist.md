@@ -210,29 +210,24 @@
 - [ ] **Screenshots PNG dans le repo root** — ~11MB de binaires, supprimer + gitignore
 - [ ] **Dependabot npm config morte** — pas de package.json, supprimer l'entrée npm
 
-### Migrations squash
-- [ ] Squash toutes les migrations en fichiers de création propre (état final)
-- [ ] Plus de migrations de données (ALTER ADD/DROP inutiles)
-- [ ] Un seul set de migrations qui crée le schema from scratch
-- [ ] Tester que le schema résultant est identique à l'actuel
+### Migrations squash ✅
+- [x] 55 migrations → 8 fichiers de création propre (état final)
+- [x] Schema identique, testé end-to-end avec seed
 
-### Fixtures Rust (remplace le SQL)
-- [ ] Créer un binaire `seed` en Rust (`src/bin/seed.rs`)
-- [ ] Utiliser les mêmes repos/models que l'app (type-safe, compile-time check)
-- [ ] Si un champ change → seed ne compile plus → dev forcé de mettre à jour
-- [ ] Supprimer `fixtures/dev_seed.sql` une fois le binaire prêt
-- [ ] Mettre à jour `docker-entrypoint.sh` pour appeler le binaire seed
+### Fixtures Rust (backlog)
+- [ ] Créer un binaire `seed` en Rust (type-safe, compile-time check)
+- [ ] Remplacera le SQL actuel (qui fonctionne mais se désynchronise)
 
-### Audit final repo — Should fix
-- [ ] `.gitignore` incomplet (`.wrangler/`, `.bmad-task/`, `.playwright-mcp/`, `*.png` root, `LOGOS/`, `UI design proto/`, `*.docx`, `client_*.plist`, `AuthKey_*.p8`)
-- [ ] `traits.rs` monolithe 1279 lignes → split en `traits/` modules par domaine
-- [ ] Status fields raw `String` → typed enums sqlx (`Item.status`, `CommunityWish.status`, `FriendRequest.status`, `CircleMember.role`)
-- [ ] `main.rs` 590 lignes → extraire cron jobs + legal routes en modules séparés
-- [ ] Redis `get_multiplexed_async_connection()` par appel → connection manager partagé dans AppState
-- [ ] Ajouter Docker + SPM ecosystems à Dependabot
-- [ ] Debug base URL ngrok dans `APIEndpoint.swift` → localhost
-- [ ] Missing `Clone` derive sur la plupart des model structs
-- [ ] Design files dans le repo (`LOGOS/`, `UI design proto/`, `offrii-vision-specs-v2.docx`) → déplacer hors du repo
+### Audit final repo — Should fix ✅
+- [x] `.gitignore` complété (`.wrangler/`, screenshots, design files, `.plist`)
+- [x] `traits.rs` → `traits/` module (9 fichiers par domaine)
+- [x] `main.rs` 590→310 lignes (legal + cron jobs extraits)
+- [x] `Clone` derive ajouté à 17 model structs
+- [x] Debug base URL ngrok → localhost
+- [x] Dependabot : npm supprimé, swift ajouté
+- [ ] Status fields raw `String` → typed enums sqlx — dédié (15+ fichiers à toucher)
+- [ ] Redis connection manager partagé — optimisation, pas urgent
+- [ ] Design files dans le repo — à déplacer manuellement
 
 ### Backlog (post-launch)
 - [ ] ETags / conditional requests pour réduire la bande passante mobile
