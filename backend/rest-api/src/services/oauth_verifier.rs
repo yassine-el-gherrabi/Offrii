@@ -149,7 +149,12 @@ impl OAuthVerifier {
             .ok_or_else(|| AppError::Unauthorized("token header missing kid".into()))?;
 
         let guard = self.google_jwks.read().await;
-        let jwks = &guard.as_ref().unwrap().1;
+        let jwks = &guard
+            .as_ref()
+            .ok_or_else(|| {
+                AppError::Internal(anyhow::anyhow!("Google JWKS cache empty after fetch"))
+            })?
+            .1;
         let key = Self::find_decoding_key(jwks, &kid)?;
 
         let validation = make_validation(
@@ -189,7 +194,12 @@ impl OAuthVerifier {
             .ok_or_else(|| AppError::Unauthorized("token header missing kid".into()))?;
 
         let guard = self.apple_jwks.read().await;
-        let jwks = &guard.as_ref().unwrap().1;
+        let jwks = &guard
+            .as_ref()
+            .ok_or_else(|| {
+                AppError::Internal(anyhow::anyhow!("Apple JWKS cache empty after fetch"))
+            })?
+            .1;
         let key = Self::find_decoding_key(jwks, &kid)?;
 
         let validation = make_validation(&self.apple_bundle_id, &["https://appleid.apple.com"]);

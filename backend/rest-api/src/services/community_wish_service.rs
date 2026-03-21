@@ -125,6 +125,12 @@ impl PgCommunityWishService {
                 .arg("community_wishes:ver")
                 .query_async(&mut conn)
                 .await;
+            // Ensure key expires after 48h to prevent unbounded growth
+            let _: Result<(), _> = redis::cmd("EXPIRE")
+                .arg("community_wishes:ver")
+                .arg(172_800) // 48 hours
+                .query_async(&mut conn)
+                .await;
         }
     }
 

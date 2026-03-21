@@ -106,6 +106,11 @@ impl PgCircleService {
                 .arg(&ver_key)
                 .query_async(&mut conn)
                 .await;
+            let _: Result<(), _> = redis::cmd("EXPIRE")
+                .arg(&ver_key)
+                .arg(172_800)
+                .query_async(&mut conn)
+                .await;
         });
     }
 
@@ -119,6 +124,11 @@ impl PgCircleService {
             };
             let _: Result<i64, _> = redis::cmd("INCR")
                 .arg(&ver_key)
+                .query_async(&mut conn)
+                .await;
+            let _: Result<(), _> = redis::cmd("EXPIRE")
+                .arg(&ver_key)
+                .arg(172_800)
                 .query_async(&mut conn)
                 .await;
         });

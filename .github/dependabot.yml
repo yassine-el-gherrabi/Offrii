@@ -11,16 +11,13 @@ updates:
       rust-minor-patch:
         update-types: ["minor", "patch"]
 
-  - package-ecosystem: npm
-    directory: /frontend
+  - package-ecosystem: swift
+    directory: /frontend/ios/Offrii
     schedule:
       interval: weekly
     commit-message:
       prefix: "chore(deps):"
     open-pull-requests-limit: 5
-    groups:
-      npm-minor-patch:
-        update-types: ["minor", "patch"]
 
   - package-ecosystem: github-actions
     directory: /

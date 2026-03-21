@@ -196,20 +196,45 @@
 - [x] **PUT → PATCH /items/{id}** — backend router + frontend APIEndpoint
 - [x] **Protéger `/metrics`** — Caddy respond 404 (Prometheus passe par Docker interne)
 
-### Important (avant scale)
-- [ ] **Pagination manquante sur 11 endpoints** — OK < 1000 users, problème après
-  - `/circles`, `/me/friends`, `/share-links`, `/community/wishes/mine`,
-    `/community/wishes/my-offers`, `/community/wishes/recent-fulfilled`,
-    `/circles/my-reservations`, `/circles/my-share-rules`, `/circles/{id}/items`,
-    `/circles/{id}/invites`, `/me/friend-requests`
-  - Backend : ajouter `page`/`limit` query params + `PaginatedResponse`
-  - Frontend : adapter les appels pour gérer la pagination (ou garder tel quel si liste courte)
-- [x] **CHECK constraints DB** — migration 20260322000005 (notifications.type, share_mode, claimed_via)
-- [ ] **Namespace `/me` inconsistant** — cosmétique, reporter post-launch
-- [ ] **Raw SQL dans handlers** — cosmétique, reporter post-launch
+### Important ✅
+- [x] **Pagination sur 11 endpoints** — PaginatedResponse, backend + frontend
+- [x] **CHECK constraints DB** — migration 20260322000005
+- [x] **Namespace `/me` unifié** — `/users/me` → `/me/profile`, `/me/export`, `/me/email`
+- [x] **Raw SQL dans handlers** → déplacé vers repositories (4 méthodes créées)
+- [x] **API versioning `/v1/`** — toutes les routes API sous `/v1/`, infra au root
+
+### Audit final repo (2026-03-22) — Must fix
+- [ ] **Secrets dans le repo** — `AuthKey_LTCYFUC4WT.p8` dans root, vérifier `jwt-keys/` et `apns-keys/` pas trackés
+- [ ] **Redis TTL manquant** — version counters `items:{user_id}:ver`, `community_wishes:ver`, `circles:{id}:ver` (ajouter TTL 24-48h)
+- [ ] **`.unwrap()` dans `oauth_verifier.rs:152,192`** — crash possible si JWKS fetch échoue, remplacer par error handling
+- [ ] **Screenshots PNG dans le repo root** — ~11MB de binaires, supprimer + gitignore
+- [ ] **Dependabot npm config morte** — pas de package.json, supprimer l'entrée npm
+
+### Migrations squash
+- [ ] Squash toutes les migrations en fichiers de création propre (état final)
+- [ ] Plus de migrations de données (ALTER ADD/DROP inutiles)
+- [ ] Un seul set de migrations qui crée le schema from scratch
+- [ ] Tester que le schema résultant est identique à l'actuel
+
+### Fixtures Rust (remplace le SQL)
+- [ ] Créer un binaire `seed` en Rust (`src/bin/seed.rs`)
+- [ ] Utiliser les mêmes repos/models que l'app (type-safe, compile-time check)
+- [ ] Si un champ change → seed ne compile plus → dev forcé de mettre à jour
+- [ ] Supprimer `fixtures/dev_seed.sql` une fois le binaire prêt
+- [ ] Mettre à jour `docker-entrypoint.sh` pour appeler le binaire seed
+
+### Audit final repo — Should fix
+- [ ] `.gitignore` incomplet (`.wrangler/`, `.bmad-task/`, `.playwright-mcp/`, `*.png` root, `LOGOS/`, `UI design proto/`, `*.docx`, `client_*.plist`, `AuthKey_*.p8`)
+- [ ] `traits.rs` monolithe 1279 lignes → split en `traits/` modules par domaine
+- [ ] Status fields raw `String` → typed enums sqlx (`Item.status`, `CommunityWish.status`, `FriendRequest.status`, `CircleMember.role`)
+- [ ] `main.rs` 590 lignes → extraire cron jobs + legal routes en modules séparés
+- [ ] Redis `get_multiplexed_async_connection()` par appel → connection manager partagé dans AppState
+- [ ] Ajouter Docker + SPM ecosystems à Dependabot
+- [ ] Debug base URL ngrok dans `APIEndpoint.swift` → localhost
+- [ ] Missing `Clone` derive sur la plupart des model structs
+- [ ] Design files dans le repo (`LOGOS/`, `UI design proto/`, `offrii-vision-specs-v2.docx`) → déplacer hors du repo
 
 ### Backlog (post-launch)
-- [ ] API versioning (`/v1/` prefix)
 - [ ] ETags / conditional requests pour réduire la bande passante mobile
 - [ ] Staging environment complet (docker-compose.staging.yml)
 - [ ] Canary deployments / blue-green

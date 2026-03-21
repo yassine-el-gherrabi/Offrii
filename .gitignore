@@ -62,3 +62,21 @@ coverage/
 KANBAN-TICKETS.md
 apns-keys/
 AuthKey_*.p8
+
+# Local tools
+.wrangler/
+.playwright-mcp/
+
+# Design / non-code assets (belong in Figma/Drive, not git)
+LOGOS/
+UI design proto/
+*.docx
+
+# Google OAuth plist (contains client ID, not secret)
+client_*.plist
+
+# Screenshots (taken during setup/debug)
+Capture d'*
+screencapture-*
+error-page.png
+shared-page-*.png

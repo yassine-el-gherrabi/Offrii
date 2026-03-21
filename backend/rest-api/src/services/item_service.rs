@@ -53,11 +53,18 @@ impl PgItemService {
             return None;
         };
         let ver_key = format!("items:{user_id}:ver");
-        redis::cmd("INCR")
+        let result = redis::cmd("INCR")
             .arg(&ver_key)
             .query_async::<i64>(&mut conn)
             .await
-            .ok()
+            .ok();
+        // Ensure key expires after 48h to prevent unbounded growth
+        let _: Result<(), _> = redis::cmd("EXPIRE")
+            .arg(&ver_key)
+            .arg(172_800) // 48 hours
+            .query_async(&mut conn)
+            .await;
+        result
     }
 
     /// Get the current version counter for a user's items cache.
