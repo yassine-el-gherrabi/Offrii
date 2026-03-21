@@ -7,4 +7,4 @@ RUN cargo install cargo-watch
 
 WORKDIR /app
 
-CMD ["sh", "-c", "cargo run --bin migrate && if [ \"${SEED_DEV_DATA:-}\" = \"true\" ]; then echo 'Seeding dev data...' && psql \"$DATABASE_URL\" -f /app/rest-api/fixtures/dev_seed.sql && echo 'Dev data seeded.'; fi && cargo watch -x 'run --bin rest-api'"]
+CMD ["sh", "-c", "cargo run --bin migrate && if [ \"${SEED_DEV_DATA:-}\" = \"true\" ]; then echo 'Seeding dev data...' && cargo run --bin seed && echo 'Dev data seeded.'; fi && cargo watch -x 'run --bin rest-api'"]

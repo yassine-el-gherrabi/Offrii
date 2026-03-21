@@ -12,12 +12,13 @@ COPY rest-api/Cargo.toml rest-api/Cargo.toml
 RUN mkdir -p rest-api/src rest-api/src/bin \
     && echo "fn main() {}" > rest-api/src/main.rs \
     && echo "fn main() {}" > rest-api/src/bin/migrate.rs \
+    && echo "fn main() {}" > rest-api/src/bin/seed.rs \
     && echo "" > rest-api/src/lib.rs \
     && cargo build --release --workspace 2>&1 || true \
     && rm -rf rest-api/src
 
 COPY rest-api/ rest-api/
-RUN touch rest-api/src/main.rs rest-api/src/lib.rs rest-api/src/bin/migrate.rs
+RUN touch rest-api/src/main.rs rest-api/src/lib.rs rest-api/src/bin/migrate.rs rest-api/src/bin/seed.rs
 RUN cargo build --release --workspace
 
 # ── Runtime ──────────────────────────────────────────
@@ -31,6 +32,7 @@ RUN groupadd --gid 1000 appuser \
 
 COPY --from=builder /build/target/release/rest-api /usr/local/bin/rest-api
 COPY --from=builder /build/target/release/migrate  /usr/local/bin/migrate
+COPY --from=builder /build/target/release/seed     /usr/local/bin/seed
 COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 

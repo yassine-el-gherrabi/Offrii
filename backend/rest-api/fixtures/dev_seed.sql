@@ -1,4 +1,8 @@
 -- =============================================================================
+-- DEPRECATED — This file is kept as a reference only.
+-- The source of truth is now: src/bin/seed.rs (Rust binary)
+-- Run via: cargo run --bin seed
+-- =============================================================================
 -- Offrii Dev Seed Data
 -- =============================================================================
 -- Idempotent: all INSERTs use ON CONFLICT DO NOTHING
