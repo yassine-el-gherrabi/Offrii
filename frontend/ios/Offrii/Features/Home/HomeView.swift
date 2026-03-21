@@ -115,7 +115,7 @@ struct HomeView: View {
                 Button {
                     showNotificationCenter = true
                 } label: {
-                    Image(systemName: "bell.fill")
+                    Image(systemName: "bell")
                         .font(.system(size: 18))
                         .foregroundColor(OffriiTheme.primary)
                         .overlay(alignment: .topTrailing) {
