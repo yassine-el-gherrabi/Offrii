@@ -23,6 +23,18 @@ final class AuthManager {
         keychain.accessToken != nil
     }
 
+    init() {
+        NotificationCenter.default.addObserver(
+            forName: .authSessionExpired,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in
+                self?.clearAuthState()
+            }
+        }
+    }
+
     // MARK: - Register
 
     /// Creates a new account and stores the returned tokens.

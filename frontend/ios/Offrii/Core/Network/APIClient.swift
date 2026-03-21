@@ -1,6 +1,10 @@
 import Foundation
 import os
 
+extension Notification.Name {
+    static let authSessionExpired = Notification.Name("authSessionExpired")
+}
+
 // MARK: - API Client
 
 /// Central HTTP client for communicating with the Offrii REST API.
@@ -203,8 +207,9 @@ final class APIClient: Sendable {
                 }
                 return try await execute(retryRequest, endpoint: endpoint, isRetry: true)
             } catch {
-                // Refresh failed -- clear auth state and propagate.
+                // Refresh failed -- clear auth state and notify app.
                 KeychainService.shared.clearAll()
+                NotificationCenter.default.post(name: .authSessionExpired, object: nil)
                 throw APIError.unauthorized("Session expired")
             }
         }
