@@ -225,9 +225,9 @@
 - [x] `Clone` derive ajouté à 17 model structs
 - [x] Debug base URL ngrok → localhost
 - [x] Dependabot : npm supprimé, swift ajouté
-- [ ] Status fields raw `String` → typed enums sqlx — dédié (15+ fichiers à toucher)
-- [ ] Redis connection manager partagé — optimisation, pas urgent
-- [ ] Design files dans le repo — à déplacer manuellement
+- [x] Status fields → typed enums sqlx (ItemStatus, WishStatus, FriendRequestStatus, CircleMemberRole)
+- [x] Redis connection manager — documenté : `get_multiplexed_async_connection()` réutilise déjà les connexions TCP
+- [ ] Design files dans le repo — à déplacer manuellement (LOGOS/, UI design proto/, *.docx)
 
 ### Backlog (post-launch)
 - [ ] ETags / conditional requests pour réduire la bande passante mobile

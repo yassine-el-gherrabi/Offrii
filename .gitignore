@@ -68,7 +68,6 @@ AuthKey_*.p8
 .playwright-mcp/
 
 # Design / non-code assets (belong in Figma/Drive, not git)
-LOGOS/
 UI design proto/
 *.docx
 
