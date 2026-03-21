@@ -46,7 +46,12 @@ struct WishDetailSheet: View {
                     }
                     .transition(.opacity)
                 } else if viewModel.isLoading && wish == nil {
-                    ProgressView()
+                    VStack(spacing: OffriiTheme.spacingBase) {
+                        SkeletonRow(height: 120)
+                        SkeletonRow()
+                        SkeletonRow()
+                    }
+                    .padding(.top, OffriiTheme.spacingLG)
                 } else if let wish {
                     wishContent(wish)
                 }

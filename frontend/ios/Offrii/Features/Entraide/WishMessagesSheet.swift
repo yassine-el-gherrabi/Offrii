@@ -20,8 +20,12 @@ struct WishMessagesSheet: View {
         NavigationStack {
             VStack(spacing: 0) {
                 if isLoading && messages.isEmpty {
-                    Spacer()
-                    ProgressView()
+                    VStack(spacing: OffriiTheme.spacingSM) {
+                        ForEach(0..<5, id: \.self) { _ in
+                            SkeletonRow(height: 56)
+                        }
+                    }
+                    .padding(.top, OffriiTheme.spacingBase)
                     Spacer()
                 } else if messages.isEmpty {
                     Spacer()

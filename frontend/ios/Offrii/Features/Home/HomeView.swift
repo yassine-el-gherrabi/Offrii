@@ -59,6 +59,10 @@ struct HomeView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: OffriiTheme.spacingLG) {
+                if vm.isLoading {
+                    homeSkeletonView
+                } else {
+
                 // Contextual subtitle under the greeting
                 HStack(spacing: 6) {
                     Image(systemName: subtitleIcon)
@@ -72,7 +76,7 @@ struct HomeView: View {
                 .padding(.top, -OffriiTheme.spacingSM)
 
                 // Section 1: Profile progress (hidden while loading, hidden at 100%)
-                if !vm.isLoading && vm.profileProgress.percentage < 100 {
+                if vm.profileProgress.percentage < 100 {
                     ProfileProgressCard(progress: vm.profileProgress) {
                         Task { await vm.load(authManager: authManager) }
                     }
@@ -96,6 +100,8 @@ struct HomeView: View {
 
                 // Section 6: Community spotlight
                 CommunitySpotlightSection(wishes: vm.communityWishes, selectedWishId: $selectedWishId)
+
+                } // end else (not loading)
             }
             .padding(.horizontal, OffriiTheme.spacingBase)
             .padding(.top, OffriiTheme.spacingBase)
@@ -175,6 +181,48 @@ struct HomeView: View {
     // MARK: - Wishlist Grid Section
 
     @ViewBuilder
+    // MARK: - Skeleton
+
+    private var homeSkeletonView: some View {
+        VStack(spacing: OffriiTheme.spacingLG) {
+            // Subtitle placeholder
+            HStack {
+                RoundedRectangle(cornerRadius: 4)
+                    .fill(OffriiTheme.border.opacity(0.3))
+                    .frame(width: 180, height: 14)
+                Spacer()
+            }
+            .shimmer()
+
+            // Stats chips placeholder
+            HStack(spacing: OffriiTheme.spacingSM) {
+                ForEach(0..<4, id: \.self) { _ in
+                    RoundedRectangle(cornerRadius: OffriiTheme.cornerRadiusMD)
+                        .fill(OffriiTheme.border.opacity(0.2))
+                        .frame(height: 56)
+                }
+            }
+            .shimmer()
+
+            // Grid placeholder
+            LazyVGrid(columns: gridColumns, spacing: OffriiTheme.spacingSM) {
+                ForEach(0..<4, id: \.self) { _ in
+                    RoundedRectangle(cornerRadius: OffriiTheme.cornerRadiusLG)
+                        .fill(OffriiTheme.border.opacity(0.15))
+                        .frame(height: 160)
+                }
+            }
+            .shimmer()
+
+            // Activity placeholder
+            VStack(spacing: OffriiTheme.spacingSM) {
+                ForEach(0..<3, id: \.self) { _ in
+                    SkeletonRow(height: 56)
+                }
+            }
+        }
+    }
+
     private var wishlistGridSection: some View {
         VStack(alignment: .leading, spacing: OffriiTheme.spacingSM) {
             // Title + "Voir tout"
