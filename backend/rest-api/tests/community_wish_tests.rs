@@ -4499,7 +4499,10 @@ async fn offer_wish_after_report_rejected_400() {
     assert_eq!(status, StatusCode::BAD_REQUEST);
     assert_error(&resp, "BAD_REQUEST");
     assert!(
-        resp["message"].as_str().unwrap_or("").contains("reported"),
+        resp["error"]["message"]
+            .as_str()
+            .unwrap_or("")
+            .contains("reported"),
         "error message should mention reporting: {resp}"
     );
 }

@@ -50,6 +50,7 @@
 "error.invalidCredentials" = "Invalid credentials";
 "error.invalidCode" = "The code must be 6 digits";
 "error.invalidURL" = "Invalid URL";
+"error.invalidLink" = "This link is not valid";
 "error.serverError" = "Server error, please try again later";
 "error.networkError" = "Unable to connect";
 "error.decodingError" = "Data error";

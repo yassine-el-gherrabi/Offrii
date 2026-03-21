@@ -2156,3 +2156,126 @@ async fn shared_circles_no_duplicate_when_both_rule_and_selection() {
         "circle must appear only once even with both rule and selection"
     );
 }
+
+// ── Link URL Validation ────────────────────────────────────────────
+
+#[tokio::test]
+async fn create_item_with_valid_links() {
+    let app = TestApp::new().await;
+    let token = app
+        .setup_user_token("links-valid@example.com", TEST_PASSWORD)
+        .await;
+
+    let body = serde_json::json!({
+        "name": "Gadget",
+        "links": ["https://example.com/product", "https://shop.example.org/item?id=42"]
+    });
+    let (status, item) = app.post_json_with_auth("/items", &body, &token).await;
+
+    assert_eq!(status, StatusCode::CREATED);
+    let links = item["links"].as_array().unwrap();
+    assert_eq!(links.len(), 2);
+    assert_eq!(links[0], "https://example.com/product");
+    assert_eq!(links[1], "https://shop.example.org/item?id=42");
+}
+
+#[tokio::test]
+async fn create_item_with_invalid_link_rejected() {
+    let app = TestApp::new().await;
+    let token = app
+        .setup_user_token("links-invalid@example.com", TEST_PASSWORD)
+        .await;
+
+    let body = serde_json::json!({
+        "name": "Gadget",
+        "links": ["not-a-url"]
+    });
+    let (status, resp) = app.post_json_with_auth("/items", &body, &token).await;
+
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    assert_error(&resp, "BAD_REQUEST");
+}
+
+#[tokio::test]
+async fn create_item_with_mixed_valid_invalid_rejected() {
+    let app = TestApp::new().await;
+    let token = app
+        .setup_user_token("links-mixed@example.com", TEST_PASSWORD)
+        .await;
+
+    let body = serde_json::json!({
+        "name": "Gadget",
+        "links": ["https://valid.com/page", "just-text"]
+    });
+    let (status, resp) = app.post_json_with_auth("/items", &body, &token).await;
+
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    assert_error(&resp, "BAD_REQUEST");
+}
+
+#[tokio::test]
+async fn update_item_with_invalid_link_rejected() {
+    let app = TestApp::new().await;
+    let token = app
+        .setup_user_token("links-update@example.com", TEST_PASSWORD)
+        .await;
+
+    let item = app
+        .create_item(&token, &serde_json::json!({ "name": "Original" }))
+        .await;
+    let id = item["id"].as_str().unwrap();
+
+    let (status, resp) = app
+        .put_json_with_auth(
+            &format!("/items/{id}"),
+            &serde_json::json!({ "links": ["ftp://bad-scheme.com"] }),
+            &token,
+        )
+        .await;
+
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    assert_error(&resp, "BAD_REQUEST");
+}
+
+#[tokio::test]
+async fn create_item_with_empty_links_ok() {
+    let app = TestApp::new().await;
+    let token = app
+        .setup_user_token("links-empty@example.com", TEST_PASSWORD)
+        .await;
+
+    // Empty array
+    let body = serde_json::json!({
+        "name": "No links",
+        "links": []
+    });
+    let (status, _) = app.post_json_with_auth("/items", &body, &token).await;
+    assert_eq!(status, StatusCode::CREATED);
+
+    // Array with empty strings (should be accepted — filtered by frontend)
+    let body2 = serde_json::json!({
+        "name": "Empty strings",
+        "links": ["", ""]
+    });
+    let (status2, _) = app.post_json_with_auth("/items", &body2, &token).await;
+    assert_eq!(status2, StatusCode::CREATED);
+}
+
+#[tokio::test]
+async fn create_item_with_http_link_ok() {
+    let app = TestApp::new().await;
+    let token = app
+        .setup_user_token("links-http@example.com", TEST_PASSWORD)
+        .await;
+
+    let body = serde_json::json!({
+        "name": "HTTP item",
+        "links": ["http://example.com/page"]
+    });
+    let (status, item) = app.post_json_with_auth("/items", &body, &token).await;
+
+    assert_eq!(status, StatusCode::CREATED);
+    let links = item["links"].as_array().unwrap();
+    assert_eq!(links.len(), 1);
+    assert_eq!(links[0], "http://example.com/page");
+}

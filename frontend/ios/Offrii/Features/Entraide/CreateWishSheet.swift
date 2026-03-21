@@ -27,6 +27,7 @@ struct CreateWishSheet: View {
     @State private var isSubmitting = false
     @State private var error: String?
     @State private var showEditWarning = false
+    @State private var linkValidationError: String?
 
     private var isEditing: Bool { editingWishId != nil }
 
@@ -277,7 +278,7 @@ struct CreateWishSheet: View {
 
             ForEach(links.indices, id: \.self) { index in
                 HStack {
-                    TextField("https://...", text: $links[index])
+                    TextField("google.com, amazon.fr...", text: $links[index])
                         .font(OffriiTypography.body)
                         .textFieldStyle(.roundedBorder)
                         .autocapitalization(.none)
@@ -290,6 +291,12 @@ struct CreateWishSheet: View {
                             .foregroundColor(OffriiTheme.danger)
                     }
                 }
+            }
+
+            if let linkValidationError {
+                Text(linkValidationError)
+                    .font(OffriiTypography.caption)
+                    .foregroundColor(OffriiTheme.danger)
             }
 
             if links.count < 10 {
@@ -331,8 +338,19 @@ struct CreateWishSheet: View {
     private func submit() async {
         isSubmitting = true
         error = nil
+        linkValidationError = nil
 
-        let validLinks = links.filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+        let validLinks = links
+            .map { normalizeURL($0) }
+            .filter { !$0.isEmpty }
+
+        // Validate URLs
+        let invalidLinks = validLinks.filter { !isValidURL($0) }
+        if !invalidLinks.isEmpty {
+            linkValidationError = NSLocalizedString("error.invalidLink", comment: "")
+            isSubmitting = false
+            return
+        }
 
         do {
             if let wishId = editingWishId {

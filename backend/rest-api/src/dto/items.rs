@@ -52,8 +52,16 @@ impl CreateItemRequest {
                 return Err("links must contain at most 10 entries".into());
             }
             for (i, link) in links.iter().enumerate() {
+                if link.is_empty() {
+                    continue;
+                }
                 if link.len() > 2048 {
                     return Err(format!("links[{i}] must be at most 2048 characters"));
+                }
+                if !crate::utils::link_validation::is_valid_link(link) {
+                    return Err(format!(
+                        "links[{i}] is not a valid URL (must be http(s) with a valid domain)"
+                    ));
                 }
             }
         }
@@ -101,8 +109,16 @@ impl UpdateItemRequest {
                 return Err("links must contain at most 10 entries".into());
             }
             for (i, link) in links.iter().enumerate() {
+                if link.is_empty() {
+                    continue;
+                }
                 if link.len() > 2048 {
                     return Err(format!("links[{i}] must be at most 2048 characters"));
+                }
+                if !crate::utils::link_validation::is_valid_link(link) {
+                    return Err(format!(
+                        "links[{i}] is not a valid URL (must be http(s) with a valid domain)"
+                    ));
                 }
             }
         }

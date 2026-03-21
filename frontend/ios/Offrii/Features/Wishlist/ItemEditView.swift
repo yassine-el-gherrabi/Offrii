@@ -27,6 +27,7 @@ struct ItemEditView: View {
     @State private var sharedCircles: [SharedCircleInfo]
     @State private var didCancel = false
     @State private var didSave = false
+    @State private var linkValidationError: String?
 
     init(item: Item, onSave: @escaping (Item) -> Void) {
         self.item = item
@@ -243,8 +244,6 @@ struct ItemEditView: View {
                     Button(NSLocalizedString("common.ok", comment: "")) {
                         Task {
                             await save()
-                            didSave = true
-                            dismiss()
                         }
                     }
                     .fontWeight(.semibold)
@@ -338,7 +337,7 @@ struct ItemEditView: View {
                     OffriiTextField(
                         label: "",
                         text: $links[index],
-                        placeholder: "https://...",
+                        placeholder: "google.com, amazon.fr...",
                         keyboardType: .URL,
                         autocapitalization: .never
                     )
@@ -354,6 +353,12 @@ struct ItemEditView: View {
                             .foregroundColor(OffriiTheme.textMuted)
                     }
                 }
+            }
+
+            if let linkValidationError {
+                Text(linkValidationError)
+                    .font(OffriiTypography.caption)
+                    .foregroundColor(OffriiTheme.danger)
             }
 
             if links.count < 10 {
@@ -382,11 +387,22 @@ struct ItemEditView: View {
 
     private func save() async {
         isSaving = true
+        linkValidationError = nil
 
         let trimmedName = name.trimmingCharacters(in: .whitespaces)
         let trimmedDesc = description.trimmingCharacters(in: .whitespaces)
         let price = Decimal(string: estimatedPrice.replacingOccurrences(of: ",", with: "."))
-        let trimmedLinks = links.map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
+        let trimmedLinks = links
+            .map { normalizeURL($0) }
+            .filter { !$0.isEmpty }
+
+        // Validate URLs
+        let invalidLinks = trimmedLinks.filter { !isValidURL($0) }
+        if !invalidLinks.isEmpty {
+            linkValidationError = NSLocalizedString("error.invalidLink", comment: "")
+            isSaving = false
+            return
+        }
 
         // Upload image if selected, or mark as removed
         var imageUrl: String??
@@ -418,6 +434,7 @@ struct ItemEditView: View {
                 isPrivate: isPrivate
             )
             onSave(updated)
+            didSave = true
             dismiss()
 
             Task {

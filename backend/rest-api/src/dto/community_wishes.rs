@@ -161,14 +161,18 @@ fn validate_links(links: &Vec<String>) -> Result<(), validator::ValidationError>
         return Err(err);
     }
     for link in links {
+        if link.is_empty() {
+            continue;
+        }
         if link.len() > 2048 {
             let mut err = validator::ValidationError::new("link_too_long");
             err.message = Some("each link must be at most 2048 characters".into());
             return Err(err);
         }
-        if !link.starts_with("http://") && !link.starts_with("https://") {
+        if !crate::utils::link_validation::is_valid_link(link) {
             let mut err = validator::ValidationError::new("invalid_link");
-            err.message = Some("links must start with http:// or https://".into());
+            err.message =
+                Some("link is not a valid URL (must be http(s) with a valid domain)".into());
             return Err(err);
         }
     }

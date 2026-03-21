@@ -50,6 +50,7 @@
 "error.invalidCredentials" = "Identifiant ou mot de passe incorrect";
 "error.invalidCode" = "Le code doit contenir 6 chiffres";
 "error.invalidURL" = "URL invalide";
+"error.invalidLink" = "Ce lien n'est pas valide";
 "error.serverError" = "Erreur serveur, réessayez plus tard";
 "error.networkError" = "Connexion impossible";
 "error.decodingError" = "Erreur de données";

@@ -11,6 +11,7 @@ struct QuickAddSheet: View {
     @State private var isPrivate = false
     @State private var isAdding = false
     @State private var categories: [CategoryResponse] = []
+    @State private var linkValidationError: String?
 
     let onAdd: (String, Decimal?, UUID?, Int, String?, [String]?, Bool) async -> Bool
 
@@ -74,13 +75,21 @@ struct QuickAddSheet: View {
                     OffriiImagePicker(selectedImage: $selectedImage, isUploading: isAdding)
 
                     // Link (optional, single for quick add)
-                    OffriiTextField(
-                        label: NSLocalizedString("item.url", comment: ""),
-                        text: $linkText,
-                        placeholder: "https://...",
-                        keyboardType: .URL,
-                        autocapitalization: .never
-                    )
+                    VStack(alignment: .leading, spacing: 2) {
+                        OffriiTextField(
+                            label: NSLocalizedString("item.url", comment: ""),
+                            text: $linkText,
+                            placeholder: "google.com, amazon.fr...",
+                            keyboardType: .URL,
+                            autocapitalization: .never
+                        )
+
+                        if let linkValidationError {
+                            Text(linkValidationError)
+                                .font(OffriiTypography.caption)
+                                .foregroundColor(OffriiTheme.danger)
+                        }
+                    }
 
                     // Private toggle
                     Toggle(isOn: $isPrivate) {
@@ -105,6 +114,14 @@ struct QuickAddSheet: View {
                         isDisabled: name.trimmingCharacters(in: .whitespaces).isEmpty
                     ) {
                         Task {
+                            linkValidationError = nil
+
+                            let normalizedLink = normalizeURL(linkText)
+                            if !normalizedLink.isEmpty && !isValidURL(normalizedLink) {
+                                linkValidationError = NSLocalizedString("error.invalidLink", comment: "")
+                                return
+                            }
+
                             isAdding = true
 
                             // Upload image if selected
@@ -115,8 +132,7 @@ struct QuickAddSheet: View {
                             }
 
                             let price = Decimal(string: priceText.replacingOccurrences(of: ",", with: "."))
-                            let trimmedLink = linkText.trimmingCharacters(in: .whitespaces)
-                            let links: [String]? = trimmedLink.isEmpty ? nil : [trimmedLink]
+                            let links: [String]? = normalizedLink.isEmpty ? nil : [normalizedLink]
 
                             let success = await onAdd(
                                 name.trimmingCharacters(in: .whitespaces),
