@@ -270,6 +270,7 @@ struct CircleDetailView: View {
                         }
                     }
                 }
+                .foregroundColor(OffriiTheme.primary)
             }
         }
     }

@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS friend_requests (
     id           UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
     from_user_id UUID        NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     to_user_id   UUID        NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    status       TEXT        NOT NULL DEFAULT 'pending'
+    status       VARCHAR(20) NOT NULL DEFAULT 'pending'
                  CHECK (status IN ('pending', 'accepted', 'declined', 'cancelled')),
     created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     UNIQUE (from_user_id, to_user_id)

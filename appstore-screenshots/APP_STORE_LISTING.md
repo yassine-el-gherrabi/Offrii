@@ -10,9 +10,9 @@ Offrii - Wishlist & Cadeaux
 Entraide & liste de souhaits
 ```
 
-## Mots-cles FR (99/100 chars)
+## Mots-cles FR (96/100 chars)
 ```
-noel,anniversaire,mariage,idee,cadeau,souhait,famille,ami,partage,reservation,doublon,aide,communaute,besoin,cercle,naissance
+noel,anniversaire,mariage,idee,cadeau,souhait,famille,ami,partage,doublon,aide,communaute,besoin
 ```
 
 ## Mots-cles EN-UK (98/100 chars)

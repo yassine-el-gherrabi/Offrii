@@ -785,7 +785,7 @@ async fn logout_blacklists_token_across_endpoints() {
     let (status, _) = app.get_with_auth("/items", access).await;
     assert_eq!(status, StatusCode::UNAUTHORIZED);
 
-    let (status, _) = app.get_with_auth("/users/me", access).await;
+    let (status, _) = app.get_with_auth("/users/profile", access).await;
     assert_eq!(status, StatusCode::UNAUTHORIZED);
 }
 
@@ -927,7 +927,7 @@ async fn version_bump_does_not_affect_other_users() {
 // ---------------------------------------------------------------------------
 
 #[tokio::test]
-async fn change_password_success_204() {
+async fn change_password_returns_new_tokens() {
     let app = TestApp::new().await;
     let reg = app.setup_user(TEST_EMAIL, TEST_PASSWORD).await;
     let access = reg["tokens"]["access_token"].as_str().unwrap();
@@ -936,11 +936,19 @@ async fn change_password_success_204() {
         "current_password": TEST_PASSWORD,
         "new_password": NEW_PASSWORD,
     });
-    let (status, _) = app
+    let (status, resp) = app
         .post_json_with_auth("/auth/change-password", &body, access)
         .await;
 
-    assert_eq!(status, StatusCode::NO_CONTENT);
+    assert_eq!(status, StatusCode::OK);
+    assert!(
+        resp["tokens"]["access_token"].is_string(),
+        "should return new access token"
+    );
+    assert!(
+        resp["tokens"]["refresh_token"].is_string(),
+        "should return new refresh token"
+    );
 }
 
 #[tokio::test]
@@ -1011,24 +1019,30 @@ async fn change_password_too_long_new_password_400() {
 }
 
 #[tokio::test]
-async fn change_password_invalidates_tokens_and_allows_new_login() {
+async fn change_password_invalidates_old_tokens_and_allows_new_login() {
     let app = TestApp::new().await;
     let reg = app.setup_user(TEST_EMAIL, TEST_PASSWORD).await;
-    let access = reg["tokens"]["access_token"].as_str().unwrap();
-    let refresh = reg["tokens"]["refresh_token"].as_str().unwrap().to_string();
+    let old_access = reg["tokens"]["access_token"].as_str().unwrap();
+    let old_refresh = reg["tokens"]["refresh_token"].as_str().unwrap().to_string();
 
-    // Change password
+    // Change password — returns new tokens
     let body = serde_json::json!({
         "current_password": TEST_PASSWORD,
         "new_password": NEW_PASSWORD,
     });
-    let (status, _) = app
-        .post_json_with_auth("/auth/change-password", &body, access)
+    let (status, resp) = app
+        .post_json_with_auth("/auth/change-password", &body, old_access)
         .await;
-    assert_eq!(status, StatusCode::NO_CONTENT);
+    assert_eq!(status, StatusCode::OK);
+    let new_access = resp["tokens"]["access_token"].as_str().unwrap();
+    assert!(resp["tokens"]["refresh_token"].is_string());
+
+    // New token works
+    let (status, _) = app.get_with_auth("/users/profile", new_access).await;
+    assert_eq!(status, StatusCode::OK);
 
     // Old refresh token should be revoked
-    let body = serde_json::json!({ "refresh_token": refresh });
+    let body = serde_json::json!({ "refresh_token": old_refresh });
     let (status, _) = app.post_json("/auth/refresh", &body).await;
     assert_eq!(status, StatusCode::UNAUTHORIZED);
 
@@ -1766,22 +1780,22 @@ async fn register_sends_verification_email_with_token() {
 }
 
 #[tokio::test]
-async fn change_password_invalidates_tokens() {
+async fn change_password_invalidates_old_access_token() {
     let app = TestApp::new().await;
-    let token = app.setup_user_token(TEST_EMAIL, TEST_PASSWORD).await;
+    let old_token = app.setup_user_token(TEST_EMAIL, TEST_PASSWORD).await;
 
-    // Change password
+    // Change password — returns new tokens, old ones invalidated
     let body = serde_json::json!({
         "current_password": TEST_PASSWORD,
         "new_password": NEW_PASSWORD,
     });
     let (status, _) = app
-        .post_json_with_auth("/auth/change-password", &body, &token)
+        .post_json_with_auth("/auth/change-password", &body, &old_token)
         .await;
-    assert_eq!(status, StatusCode::NO_CONTENT);
+    assert_eq!(status, StatusCode::OK);
 
     // Old token should be invalidated
-    let (status, _) = app.get_with_auth("/users/me", &token).await;
+    let (status, _) = app.get_with_auth("/users/profile", &old_token).await;
     assert_eq!(
         status,
         StatusCode::UNAUTHORIZED,
@@ -1817,7 +1831,7 @@ async fn reset_password_invalidates_tokens() {
 
     // We can't reverse the hash, but we can verify the flow works
     // by checking the old token is still valid before reset
-    let (status, _) = app.get_with_auth("/users/me", &token).await;
+    let (status, _) = app.get_with_auth("/users/profile", &token).await;
     assert_eq!(
         status,
         StatusCode::OK,
@@ -1893,10 +1907,10 @@ async fn change_password_same_as_current_works() {
     let (status, _) = app
         .post_json_with_auth("/auth/change-password", &body, &token)
         .await;
-    // This may succeed or fail depending on password policy
+    // This may succeed (200 with new tokens) or fail depending on password policy
     assert!(
-        status == StatusCode::NO_CONTENT || status == StatusCode::BAD_REQUEST,
-        "should either succeed or fail gracefully"
+        status == StatusCode::OK || status == StatusCode::BAD_REQUEST,
+        "should either succeed with new tokens or fail gracefully, got {status}"
     );
 }
 

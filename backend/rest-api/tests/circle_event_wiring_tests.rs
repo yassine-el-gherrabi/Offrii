@@ -59,7 +59,7 @@ async fn share_item(app: &TestApp, circle_id: &str, item_id: &str, token: &str) 
         .await;
     assert_eq!(
         status,
-        StatusCode::CREATED,
+        StatusCode::NO_CONTENT,
         "share_item precondition: {resp}"
     );
 }

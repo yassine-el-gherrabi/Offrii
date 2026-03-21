@@ -207,7 +207,7 @@ struct ItemDetailSheet: View {
                                     HStack(spacing: OffriiTheme.spacingSM) {
                                         OffriiButton(
                                             NSLocalizedString("wishlist.edit", comment: ""),
-                                            variant: .ghost
+                                            variant: .secondary
                                         ) {
                                             showEdit = true
                                         }
