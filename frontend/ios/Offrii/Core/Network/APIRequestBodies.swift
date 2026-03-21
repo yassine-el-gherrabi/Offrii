@@ -7,11 +7,13 @@ struct RegisterBody: Encodable {
     let email: String
     let password: String
     let displayName: String?
+    let termsAccepted: Bool
 
     enum CodingKeys: String, CodingKey {
         case email
         case password
         case displayName = "display_name"
+        case termsAccepted = "terms_accepted"
     }
 }
 

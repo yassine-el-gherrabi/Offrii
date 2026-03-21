@@ -53,6 +53,11 @@ async fn register(
 ) -> Result<(StatusCode, Json<AuthResponse>), AppError> {
     validate_request(&req)?;
 
+    // CGU acceptance is required
+    if req.terms_accepted != Some(true) {
+        return Err(AppError::BadRequest("terms_accepted is required".into()));
+    }
+
     let response = state
         .auth
         .register(
@@ -447,6 +452,7 @@ mod tests {
             password: "longpassword".into(),
             display_name: None,
             username: None,
+            terms_accepted: Some(true),
         };
         assert!(req.validate().is_err());
     }
@@ -458,6 +464,7 @@ mod tests {
             password: "short".into(),
             display_name: None,
             username: None,
+            terms_accepted: Some(true),
         };
         assert!(req.validate().is_err());
     }
@@ -469,6 +476,7 @@ mod tests {
             password: "longpassword123".into(),
             display_name: Some("Alice".into()),
             username: None,
+            terms_accepted: Some(true),
         };
         assert!(req.validate().is_ok());
     }
@@ -480,6 +488,7 @@ mod tests {
             password: "longpassword123".into(),
             display_name: None,
             username: Some("alice_e2e".into()),
+            terms_accepted: Some(true),
         };
         assert!(req.validate().is_ok());
     }
@@ -491,6 +500,7 @@ mod tests {
             password: "longpassword123".into(),
             display_name: None,
             username: Some("ab".into()),
+            terms_accepted: Some(true),
         };
         assert!(req.validate().is_err());
     }
@@ -502,6 +512,7 @@ mod tests {
             password: "longpassword123".into(),
             display_name: None,
             username: Some("a".repeat(31)),
+            terms_accepted: Some(true),
         };
         assert!(req.validate().is_err());
     }

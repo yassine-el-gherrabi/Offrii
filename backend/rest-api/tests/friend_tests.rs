@@ -150,7 +150,8 @@ async fn search_users_returns_display_name() {
         "email": "bob@test.com",
         "password": TEST_PASSWORD,
         "display_name": "Bob Le Grand",
-        "username": "bob_display"
+        "username": "bob_display",
+        "terms_accepted": true
     });
     let (status, _) = app.post_json("/auth/register", &body).await;
     assert_eq!(status, StatusCode::CREATED);
@@ -1160,7 +1161,8 @@ async fn list_sent_includes_display_name() {
         "email": "bob@test.com",
         "password": TEST_PASSWORD,
         "display_name": "Robert",
-        "username": "bob_test"
+        "username": "bob_test",
+        "terms_accepted": true
     });
     let (status, _) = app.post_json("/auth/register", &body).await;
     assert_eq!(status, StatusCode::CREATED);

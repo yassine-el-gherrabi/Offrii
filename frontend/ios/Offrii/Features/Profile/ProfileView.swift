@@ -146,7 +146,7 @@ struct ProfileView: View {
                             Divider().padding(.leading, OffriiTheme.spacingBase)
 
                             NavigationLink {
-                                LegalView()
+                                LegalView(page: .mentions)
                             } label: {
                                 profileRow(
                                     title: NSLocalizedString("profile.legal", comment: ""),
@@ -157,10 +157,21 @@ struct ProfileView: View {
                             Divider().padding(.leading, OffriiTheme.spacingBase)
 
                             NavigationLink {
-                                LegalView(showPrivacy: true)
+                                LegalView(page: .privacy)
                             } label: {
                                 profileRow(
                                     title: NSLocalizedString("profile.privacy", comment: ""),
+                                    value: nil
+                                )
+                            }
+
+                            Divider().padding(.leading, OffriiTheme.spacingBase)
+
+                            NavigationLink {
+                                LegalView(page: .terms)
+                            } label: {
+                                profileRow(
+                                    title: NSLocalizedString("profile.terms", comment: ""),
                                     value: nil
                                 )
                             }

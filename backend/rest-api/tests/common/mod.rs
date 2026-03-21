@@ -312,11 +312,6 @@ impl TestApp {
             notification_repo.clone(),
         ));
 
-        let user_svc: Arc<dyn UserService> = Arc::new(PgUserService::new(
-            user_repo.clone(),
-            item_repo,
-            category_repo,
-        ));
         let push_token_svc: Arc<dyn PushTokenService> =
             Arc::new(PgPushTokenService::new(push_token_repo.clone()));
 
@@ -342,10 +337,20 @@ impl TestApp {
         let wish_message_svc: Arc<dyn WishMessageService> = Arc::new(PgWishMessageService::new(
             wish_repo,
             message_repo,
-            user_repo,
+            user_repo.clone(),
             push_token_repo,
             notification_svc,
             notification_repo.clone(),
+        ));
+
+        let user_svc: Arc<dyn UserService> = Arc::new(PgUserService::new(
+            user_repo,
+            item_repo,
+            category_repo,
+            circle_svc.clone(),
+            friend_svc.clone(),
+            community_wish_svc.clone(),
+            wish_message_svc.clone(),
         ));
 
         let redis_for_app = redis.clone();
@@ -492,6 +497,7 @@ impl TestApp {
         let body = serde_json::json!({
             "email": email,
             "password": password,
+            "terms_accepted": true,
         });
         self.post_json("/auth/register", &body).await
     }
@@ -518,6 +524,7 @@ impl TestApp {
             "email": email,
             "password": password,
             "display_name": display_name,
+            "terms_accepted": true,
         });
         self.post_json("/auth/register", &body).await
     }
@@ -532,6 +539,7 @@ impl TestApp {
             "email": email,
             "password": password,
             "username": username,
+            "terms_accepted": true,
         });
         self.post_json("/auth/register", &body).await
     }

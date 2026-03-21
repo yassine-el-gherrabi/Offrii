@@ -30,7 +30,8 @@ final class AuthManager {
         let body = RegisterBody(
             email: email,
             password: password,
-            displayName: displayName
+            displayName: displayName,
+            termsAccepted: true
         )
 
         let response: AuthResponse = try await client.request(.register(body))

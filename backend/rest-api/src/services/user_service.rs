@@ -16,6 +16,10 @@ pub struct PgUserService {
     user_repo: Arc<dyn traits::UserRepo>,
     item_repo: Arc<dyn traits::ItemRepo>,
     category_repo: Arc<dyn traits::CategoryRepo>,
+    circle_svc: Arc<dyn traits::CircleService>,
+    friend_svc: Arc<dyn traits::FriendService>,
+    community_wish_svc: Arc<dyn traits::CommunityWishService>,
+    wish_message_svc: Arc<dyn traits::WishMessageService>,
 }
 
 impl PgUserService {
@@ -23,11 +27,19 @@ impl PgUserService {
         user_repo: Arc<dyn traits::UserRepo>,
         item_repo: Arc<dyn traits::ItemRepo>,
         category_repo: Arc<dyn traits::CategoryRepo>,
+        circle_svc: Arc<dyn traits::CircleService>,
+        friend_svc: Arc<dyn traits::FriendService>,
+        community_wish_svc: Arc<dyn traits::CommunityWishService>,
+        wish_message_svc: Arc<dyn traits::WishMessageService>,
     ) -> Self {
         Self {
             user_repo,
             item_repo,
             category_repo,
+            circle_svc,
+            friend_svc,
+            community_wish_svc,
+            wish_message_svc,
         }
     }
 }
@@ -112,10 +124,32 @@ impl traits::UserService for PgUserService {
             .await
             .map_err(AppError::Internal)?;
 
+        let circles = self.circle_svc.list_circles(user_id).await?;
+
+        let friends = self.friend_svc.list_friends(user_id).await?;
+
+        let community_wishes = self.community_wish_svc.list_my_wishes(user_id).await?;
+
+        // Collect messages from all user's wishes
+        let mut wish_messages = Vec::new();
+        for wish in &community_wishes {
+            if let Ok(paginated) = self
+                .wish_message_svc
+                .list_messages(wish.id, user_id, 1, 1000, 0)
+                .await
+            {
+                wish_messages.extend(paginated.data);
+            }
+        }
+
         Ok(UserDataExport {
             profile: UserProfileResponse::from(&user),
             items: items.into_iter().map(ItemResponse::from).collect(),
             categories: categories.into_iter().map(CategoryResponse::from).collect(),
+            circles,
+            friends,
+            community_wishes,
+            wish_messages,
             exported_at: chrono::Utc::now(),
         })
     }

@@ -26,6 +26,7 @@ struct AuthView: View {
     @State private var ssoService = SSOService()
     @State private var showForgotPassword = false
     @State private var appeared = false
+    @State private var termsAccepted = false
     @FocusState private var focusedField: AuthField?
 
     private enum AuthField: Hashable {
@@ -173,6 +174,22 @@ struct AuthView: View {
                 }
             }
 
+            // CGU checkbox (register only)
+            if mode == .register {
+                Button {
+                    termsAccepted.toggle()
+                } label: {
+                    HStack(alignment: .top, spacing: OffriiTheme.spacingSM) {
+                        Image(systemName: termsAccepted ? "checkmark.square.fill" : "square")
+                            .font(.system(size: 20))
+                            .foregroundColor(termsAccepted ? OffriiTheme.primary : OffriiTheme.textMuted)
+
+                        termsLabel
+                    }
+                }
+                .buttonStyle(.plain)
+            }
+
             // Error + CTA
             VStack(spacing: OffriiTheme.spacingMD) {
                 if case .error(let message) = viewModel.state {
@@ -185,7 +202,8 @@ struct AuthView: View {
                 OffriiButton(
                     NSLocalizedString(mode == .login ? "auth.login" : "auth.register", comment: ""),
                     variant: .primary,
-                    isLoading: viewModel.isLoading
+                    isLoading: viewModel.isLoading,
+                    isDisabled: mode == .register && !termsAccepted
                 ) {
                     submit()
                 }
@@ -235,6 +253,35 @@ struct AuthView: View {
         .onAppear {
             withAnimation(OffriiAnimation.modal.delay(0.15)) {
                 appeared = true
+            }
+        }
+    }
+
+    // MARK: - Terms Label
+
+    private var termsLabel: some View {
+        let lang = Locale.current.language.languageCode?.identifier ?? "fr"
+        let base = APIEndpoint.baseURL
+
+        return VStack(alignment: .leading, spacing: 2) {
+            Text(NSLocalizedString("auth.terms.accept", comment: ""))
+                .font(OffriiTypography.caption)
+                .foregroundColor(OffriiTheme.textSecondary)
+
+            HStack(spacing: 0) {
+                Link(NSLocalizedString("auth.terms.cgu", comment: ""),
+                     destination: URL(string: "\(base)/legal/terms?lang=\(lang)")!)
+                    .font(OffriiTypography.caption)
+                    .foregroundColor(OffriiTheme.primary)
+
+                Text(NSLocalizedString("auth.terms.and", comment: ""))
+                    .font(OffriiTypography.caption)
+                    .foregroundColor(OffriiTheme.textSecondary)
+
+                Link(NSLocalizedString("auth.terms.privacy", comment: ""),
+                     destination: URL(string: "\(base)/legal/privacy?lang=\(lang)")!)
+                    .font(OffriiTypography.caption)
+                    .foregroundColor(OffriiTheme.primary)
             }
         }
     }

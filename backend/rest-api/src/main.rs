@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use axum::Router;
+use axum::extract::Query;
 use axum::http::{Method, header};
 use axum::response::IntoResponse;
 use axum::routing::get;
@@ -130,11 +131,7 @@ async fn main() -> anyhow::Result<()> {
 
     // New services
     let push_token_repo: Arc<dyn PushTokenRepo> = Arc::new(PgPushTokenRepo::new(db.clone()));
-    let user_svc: Arc<dyn UserService> = Arc::new(PgUserService::new(
-        user_repo.clone(),
-        item_repo.clone(),
-        category_repo.clone(),
-    ));
+    // user_svc is created later, after circle_svc / friend_svc / community_wish_svc / wish_message_svc
     let push_token_svc: Arc<dyn PushTokenService> =
         Arc::new(PgPushTokenService::new(push_token_repo.clone()));
 
@@ -269,6 +266,16 @@ async fn main() -> anyhow::Result<()> {
 
     // notification_repo already created above
 
+    let user_svc: Arc<dyn UserService> = Arc::new(PgUserService::new(
+        user_repo.clone(),
+        item_repo.clone(),
+        category_repo.clone(),
+        circle_svc.clone(),
+        friend_svc.clone(),
+        community_wish_svc.clone(),
+        wish_message_svc.clone(),
+    ));
+
     let state = AppState {
         auth,
         jwt,
@@ -317,6 +324,7 @@ async fn main() -> anyhow::Result<()> {
         .route("/favicon.ico", get(serve_favicon))
         .route("/legal/privacy", get(legal_privacy))
         .route("/legal/terms", get(legal_terms))
+        .route("/legal/mentions", get(legal_mentions))
         .nest("/me", friends::router())
         .nest("/users", friends::search_router())
         .nest("/community/wishes", community_wishes::router())
@@ -377,6 +385,56 @@ async fn main() -> anyhow::Result<()> {
             })
         })?)
         .await?;
+
+    // Cleanup expired email verification tokens (daily at 3:05 AM)
+    let cleanup_pool2 = db.clone();
+    sched
+        .add(Job::new_async("0 5 3 * * *", move |_, _| {
+            let pool = cleanup_pool2.clone();
+            Box::pin(async move {
+                let r1 =
+                    sqlx::query("DELETE FROM email_verification_tokens WHERE expires_at < NOW()")
+                        .execute(&pool)
+                        .await;
+                let r2 = sqlx::query("DELETE FROM email_change_tokens WHERE expires_at < NOW()")
+                    .execute(&pool)
+                    .await;
+                match (r1, r2) {
+                    (Ok(a), Ok(b)) => tracing::info!(
+                        verification = a.rows_affected(),
+                        email_change = b.rows_affected(),
+                        "expired token cleanup complete"
+                    ),
+                    _ => tracing::warn!("expired token cleanup encountered errors"),
+                }
+            })
+        })?)
+        .await?;
+
+    // Cleanup old notifications > 6 months (daily at 3:10 AM)
+    let cleanup_pool3 = db.clone();
+    sched
+        .add(Job::new_async("0 10 3 * * *", move |_, _| {
+            let pool = cleanup_pool3.clone();
+            Box::pin(async move {
+                match sqlx::query(
+                    "DELETE FROM notifications WHERE created_at < NOW() - INTERVAL '6 months'",
+                )
+                .execute(&pool)
+                .await
+                {
+                    Ok(r) => tracing::info!(
+                        rows = r.rows_affected(),
+                        "old notifications cleanup complete"
+                    ),
+                    Err(e) => {
+                        tracing::warn!(error = %e, "old notifications cleanup failed")
+                    }
+                }
+            })
+        })?)
+        .await?;
+
     sched.start().await?;
 
     let addr = format!("0.0.0.0:{}", config.api_port);
@@ -415,10 +473,31 @@ async fn serve_favicon() -> impl IntoResponse {
     )
 }
 
-async fn legal_privacy() -> axum::response::Html<&'static str> {
-    axum::response::Html(include_str!("../templates/privacy.html"))
+#[derive(Debug, serde::Deserialize)]
+struct LangQuery {
+    lang: Option<String>,
 }
 
-async fn legal_terms() -> axum::response::Html<&'static str> {
-    axum::response::Html(include_str!("../templates/terms.html"))
+async fn legal_privacy(Query(q): Query<LangQuery>) -> axum::response::Html<&'static str> {
+    if q.lang.as_deref() == Some("en") {
+        axum::response::Html(include_str!("../templates/privacy-en.html"))
+    } else {
+        axum::response::Html(include_str!("../templates/privacy-fr.html"))
+    }
+}
+
+async fn legal_terms(Query(q): Query<LangQuery>) -> axum::response::Html<&'static str> {
+    if q.lang.as_deref() == Some("en") {
+        axum::response::Html(include_str!("../templates/terms-en.html"))
+    } else {
+        axum::response::Html(include_str!("../templates/terms-fr.html"))
+    }
+}
+
+async fn legal_mentions(Query(q): Query<LangQuery>) -> axum::response::Html<&'static str> {
+    if q.lang.as_deref() == Some("en") {
+        axum::response::Html(include_str!("../templates/mentions-legales-en.html"))
+    } else {
+        axum::response::Html(include_str!("../templates/mentions-legales-fr.html"))
+    }
 }

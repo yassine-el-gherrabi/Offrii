@@ -44,6 +44,10 @@
 "auth.welcomeNew" = "Bienvenue !";
 "auth.emailOrUsername" = "Email ou nom d'utilisateur";
 "auth.passwordHint" = "8 caractères minimum";
+"auth.terms.accept" = "J'accepte les";
+"auth.terms.cgu" = "Conditions Générales d'Utilisation";
+"auth.terms.and" = " et la ";
+"auth.terms.privacy" = "Politique de Confidentialité";
 
 /* Errors */
 "error.emailTaken" = "Cet email est déjà utilisé";
@@ -165,6 +169,7 @@
 "profile.deleteAccount.placeholder" = "SUPPRIMER";
 "profile.legal" = "Mentions légales";
 "profile.privacy" = "Politique de confidentialité";
+"profile.terms" = "Conditions d'utilisation";
 "profile.username" = "Nom d'utilisateur";
 "profile.editUsername" = "Modifier le nom d'utilisateur";
 "profile.usernamePlaceholder" = "ex : marie_dupont";

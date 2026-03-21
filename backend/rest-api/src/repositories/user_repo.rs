@@ -11,7 +11,7 @@ use crate::traits;
 const USER_COLS: &str = "id, email, username, password_hash, display_name, \
                          oauth_provider, oauth_provider_id, email_verified, \
                          token_version, is_admin, username_customized, \
-                         avatar_url, created_at, updated_at";
+                         avatar_url, terms_accepted_at, created_at, updated_at";
 
 // ── Concrete implementation ──────────────────────────────────────────
 
@@ -146,8 +146,8 @@ pub(crate) async fn create_user(
     display_name: Option<&str>,
 ) -> Result<User> {
     let sql = format!(
-        "INSERT INTO users (email, username, password_hash, display_name) \
-         VALUES ($1, $2, $3, $4) \
+        "INSERT INTO users (email, username, password_hash, display_name, terms_accepted_at) \
+         VALUES ($1, $2, $3, $4, NOW()) \
          RETURNING {USER_COLS}"
     );
     let user = sqlx::query_as::<_, User>(&sql)
@@ -328,8 +328,8 @@ pub(crate) async fn create_oauth_user(
     avatar_url: Option<&str>,
 ) -> Result<User> {
     let sql = format!(
-        "INSERT INTO users (email, username, display_name, oauth_provider, oauth_provider_id, email_verified, avatar_url) \
-         VALUES ($1, $2, $3, $4, $5, true, $6) \
+        "INSERT INTO users (email, username, display_name, oauth_provider, oauth_provider_id, email_verified, avatar_url, terms_accepted_at) \
+         VALUES ($1, $2, $3, $4, $5, true, $6, NOW()) \
          RETURNING {USER_COLS}"
     );
     let user = sqlx::query_as::<_, User>(&sql)

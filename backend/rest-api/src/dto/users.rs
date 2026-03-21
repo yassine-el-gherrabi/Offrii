@@ -4,7 +4,11 @@ use uuid::Uuid;
 use validator::Validate;
 
 use crate::dto::categories::CategoryResponse;
+use crate::dto::circles::CircleResponse;
+use crate::dto::community_wishes::MyWishResponse;
+use crate::dto::friends::FriendResponse;
 use crate::dto::items::ItemResponse;
+use crate::dto::wish_messages::MessageResponse;
 use crate::models::User;
 
 // ── Request DTOs ─────────────────────────────────────────────────────
@@ -42,6 +46,10 @@ pub struct UserDataExport {
     pub profile: UserProfileResponse,
     pub items: Vec<ItemResponse>,
     pub categories: Vec<CategoryResponse>,
+    pub circles: Vec<CircleResponse>,
+    pub friends: Vec<FriendResponse>,
+    pub community_wishes: Vec<MyWishResponse>,
+    pub wish_messages: Vec<MessageResponse>,
     pub exported_at: DateTime<Utc>,
 }
 

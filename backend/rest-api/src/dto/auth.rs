@@ -25,6 +25,7 @@ pub struct RegisterRequest {
         message = "username must be between 3 and 30 characters"
     ))]
     pub username: Option<String>,
+    pub terms_accepted: Option<bool>,
 }
 
 #[derive(Debug, Deserialize, Validate, utoipa::ToSchema)]

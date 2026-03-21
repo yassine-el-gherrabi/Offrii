@@ -642,6 +642,7 @@ async fn username_customized_in_auth_response() {
     let register_body = serde_json::json!({
         "email": "authresp@example.com",
         "password": TEST_PASSWORD,
+        "terms_accepted": true,
     });
     let (status, body) = app.post_json("/auth/register", &register_body).await;
 
