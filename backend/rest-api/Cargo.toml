@@ -3,6 +3,9 @@ name = "rest-api"
 version.workspace = true
 edition.workspace = true
 
+[package.metadata.cargo-machete]
+ignored = ["kamadak-exif"]  # imported as `exif`, machete false positive
+
 [lib]
 name = "rest_api"
 path = "src/lib.rs"
@@ -24,7 +27,6 @@ a2.workspace = true
 anyhow.workspace = true
 argon2.workspace = true
 async-trait.workspace = true
-aws-config.workspace = true
 aws-sdk-s3.workspace = true
 axum.workspace = true
 axum-extra.workspace = true

@@ -1,7 +1,7 @@
 // swiftlint:disable file_length
 import PhotosUI
 import SwiftUI
-import UserNotifications
+@preconcurrency import UserNotifications
 
 // swiftlint:disable:next type_body_length
 struct ProfileView: View {
