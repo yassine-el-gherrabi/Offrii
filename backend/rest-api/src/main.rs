@@ -327,7 +327,12 @@ async fn main() -> anyhow::Result<()> {
         .layer(TraceLayer::new_for_http())
         .layer(
             CorsLayer::new()
-                .allow_origin(tower_http::cors::Any)
+                .allow_origin([
+                    "https://offrii.com".parse().unwrap(),
+                    "https://api.offrii.com".parse().unwrap(),
+                    "https://cdn.offrii.com".parse().unwrap(),
+                    "https://staging.offrii.com".parse().unwrap(),
+                ])
                 .allow_methods([
                     Method::GET,
                     Method::POST,

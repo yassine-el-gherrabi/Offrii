@@ -242,6 +242,26 @@ impl traits::AuthService for PgAuthService {
         let invalid_credentials =
             || AppError::Unauthorized("invalid email/username or password".into());
 
+        // Rate limit: max 10 attempts per identifier per 5 minutes
+        let rate_key = format!("login:attempts:{identifier}");
+        if let Ok(mut conn) = self.redis.get_multiplexed_async_connection().await {
+            let attempts: i64 = redis::cmd("INCR")
+                .arg(&rate_key)
+                .query_async(&mut conn)
+                .await
+                .unwrap_or(1);
+            if attempts == 1 {
+                let _: Result<(), _> = redis::cmd("EXPIRE")
+                    .arg(&rate_key)
+                    .arg(300) // 5 minutes
+                    .query_async(&mut conn)
+                    .await;
+            }
+            if attempts > 10 {
+                return Err(AppError::BadRequest("too_many_attempts".into()));
+            }
+        }
+
         // Try email first, then username
         let user: Option<User> = if identifier.contains('@') {
             self.user_repo
