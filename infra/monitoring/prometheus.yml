@@ -9,11 +9,10 @@ scrape_configs:
       - targets: ["node-exporter:9100"]
 
   # Offrii backend application metrics
-  # Uncomment when /metrics endpoint is implemented
-  # - job_name: offrii-backend
-  #   metrics_path: /metrics
-  #   static_configs:
-  #     - targets: ["backend:3000"]
+  - job_name: offrii-backend
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["backend:3000"]
 
   # Caddy reverse proxy metrics
   # Requires admin API enabled: servers > metrics in Caddyfile

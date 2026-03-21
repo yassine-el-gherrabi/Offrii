@@ -4,6 +4,7 @@ use axum::Router;
 use axum::http::{Method, header};
 use axum::response::IntoResponse;
 use axum::routing::get;
+use axum_prometheus::PrometheusMetricLayerBuilder;
 use tokio::net::TcpListener;
 use tokio_cron_scheduler::{Job, JobScheduler};
 use tower_http::cors::CorsLayer;
@@ -289,6 +290,15 @@ async fn main() -> anyhow::Result<()> {
         app_base_url: config.app_base_url,
     };
 
+    // Prometheus metrics — layer tracks request count, duration, and pending
+    // requests by method, path, and status code.  The /metrics endpoint itself
+    // and health-check paths are excluded from tracking.
+    let (prometheus_layer, metric_handle) = PrometheusMetricLayerBuilder::new()
+        .with_ignore_patterns(&["/metrics", "/health", "/health/live", "/health/ready"])
+        .with_default_metrics()
+        .build_pair();
+
+    // Main application router with CORS and auth middleware.
     let app = Router::new()
         .route("/health", get(health_check))
         .route("/health/live", get(health_live))
@@ -338,7 +348,11 @@ async fn main() -> anyhow::Result<()> {
         .merge(SwaggerUi::new("/docs").url(
             "/api-doc/openapi.json",
             rest_api::openapi::ApiDoc::openapi(),
-        ));
+        ))
+        // /metrics is merged after CORS so it is NOT behind the CORS layer.
+        .route("/metrics", get(|| async move { metric_handle.render() }))
+        // Prometheus middleware wraps the entire router (outermost layer).
+        .layer(prometheus_layer);
 
     // CRON scheduler: cleanup expired refresh tokens daily at 3 AM UTC
     let sched = JobScheduler::new().await?;

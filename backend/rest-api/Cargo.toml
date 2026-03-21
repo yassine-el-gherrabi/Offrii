@@ -24,6 +24,7 @@ aws-config.workspace = true
 aws-sdk-s3.workspace = true
 axum.workspace = true
 axum-extra = { version = "0.10", features = ["multipart"] }
+axum-prometheus = "0.10"
 chrono.workspace = true
 dotenvy.workspace = true
 futures.workspace = true
