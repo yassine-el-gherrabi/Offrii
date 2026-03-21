@@ -17,10 +17,13 @@ struct ProfileAvatarButton: View {
                             .aspectRatio(contentMode: .fill)
                             .frame(width: 32, height: 32)
                             .clipShape(Circle())
+                    } else if state.error != nil {
+                        initialsView
                     } else {
                         initialsView
                     }
                 }
+                .processors([.resize(size: CGSize(width: 64, height: 64))])
             } else {
                 initialsView
             }
@@ -37,6 +40,8 @@ struct ProfileAvatarButton: View {
                     .offset(x: 2, y: -2)
             }
         }
+        // Force re-render when avatar URL changes
+        .id(avatarUrl?.absoluteString ?? "no-avatar")
     }
 
     private var initialsView: some View {
