@@ -68,7 +68,7 @@ struct WishDetailSheet: View {
             }
         }
         .sheet(isPresented: $showMessagesSheet) {
-            WishMessagesSheet(wishId: wishId)
+            WishMessagesSheet(wishId: wishId, readOnly: wish?.status == .fulfilled)
                 .presentationDetents([.large])
         }
         .sheet(isPresented: $showReportSheet, onDismiss: {
@@ -275,8 +275,18 @@ struct WishDetailSheet: View {
             visitorActions(wish)
             ownerMatchedActions(wish)
             donorMatchedActions(wish)
+            fulfilledActions(wish)
             ownerOpenActions(wish)
             reportAction(wish)
+        }
+    }
+
+    @ViewBuilder
+    private func fulfilledActions(_ wish: WishDetail) -> some View {
+        if wish.status == .fulfilled && (isMine || isMatchedByMe) {
+            OffriiButton(NSLocalizedString("entraide.action.viewMessages", comment: ""), variant: .secondary) {
+                openMessages()
+            }
         }
     }
 

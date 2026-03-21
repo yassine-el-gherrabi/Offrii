@@ -4,6 +4,7 @@ import SwiftUI
 
 struct WishMessagesSheet: View {
     let wishId: UUID
+    var readOnly: Bool = false
 
     @Environment(\.dismiss) private var dismiss
     @State private var messages: [WishMessage] = []
@@ -39,7 +40,9 @@ struct WishMessagesSheet: View {
                     messageList
                 }
 
-                inputBar
+                if !readOnly {
+                    inputBar
+                }
             }
             .background(OffriiTheme.background)
             .navigationTitle(NSLocalizedString("entraide.action.messages", comment: ""))

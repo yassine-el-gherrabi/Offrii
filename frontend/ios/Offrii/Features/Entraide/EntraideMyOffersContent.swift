@@ -30,7 +30,7 @@ struct EntraideMyOffersContent: View {
         } else {
             LazyVStack(spacing: OffriiTheme.spacingSM) {
                 ForEach(viewModel.myOfferWishes) { wish in
-                    EntraideWishCard(wish: wish, showActivityIndicator: true) {
+                    EntraideWishCard(wish: wish) {
                         selectedWishId = wish.id
                     }
                     .contextMenu {

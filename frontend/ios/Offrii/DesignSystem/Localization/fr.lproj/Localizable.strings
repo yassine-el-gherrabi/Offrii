@@ -362,6 +362,7 @@
 "entraide.action.reject" = "Rejeter l'offre";
 "entraide.action.withdraw" = "Se retirer";
 "entraide.action.messages" = "Messages";
+"entraide.action.viewMessages" = "Voir les messages";
 "entraide.action.offerSuccess" = "Merci pour votre générosité !";
 "entraide.action.closeSuccess" = "Besoin fermé.";
 "entraide.action.rejectSuccess" = "Offre déclinée.";

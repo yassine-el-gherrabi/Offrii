@@ -362,6 +362,7 @@
 "entraide.action.reject" = "Reject offer";
 "entraide.action.withdraw" = "Withdraw";
 "entraide.action.messages" = "Messages";
+"entraide.action.viewMessages" = "View messages";
 "entraide.action.offerSuccess" = "Thank you for your generosity!";
 "entraide.action.closeSuccess" = "Wish closed.";
 "entraide.action.rejectSuccess" = "Offer declined.";

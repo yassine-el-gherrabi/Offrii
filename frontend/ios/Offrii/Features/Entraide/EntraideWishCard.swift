@@ -5,7 +5,6 @@ import SwiftUI
 
 struct EntraideWishCard: View {
     let wish: CommunityWish
-    var showActivityIndicator = false
     var onTap: (() -> Void)?
 
     var body: some View {
@@ -62,18 +61,7 @@ struct EntraideWishCard: View {
                         .foregroundColor(OffriiTheme.warning)
                         .padding(.top, 2)
                     }
-                }
 
-                // Activity indicator for Engagements tab
-                if showActivityIndicator && wish.status == .matched {
-                    HStack(spacing: 4) {
-                        Image(systemName: "bubble.left.fill")
-                            .font(.system(size: 10))
-                        Text(NSLocalizedString("entraide.card.actionRequired", comment: ""))
-                            .font(.system(size: 11, weight: .medium))
-                    }
-                    .foregroundColor(OffriiTheme.primary)
-                    .padding(.top, 2)
                 }
 
                 Spacer(minLength: 0)
