@@ -146,11 +146,6 @@ final class APIClient: Sendable {
         request.httpMethod = endpoint.method.rawValue
         request.setValue("application/json", forHTTPHeaderField: "Accept")
 
-        // Skip ngrok browser warning in dev builds.
-        #if DEBUG
-        request.setValue("true", forHTTPHeaderField: "ngrok-skip-browser-warning")
-        #endif
-
         // Inject bearer token for authenticated endpoints.
         if endpoint.requiresAuth, let token = KeychainService.shared.accessToken {
             request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
