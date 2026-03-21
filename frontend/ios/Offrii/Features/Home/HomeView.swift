@@ -133,7 +133,9 @@ struct HomeView: View {
                 }
             }
         }
-        .sheet(isPresented: $showNotificationCenter) {
+        .sheet(isPresented: $showNotificationCenter, onDismiss: {
+            Task { await vm.load(authManager: authManager) }
+        }) {
             NotificationCenterView()
         }
         .sheet(item: $selectedWishId, onDismiss: {
