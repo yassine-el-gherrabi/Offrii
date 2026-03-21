@@ -69,6 +69,7 @@ struct NotificationCenterView: View {
             }
             .task {
                 await loadNotifications()
+                await markAllRead()
             }
         }
     }
