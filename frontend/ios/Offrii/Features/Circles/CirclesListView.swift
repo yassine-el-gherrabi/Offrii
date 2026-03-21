@@ -1,4 +1,3 @@
-// swiftlint:disable file_length
 import SwiftUI
 
 // MARK: - Circle Filter
@@ -35,8 +34,6 @@ struct CirclesListView: View {
     @State private var showAddFriend = false
     @State private var showQuickCreate = false
     @State private var showInviteContacts = false
-    @State private var showNotificationCenter = false
-    @State private var unreadCount = 0
     @State private var searchQuery = ""
     @State private var circleToDelete: OffriiCircle?
     @State private var circleToLeave: OffriiCircle?
@@ -161,26 +158,6 @@ struct CirclesListView: View {
         }
         .toolbar {
             ToolbarItemGroup(placement: .topBarTrailing) {
-                Button {
-                    showNotificationCenter = true
-                } label: {
-                    ZStack(alignment: .topTrailing) {
-                        Image(systemName: "bell")
-                            .font(.system(size: 18))
-                            .foregroundColor(OffriiTheme.primary)
-
-                        if unreadCount > 0 {
-                            Text("\(unreadCount)")
-                                .font(.system(size: 9, weight: .bold))
-                                .foregroundColor(.white)
-                                .padding(3)
-                                .background(OffriiTheme.primary)
-                                .clipShape(Circle())
-                                .offset(x: 6, y: -6)
-                        }
-                    }
-                }
-
                 NavigationLink(destination: ProfileView()) {
                     ProfileAvatarButton(
                         initials: ProfileAvatarButton.initials(
@@ -212,12 +189,6 @@ struct CirclesListView: View {
             InviteContactsSheet()
                 .presentationDetents([.large])
         }
-        .sheet(isPresented: $showNotificationCenter, onDismiss: {
-            Task { await loadUnreadCount() }
-        }) {
-            NotificationCenterView()
-                .presentationDetents([.medium, .large])
-        }
         .sheet(isPresented: $showQuickCreate) {
             CirclesQuickActionSheet(
                 onCreateCircle: {
@@ -237,7 +208,6 @@ struct CirclesListView: View {
         }
         .task {
             await viewModel.loadAll()
-            await loadUnreadCount()
             tipManager.showIfNeeded(.circlesCreate)
         }
         .onAppear {
@@ -248,7 +218,6 @@ struct CirclesListView: View {
             }
             Task {
                 await viewModel.loadCircles()
-                await loadUnreadCount()
             }
         }
         .refreshable {
@@ -405,7 +374,4 @@ struct CirclesListView: View {
         )
     }
 
-    private func loadUnreadCount() async {
-        unreadCount = (try? await NotificationCenterService.shared.unreadCount()) ?? 0
-    }
 }
