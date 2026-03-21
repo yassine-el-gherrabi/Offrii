@@ -158,21 +158,21 @@
 
 ---
 
-## P3 — Hardening (ce sprint)
+## P3 — Hardening ✅
 
 ### Exporters
-- [ ] postgres_exporter (connexions, queries, locks, replication lag)
-- [ ] redis_exporter (memory, evictions, connections)
+- [x] postgres_exporter v0.16.0 + dashboard Grafana (ID 9628)
+- [x] redis_exporter v1.67.0 + dashboard Grafana (ID 763)
+- [x] Prometheus config mis à jour pour scraper les 2
 
 ### Securite
-- [ ] Rotation JWT keys (versionning, grace period)
-- [ ] Documenter procédure rotation API keys
-- [ ] Vérifier DMARC/SPF pour emails Resend
+- [x] Rotation JWT keys → procédure documentée dans RUNBOOK.md
+- [x] Rotation API keys → procédure documentée dans RUNBOOK.md
+- [x] DMARC/SPF vérifié : SPF ✅, DKIM ✅, DMARC ✅ (p=none, OK pour le launch)
 
 ### Ops
-- [ ] Test de restore backup (snapshot Hetzner → nouveau serveur)
-- [ ] Runbook : comment redémarrer, rollback, debug
-- [ ] Documenter procédure d'incident
+- [ ] Test de restore backup (snapshot Hetzner → nouveau serveur) — à faire manuellement
+- [x] Runbook complet : infra/docs/RUNBOOK.md (SSH, logs, restart, rollback, DB, Redis, diagnostic, rotation clés)
 
 ---
 

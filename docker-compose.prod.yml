@@ -182,6 +182,38 @@ services:
         limits:
           memory: 128M
 
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:v0.16.0
+    container_name: offrii-postgres-exporter
+    restart: unless-stopped
+    environment:
+      DATA_SOURCE_NAME: "postgresql://${POSTGRES_USER:-offrii}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-offrii}?sslmode=disable"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - offrii-net
+    deploy:
+      resources:
+        limits:
+          memory: 64M
+
+  redis-exporter:
+    image: oliver006/redis_exporter:v1.67.0
+    container_name: offrii-redis-exporter
+    restart: unless-stopped
+    environment:
+      REDIS_ADDR: "redis://redis:6379"
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - offrii-net
+    deploy:
+      resources:
+        limits:
+          memory: 64M
+
 volumes:
   prometheus_data:
   loki_data:

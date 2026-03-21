@@ -21,14 +21,10 @@ scrape_configs:
   #   static_configs:
   #     - targets: ["caddy:2019"]
 
-  # PostgreSQL metrics via postgres_exporter
-  # Add postgres-exporter service to docker-compose.prod.yml when needed
-  # - job_name: postgres
-  #   static_configs:
-  #     - targets: ["postgres-exporter:9187"]
+  - job_name: postgres
+    static_configs:
+      - targets: ["postgres-exporter:9187"]
 
-  # Redis metrics via redis_exporter
-  # Add redis-exporter service to docker-compose.prod.yml when needed
-  # - job_name: redis
-  #   static_configs:
-  #     - targets: ["redis-exporter:9121"]
+  - job_name: redis
+    static_configs:
+      - targets: ["redis-exporter:9121"]
