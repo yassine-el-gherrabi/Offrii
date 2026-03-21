@@ -750,21 +750,23 @@ fn render_join_html(
     headers: &HeaderMap,
 ) -> String {
     let lang = get_lang(headers);
-    let (title, subtitle, btn, or_text, dl_text) = if lang == "en" {
+    let (title, subtitle, btn, or_text, dl_text, footer_slogan) = if lang == "en" {
         (
             format!("Join \"{}\"", circle_name),
             "You've been invited to join a circle on Offrii.",
             "Join circle",
             "or",
             "Download Offrii",
+            "Give, share, delight",
         )
     } else {
         (
             format!("Rejoindre \"{}\"", circle_name),
-            "Vous avez été invité à rejoindre un cercle sur Offrii.",
+            "Vous avez \u{00e9}t\u{00e9} invit\u{00e9} \u{00e0} rejoindre un cercle sur Offrii.",
             "Rejoindre le cercle",
             "ou",
-            "Télécharger Offrii",
+            "T\u{00e9}l\u{00e9}charger Offrii",
+            "Offre, partage, fais plaisir",
         )
     };
 
@@ -774,89 +776,154 @@ fn render_join_html(
         .replace('>', "&gt;")
         .replace('"', "&quot;");
 
-    format!(
-        r#"<!DOCTYPE html><html lang="{lang}"><head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>{title} — Offrii</title>
-<meta property="og:title" content="{title}">
-<meta property="og:description" content="{subtitle}">
-<link rel="icon" type="image/png" sizes="32x32" href="/favicon.png">
-<style>
-*{{margin:0;padding:0;box-sizing:border-box}}
-body{{font-family:-apple-system,system-ui,sans-serif;background:#FFFAF9;display:flex;justify-content:center;align-items:center;min-height:100vh;padding:20px}}
-.c{{max-width:400px;text-align:center}}
-.logo{{font-size:1.5rem;font-weight:800;color:#FF6B6B;letter-spacing:-0.02em;margin-bottom:24px}}
-.av{{width:72px;height:72px;border-radius:50%;background:#FF6B6B;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:1.5rem;font-weight:600;color:#fff}}
-.av-img{{width:72px;height:72px;border-radius:50%;object-fit:cover;margin:0 auto 16px}}
-h1{{font-size:1.3rem;font-weight:700;margin-bottom:8px;color:#1a1a1a}}
-.sub{{color:#666;margin-bottom:24px;font-size:0.95rem}}
-.btn{{display:block;background:#FF6B6B;color:#fff;text-decoration:none;padding:14px 24px;border-radius:12px;font-weight:600;font-size:1rem;margin-bottom:12px}}
-.btn:hover{{background:#e55a5a}}
-.or{{color:#999;margin:8px 0;font-size:0.9rem}}
-.dl{{color:#FF6B6B;text-decoration:none;font-weight:500}}
-</style></head><body>
-<div class="c">
-<div class="logo">offrii</div>
-{avatar_html}
-<h1>{title}</h1>
-<p class="sub">{subtitle}</p>
-<a class="btn" href="offrii://join/{token}">{btn}</a>
-<p class="or">{or_text}</p>
-<a class="dl" href="https://apps.apple.com/app/offrii">{dl_text}</a>
-</div></body></html>"#,
-        lang = lang,
-        title = title,
-        subtitle = subtitle,
-        btn = btn,
-        or_text = or_text,
-        dl_text = dl_text,
-        token = token,
-        avatar_html = if let Some(img) = circle_image {
-            format!("<img class=\"av-img\" src=\"{}\" alt=\"\">", img)
-        } else {
-            format!(
-                "<div class=\"av\">{}</div>",
-                escaped_name.chars().next().unwrap_or('?').to_uppercase()
-            )
-        },
-    )
-    .replace(
-        "</head>",
-        "<meta property=\"og:image\" content=\"https://pub-83ca22acc7354445815c6b4e152ba243.r2.dev/branding/opengraph.png\">\
-         <meta property=\"og:type\" content=\"website\">\
-         <meta name=\"theme-color\" content=\"#FF6B6B\">\
-         </head>",
-    )
+    let logo_url = "https://cdn.offrii.com/branding/logo-1024.png";
+    let html_lang = if lang == "en" { "en" } else { "fr" };
+
+    let avatar_html = if let Some(img) = circle_image {
+        format!("<img class=\"av-img\" src=\"{}\" alt=\"\">", img)
+    } else {
+        format!(
+            "<div class=\"av\">{}</div>",
+            escaped_name.chars().next().unwrap_or('?').to_uppercase()
+        )
+    };
+
+    let mut h = String::with_capacity(4096);
+    h.push_str(&format!(
+        "<!DOCTYPE html><html lang=\"{html_lang}\"><head><meta charset=\"utf-8\">"
+    ));
+    h.push_str("<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">");
+    h.push_str(&format!("<title>{title} \u{2014} Offrii</title>"));
+    h.push_str(&format!("<meta property=\"og:title\" content=\"{title}\">"));
+    h.push_str(&format!(
+        "<meta property=\"og:description\" content=\"{subtitle}\">"
+    ));
+    h.push_str("<meta property=\"og:image\" content=\"https://pub-83ca22acc7354445815c6b4e152ba243.r2.dev/branding/opengraph.png\">");
+    h.push_str("<meta property=\"og:type\" content=\"website\">");
+    h.push_str("<meta name=\"theme-color\" content=\"#FF6B6B\">");
+    h.push_str("<link rel=\"icon\" type=\"image/png\" sizes=\"32x32\" href=\"/favicon.png\">");
+    h.push_str("<link rel=\"icon\" type=\"image/x-icon\" href=\"/favicon.ico\">");
+    h.push_str(
+        "<style>\
+         *{margin:0;padding:0;box-sizing:border-box}\
+         body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;background:#FFFAF9;display:flex;justify-content:center;align-items:center;min-height:100vh;padding:20px;-webkit-font-smoothing:antialiased;overflow-x:hidden}\
+         .blob{position:fixed;border-radius:50%;opacity:0.08;filter:blur(60px);z-index:0;pointer-events:none}\
+         .blob-1{width:300px;height:300px;background:#FF6B6B;top:-100px;right:-50px}\
+         .blob-2{width:250px;height:250px;background:#FFB347;bottom:-80px;left:-60px}\
+         .wrap{position:relative;z-index:1;max-width:420px;width:100%}\
+         .brand{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:24px}\
+         .brand img{width:56px;height:56px;border-radius:14px}\
+         .brand span{font-size:20px;font-weight:700;color:#FF6B6B;letter-spacing:-0.02em}\
+         .card{text-align:center;padding:40px 32px;background:#fff;border-radius:16px;box-shadow:0 4px 24px rgba(0,0,0,0.06)}\
+         .av{width:72px;height:72px;border-radius:50%;background:#FF6B6B;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:1.5rem;font-weight:600;color:#fff;box-shadow:0 2px 12px rgba(255,107,107,0.25)}\
+         .av-img{width:72px;height:72px;border-radius:50%;object-fit:cover;margin:0 auto 16px;box-shadow:0 2px 12px rgba(0,0,0,0.1)}\
+         h1{font-size:1.3rem;font-weight:700;margin-bottom:8px;color:#1a1a2e}\
+         .sub{color:#6b7280;margin-bottom:28px;font-size:0.95rem;line-height:1.5}\
+         .btn{display:block;background:#FF6B6B;color:#fff;text-decoration:none;padding:14px 24px;border-radius:12px;font-weight:600;font-size:1rem;margin-bottom:12px;transition:background 0.2s}\
+         .btn:hover{background:#e55b5b}\
+         .or{color:#9ca3af;margin:8px 0;font-size:0.9rem}\
+         .dl{color:#FF6B6B;text-decoration:none;font-weight:500}\
+         .dl:hover{text-decoration:underline}\
+         .ft{text-align:center;margin-top:24px;font-size:12px;color:#9ca3af}\
+         .ft-brand{color:#FF6B6B;font-weight:600}\
+         .ft a{color:#9ca3af;text-decoration:underline}\
+         </style>",
+    );
+    h.push_str("</head><body>");
+    h.push_str("<div class=\"blob blob-1\"></div><div class=\"blob blob-2\"></div>");
+    h.push_str("<div class=\"wrap\">");
+    h.push_str(&format!(
+        "<div class=\"brand\"><img src=\"{logo_url}\" alt=\"Offrii\"><span>Offrii</span></div>"
+    ));
+    h.push_str("<div class=\"card\">");
+    h.push_str(&avatar_html);
+    h.push_str(&format!("<h1>{title}</h1>"));
+    h.push_str(&format!("<p class=\"sub\">{subtitle}</p>"));
+    h.push_str(&format!(
+        "<a class=\"btn\" href=\"offrii://join/{token}\">{btn}</a>"
+    ));
+    h.push_str(&format!("<p class=\"or\">{or_text}</p>"));
+    h.push_str(&format!(
+        "<a class=\"dl\" href=\"https://apps.apple.com/app/offrii\">{dl_text}</a>"
+    ));
+    h.push_str("</div>");
+    h.push_str(&format!(
+        "<div class=\"ft\"><p><span class=\"ft-brand\">Offrii</span> \u{2014} {footer_slogan}<br><a href=\"https://offrii.com\">offrii.com</a></p></div>"
+    ));
+    h.push_str("</div></body></html>");
+    h
 }
 
 fn render_join_error_html(headers: &HeaderMap) -> String {
     let lang = get_lang(headers);
-    let (title, msg) = if lang == "en" {
+    let (title, msg, back_text, footer_slogan) = if lang == "en" {
         (
             "Invalid invitation",
             "This invitation link is expired or invalid.",
+            "Discover Offrii",
+            "Give, share, delight",
         )
     } else {
         (
             "Invitation invalide",
-            "Ce lien d'invitation est expiré ou invalide.",
+            "Ce lien d\u{2019}invitation est expir\u{00e9} ou invalide.",
+            "D\u{00e9}couvrir Offrii",
+            "Offre, partage, fais plaisir",
         )
     };
-    format!(
-        r#"<!DOCTYPE html><html><head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>{title} — Offrii</title>
-<style>
-*{{margin:0;padding:0;box-sizing:border-box}}
-body{{font-family:-apple-system,system-ui,sans-serif;background:#FFFAF9;display:flex;justify-content:center;align-items:center;min-height:100vh;padding:20px}}
-.c{{max-width:400px;text-align:center}}
-.logo{{font-size:1.5rem;font-weight:800;color:#FF6B6B;margin-bottom:24px}}
-h1{{font-size:1.2rem;color:#1a1a1a;margin-bottom:8px}}
-p{{color:#666}}
-</style></head><body>
-<div class="c"><div class="logo">offrii</div><h1>{title}</h1><p>{msg}</p></div>
-</body></html>"#,
-        title = title,
-        msg = msg
-    )
+    let logo_url = "https://cdn.offrii.com/branding/logo-1024.png";
+    let html_lang = if lang == "en" { "en" } else { "fr" };
+    let lock_svg = r#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 8h-1V6A5 5 0 0 0 7 6v2H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V10a2 2 0 0 0-2-2ZM9 6a3 3 0 0 1 6 0v2H9V6Zm9 14H6V10h12v10Zm-6-3a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z"/></svg>"#;
+
+    let mut h = String::with_capacity(4096);
+    h.push_str(&format!(
+        "<!DOCTYPE html><html lang=\"{html_lang}\"><head><meta charset=\"utf-8\">"
+    ));
+    h.push_str("<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">");
+    h.push_str(&format!("<title>{title} \u{2014} Offrii</title>"));
+    h.push_str("<meta name=\"theme-color\" content=\"#FF6B6B\">");
+    h.push_str("<link rel=\"icon\" type=\"image/png\" sizes=\"32x32\" href=\"/favicon.png\">");
+    h.push_str("<link rel=\"icon\" type=\"image/x-icon\" href=\"/favicon.ico\">");
+    h.push_str(
+        "<style>\
+         *{margin:0;padding:0;box-sizing:border-box}\
+         body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;background:#FFFAF9;display:flex;justify-content:center;align-items:center;min-height:100vh;padding:20px;-webkit-font-smoothing:antialiased;overflow-x:hidden}\
+         .blob{position:fixed;border-radius:50%;opacity:0.08;filter:blur(60px);z-index:0;pointer-events:none}\
+         .blob-1{width:300px;height:300px;background:#FF6B6B;top:-100px;right:-50px}\
+         .blob-2{width:250px;height:250px;background:#FFB347;bottom:-80px;left:-60px}\
+         .wrap{position:relative;z-index:1;max-width:420px;width:100%}\
+         .brand{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:24px}\
+         .brand img{width:56px;height:56px;border-radius:14px}\
+         .brand span{font-size:20px;font-weight:700;color:#FF6B6B;letter-spacing:-0.02em}\
+         .card{text-align:center;padding:40px 32px;background:#fff;border-radius:16px;box-shadow:0 4px 24px rgba(0,0,0,0.06)}\
+         .icon{width:64px;height:64px;margin:0 auto 20px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#FFE8E8}\
+         .icon svg{width:32px;height:32px;fill:#FF6B6B}\
+         h1{font-size:1.3rem;font-weight:700;color:#1a1a2e;margin-bottom:8px}\
+         p{color:#6b7280;font-size:.9rem;line-height:1.5;margin-bottom:24px}\
+         a.btn{display:inline-block;padding:12px 28px;background:#FF6B6B;color:#fff;border-radius:12px;text-decoration:none;font-size:.9rem;font-weight:600;transition:background 0.2s}\
+         a.btn:hover{background:#e55b5b}\
+         .ft{text-align:center;margin-top:24px;font-size:12px;color:#9ca3af}\
+         .ft-brand{color:#FF6B6B;font-weight:600}\
+         .ft a{color:#9ca3af;text-decoration:underline}\
+         </style>",
+    );
+    h.push_str("</head><body>");
+    h.push_str("<div class=\"blob blob-1\"></div><div class=\"blob blob-2\"></div>");
+    h.push_str("<div class=\"wrap\">");
+    h.push_str(&format!(
+        "<div class=\"brand\"><img src=\"{logo_url}\" alt=\"Offrii\"><span>Offrii</span></div>"
+    ));
+    h.push_str("<div class=\"card\">");
+    h.push_str(&format!("<div class=\"icon\">{lock_svg}</div>"));
+    h.push_str(&format!("<h1>{title}</h1>"));
+    h.push_str(&format!("<p>{msg}</p>"));
+    h.push_str(&format!(
+        "<a class=\"btn\" href=\"https://offrii.com\">{back_text}</a>"
+    ));
+    h.push_str("</div>");
+    h.push_str(&format!(
+        "<div class=\"ft\"><p><span class=\"ft-brand\">Offrii</span> \u{2014} {footer_slogan}<br><a href=\"https://offrii.com\">offrii.com</a></p></div>"
+    ));
+    h.push_str("</div></body></html>");
+    h
 }

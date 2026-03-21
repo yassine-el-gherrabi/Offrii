@@ -276,38 +276,59 @@ async fn verify_email_get(
 
 fn verify_email_page(title: &str, message: &str, success: bool) -> String {
     let color = if success { "#FF6B6B" } else { "#ef4444" };
-    let icon = if success { "&#10003;" } else { "&#10007;" };
+    let icon_svg = if success {
+        r#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="32" height="32"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>"#
+    } else {
+        r#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="32" height="32"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/></svg>"#
+    };
     let logo_url = "https://cdn.offrii.com/branding/logo-1024.png";
-    format!(
-        r#"<!DOCTYPE html>
-<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>{title} — Offrii</title>
-<style>
-body{{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;background:#FFFAF9;-webkit-font-smoothing:antialiased;}}
-.container{{text-align:center;padding:48px 32px;max-width:420px;}}
-.logo{{width:56px;height:56px;border-radius:14px;margin-bottom:8px;}}
-.brand{{font-size:20px;font-weight:700;color:#FF6B6B;letter-spacing:-0.02em;margin-bottom:32px;}}
-.card{{text-align:center;padding:40px 32px;background:#fff;border-radius:16px;box-shadow:0 4px 24px rgba(0,0,0,0.06);}}
-.icon{{display:inline-flex;align-items:center;justify-content:center;width:64px;height:64px;border-radius:50%;background:{color}1a;font-size:32px;color:{color};margin-bottom:20px;}}
-h1{{font-size:22px;font-weight:700;color:#1a1a2e;margin:0 0 12px;}}
-p{{font-size:15px;color:#6b7280;line-height:1.6;margin:0;}}
-.footer{{margin-top:24px;font-size:12px;color:#9ca3af;}}
-.footer a{{color:#9ca3af;text-decoration:underline;}}
-</style></head><body>
-<div class="container">
-<img src="{logo_url}" alt="Offrii" class="logo" />
-<div class="brand">Offrii</div>
-<div class="card">
-<div class="icon">{icon}</div>
-<h1>{title}</h1>
-<p>{message}</p>
-</div>
-<div class="footer">
-<span style="color:#FF6B6B;font-weight:600;">Offrii</span> — Offre, partage, fais plaisir.<br>
-<a href="https://offrii.com">offrii.com</a>
-</div>
-</div></body></html>"#
-    )
+
+    let mut h = String::with_capacity(4096);
+    h.push_str("<!DOCTYPE html><html lang=\"fr\"><head><meta charset=\"utf-8\">");
+    h.push_str("<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">");
+    h.push_str(&format!("<title>{title} \u{2014} Offrii</title>"));
+    h.push_str("<meta name=\"theme-color\" content=\"#FF6B6B\">");
+    h.push_str("<link rel=\"icon\" type=\"image/png\" sizes=\"32x32\" href=\"/favicon.png\">");
+    h.push_str("<link rel=\"icon\" type=\"image/x-icon\" href=\"/favicon.ico\">");
+    h.push_str(&format!(
+        "<style>\
+         *{{margin:0;padding:0;box-sizing:border-box}}\
+         body{{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;background:#FFFAF9;-webkit-font-smoothing:antialiased;overflow-x:hidden}}\
+         .blob{{position:fixed;border-radius:50%;opacity:0.08;filter:blur(60px);z-index:0;pointer-events:none}}\
+         .blob-1{{width:300px;height:300px;background:#FF6B6B;top:-100px;right:-50px}}\
+         .blob-2{{width:250px;height:250px;background:#FFB347;bottom:-80px;left:-60px}}\
+         .wrap{{position:relative;z-index:1;text-align:center;padding:48px 32px;max-width:420px;width:100%}}\
+         .brand{{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:32px}}\
+         .brand img{{width:56px;height:56px;border-radius:14px}}\
+         .brand span{{font-size:20px;font-weight:700;color:#FF6B6B;letter-spacing:-0.02em}}\
+         .card{{text-align:center;padding:40px 32px;background:#fff;border-radius:16px;box-shadow:0 4px 24px rgba(0,0,0,0.06)}}\
+         .icon{{display:inline-flex;align-items:center;justify-content:center;width:64px;height:64px;border-radius:50%;background:{color}1a;margin-bottom:20px}}\
+         .icon svg{{fill:{color}}}\
+         h1{{font-size:22px;font-weight:700;color:#1a1a2e;margin:0 0 12px}}\
+         p{{font-size:15px;color:#6b7280;line-height:1.6;margin:0}}\
+         .ft{{margin-top:24px;font-size:12px;color:#9ca3af}}\
+         .ft-brand{{color:#FF6B6B;font-weight:600}}\
+         .ft a{{color:#9ca3af;text-decoration:underline}}\
+         </style>"
+    ));
+    h.push_str("</head><body>");
+    h.push_str("<div class=\"blob blob-1\"></div><div class=\"blob blob-2\"></div>");
+    h.push_str("<div class=\"wrap\">");
+    h.push_str(&format!(
+        "<div class=\"brand\"><img src=\"{logo_url}\" alt=\"Offrii\"><span>Offrii</span></div>"
+    ));
+    h.push_str("<div class=\"card\">");
+    h.push_str(&format!("<div class=\"icon\">{icon_svg}</div>"));
+    h.push_str(&format!("<h1>{title}</h1>"));
+    h.push_str(&format!("<p>{message}</p>"));
+    h.push_str("</div>");
+    h.push_str("<div class=\"ft\">");
+    h.push_str(
+        "<p><span class=\"ft-brand\">Offrii</span> \u{2014} Offre, partage, fais plaisir.<br>",
+    );
+    h.push_str("<a href=\"https://offrii.com\">offrii.com</a></p>");
+    h.push_str("</div></div></body></html>");
+    h
 }
 
 #[utoipa::path(
