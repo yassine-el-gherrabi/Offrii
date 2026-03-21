@@ -624,6 +624,8 @@
 "share.ttl.oneWeek" = "1 week";
 "share.ttl.oneMonth" = "1 month";
 "share.ttl.threeMonths" = "3 months";
+"share.expiration" = "Expiration date";
+"share.expirationHint" = "The link will stop working after this date";
 "share.linkActive" = "Link active";
 "share.linkActiveHint" = "Disable to block access without deleting";
 "share.expiresAt" = "Expires in";

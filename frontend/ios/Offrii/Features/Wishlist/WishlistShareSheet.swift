@@ -24,7 +24,7 @@ private enum ShareScope: String, CaseIterable {
     case selection
 }
 
-private enum LinkTTL: String, CaseIterable {
+enum LinkTTL: String, CaseIterable {
     case oneDay
     case oneWeek
     case oneMonth
