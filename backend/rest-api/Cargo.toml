@@ -23,8 +23,8 @@ async-trait.workspace = true
 aws-config.workspace = true
 aws-sdk-s3.workspace = true
 axum.workspace = true
-axum-extra = { version = "0.10", features = ["multipart"] }
-axum-prometheus = "0.10"
+axum-extra.workspace = true
+axum-prometheus.workspace = true
 chrono.workspace = true
 dotenvy.workspace = true
 futures.workspace = true
@@ -50,20 +50,20 @@ tokio-cron-scheduler.workspace = true
 tower-http.workspace = true
 tracing.workspace = true
 tracing-subscriber.workspace = true
-utoipa = { version = "5.4", features = ["axum_extras", "uuid", "chrono", "decimal"] }
-utoipa-swagger-ui = { version = "9", features = ["axum"] }
+utoipa.workspace = true
+utoipa-swagger-ui.workspace = true
 url.workspace = true
 uuid.workspace = true
 validator.workspace = true
 webp.workspace = true
 
 [dev-dependencies]
-http-body-util = "0.1"
-testcontainers = "0.27"
-testcontainers-modules = { version = "0.15", features = ["postgres", "redis"] }
-tokio = { version = "1", features = ["full"] }
-tower = { version = "0.5", features = ["util"] }
-wiremock = "0.6"
+http-body-util.workspace = true
+testcontainers.workspace = true
+testcontainers-modules.workspace = true
+tokio.workspace = true
+tower.workspace = true
+wiremock.workspace = true
 
 [lints]
 workspace = true
