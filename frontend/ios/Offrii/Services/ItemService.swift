@@ -120,10 +120,10 @@ final class ItemService: Sendable {
 
     // MARK: - OG Metadata Retry
 
-    /// Re-fetches the item after a delay if it has links but no OG metadata yet.
-    /// Returns the updated item if OG was populated, otherwise the original.
+    /// Re-fetches the item after a delay to pick up OG metadata changes.
+    /// Returns the updated item if OG changed, otherwise the original.
     func refetchIfMissingOG(_ item: Item, delay: Duration = .seconds(2)) async -> Item {
-        guard let links = item.links, !links.isEmpty, item.ogImageUrl == nil else {
+        guard let links = item.links, !links.isEmpty else {
             return item
         }
         try? await Task.sleep(for: delay)

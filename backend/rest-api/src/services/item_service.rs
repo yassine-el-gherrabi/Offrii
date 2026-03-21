@@ -529,37 +529,47 @@ impl traits::ItemService for PgItemService {
         // Invalidate list cache
         self.bump_version(user_id).await;
 
-        // Async OG fetch for the first link (if links changed)
-        if let Some(links) = links
-            && let Some(first_link) = links.first()
-        {
+        // OG metadata handling when links change
+        if let Some(links) = links {
             let item_repo = self.item_repo.clone();
-            let link = first_link.clone();
             let item_id = item.id;
-            tracing::info!(item_id = %item_id, link = %link, "OG fetch starting (update)");
-            tokio::spawn(async move {
-                match crate::services::og_service::fetch_og_metadata(&link).await {
-                    Ok(og) => {
-                        tracing::info!(
-                            item_id = %item_id,
-                            og_image = ?og.image_url,
-                            og_title = ?og.title,
-                            "OG fetch succeeded (update)"
-                        );
-                        let _ = item_repo
-                            .update_og_metadata(
-                                item_id,
-                                og.image_url.as_deref(),
-                                og.title.as_deref(),
-                                og.site_name.as_deref(),
-                            )
-                            .await;
+
+            if let Some(first_link) = links.first() {
+                // Links changed — clear old OG first, then fetch new
+                let _ = item_repo
+                    .update_og_metadata(item_id, None, None, None)
+                    .await;
+                let link = first_link.clone();
+                tracing::info!(item_id = %item_id, link = %link, "OG fetch starting (update)");
+                tokio::spawn(async move {
+                    match crate::services::og_service::fetch_og_metadata(&link).await {
+                        Ok(og) => {
+                            tracing::info!(
+                                item_id = %item_id,
+                                og_image = ?og.image_url,
+                                og_title = ?og.title,
+                                "OG fetch succeeded (update)"
+                            );
+                            let _ = item_repo
+                                .update_og_metadata(
+                                    item_id,
+                                    og.image_url.as_deref(),
+                                    og.title.as_deref(),
+                                    og.site_name.as_deref(),
+                                )
+                                .await;
+                        }
+                        Err(e) => {
+                            tracing::warn!(item_id = %item_id, error = %e, "OG fetch failed (update)");
+                        }
                     }
-                    Err(e) => {
-                        tracing::warn!(item_id = %item_id, error = %e, "OG fetch failed (update)");
-                    }
-                }
-            });
+                });
+            } else {
+                // Links cleared — remove OG metadata
+                let _ = item_repo
+                    .update_og_metadata(item_id, None, None, None)
+                    .await;
+            }
         }
 
         Ok(ItemResponse::from(item))

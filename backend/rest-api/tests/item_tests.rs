@@ -2279,3 +2279,169 @@ async fn create_item_with_http_link_ok() {
     assert_eq!(links.len(), 1);
     assert_eq!(links[0], "http://example.com/page");
 }
+
+// ── OG metadata behavior on link changes ────────────────────────────
+
+#[tokio::test]
+async fn update_links_clears_og_metadata() {
+    let app = TestApp::new().await;
+    let token = app.setup_user_token(TEST_EMAIL, TEST_PASSWORD).await;
+
+    // Create item with a link (OG will be fetched async but may not complete)
+    let body = serde_json::json!({
+        "name": "OG test item",
+        "links": ["https://example.com"]
+    });
+    let item = app.create_item(&token, &body).await;
+    let item_id = item["id"].as_str().unwrap();
+
+    // Manually set OG metadata to simulate a successful OG fetch
+    sqlx::query(
+        "UPDATE items SET og_image_url = 'https://example.com/old-og.png', \
+         og_title = 'Old Title', og_site_name = 'Old Site' WHERE id = $1::uuid",
+    )
+    .bind(item_id)
+    .execute(&app.db)
+    .await
+    .unwrap();
+
+    // Verify OG is set
+    let (status, fetched) = app
+        .get_with_auth(&format!("/items/{item_id}"), &token)
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(fetched["og_image_url"], "https://example.com/old-og.png");
+
+    // Update links to a different URL
+    let patch = serde_json::json!({ "links": ["https://different-site.com"] });
+    let (status, _) = app
+        .patch_json_with_auth(&format!("/items/{item_id}"), &patch, &token)
+        .await;
+    assert_eq!(status, StatusCode::OK);
+
+    // OG should be cleared immediately (async fetch may populate later but we check the clear)
+    // Small delay to let the synchronous clear execute
+    tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+    let (status, fetched) = app
+        .get_with_auth(&format!("/items/{item_id}"), &token)
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    assert!(
+        fetched["og_image_url"].is_null(),
+        "og_image_url should be cleared when links change, got: {}",
+        fetched["og_image_url"]
+    );
+    assert!(
+        fetched["og_title"].is_null(),
+        "og_title should be cleared when links change"
+    );
+}
+
+#[tokio::test]
+async fn remove_all_links_clears_og_metadata() {
+    let app = TestApp::new().await;
+    let token = app.setup_user_token(TEST_EMAIL, TEST_PASSWORD).await;
+
+    let body = serde_json::json!({
+        "name": "OG clear test",
+        "links": ["https://example.com"]
+    });
+    let item = app.create_item(&token, &body).await;
+    let item_id = item["id"].as_str().unwrap();
+
+    // Set OG metadata manually
+    sqlx::query(
+        "UPDATE items SET og_image_url = 'https://example.com/og.png', \
+         og_title = 'Title' WHERE id = $1::uuid",
+    )
+    .bind(item_id)
+    .execute(&app.db)
+    .await
+    .unwrap();
+
+    // Remove all links
+    let patch = serde_json::json!({ "links": [] });
+    let (status, _) = app
+        .patch_json_with_auth(&format!("/items/{item_id}"), &patch, &token)
+        .await;
+    assert_eq!(status, StatusCode::OK);
+
+    tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+    let (status, fetched) = app
+        .get_with_auth(&format!("/items/{item_id}"), &token)
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    assert!(
+        fetched["og_image_url"].is_null(),
+        "og_image_url should be cleared when all links removed"
+    );
+}
+
+#[tokio::test]
+async fn update_non_link_fields_preserves_og_metadata() {
+    let app = TestApp::new().await;
+    let token = app.setup_user_token(TEST_EMAIL, TEST_PASSWORD).await;
+
+    let body = serde_json::json!({
+        "name": "OG preserve test",
+        "links": ["https://example.com"]
+    });
+    let item = app.create_item(&token, &body).await;
+    let item_id = item["id"].as_str().unwrap();
+
+    // Set OG metadata manually
+    sqlx::query(
+        "UPDATE items SET og_image_url = 'https://example.com/og.png', \
+         og_title = 'Keep Me' WHERE id = $1::uuid",
+    )
+    .bind(item_id)
+    .execute(&app.db)
+    .await
+    .unwrap();
+
+    // Update name only (no links change)
+    let patch = serde_json::json!({ "name": "Renamed item" });
+    let (status, _) = app
+        .patch_json_with_auth(&format!("/items/{item_id}"), &patch, &token)
+        .await;
+    assert_eq!(status, StatusCode::OK);
+
+    let (status, fetched) = app
+        .get_with_auth(&format!("/items/{item_id}"), &token)
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(
+        fetched["og_image_url"], "https://example.com/og.png",
+        "og_image_url should be preserved when links are not changed"
+    );
+    assert_eq!(fetched["og_title"], "Keep Me");
+}
+
+#[tokio::test]
+async fn uploaded_image_takes_priority_over_og() {
+    let app = TestApp::new().await;
+    let token = app.setup_user_token(TEST_EMAIL, TEST_PASSWORD).await;
+
+    let body = serde_json::json!({
+        "name": "Priority test",
+        "image_url": "https://cdn.example.com/uploaded.jpg",
+        "links": ["https://example.com"]
+    });
+    let item = app.create_item(&token, &body).await;
+    let item_id = item["id"].as_str().unwrap();
+
+    // Set OG metadata
+    sqlx::query("UPDATE items SET og_image_url = 'https://example.com/og.png' WHERE id = $1::uuid")
+        .bind(item_id)
+        .execute(&app.db)
+        .await
+        .unwrap();
+
+    let (status, fetched) = app
+        .get_with_auth(&format!("/items/{item_id}"), &token)
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    // Both exist — frontend decides priority, but both should be present in API
+    assert_eq!(fetched["image_url"], "https://cdn.example.com/uploaded.jpg");
+    assert_eq!(fetched["og_image_url"], "https://example.com/og.png");
+}
