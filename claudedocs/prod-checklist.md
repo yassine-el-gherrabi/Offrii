@@ -144,8 +144,8 @@
 ### Medium
 - [x] **S6: OG fetch** → content-length check avant download
 - [x] **P2: `list_items` enrichissement** → tokio::join! (4→3 round-trips)
-- [ ] **Q2: `list_recent_fulfilled` bypass service layer** → cosmétique, later
-- [ ] **Q1: Admin `is_admin` check** → JWT claims refacto, later
+- [x] **Q2: `list_recent_fulfilled`** → moved to service/repo layer
+- [x] **Q1: Admin `is_admin`** → JWT claims (no more DB query per admin request)
 
 ### Low
 - [ ] **S7: ngrok URL hardcodée dans debug** → utiliser localhost

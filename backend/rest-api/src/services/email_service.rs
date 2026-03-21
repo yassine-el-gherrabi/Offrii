@@ -1,9 +1,17 @@
+use std::time::Duration;
+
 use async_trait::async_trait;
 use resend_rs::Resend;
 use resend_rs::types::CreateEmailBaseOptions;
 
 use crate::errors::AppError;
 use crate::traits;
+
+/// Backoff delays between retry attempts (1 s, then 2 s).
+const RETRY_DELAYS: [Duration; 2] = [Duration::from_secs(1), Duration::from_secs(2)];
+
+/// Maximum number of send attempts (initial + retries).
+const MAX_ATTEMPTS: usize = 3;
 
 // ── Brand constants ─────────────────────────────────────────────────
 
@@ -91,6 +99,33 @@ impl ResendEmailService {
             base_url,
         }
     }
+
+    /// Send an email with retry + exponential backoff.
+    /// Tries up to [`MAX_ATTEMPTS`] times with delays defined in [`RETRY_DELAYS`].
+    async fn send_with_retry(&self, email: CreateEmailBaseOptions) -> Result<(), AppError> {
+        let mut last_err = None;
+        for attempt in 0..MAX_ATTEMPTS {
+            match self.client.emails.send(email.clone()).await {
+                Ok(_) => return Ok(()),
+                Err(e) => {
+                    tracing::warn!(
+                        attempt = attempt + 1,
+                        max = MAX_ATTEMPTS,
+                        error = %e,
+                        "email send failed, will retry"
+                    );
+                    last_err = Some(e);
+                    if let Some(delay) = RETRY_DELAYS.get(attempt) {
+                        tokio::time::sleep(*delay).await;
+                    }
+                }
+            }
+        }
+        Err(AppError::Internal(anyhow::anyhow!(
+            "email send failed after {MAX_ATTEMPTS} attempts: {}",
+            last_err.map(|e| e.to_string()).unwrap_or_default()
+        )))
+    }
 }
 
 #[async_trait]
@@ -127,13 +162,7 @@ Si vous n'avez pas demandé de réinitialisation, ignorez cet email.
         let email =
             CreateEmailBaseOptions::new(&self.from, [to], "Votre code Offrii").with_html(&html);
 
-        self.client
-            .emails
-            .send(email)
-            .await
-            .map_err(|e| AppError::Internal(anyhow::anyhow!("email send failed: {e}")))?;
-
-        Ok(())
+        self.send_with_retry(email).await
     }
 
     async fn send_welcome_email(
@@ -174,13 +203,7 @@ A très vite sur Offrii !
         };
         let email = CreateEmailBaseOptions::new(&self.from, [to], &subject).with_html(&html);
 
-        self.client
-            .emails
-            .send(email)
-            .await
-            .map_err(|e| AppError::Internal(anyhow::anyhow!("email send failed: {e}")))?;
-
-        Ok(())
+        self.send_with_retry(email).await
     }
 
     async fn send_welcome_and_verify_email(
@@ -232,13 +255,7 @@ Ce lien expire dans <strong>24 heures</strong>.
         };
         let email = CreateEmailBaseOptions::new(&self.from, [to], &subject).with_html(&html);
 
-        self.client
-            .emails
-            .send(email)
-            .await
-            .map_err(|e| AppError::Internal(anyhow::anyhow!("email send failed: {e}")))?;
-
-        Ok(())
+        self.send_with_retry(email).await
     }
 
     async fn send_verification_email(&self, to: &str, token: &str) -> Result<(), AppError> {
@@ -267,13 +284,7 @@ Si vous n'avez pas créé de compte Offrii, ignorez cet email.
         let email = CreateEmailBaseOptions::new(&self.from, [to], "Vérifiez votre email — Offrii")
             .with_html(&html);
 
-        self.client
-            .emails
-            .send(email)
-            .await
-            .map_err(|e| AppError::Internal(anyhow::anyhow!("email send failed: {e}")))?;
-
-        Ok(())
+        self.send_with_retry(email).await
     }
 
     async fn send_password_changed_email(&self, to: &str) -> Result<(), AppError> {
@@ -292,12 +303,64 @@ Si vous n'êtes pas à l'origine de ce changement, contactez-nous immédiatement
         let email = CreateEmailBaseOptions::new(&self.from, [to], "Mot de passe modifié — Offrii")
             .with_html(&html);
 
-        self.client
-            .emails
-            .send(email)
-            .await
-            .map_err(|e| AppError::Internal(anyhow::anyhow!("email send failed: {e}")))?;
+        self.send_with_retry(email).await
+    }
+}
 
-        Ok(())
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn retry_delays_match_max_attempts() {
+        // We need exactly MAX_ATTEMPTS - 1 delays (no delay after the last attempt).
+        assert_eq!(
+            RETRY_DELAYS.len(),
+            MAX_ATTEMPTS - 1,
+            "should have one fewer delay than attempts"
+        );
+    }
+
+    #[test]
+    fn retry_delays_are_increasing() {
+        for window in RETRY_DELAYS.windows(2) {
+            assert!(
+                window[1] > window[0],
+                "delays must increase: {:?} should be > {:?}",
+                window[1],
+                window[0]
+            );
+        }
+    }
+
+    #[test]
+    fn email_template_contains_logo() {
+        let html = email_template("test body");
+        assert!(
+            html.contains(LOGO_URL),
+            "template must reference the brand logo"
+        );
+    }
+
+    #[test]
+    fn email_template_wraps_body_content() {
+        let html = email_template("<p>Hello</p>");
+        assert!(html.contains("<p>Hello</p>"), "body must be embedded");
+        assert!(html.contains("<!DOCTYPE html>"), "must be full HTML doc");
+    }
+
+    #[test]
+    fn cta_button_contains_link_and_label() {
+        let btn = cta_button("Click me", "https://example.com");
+        assert!(btn.contains("https://example.com"));
+        assert!(btn.contains("Click me"));
+    }
+
+    #[test]
+    fn max_attempts_is_at_least_two() {
+        assert!(
+            MAX_ATTEMPTS >= 2,
+            "retry logic requires at least 2 attempts to be useful"
+        );
     }
 }

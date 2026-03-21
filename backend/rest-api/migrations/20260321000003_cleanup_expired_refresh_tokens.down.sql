@@ -1,0 +1,2 @@
+-- Cleanup is not reversible (deleted rows cannot be restored).
+-- This is a no-op down migration.

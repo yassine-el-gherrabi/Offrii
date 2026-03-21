@@ -1,5 +1,3 @@
-use std::collections::hash_map::DefaultHasher;
-use std::hash::{Hash, Hasher};
 use std::sync::Arc;
 
 use async_trait::async_trait;
@@ -212,16 +210,22 @@ impl PgItemService {
     }
 }
 
-/// Hash the query parameters to create a unique cache key suffix.
-fn hash_query(query: &ListItemsQuery, sort: &str, order: &str, page: i64, limit: i64) -> u64 {
-    let mut hasher = DefaultHasher::new();
-    query.status.hash(&mut hasher);
-    query.category_id.hash(&mut hasher);
-    sort.hash(&mut hasher);
-    order.hash(&mut hasher);
-    page.hash(&mut hasher);
-    limit.hash(&mut hasher);
-    hasher.finish()
+/// Build a deterministic, human-readable cache key suffix from query parameters.
+/// Unlike `DefaultHasher` (which may vary across processes / Rust versions),
+/// this produces a stable string suitable for Redis keys.
+fn cache_key_suffix(
+    query: &ListItemsQuery,
+    sort: &str,
+    order: &str,
+    page: i64,
+    limit: i64,
+) -> String {
+    let status = query.status.as_deref().unwrap_or("_");
+    let cat = query
+        .category_id
+        .map(|c| c.to_string())
+        .unwrap_or_else(|| "_".to_string());
+    format!("{status}:{cat}:{sort}:{order}:{page}:{limit}")
 }
 
 #[async_trait]
@@ -369,9 +373,9 @@ impl traits::ItemService for PgItemService {
         // Try Redis cache (fail-open). Treat missing version key as 0 so the
         // cache can be hit even before the first mutation.
         let ver = self.get_version(user_id).await.unwrap_or(0);
-        let query_hash = hash_query(query, sort, order, page, limit);
+        let suffix = cache_key_suffix(query, sort, order, page, limit);
 
-        let cache_key = format!("items:{user_id}:v{ver}:{query_hash}");
+        let cache_key = format!("items:{user_id}:v{ver}:{suffix}");
         if let Some(cached) = self.get_cached_list(&cache_key).await
             && let Ok(resp) = serde_json::from_str::<PaginatedResponse<ItemResponse>>(&cached)
         {
@@ -714,5 +718,110 @@ impl traits::ItemService for PgItemService {
         }
 
         Ok(count)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::dto::items::ListItemsQuery;
+
+    /// cache_key_suffix must be deterministic: identical inputs always produce
+    /// the same key, even across invocations.
+    #[test]
+    fn cache_key_suffix_is_deterministic() {
+        let q = ListItemsQuery {
+            status: Some("active".to_string()),
+            category_id: Some(Uuid::nil()),
+            category_ids: None,
+            sort: None,
+            order: None,
+            page: None,
+            limit: None,
+        };
+        let a = cache_key_suffix(&q, "created_at", "desc", 1, 20);
+        let b = cache_key_suffix(&q, "created_at", "desc", 1, 20);
+        assert_eq!(a, b, "same inputs must produce identical keys");
+    }
+
+    /// Different status values must yield different cache keys.
+    #[test]
+    fn cache_key_suffix_varies_by_status() {
+        let q1 = ListItemsQuery {
+            status: Some("active".to_string()),
+            category_id: None,
+            category_ids: None,
+            sort: None,
+            order: None,
+            page: None,
+            limit: None,
+        };
+        let q2 = ListItemsQuery {
+            status: Some("purchased".to_string()),
+            category_id: None,
+            category_ids: None,
+            sort: None,
+            order: None,
+            page: None,
+            limit: None,
+        };
+        assert_ne!(
+            cache_key_suffix(&q1, "created_at", "desc", 1, 20),
+            cache_key_suffix(&q2, "created_at", "desc", 1, 20),
+        );
+    }
+
+    /// Different pages must yield different cache keys.
+    #[test]
+    fn cache_key_suffix_varies_by_page() {
+        let q = ListItemsQuery {
+            status: None,
+            category_id: None,
+            category_ids: None,
+            sort: None,
+            order: None,
+            page: None,
+            limit: None,
+        };
+        let k1 = cache_key_suffix(&q, "created_at", "desc", 1, 20);
+        let k2 = cache_key_suffix(&q, "created_at", "desc", 2, 20);
+        assert_ne!(k1, k2, "different pages must produce different keys");
+    }
+
+    /// Verify None status and category produce a readable placeholder, not an
+    /// empty string that could collide.
+    #[test]
+    fn cache_key_suffix_none_values_produce_placeholder() {
+        let q = ListItemsQuery {
+            status: None,
+            category_id: None,
+            category_ids: None,
+            sort: None,
+            order: None,
+            page: None,
+            limit: None,
+        };
+        let key = cache_key_suffix(&q, "name", "asc", 1, 10);
+        assert!(
+            key.contains("_:_:"),
+            "None values should produce underscore placeholders, got: {key}"
+        );
+    }
+
+    /// Different sort/order combos produce distinct keys.
+    #[test]
+    fn cache_key_suffix_varies_by_sort_and_order() {
+        let q = ListItemsQuery {
+            status: None,
+            category_id: None,
+            category_ids: None,
+            sort: None,
+            order: None,
+            page: None,
+            limit: None,
+        };
+        let k1 = cache_key_suffix(&q, "created_at", "asc", 1, 20);
+        let k2 = cache_key_suffix(&q, "priority", "desc", 1, 20);
+        assert_ne!(k1, k2);
     }
 }
