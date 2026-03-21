@@ -36,9 +36,14 @@ static DUMMY_HASH: LazyLock<String> = LazyLock::new(|| {
     hash::hash_password("timing-safe-dummy").expect("failed to generate dummy hash")
 });
 
-fn generate_token_pair(jwt: &JwtKeys, user_id: Uuid, token_version: i32) -> Result<TokenPair> {
-    let access_token = jwt.generate_access_token(user_id, token_version)?;
-    let refresh_token = jwt.generate_refresh_token(user_id, token_version)?;
+fn generate_token_pair(
+    jwt: &JwtKeys,
+    user_id: Uuid,
+    token_version: i32,
+    is_admin: bool,
+) -> Result<TokenPair> {
+    let access_token = jwt.generate_access_token(user_id, token_version, is_admin)?;
+    let refresh_token = jwt.generate_refresh_token(user_id, token_version, is_admin)?;
     Ok(TokenPair {
         access_token,
         refresh_token,
@@ -195,7 +200,7 @@ impl traits::AuthService for PgAuthService {
                     }
                 })?;
 
-        let tokens = generate_token_pair(&self.jwt, user.id, user.token_version)
+        let tokens = generate_token_pair(&self.jwt, user.id, user.token_version, user.is_admin)
             .map_err(AppError::Internal)?;
         let refresh_hash = sha256_hex(&tokens.refresh_token);
 
@@ -304,7 +309,7 @@ impl traits::AuthService for PgAuthService {
             _ => return Err(invalid_credentials()),
         };
 
-        let tokens = generate_token_pair(&self.jwt, user.id, user.token_version)
+        let tokens = generate_token_pair(&self.jwt, user.id, user.token_version, user.is_admin)
             .map_err(AppError::Internal)?;
         let refresh_hash = sha256_hex(&tokens.refresh_token);
 
@@ -369,7 +374,7 @@ impl traits::AuthService for PgAuthService {
             ));
         }
 
-        let tokens = generate_token_pair(&self.jwt, user_id, user.token_version)
+        let tokens = generate_token_pair(&self.jwt, user_id, user.token_version, user.is_admin)
             .map_err(AppError::Internal)?;
         let new_hash = sha256_hex(&tokens.refresh_token);
 
@@ -912,7 +917,7 @@ impl traits::AuthService for PgAuthService {
         };
 
         // 5. Generate token pair + store refresh token
-        let tokens = generate_token_pair(&self.jwt, user.id, user.token_version)
+        let tokens = generate_token_pair(&self.jwt, user.id, user.token_version, user.is_admin)
             .map_err(AppError::Internal)?;
         let refresh_hash = sha256_hex(&tokens.refresh_token);
 

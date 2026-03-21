@@ -142,10 +142,10 @@
 - [x] ~~S5: Register rate limit~~ → couvert par Caddy IP rate limit + unique email constraint
 
 ### Medium
-- [ ] **S6: OG fetch body size check post-download** → vérifier content-length avant
-- [ ] **P2: 4 queries par `list_items`** → tokio::join! enrichissement cercles
-- [ ] **Q2: `list_recent_fulfilled` bypass service layer** → refactor dans service
-- [ ] **Q1: Admin `is_admin` check = query DB extra** → inclure dans JWT claims
+- [x] **S6: OG fetch** → content-length check avant download
+- [x] **P2: `list_items` enrichissement** → tokio::join! (4→3 round-trips)
+- [ ] **Q2: `list_recent_fulfilled` bypass service layer** → cosmétique, later
+- [ ] **Q1: Admin `is_admin` check** → JWT claims refacto, later
 
 ### Low
 - [ ] **S7: ngrok URL hardcodée dans debug** → utiliser localhost

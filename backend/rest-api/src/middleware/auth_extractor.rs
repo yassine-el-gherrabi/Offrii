@@ -11,6 +11,7 @@ pub struct AuthUser {
     pub user_id: Uuid,
     pub jti: String,
     pub exp: usize,
+    pub is_admin: bool,
 }
 
 /// Parse a Bearer token from the Authorization header value (case-insensitive scheme).
@@ -76,6 +77,7 @@ impl AuthUser {
             user_id,
             jti: claims.jti,
             exp: claims.exp,
+            is_admin: claims.is_admin,
         })
     }
 }
@@ -139,18 +141,12 @@ impl FromRequestParts<AppState> for AdminUser {
     ) -> Result<Self, Self::Rejection> {
         let auth_user = AuthUser::from_request_parts(parts, state).await?;
 
-        // Check admin status via a quick DB query
-        let is_admin: Option<(bool,)> = sqlx::query_as("SELECT is_admin FROM users WHERE id = $1")
-            .bind(auth_user.user_id)
-            .fetch_optional(&state.db)
-            .await
-            .map_err(|e| AppError::Internal(anyhow::anyhow!(e)))?;
-
-        match is_admin {
-            Some((true,)) => Ok(AdminUser {
+        if auth_user.is_admin {
+            Ok(AdminUser {
                 user_id: auth_user.user_id,
-            }),
-            _ => Err(AppError::Forbidden("admin access required".into())),
+            })
+        } else {
+            Err(AppError::Forbidden("admin access required".into()))
         }
     }
 }

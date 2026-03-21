@@ -152,6 +152,18 @@ impl traits::CommunityWishRepo for PgCommunityWishRepo {
         count_flagged(&self.pool).await
     }
 
+    async fn list_recent_fulfilled(&self, limit: i64) -> Result<Vec<CommunityWish>> {
+        let sql = format!(
+            "SELECT {WISH_COLS} FROM community_wishes \
+             WHERE status = 'fulfilled' \
+             ORDER BY fulfilled_at DESC NULLS LAST LIMIT $1"
+        );
+        Ok(sqlx::query_as::<_, CommunityWish>(&sql)
+            .bind(limit)
+            .fetch_all(&self.pool)
+            .await?)
+    }
+
     async fn delete(&self, id: Uuid) -> Result<bool> {
         let result = sqlx::query("DELETE FROM community_wishes WHERE id = $1")
             .bind(id)

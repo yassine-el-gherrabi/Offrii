@@ -12,7 +12,7 @@ const USER_COLS: &str = "id, email, username, password_hash, display_name, \
                          oauth_provider, oauth_provider_id, email_verified, \
                          reminder_freq, reminder_time, timezone, \
                          utc_reminder_hour, locale, token_version, \
-                         username_customized, avatar_url, \
+                         is_admin, username_customized, avatar_url, \
                          created_at, updated_at";
 
 // ── Concrete implementation ──────────────────────────────────────────

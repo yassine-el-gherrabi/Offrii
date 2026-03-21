@@ -170,34 +170,8 @@ async fn list_my_offers(
 async fn list_recent_fulfilled(
     State(state): State<AppState>,
 ) -> Result<Json<Vec<WishResponse>>, AppError> {
-    let wishes: Vec<crate::models::CommunityWish> = sqlx::query_as(
-        "SELECT * FROM community_wishes \
-         WHERE status = 'fulfilled' \
-         ORDER BY fulfilled_at DESC NULLS LAST LIMIT 8",
-    )
-    .fetch_all(&state.db)
-    .await
-    .map_err(|e| AppError::Internal(e.into()))?;
-
-    let responses = wishes
-        .into_iter()
-        .map(|w| WishResponse {
-            id: w.id,
-            display_name: None, // Public feed — names resolved by service layer
-            title: w.title,
-            description: w.description,
-            category: w.category,
-            status: w.status,
-            is_mine: false,
-            is_matched_by_me: false,
-            image_url: w.image_url,
-            links: w.links,
-            fulfilled_at: w.fulfilled_at,
-            created_at: w.created_at,
-        })
-        .collect();
-
-    Ok(Json(responses))
+    let response = state.community_wishes.list_recent_fulfilled().await?;
+    Ok(Json(response))
 }
 
 #[utoipa::path(

@@ -955,6 +955,8 @@ pub trait CommunityWishRepo: Send + Sync {
 
     async fn count_flagged(&self) -> Result<i64>;
 
+    async fn list_recent_fulfilled(&self, limit: i64) -> Result<Vec<CommunityWish>>;
+
     async fn delete(&self, id: Uuid) -> Result<bool>;
 }
 
@@ -1045,6 +1047,10 @@ pub trait CommunityWishService: Send + Sync {
     async fn list_my_offers(
         &self,
         user_id: Uuid,
+    ) -> Result<Vec<crate::dto::community_wishes::WishResponse>, crate::errors::AppError>;
+
+    async fn list_recent_fulfilled(
+        &self,
     ) -> Result<Vec<crate::dto::community_wishes::WishResponse>, crate::errors::AppError>;
 
     async fn update_wish(
