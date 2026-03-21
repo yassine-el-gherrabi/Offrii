@@ -181,7 +181,10 @@
 - [x] Trivy container image scanning dans CD (advisory)
 - [x] PR review requirement retiré (solo dev)
 - [ ] Mettre à jour privacy policy avec liste sous-traitants RGPD (Resend, OpenAI, Cloudflare, Hetzner, APNs)
-- [ ] Uptime monitoring externe (UptimeRobot sur https://api.offrii.com/health/ready) — à faire manuellement
+- [x] Uptime monitoring externe — UptimeRobot
+  - Prod : `https://api.offrii.com/health/ready` (5 min interval)
+  - Status page : `https://stats.uptimerobot.com/J7vbVoj5h1`
+  - [ ] Ajouter monitor staging : `https://staging.offrii.com/health/ready` (quand staging déployé)
 
 ---
 
