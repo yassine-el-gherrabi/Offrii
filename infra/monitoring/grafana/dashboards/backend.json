@@ -23,8 +23,8 @@
           "custom": { "drawStyle": "line", "fillOpacity": 10, "stacking": { "mode": "normal" } },
           "links": [
             {
-              "title": "View ${__series.name} logs in Loki",
-              "url": "/explore?orgId=1&left={\"datasource\":\"loki\",\"queries\":[{\"refId\":\"A\",\"expr\":\"{container_name=\\\"offrii-backend\\\"} |~ \\\"${__series.name}\\\"\"}],\"range\":{\"from\":\"${__from}\",\"to\":\"${__to}\"}}",
+              "title": "View status ${__series.name} logs",
+              "url": "/explore?schemaVersion=1&panes={\"a\":{\"datasource\":\"loki\",\"queries\":[{\"refId\":\"A\",\"expr\":\"{container_name=\\\"offrii-backend\\\"} | json | status = ${__series.name}\",\"queryType\":\"range\"}]}}&orgId=1",
               "targetBlank": true
             }
           ]
@@ -54,7 +54,7 @@
           "links": [
             {
               "title": "View 5xx error logs",
-              "url": "/explore?orgId=1&left={\"datasource\":\"loki\",\"queries\":[{\"refId\":\"A\",\"expr\":\"{container_name=\\\"offrii-backend\\\"} |~ \\\"status=5[0-9][0-9]\\\"\"}],\"range\":{\"from\":\"${__from}\",\"to\":\"${__to}\"}}",
+              "url": "/explore?schemaVersion=1&panes={\"a\":{\"datasource\":\"loki\",\"queries\":[{\"refId\":\"A\",\"expr\":\"{container_name=\\\"offrii-backend\\\"} | json | status >= 500\",\"queryType\":\"range\"}]}}&orgId=1",
               "targetBlank": true
             }
           ]
@@ -126,7 +126,7 @@
           "links": [
             {
               "title": "View logs for ${__series.name}",
-              "url": "/explore?orgId=1&left={\"datasource\":\"loki\",\"queries\":[{\"refId\":\"A\",\"expr\":\"{container_name=\\\"offrii-backend\\\"} |~ \\\"${__series.name}\\\"\"}],\"range\":{\"from\":\"${__from}\",\"to\":\"${__to}\"}}",
+              "url": "/explore?schemaVersion=1&panes={\"a\":{\"datasource\":\"loki\",\"queries\":[{\"refId\":\"A\",\"expr\":\"{container_name=\\\"offrii-backend\\\"} |~ \\\"${__series.name}\\\"\",\"queryType\":\"range\"}]}}&orgId=1",
               "targetBlank": true
             }
           ]
@@ -160,7 +160,7 @@
                 "value": [
                   {
                     "title": "View logs for ${__value.text}",
-                    "url": "/explore?orgId=1&left={\"datasource\":\"loki\",\"queries\":[{\"refId\":\"A\",\"expr\":\"{container_name=\\\"offrii-backend\\\"} |~ \\\"${__value.text}\\\"\"}],\"range\":{\"from\":\"${__from}\",\"to\":\"${__to}\"}}",
+                    "url": "/explore?schemaVersion=1&panes={\"a\":{\"datasource\":\"loki\",\"queries\":[{\"refId\":\"A\",\"expr\":\"{container_name=\\\"offrii-backend\\\"} |~ \\\"${__value.text}\\\"\",\"queryType\":\"range\"}]}}&orgId=1",
                     "targetBlank": true
                   }
                 ]
@@ -191,7 +191,7 @@
           "links": [
             {
               "title": "View 5xx logs for ${__series.name}",
-              "url": "/explore?orgId=1&left={\"datasource\":\"loki\",\"queries\":[{\"refId\":\"A\",\"expr\":\"{container_name=\\\"offrii-backend\\\"} |~ \\\"${__series.name}\\\" |~ \\\"status=5[0-9][0-9]\\\"\"}],\"range\":{\"from\":\"${__from}\",\"to\":\"${__to}\"}}",
+              "url": "/explore?schemaVersion=1&panes={\"a\":{\"datasource\":\"loki\",\"queries\":[{\"refId\":\"A\",\"expr\":\"{container_name=\\\"offrii-backend\\\"} | json | status >= 500 |~ \\\"${__series.name}\\\"\",\"queryType\":\"range\"}]}}&orgId=1",
               "targetBlank": true
             }
           ]
