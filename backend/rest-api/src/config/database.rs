@@ -2,7 +2,16 @@ use sqlx::PgPool;
 use sqlx::postgres::PgPoolOptions;
 
 pub async fn create_pg_pool(url: &str) -> anyhow::Result<PgPool> {
-    let pool = PgPoolOptions::new().max_connections(5).connect(url).await?;
+    let max_conn: u32 = std::env::var("DATABASE_MAX_CONNECTIONS")
+        .ok()
+        .and_then(|v| v.parse().ok())
+        .unwrap_or(20);
+
+    let pool = PgPoolOptions::new()
+        .max_connections(max_conn)
+        .acquire_timeout(std::time::Duration::from_secs(5))
+        .connect(url)
+        .await?;
     Ok(pool)
 }
 

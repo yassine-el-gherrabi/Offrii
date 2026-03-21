@@ -1,4 +1,5 @@
 import Foundation
+import KeychainAccess
 import os
 
 // MARK: - Auth Manager
@@ -167,9 +168,10 @@ final class AuthManager {
         }
     }
 
-    /// Restores the cached user from UserDefaults for instant display.
+    /// Restores the cached user from Keychain for instant display.
     func restoreCachedUser() {
-        guard let data = UserDefaults.standard.data(forKey: "cachedUser"),
+        guard let base64 = try? Keychain(service: "com.offrii.auth").get("cachedUser"),
+              let data = Data(base64Encoded: base64),
               let user = try? JSONDecoder().decode(User.self, from: data) else { return }
         currentUser = user
     }
@@ -183,13 +185,13 @@ final class AuthManager {
 
     private func cacheUser(_ user: User) {
         if let data = try? JSONEncoder().encode(user) {
-            UserDefaults.standard.set(data, forKey: "cachedUser")
+            try? Keychain(service: "com.offrii.auth").set(data.base64EncodedString(), key: "cachedUser")
         }
     }
 
     private func clearAuthState() {
         keychain.clearAll()
         currentUser = nil
-        UserDefaults.standard.removeObject(forKey: "cachedUser")
+        try? Keychain(service: "com.offrii.auth").remove("cachedUser")
     }
 }

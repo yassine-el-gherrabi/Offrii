@@ -24,8 +24,10 @@
 		</dict>
 	</array>
 	<key>NSCameraUsageDescription</key>
-	<string>Offrii utilise l'appareil photo pour prendre des photos de vos envies.</string>
+	<string>Offrii utilise l'appareil photo pour prendre une photo de profil ou une image pour vos envies.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Offrii utilise votre bibliothèque photo pour sélectionner une photo de profil ou une image pour vos envies.</string>
 	<key>NSContactsUsageDescription</key>
-	<string>Offrii utilise vos contacts pour vous aider à inviter vos proches.</string>
+	<string>Offrii utilise vos contacts pour vous aider à inviter vos proches dans vos cercles.</string>
 </dict>
 </plist>

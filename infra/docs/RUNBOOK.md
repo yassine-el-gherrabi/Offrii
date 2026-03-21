@@ -5,16 +5,16 @@
 | Service | URL | Auth |
 |---------|-----|------|
 | API prod | `https://api.offrii.com` | JWT Bearer |
-| Swagger UI | `https://api.offrii.com/docs/` | `admin` / `OffriiDocs2026Prod` |
+| Swagger UI | `https://api.offrii.com/docs/` | `admin` / `<CHANGE_ME_SEE_ENV>` |
 | Grafana | `https://grafana.offrii.com` | `admin` / (GF_SECURITY_ADMIN_PASSWORD) |
-| Serveur SSH | `ssh deploy@167.235.193.237` | Clé SSH |
+| Serveur SSH | `ssh deploy@<SERVER_IP>` | Clé SSH |
 
 ## Commandes courantes
 
 ### SSH au serveur
 
 ```bash
-ssh deploy@167.235.193.237
+ssh deploy@<SERVER_IP>
 cd /opt/offrii
 ```
 
@@ -146,14 +146,14 @@ FLUSHALL
 
 ### Checklist "le site est down"
 
-1. **SSH marche ?** → `ssh deploy@167.235.193.237`
+1. **SSH marche ?** → `ssh deploy@<SERVER_IP>`
 2. **Containers up ?** → `docker ps` — vérifier que backend, postgres, redis, caddy sont "healthy"
 3. **Health check ?** → `curl http://localhost:3000/health/ready` — si DB ou Redis down, le health check le dit
 4. **Logs ?** → `docker logs offrii-backend --tail 50` — chercher les erreurs
 5. **Disk plein ?** → `df -h` — si > 90%, nettoyer les images Docker : `docker image prune -f`
 6. **RAM ?** → `free -h` — si < 500MB libre, un container consomme trop
 7. **CPU ?** → `top` ou `htop` — vérifier quel process consomme
-8. **DNS ?** → `dig api.offrii.com` — doit pointer vers 167.235.193.237
+8. **DNS ?** → `dig api.offrii.com` — doit pointer vers <SERVER_IP>
 
 ### Checklist "les emails n'arrivent pas"
 
@@ -179,8 +179,8 @@ openssl genpkey -algorithm RSA -out new_private.pem -pkeyopt rsa_keygen_bits:204
 openssl rsa -in new_private.pem -pubout -out new_public.pem
 
 # 2. Copier sur le serveur
-scp new_private.pem deploy@167.235.193.237:/opt/offrii/secrets/jwt_private.pem
-scp new_public.pem deploy@167.235.193.237:/opt/offrii/secrets/jwt_public.pem
+scp new_private.pem deploy@<SERVER_IP>:/opt/offrii/secrets/jwt_private.pem
+scp new_public.pem deploy@<SERVER_IP>:/opt/offrii/secrets/jwt_public.pem
 
 # 3. Mettre à jour les secrets GitHub (base64)
 base64 < new_private.pem | gh secret set JWT_PRIVATE_KEY_BASE64
