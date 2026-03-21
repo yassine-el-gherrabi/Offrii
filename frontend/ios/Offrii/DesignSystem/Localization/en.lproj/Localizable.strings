@@ -384,6 +384,8 @@
 "entraide.action.reopenSuccess" = "Your need is being re-reviewed.";
 "entraide.wishLimit.title" = "Limit reached";
 "entraide.wishLimit.message" = "You already have 3 active needs. Close or wait for one to be fulfilled before creating a new one.";
+"entraide.eligibility.title" = "Feature unavailable";
+"entraide.eligibility.message" = "Your account must be more than 24 hours old and your email must be verified to use Entraide.";
 "entraide.eligibility.tooRecent" = "Your account is too recent to participate in Entraide.";
 "entraide.eligibility.emailNotVerified" = "Verify your email to participate in Entraide.";
 "entraide.eligibility.resend" = "Resend link";

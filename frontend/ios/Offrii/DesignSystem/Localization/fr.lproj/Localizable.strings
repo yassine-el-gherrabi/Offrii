@@ -384,6 +384,8 @@
 "entraide.action.reopenSuccess" = "Votre besoin est en cours de re-vérification.";
 "entraide.wishLimit.title" = "Limite atteinte";
 "entraide.wishLimit.message" = "Vous avez déjà 3 besoins actifs. Fermez-en un ou attendez qu'un soit comblé avant d'en publier un nouveau.";
+"entraide.eligibility.title" = "Fonctionnalité indisponible";
+"entraide.eligibility.message" = "Votre compte doit avoir plus de 24h et votre email doit être vérifié pour utiliser l'Entraide.";
 "entraide.eligibility.tooRecent" = "Votre compte est trop récent pour participer à l'Entraide.";
 "entraide.eligibility.emailNotVerified" = "Vérifiez votre email pour participer à l'Entraide.";
 "entraide.eligibility.resend" = "Renvoyer le lien";

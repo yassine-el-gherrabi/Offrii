@@ -275,9 +275,13 @@ struct WishDetailSheet: View {
         }
     }
 
+    private var isUserEligible: Bool {
+        EntraideEligibility(user: authManager.currentUser).isEligible
+    }
+
     @ViewBuilder
     private func visitorActions(_ wish: WishDetail) -> some View {
-        if wish.status == .open && !isMine && !(wish.hasReported ?? false) {
+        if wish.status == .open && !isMine && !(wish.hasReported ?? false) && isUserEligible {
             OffriiButton(
                 NSLocalizedString("entraide.offer.cta", comment: ""),
                 variant: .primary,
@@ -469,7 +473,7 @@ struct WishDetailSheet: View {
 
     @ViewBuilder
     private func reportAction(_ wish: WishDetail) -> some View {
-        if !isMine && wish.status == .open {
+        if !isMine && wish.status == .open && isUserEligible {
             if wish.hasReported ?? false {
                 Label(NSLocalizedString("entraide.report.alreadyReported", comment: ""), systemImage: "checkmark.shield")
                     .font(OffriiTypography.footnote)

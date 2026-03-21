@@ -3,11 +3,13 @@ import SwiftUI
 // MARK: - HomeQuickActionsSection
 
 struct HomeQuickActionsSection: View {
+    @Environment(AuthManager.self) private var authManager
     @State private var showAddWish = false
     @State private var showCreateCircle = false
     @State private var showAddFriend = false
     @State private var showPublishNeed = false
     @State private var showWishLimitAlert = false
+    @State private var showEligibilityAlert = false
 
     private let columns = [
         GridItem(.flexible(), spacing: OffriiTheme.spacingSM),
@@ -48,8 +50,13 @@ struct HomeQuickActionsSection: View {
                 actionTile(
                     icon: "hand.raised.fill",
                     color: OffriiTheme.warning,
-                    label: NSLocalizedString("create.publishNeed", comment: "")
+                    label: NSLocalizedString("create.publishNeed", comment: ""),
+                    isDisabled: !EntraideEligibility(user: authManager.currentUser).isEligible
                 ) {
+                    guard EntraideEligibility(user: authManager.currentUser).isEligible else {
+                        showEligibilityAlert = true
+                        return
+                    }
                     Task {
                         let wishes = (try? await CommunityWishService.shared.listMyWishes()) ?? []
                         let activeCount = wishes.filter {
@@ -97,6 +104,14 @@ struct HomeQuickActionsSection: View {
         } message: {
             Text(NSLocalizedString("entraide.wishLimit.message", comment: ""))
         }
+        .alert(
+            NSLocalizedString("entraide.eligibility.title", comment: ""),
+            isPresented: $showEligibilityAlert
+        ) {
+            Button(NSLocalizedString("common.ok", comment: ""), role: .cancel) {}
+        } message: {
+            Text(NSLocalizedString("entraide.eligibility.message", comment: ""))
+        }
     }
 
     // MARK: - Action Tile
@@ -105,6 +120,7 @@ struct HomeQuickActionsSection: View {
         icon: String,
         color: Color,
         label: String,
+        isDisabled: Bool = false,
         action: @escaping () -> Void
     ) -> some View {
         Button(action: action) {
@@ -134,6 +150,7 @@ struct HomeQuickActionsSection: View {
                 x: 0,
                 y: OffriiTheme.cardShadowY
             )
+            .opacity(isDisabled ? 0.45 : 1.0)
         }
         .buttonStyle(.plain)
     }

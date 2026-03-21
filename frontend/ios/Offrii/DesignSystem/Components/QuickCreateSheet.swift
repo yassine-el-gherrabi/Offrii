@@ -4,11 +4,13 @@ import SwiftUI
 
 struct QuickCreateSheet: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(AuthManager.self) private var authManager
     @State private var navigateToAddWish = false
     @State private var navigateToCreateCircle = false
     @State private var navigateToAddFriend = false
     @State private var navigateToPublishNeed = false
     @State private var showWishLimitAlert = false
+    @State private var showEligibilityAlert = false
 
     var body: some View {
         NavigationStack {
@@ -44,8 +46,13 @@ struct QuickCreateSheet: View {
                     icon: "hand.raised.fill",
                     iconColor: OffriiTheme.warning,
                     title: NSLocalizedString("create.publishNeed", comment: ""),
-                    subtitle: NSLocalizedString("create.publishNeedSubtitle", comment: "")
+                    subtitle: NSLocalizedString("create.publishNeedSubtitle", comment: ""),
+                    isDisabled: !EntraideEligibility(user: authManager.currentUser).isEligible
                 ) {
+                    guard EntraideEligibility(user: authManager.currentUser).isEligible else {
+                        showEligibilityAlert = true
+                        return
+                    }
                     Task {
                         let wishes = (try? await CommunityWishService.shared.listMyWishes()) ?? []
                         let activeCount = wishes.filter {
@@ -110,6 +117,14 @@ struct QuickCreateSheet: View {
         } message: {
             Text(NSLocalizedString("entraide.wishLimit.message", comment: ""))
         }
+        .alert(
+            NSLocalizedString("entraide.eligibility.title", comment: ""),
+            isPresented: $showEligibilityAlert
+        ) {
+            Button(NSLocalizedString("common.ok", comment: ""), role: .cancel) {}
+        } message: {
+            Text(NSLocalizedString("entraide.eligibility.message", comment: ""))
+        }
     }
 
     // MARK: - Option Card
@@ -119,6 +134,7 @@ struct QuickCreateSheet: View {
         iconColor: Color,
         title: String,
         subtitle: String,
+        isDisabled: Bool = false,
         action: @escaping () -> Void
     ) -> some View {
         Button(action: action) {
@@ -157,6 +173,7 @@ struct QuickCreateSheet: View {
                 x: 0,
                 y: OffriiTheme.cardShadowY
             )
+            .opacity(isDisabled ? 0.45 : 1.0)
         }
         .buttonStyle(.plain)
     }

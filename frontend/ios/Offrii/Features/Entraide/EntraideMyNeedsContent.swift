@@ -6,6 +6,7 @@ struct EntraideMyNeedsContent: View {
     var viewModel: EntraideMyNeedsViewModel
     @Binding var selectedWishId: UUID?
     @Binding var showCreateSheet: Bool
+    @Environment(AuthManager.self) private var authManager
     @State private var wishToClose: UUID?
     @State private var wishToDelete: UUID?
     @State private var wishToEdit: MyWish?
@@ -26,7 +27,9 @@ struct EntraideMyNeedsContent: View {
                     icon: "tray",
                     title: NSLocalizedString("entraide.myWishes.empty", comment: ""),
                     subtitle: NSLocalizedString("entraide.myWishes.emptySubtitle", comment: ""),
-                    ctaTitle: NSLocalizedString("entraide.fab.publish", comment: ""),
+                    ctaTitle: EntraideEligibility(user: authManager.currentUser).isEligible
+                        ? NSLocalizedString("entraide.fab.publish", comment: "")
+                        : nil,
                     ctaAction: { showCreateSheet = true }
                 )
                 Spacer()

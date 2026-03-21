@@ -23,6 +23,7 @@
 		7883478350B7C046ABEFF52E /* CircleService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DC960665D0FCEE00400F773 /* CircleService.swift */; };
 		798ABA96D107D82F3F8E6B20 /* CreateCircleSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9CB58C031CA34EDF11A6C318 /* CreateCircleSheet.swift */; };
 		821D5BB6CF94B930F802F6E1 /* ProfileProgress.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76631281854337CE0C72D6BD /* ProfileProgress.swift */; };
+		8360354EE1C847817BEF4EA3 /* EntraideEligibility.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8546E6200EC3766E9E0501DA /* EntraideEligibility.swift */; };
 		8B7B8177E9E8F2C7CDDDB691 /* MemberCarousel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14BF011942E99FD80ADF73B4 /* MemberCarousel.swift */; };
 		8E9D80D59CDEA2E765571C00 /* WishDetailViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12CD4CA251235E5ADD02FE90 /* WishDetailViewModel.swift */; };
 		9082DA2F2F6622E1002BBF41 /* BlurView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9082DA2E2F6622E1002BBF41 /* BlurView.swift */; };
@@ -204,6 +205,7 @@
 		70A76EF6B88A42F8839A31BB /* EditShareLinkSheet.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = EditShareLinkSheet.swift; sourceTree = "<group>"; };
 		76631281854337CE0C72D6BD /* ProfileProgress.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileProgress.swift; sourceTree = "<group>"; };
 		7CD43FCFA25254BFA5826718 /* ProfileProgressCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileProgressCard.swift; sourceTree = "<group>"; };
+		8546E6200EC3766E9E0501DA /* EntraideEligibility.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = EntraideEligibility.swift; path = EntraideEligibility.swift; sourceTree = "<group>"; };
 		8B683101570004796AF55C19 /* CircleCardRow.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CircleCardRow.swift; sourceTree = "<group>"; };
 		8E8B0D51A42018F6E1949DC4 /* CommunityWish.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommunityWish.swift; sourceTree = "<group>"; };
 		90512D0B2BB0D0B2F6631406 /* CommunityWishService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommunityWishService.swift; sourceTree = "<group>"; };
@@ -477,6 +479,7 @@
 				A10000000000000000000004 /* Color+Hex.swift */,
 				61C863A588B3142B27D0456B /* UIImage+Compress.swift */,
 				6E7E69C1CC7E3280A9C3B755 /* URL+Validation.swift */,
+				8546E6200EC3766E9E0501DA /* EntraideEligibility.swift */,
 			);
 			path = Extensions;
 			sourceTree = "<group>";
@@ -1015,6 +1018,7 @@
 				9A65CB628704AE94A2B50EDF /* EntraideWelcomeSheet.swift in Sources */,
 				28C348397CE1AFAD13E07990 /* CategoryChipsBar.swift in Sources */,
 				B1B08C101B84ECC93772AC0E /* URL+Validation.swift in Sources */,
+				8360354EE1C847817BEF4EA3 /* EntraideEligibility.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
