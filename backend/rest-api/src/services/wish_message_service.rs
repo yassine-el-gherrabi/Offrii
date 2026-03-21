@@ -223,16 +223,25 @@ impl traits::WishMessageService for PgWishMessageService {
             ));
         }
 
-        let messages = self
+        // Only show messages between current participants (owner + current donor).
+        // Prevents a new donor from seeing messages from a previous donor.
+        let all_messages = self
             .message_repo
             .list_by_wish(wish_id, limit, offset)
             .await
             .map_err(AppError::Internal)?;
-        let total = self
-            .message_repo
-            .count_by_wish(wish_id)
-            .await
-            .map_err(AppError::Internal)?;
+
+        let mut participants = std::collections::HashSet::new();
+        participants.insert(wish.owner_id);
+        if let Some(donor_id) = wish.matched_with {
+            participants.insert(donor_id);
+        }
+
+        let messages: Vec<_> = all_messages
+            .into_iter()
+            .filter(|m| m.sender_id.is_some_and(|sid| participants.contains(&sid)))
+            .collect();
+        let total = messages.len() as i64;
 
         // Batch-fetch sender names (dedup to reduce query size)
         let sender_ids: Vec<Uuid> = messages

@@ -279,7 +279,6 @@
 
 /* Entraide */
 "entraide.title" = "Community";
-"entraide.subtitle" = "Simple gestures, real impact";
 "entraide.empty" = "No needs yet";
 "entraide.emptySubtitle" = "Be the first to publish a need";
 "entraide.anonymous" = "Anonymous";

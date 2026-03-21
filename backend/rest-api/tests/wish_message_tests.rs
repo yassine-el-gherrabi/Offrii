@@ -1154,3 +1154,336 @@ async fn notification_includes_sender_name() {
         "notification body should contain message preview, got: {notif_body}"
     );
 }
+
+// ═══════════════════════════════════════════════════════════════════════
+// Cat. 9: Message isolation between donors
+// ═══════════════════════════════════════════════════════════════════════
+
+#[tokio::test]
+async fn new_donor_does_not_see_previous_donor_messages() {
+    let app = TestApp::new().await;
+    let owner_token = setup_aged_user_with_name(&app, "owner@test.com", "Alice").await;
+    let donor1_token = setup_aged_user_with_name(&app, "donor1@test.com", "Bob").await;
+    let donor2_token = setup_aged_user_with_name(&app, "donor2@test.com", "Charlie").await;
+    let donor1_id = get_user_id(&app, "donor1@test.com").await;
+    let donor2_id = get_user_id(&app, "donor2@test.com").await;
+
+    let wish_id = create_open_wish(&app, &owner_token).await;
+
+    // Match with donor 1 and exchange messages
+    force_match(&app, wish_id, donor1_id).await;
+    let msg = json!({ "body": "Secret message from donor 1" });
+    let (status, _) = app
+        .post_json_with_auth(
+            &format!("/community/wishes/{wish_id}/messages"),
+            &msg,
+            &donor1_token,
+        )
+        .await;
+    assert_eq!(status, StatusCode::CREATED);
+
+    let msg2 = json!({ "body": "Owner reply to donor 1" });
+    let (status, _) = app
+        .post_json_with_auth(
+            &format!("/community/wishes/{wish_id}/messages"),
+            &msg2,
+            &owner_token,
+        )
+        .await;
+    assert_eq!(status, StatusCode::CREATED);
+
+    // Donor 1 withdraws, re-match with donor 2
+    force_match(&app, wish_id, donor2_id).await;
+
+    // Donor 2 should NOT see donor 1's messages
+    let (status, resp) = app
+        .get_with_auth(
+            &format!("/community/wishes/{wish_id}/messages"),
+            &donor2_token,
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    let messages = resp["data"].as_array().unwrap();
+
+    // Only owner's message should be visible (sent by a current participant)
+    // Donor 1's message should be filtered out
+    for msg in messages {
+        let sender = msg["sender_display_name"].as_str().unwrap_or("");
+        assert_ne!(
+            sender, "Bob",
+            "New donor should not see previous donor's messages"
+        );
+    }
+}
+
+#[tokio::test]
+async fn owner_sees_only_current_donor_messages() {
+    let app = TestApp::new().await;
+    let owner_token = setup_aged_user_with_name(&app, "owner2@test.com", "Alice").await;
+    let donor1_token = setup_aged_user_with_name(&app, "donor1b@test.com", "Bob").await;
+    let donor2_token = setup_aged_user_with_name(&app, "donor2b@test.com", "Charlie").await;
+    let donor1_id = get_user_id(&app, "donor1b@test.com").await;
+    let donor2_id = get_user_id(&app, "donor2b@test.com").await;
+
+    let wish_id = create_open_wish(&app, &owner_token).await;
+
+    // Match with donor 1, send a message
+    force_match(&app, wish_id, donor1_id).await;
+    let msg = json!({ "body": "From Bob" });
+    app.post_json_with_auth(
+        &format!("/community/wishes/{wish_id}/messages"),
+        &msg,
+        &donor1_token,
+    )
+    .await;
+
+    // Switch to donor 2, send a message
+    force_match(&app, wish_id, donor2_id).await;
+    let msg2 = json!({ "body": "From Charlie" });
+    app.post_json_with_auth(
+        &format!("/community/wishes/{wish_id}/messages"),
+        &msg2,
+        &donor2_token,
+    )
+    .await;
+
+    // Owner should only see Charlie's message + their own, not Bob's
+    let (status, resp) = app
+        .get_with_auth(
+            &format!("/community/wishes/{wish_id}/messages"),
+            &owner_token,
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    let messages = resp["data"].as_array().unwrap();
+
+    let bodies: Vec<&str> = messages.iter().filter_map(|m| m["body"].as_str()).collect();
+    assert!(
+        !bodies.contains(&"From Bob"),
+        "Owner should not see previous donor's messages after rematch"
+    );
+    assert!(
+        bodies.contains(&"From Charlie"),
+        "Owner should see current donor's messages"
+    );
+}
+
+#[tokio::test]
+async fn same_donor_rematch_sees_own_messages() {
+    let app = TestApp::new().await;
+    let owner_token = setup_aged_user_with_name(&app, "owner3@test.com", "Alice").await;
+    let donor_token = setup_aged_user_with_name(&app, "donor3@test.com", "Bob").await;
+    let donor_id = get_user_id(&app, "donor3@test.com").await;
+
+    let wish_id = create_open_wish(&app, &owner_token).await;
+
+    // Match, send message, unmatch, rematch with same donor
+    force_match(&app, wish_id, donor_id).await;
+    let msg = json!({ "body": "Hello from Bob" });
+    app.post_json_with_auth(
+        &format!("/community/wishes/{wish_id}/messages"),
+        &msg,
+        &donor_token,
+    )
+    .await;
+
+    // Unmatch then rematch with same donor
+    force_match(&app, wish_id, donor_id).await;
+
+    // Same donor should still see their own messages
+    let (status, resp) = app
+        .get_with_auth(
+            &format!("/community/wishes/{wish_id}/messages"),
+            &donor_token,
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    let messages = resp["data"].as_array().unwrap();
+    assert!(
+        !messages.is_empty(),
+        "Same donor rematched should see their previous messages"
+    );
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// Cat. 10: Message isolation edge cases
+// ═══════════════════════════════════════════════════════════════════════
+
+#[tokio::test]
+async fn previous_donor_cannot_access_messages_after_withdraw() {
+    let app = TestApp::new().await;
+    let owner_token = setup_aged_user_with_name(&app, "own_ec1@test.com", "Alice").await;
+    let donor1_token = setup_aged_user_with_name(&app, "don_ec1@test.com", "Bob").await;
+    let _donor2_token = setup_aged_user_with_name(&app, "don_ec2@test.com", "Charlie").await;
+    let donor1_id = get_user_id(&app, "don_ec1@test.com").await;
+    let donor2_id = get_user_id(&app, "don_ec2@test.com").await;
+
+    let wish_id = create_open_wish(&app, &owner_token).await;
+
+    // Match with donor 1, send messages
+    force_match(&app, wish_id, donor1_id).await;
+    let msg = json!({ "body": "from Bob" });
+    app.post_json_with_auth(
+        &format!("/community/wishes/{wish_id}/messages"),
+        &msg,
+        &donor1_token,
+    )
+    .await;
+
+    // Switch to donor 2
+    force_match(&app, wish_id, donor2_id).await;
+
+    // Donor 1 should get 403 trying to read messages
+    let (status, _) = app
+        .get_with_auth(
+            &format!("/community/wishes/{wish_id}/messages"),
+            &donor1_token,
+        )
+        .await;
+    assert_eq!(
+        status,
+        StatusCode::FORBIDDEN,
+        "Previous donor should not access messages after being replaced"
+    );
+}
+
+#[tokio::test]
+async fn previous_donor_cannot_send_messages_after_withdraw() {
+    let app = TestApp::new().await;
+    let owner_token = setup_aged_user_with_name(&app, "own_ec3@test.com", "Alice").await;
+    let donor1_token = setup_aged_user_with_name(&app, "don_ec3@test.com", "Bob").await;
+    let _donor2_token = setup_aged_user_with_name(&app, "don_ec4@test.com", "Charlie").await;
+    let donor1_id = get_user_id(&app, "don_ec3@test.com").await;
+    let donor2_id = get_user_id(&app, "don_ec4@test.com").await;
+
+    let wish_id = create_open_wish(&app, &owner_token).await;
+    force_match(&app, wish_id, donor1_id).await;
+
+    // Switch to donor 2
+    force_match(&app, wish_id, donor2_id).await;
+
+    // Donor 1 should get 403 trying to send a message
+    let msg = json!({ "body": "sneaky message" });
+    let (status, _) = app
+        .post_json_with_auth(
+            &format!("/community/wishes/{wish_id}/messages"),
+            &msg,
+            &donor1_token,
+        )
+        .await;
+    assert_eq!(
+        status,
+        StatusCode::FORBIDDEN,
+        "Previous donor should not send messages after being replaced"
+    );
+}
+
+#[tokio::test]
+async fn unrelated_user_cannot_see_messages() {
+    let app = TestApp::new().await;
+    let owner_token = setup_aged_user_with_name(&app, "own_ec5@test.com", "Alice").await;
+    let donor_token = setup_aged_user_with_name(&app, "don_ec5@test.com", "Bob").await;
+    let stranger_token = setup_aged_user_with_name(&app, "stranger@test.com", "Eve").await;
+    let donor_id = get_user_id(&app, "don_ec5@test.com").await;
+
+    let wish_id = create_open_wish(&app, &owner_token).await;
+    force_match(&app, wish_id, donor_id).await;
+
+    let msg = json!({ "body": "private conversation" });
+    app.post_json_with_auth(
+        &format!("/community/wishes/{wish_id}/messages"),
+        &msg,
+        &donor_token,
+    )
+    .await;
+
+    // Stranger should get 403
+    let (status, _) = app
+        .get_with_auth(
+            &format!("/community/wishes/{wish_id}/messages"),
+            &stranger_token,
+        )
+        .await;
+    assert_eq!(
+        status,
+        StatusCode::FORBIDDEN,
+        "Unrelated user should not access messages"
+    );
+}
+
+#[tokio::test]
+async fn empty_messages_after_donor_switch() {
+    let app = TestApp::new().await;
+    let owner_token = setup_aged_user_with_name(&app, "own_ec6@test.com", "Alice").await;
+    let donor1_token = setup_aged_user_with_name(&app, "don_ec6@test.com", "Bob").await;
+    let donor2_token = setup_aged_user_with_name(&app, "don_ec7@test.com", "Charlie").await;
+    let donor1_id = get_user_id(&app, "don_ec6@test.com").await;
+    let donor2_id = get_user_id(&app, "don_ec7@test.com").await;
+
+    let wish_id = create_open_wish(&app, &owner_token).await;
+
+    // Only donor 1 sends messages (owner doesn't reply)
+    force_match(&app, wish_id, donor1_id).await;
+    let msg = json!({ "body": "only from donor 1" });
+    app.post_json_with_auth(
+        &format!("/community/wishes/{wish_id}/messages"),
+        &msg,
+        &donor1_token,
+    )
+    .await;
+
+    // Switch to donor 2 — no messages should be visible since all were from donor 1
+    force_match(&app, wish_id, donor2_id).await;
+    let (status, resp) = app
+        .get_with_auth(
+            &format!("/community/wishes/{wish_id}/messages"),
+            &donor2_token,
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    let messages = resp["data"].as_array().unwrap();
+    assert!(
+        messages.is_empty(),
+        "New donor should see zero messages when all previous messages were from another donor"
+    );
+}
+
+#[tokio::test]
+async fn owner_messages_survive_donor_switch() {
+    let app = TestApp::new().await;
+    let owner_token = setup_aged_user_with_name(&app, "own_ec8@test.com", "Alice").await;
+    let _donor1_token = setup_aged_user_with_name(&app, "don_ec8@test.com", "Bob").await;
+    let donor2_token = setup_aged_user_with_name(&app, "don_ec9@test.com", "Charlie").await;
+    let donor1_id = get_user_id(&app, "don_ec8@test.com").await;
+    let donor2_id = get_user_id(&app, "don_ec9@test.com").await;
+
+    let wish_id = create_open_wish(&app, &owner_token).await;
+
+    // Match donor 1, owner sends a message
+    force_match(&app, wish_id, donor1_id).await;
+    let msg = json!({ "body": "Owner message during donor 1" });
+    app.post_json_with_auth(
+        &format!("/community/wishes/{wish_id}/messages"),
+        &msg,
+        &owner_token,
+    )
+    .await;
+
+    // Switch to donor 2
+    force_match(&app, wish_id, donor2_id).await;
+
+    // Owner's message should still be visible (owner is always a participant)
+    let (status, resp) = app
+        .get_with_auth(
+            &format!("/community/wishes/{wish_id}/messages"),
+            &donor2_token,
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    let messages = resp["data"].as_array().unwrap();
+    let bodies: Vec<&str> = messages.iter().filter_map(|m| m["body"].as_str()).collect();
+    assert!(
+        bodies.contains(&"Owner message during donor 1"),
+        "Owner messages should be visible to new donor since owner is always a participant"
+    );
+}

@@ -142,7 +142,7 @@ struct WishMessagesSheet: View {
                 )
             }
 
-            if messageText.count > 1500 {
+            if messageText.count > messageMaxLength * 4 / 5 {
                 HStack {
                     Spacer()
                     Text("\(messageText.count)/\(messageMaxLength)")

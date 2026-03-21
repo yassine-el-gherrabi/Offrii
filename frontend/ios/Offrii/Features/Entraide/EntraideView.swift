@@ -1,4 +1,3 @@
-// swiftlint:disable file_length
 import SwiftUI
 
 // MARK: - EntraideView
@@ -97,13 +96,6 @@ struct EntraideView: View {
                         }
                     } header: {
                         VStack(spacing: 0) {
-                            Text(NSLocalizedString("entraide.subtitle", comment: ""))
-                                .font(.system(size: 13, weight: .regular).italic())
-                                .foregroundColor(OffriiTheme.textSecondary)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .padding(.horizontal, OffriiTheme.spacingBase)
-                                .padding(.bottom, 2)
-
                             // Eligibility banner
                             if !isEligible {
                                 eligibilityBanner

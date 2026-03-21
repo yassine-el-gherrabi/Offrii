@@ -398,7 +398,7 @@ struct WishDetailSheet: View {
             OffriiButton(NSLocalizedString("entraide.action.messages", comment: ""), variant: .primary) {
                 openMessages()
             }
-            OffriiButton(NSLocalizedString("entraide.action.withdraw", comment: ""), variant: .ghost) {
+            OffriiButton(NSLocalizedString("entraide.action.withdraw", comment: ""), variant: .danger) {
                 showWithdrawConfirm = true
             }
             .alert(
