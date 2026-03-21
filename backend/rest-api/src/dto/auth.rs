@@ -101,6 +101,12 @@ pub struct AppleAuthRequest {
     pub display_name: Option<String>,
 }
 
+#[derive(Debug, Deserialize, Validate, utoipa::ToSchema)]
+pub struct ChangeEmailRequest {
+    #[validate(email(message = "invalid email address"))]
+    pub new_email: String,
+}
+
 // ── Response DTOs ────────────────────────────────────────────────────
 
 #[derive(Debug, Clone, Serialize, utoipa::ToSchema)]

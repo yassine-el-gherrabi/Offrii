@@ -382,11 +382,11 @@ struct WishDetailSheet: View {
                 ))
             }
             HStack(spacing: OffriiTheme.spacingSM) {
-                OffriiButton(NSLocalizedString("entraide.action.reject", comment: ""), variant: .danger) {
-                    Task { _ = await viewModel.rejectOffer(id: wish.id) }
-                }
                 OffriiButton(NSLocalizedString("entraide.action.messages", comment: ""), variant: .secondary) {
                     openMessages()
+                }
+                OffriiButton(NSLocalizedString("entraide.action.reject", comment: ""), variant: .danger) {
+                    Task { _ = await viewModel.rejectOffer(id: wish.id) }
                 }
             }
         }
@@ -481,14 +481,9 @@ struct WishDetailSheet: View {
                     .frame(maxWidth: .infinity, alignment: .center)
                     .padding(.top, OffriiTheme.spacingSM)
             } else {
-                Button {
+                OffriiButton(NSLocalizedString("entraide.report.title", comment: ""), variant: .ghost) {
                     openReport()
-                } label: {
-                    Label(NSLocalizedString("entraide.report.title", comment: ""), systemImage: "flag")
-                        .font(OffriiTypography.footnote)
-                        .foregroundColor(OffriiTheme.textMuted)
                 }
-                .frame(maxWidth: .infinity, alignment: .center)
                 .padding(.top, OffriiTheme.spacingSM)
             }
         }

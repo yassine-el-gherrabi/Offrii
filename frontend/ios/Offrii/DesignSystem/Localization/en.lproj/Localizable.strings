@@ -66,6 +66,9 @@
 "auth.resendLimitReached" = "Too many resends, please try again later";
 "error.passwordMismatch" = "Passwords do not match";
 "error.usernameTaken" = "This username is already taken";
+"error.emailTaken" = "This email address is already in use";
+"error.tooManyRequests" = "Please wait before trying again";
+"error.emailInvalid" = "Invalid email address";
 "error.usernameInvalid" = "3-30 characters, lowercase letters, digits and _";
 "error.loadProfileFailed" = "Failed to load profile";
 "error.emailUsesGoogle" = "This email is linked to a Google account. Please sign in with Google.";
@@ -165,6 +168,9 @@
 "profile.username" = "Username";
 "profile.editUsername" = "Edit username";
 "profile.usernamePlaceholder" = "e.g. marie_dupont";
+"profile.editEmail" = "Edit email";
+"profile.emailPlaceholder" = "e.g. marie@example.com";
+"profile.emailChangeSuccess" = "A verification email has been sent to your new address. Click the link to confirm the change.";
 "profile.account" = "Account";
 "profile.replayTutorial" = "Replay tutorial";
 "profile.resetTips" = "Reset tips";

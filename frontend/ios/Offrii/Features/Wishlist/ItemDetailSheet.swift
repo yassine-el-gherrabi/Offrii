@@ -192,58 +192,31 @@ struct ItemDetailSheet: View {
                                     }
 
                                     if item.isPurchased {
-                                        Button {
+                                        OffriiButton(
+                                            NSLocalizedString("wishlist.unarchive", comment: ""),
+                                            variant: .secondary
+                                        ) {
                                             Task {
                                                 if await viewModel.unarchive() {
                                                     dismiss()
                                                 }
                                             }
-                                        } label: {
-                                            HStack(spacing: OffriiTheme.spacingXS) {
-                                                Image(systemName: "arrow.uturn.backward")
-                                                Text(NSLocalizedString("wishlist.unarchive", comment: ""))
-                                            }
-                                            .font(OffriiTypography.subheadline)
-                                            .fontWeight(.medium)
-                                            .foregroundColor(OffriiTheme.textSecondary)
-                                            .frame(maxWidth: .infinity)
-                                            .padding(.vertical, OffriiTheme.spacingSM)
-                                            .background(OffriiTheme.textMuted.opacity(0.1))
-                                            .cornerRadius(OffriiTheme.cornerRadiusSM)
                                         }
                                     }
 
                                     HStack(spacing: OffriiTheme.spacingSM) {
-                                        Button {
+                                        OffriiButton(
+                                            NSLocalizedString("wishlist.edit", comment: ""),
+                                            variant: .ghost
+                                        ) {
                                             showEdit = true
-                                        } label: {
-                                            HStack(spacing: OffriiTheme.spacingXS) {
-                                                Image(systemName: "pencil")
-                                                Text(NSLocalizedString("wishlist.edit", comment: ""))
-                                            }
-                                            .font(OffriiTypography.subheadline)
-                                            .fontWeight(.medium)
-                                            .foregroundColor(OffriiTheme.primary)
-                                            .frame(maxWidth: .infinity)
-                                            .padding(.vertical, OffriiTheme.spacingSM)
-                                            .background(OffriiTheme.primary.opacity(0.1))
-                                            .cornerRadius(OffriiTheme.cornerRadiusSM)
                                         }
 
-                                        Button {
+                                        OffriiButton(
+                                            NSLocalizedString("common.delete", comment: ""),
+                                            variant: .danger
+                                        ) {
                                             showDeleteAlert = true
-                                        } label: {
-                                            HStack(spacing: OffriiTheme.spacingXS) {
-                                                Image(systemName: "trash")
-                                                Text(NSLocalizedString("common.delete", comment: ""))
-                                            }
-                                            .font(OffriiTypography.subheadline)
-                                            .fontWeight(.medium)
-                                            .foregroundColor(OffriiTheme.danger)
-                                            .frame(maxWidth: .infinity)
-                                            .padding(.vertical, OffriiTheme.spacingSM)
-                                            .background(OffriiTheme.danger.opacity(0.1))
-                                            .cornerRadius(OffriiTheme.cornerRadiusSM)
                                         }
                                     }
                                 }
@@ -367,18 +340,18 @@ struct ItemDetailSheet: View {
                             .fontWeight(.semibold)
                     }
                     .foregroundColor(OffriiTheme.primary)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, OffriiTheme.spacingSM)
+                    .background(OffriiTheme.primary.opacity(0.08))
+                    .cornerRadius(OffriiTheme.cornerRadiusSM)
 
-                    Button { showUnclaimConfirm = true } label: {
-                        Text(NSLocalizedString("circles.detail.unclaim", comment: ""))
-                            .font(OffriiTypography.caption)
-                            .fontWeight(.medium)
-                            .foregroundColor(OffriiTheme.textSecondary)
+                    OffriiButton(
+                        NSLocalizedString("circles.detail.unclaim", comment: ""),
+                        variant: .ghost
+                    ) {
+                        showUnclaimConfirm = true
                     }
                 }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, OffriiTheme.spacingSM)
-                .background(OffriiTheme.primary.opacity(0.08))
-                .cornerRadius(OffriiTheme.cornerRadiusSM)
                 .padding(.horizontal, OffriiTheme.spacingLG)
                 .padding(.top, OffriiTheme.spacingBase)
             } else if let claimedName = item.claimedName {

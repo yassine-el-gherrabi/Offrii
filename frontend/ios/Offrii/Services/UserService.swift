@@ -42,6 +42,12 @@ final class UserService: Sendable {
         return try await client.request(.updateProfile(body))
     }
 
+    // MARK: - Email Change
+
+    func requestEmailChange(newEmail: String) async throws {
+        try await client.requestVoid(.requestEmailChange(ChangeEmailBody(newEmail: newEmail)))
+    }
+
     // MARK: - Delete Account
 
     /// Permanently deletes the authenticated user's account and all associated data.

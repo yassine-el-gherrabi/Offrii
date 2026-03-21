@@ -71,12 +71,15 @@ struct ProfileView: View {
 
                             Divider().padding(.leading, OffriiTheme.spacingBase)
 
-                            // Email (display only)
-                            profileRow(
-                                title: NSLocalizedString("profile.email", comment: ""),
-                                value: viewModel.truncatedEmail,
-                                showChevron: false
-                            )
+                            // Email
+                            NavigationLink {
+                                EmailEditView(viewModel: viewModel)
+                            } label: {
+                                profileRow(
+                                    title: NSLocalizedString("profile.email", comment: ""),
+                                    value: viewModel.truncatedEmail
+                                )
+                            }
 
                             Divider().padding(.leading, OffriiTheme.spacingBase)
 
@@ -114,26 +117,13 @@ struct ProfileView: View {
                         title: NSLocalizedString("profile.myCommitments", comment: ""),
                         icon: "heart.circle.fill"
                     ) {
-                        VStack(spacing: 0) {
-                            NavigationLink {
-                                ReservationsListView()
-                            } label: {
-                                profileRow(
-                                    title: NSLocalizedString("profile.commitments.reservations", comment: ""),
-                                    value: nil
-                                )
-                            }
-
-                            Divider().padding(.leading, OffriiTheme.spacingBase)
-
-                            NavigationLink {
-                                EntraideView()
-                            } label: {
-                                profileRow(
-                                    title: NSLocalizedString("profile.commitments.entraide", comment: ""),
-                                    value: nil
-                                )
-                            }
+                        NavigationLink {
+                            ReservationsListView()
+                        } label: {
+                            profileRow(
+                                title: NSLocalizedString("profile.commitments.reservations", comment: ""),
+                                value: nil
+                            )
                         }
                     }
 
@@ -387,7 +377,7 @@ struct ProfileView: View {
                     .foregroundColor(OffriiTheme.textSecondary)
                 Image(systemName: "checkmark.seal.fill")
                     .font(.system(size: 12))
-                    .foregroundColor(OffriiTheme.success)
+                    .foregroundColor(OffriiTheme.primary)
             }
         } else {
             Button {

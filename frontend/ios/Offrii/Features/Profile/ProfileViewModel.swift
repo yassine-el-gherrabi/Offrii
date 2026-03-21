@@ -106,6 +106,10 @@ final class ProfileViewModel {
         username = profile.username
     }
 
+    func requestEmailChange(_ newEmail: String) async throws {
+        try await UserService.shared.requestEmailChange(newEmail: newEmail)
+    }
+
     func updateDisplayName(_ newName: String) async throws {
         let profile = try await UserService.shared.updateProfile(displayName: newName)
         displayName = profile.displayName ?? ""

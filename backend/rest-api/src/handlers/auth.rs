@@ -1,7 +1,7 @@
 use axum::extract::{Query, State};
 use axum::http::StatusCode;
 use axum::response::Html;
-use axum::routing::post;
+use axum::routing::{get, post};
 use axum::{Json, Router};
 use validator::Validate;
 
@@ -33,6 +33,7 @@ pub fn router() -> Router<AppState> {
         .route("/resend-verification", post(resend_verification))
         .route("/google", post(google_auth))
         .route("/apple", post(apple_auth))
+        .route("/verify-email-change", get(verify_email_change_get))
 }
 
 #[utoipa::path(
@@ -269,6 +270,29 @@ async fn verify_email_get(
         Err(_) => Html(verify_email_page(
             "Lien invalide ou expiré",
             "Ce lien de vérification est invalide ou a expiré. Renvoyez un email de vérification depuis l'application.",
+            false,
+        )),
+    }
+}
+
+#[derive(Debug, serde::Deserialize)]
+struct VerifyEmailChangeQuery {
+    token: String,
+}
+
+async fn verify_email_change_get(
+    State(state): State<AppState>,
+    Query(query): Query<VerifyEmailChangeQuery>,
+) -> Html<String> {
+    match state.auth.confirm_email_change(&query.token).await {
+        Ok(()) => Html(verify_email_page(
+            "Email modifié",
+            "Votre adresse email a bien été modifiée. Vous devez vous reconnecter avec votre nouvel email.",
+            true,
+        )),
+        Err(_) => Html(verify_email_page(
+            "Lien invalide ou expiré",
+            "Ce lien de changement d'email est invalide ou a expiré. Réessayez depuis l'application.",
             false,
         )),
     }

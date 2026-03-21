@@ -269,6 +269,12 @@ pub trait EmailService: Send + Sync {
     ) -> Result<(), AppError>;
     async fn send_verification_email(&self, to: &str, token: &str) -> Result<(), AppError>;
     async fn send_password_changed_email(&self, to: &str) -> Result<(), AppError>;
+    async fn send_email_change_verification(&self, to: &str, token: &str) -> Result<(), AppError>;
+    async fn send_email_changed_notification(
+        &self,
+        to: &str,
+        new_email: &str,
+    ) -> Result<(), AppError>;
 }
 
 #[async_trait]
@@ -317,6 +323,10 @@ pub trait AuthService: Send + Sync {
     async fn verify_email(&self, token: &str) -> Result<(), AppError>;
 
     async fn resend_verification(&self, user_id: Uuid) -> Result<(), AppError>;
+
+    async fn request_email_change(&self, user_id: Uuid, new_email: &str) -> Result<(), AppError>;
+
+    async fn confirm_email_change(&self, token: &str) -> Result<(), AppError>;
 }
 
 #[allow(clippy::too_many_arguments)]

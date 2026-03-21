@@ -25,6 +25,7 @@ use utoipa::openapi::security::{HttpAuthScheme, HttpBuilder, SecurityScheme};
         crate::handlers::users::update_profile,
         crate::handlers::users::export_data,
         crate::handlers::users::delete_account,
+        crate::handlers::users::request_email_change,
         // Items
         crate::handlers::items::create_item,
         crate::handlers::items::list_items,

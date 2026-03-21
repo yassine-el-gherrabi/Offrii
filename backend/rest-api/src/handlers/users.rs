@@ -1,10 +1,11 @@
 use axum::extract::State;
 use axum::http::StatusCode;
-use axum::routing::get;
+use axum::routing::{get, post};
 use axum::{Json, Router};
 use validator::Validate;
 
 use crate::AppState;
+use crate::dto::auth::ChangeEmailRequest;
 use crate::dto::users::{UpdateProfileRequest, UserDataExport, UserProfileResponse};
 use crate::errors::AppError;
 use crate::middleware::AuthUser;
@@ -23,6 +24,7 @@ pub fn router() -> Router<AppState> {
                 .delete(delete_account),
         )
         .route("/me/export", get(export_data))
+        .route("/me/email", post(request_email_change))
 }
 
 #[utoipa::path(
@@ -120,5 +122,32 @@ async fn delete_account(
     auth_user: AuthUser,
 ) -> Result<StatusCode, AppError> {
     state.users.delete_account(auth_user.user_id).await?;
+    Ok(StatusCode::NO_CONTENT)
+}
+
+#[utoipa::path(
+    post,
+    path = "/users/me/email",
+    request_body = ChangeEmailRequest,
+    responses(
+        (status = 204, description = "Verification email sent to new address"),
+        (status = 400, description = "Validation error"),
+        (status = 409, description = "Email already in use"),
+        (status = 429, description = "Too many requests"),
+    ),
+    tag = "Users",
+    security(("bearer_auth" = [])),
+)]
+#[tracing::instrument(skip(state, auth_user, req))]
+async fn request_email_change(
+    State(state): State<AppState>,
+    auth_user: AuthUser,
+    Json(req): Json<ChangeEmailRequest>,
+) -> Result<StatusCode, AppError> {
+    validate_request(&req)?;
+    state
+        .auth
+        .request_email_change(auth_user.user_id, &req.new_email)
+        .await?;
     Ok(StatusCode::NO_CONTENT)
 }

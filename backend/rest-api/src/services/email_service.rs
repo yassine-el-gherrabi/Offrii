@@ -305,6 +305,62 @@ Si vous n'êtes pas à l'origine de ce changement, contactez-nous immédiatement
 
         self.send_with_retry(email).await
     }
+
+    async fn send_email_change_verification(&self, to: &str, token: &str) -> Result<(), AppError> {
+        let verify_url = format!("{}/auth/verify-email-change?token={token}", self.base_url);
+
+        let body = format!(
+            r#"<h1 style="margin:0 0 8px;font-size:22px;font-weight:700;color:#1a1a2e;">
+Confirmez votre nouvel email
+</h1>
+<p style="margin:0 0 4px;font-size:15px;color:#6b7280;line-height:1.6;">
+Vous avez demandé à changer votre adresse email Offrii. Cliquez sur le bouton ci-dessous pour confirmer cette nouvelle adresse.
+</p>
+{cta}
+<p style="margin:20px 0 0;font-size:13px;color:#9ca3af;line-height:1.5;text-align:center;">
+Ou copiez ce lien dans votre navigateur :<br>
+<a href="{verify_url}" style="color:#FF6B6B;text-decoration:underline;word-break:break-all;font-size:12px;">{verify_url}</a>
+</p>
+<p style="margin:16px 0 0;font-size:13px;color:#9ca3af;line-height:1.5;">
+Ce lien expire dans <strong>1 heure</strong>.<br>
+Si vous n'avez pas demandé ce changement, ignorez cet email.
+</p>"#,
+            cta = cta_button("Confirmer mon nouvel email", &verify_url)
+        );
+
+        let html = email_template(&body);
+        let email =
+            CreateEmailBaseOptions::new(&self.from, [to], "Confirmez votre nouvel email — Offrii")
+                .with_html(&html);
+
+        self.send_with_retry(email).await
+    }
+
+    async fn send_email_changed_notification(
+        &self,
+        to: &str,
+        new_email: &str,
+    ) -> Result<(), AppError> {
+        let body = format!(
+            r#"<h1 style="margin:0 0 8px;font-size:22px;font-weight:700;color:#1a1a2e;">
+Adresse email modifiée
+</h1>
+<p style="margin:0 0 16px;font-size:15px;color:#6b7280;line-height:1.6;">
+Votre adresse email Offrii a été modifiée vers <strong>{new_email}</strong>.
+</p>
+<p style="margin:0 0 0;font-size:13px;color:#9ca3af;line-height:1.5;">
+Si vous n'êtes pas à l'origine de ce changement, contactez-nous immédiatement à
+<a href="mailto:contact@offrii.com" style="color:#FF6B6B;text-decoration:underline;">contact@offrii.com</a>
+</p>"#
+        );
+
+        let html = email_template(&body);
+        let email =
+            CreateEmailBaseOptions::new(&self.from, [to], "Adresse email modifiée — Offrii")
+                .with_html(&html);
+
+        self.send_with_retry(email).await
+    }
 }
 
 #[cfg(test)]

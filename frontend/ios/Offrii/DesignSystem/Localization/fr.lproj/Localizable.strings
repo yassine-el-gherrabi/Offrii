@@ -66,6 +66,9 @@
 "auth.resendLimitReached" = "Trop de renvois, réessaie plus tard";
 "error.passwordMismatch" = "Les mots de passe ne correspondent pas";
 "error.usernameTaken" = "Ce nom d'utilisateur est déjà pris";
+"error.emailTaken" = "Cette adresse email est déjà utilisée";
+"error.tooManyRequests" = "Veuillez patienter avant de réessayer";
+"error.emailInvalid" = "Adresse email invalide";
 "error.usernameInvalid" = "3-30 caractères, lettres minuscules, chiffres et _";
 "error.loadProfileFailed" = "Impossible de charger le profil";
 "error.emailUsesGoogle" = "Cet email est lié à un compte Google. Connecte-toi avec Google.";
@@ -165,6 +168,9 @@
 "profile.username" = "Nom d'utilisateur";
 "profile.editUsername" = "Modifier le nom d'utilisateur";
 "profile.usernamePlaceholder" = "ex : marie_dupont";
+"profile.editEmail" = "Modifier l'email";
+"profile.emailPlaceholder" = "ex : marie@exemple.fr";
+"profile.emailChangeSuccess" = "Un email de vérification a été envoyé à votre nouvelle adresse. Cliquez sur le lien pour confirmer le changement.";
 "profile.account" = "Compte";
 "profile.replayTutorial" = "Revoir le tutoriel";
 "profile.resetTips" = "Réinitialiser les astuces";

@@ -63,6 +63,7 @@ enum APIEndpoint {
     case updateProfile(UpdateProfileBody)
     case deleteAccount
     case exportData
+    case requestEmailChange(ChangeEmailBody)
 
     // MARK: Push Tokens
 
@@ -194,6 +195,7 @@ extension APIEndpoint {
         case .updateProfile:                    return "/users/me"
         case .deleteAccount:                    return "/users/me"
         case .exportData:                       return "/users/me/export"
+        case .requestEmailChange:               return "/users/me/email"
 
         // Push Tokens
         case .registerToken:                    return "/push-tokens"
@@ -313,6 +315,7 @@ extension APIEndpoint {
         case .updateProfile:    return .PATCH
         case .deleteAccount:    return .DELETE
         case .exportData:       return .GET
+        case .requestEmailChange: return .POST
 
         // Push Tokens
         case .registerToken:    return .POST
@@ -478,6 +481,7 @@ extension APIEndpoint {
         case .createItem(let body):         return body
         case .updateItem(_, let body):      return body
         case .updateProfile(let body):      return body
+        case .requestEmailChange(let body): return body
         case .registerToken(let body):      return body
         case .createShareLink(let body):    return body
         case .updateShareLink(_, let body): return body

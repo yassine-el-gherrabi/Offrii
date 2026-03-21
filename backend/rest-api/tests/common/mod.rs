@@ -76,6 +76,8 @@ struct SpyEmailService {
     last_code: Arc<StdMutex<Option<String>>>,
     welcome_sent: Arc<StdMutex<Vec<String>>>,
     verification_sent: Arc<StdMutex<Vec<(String, String)>>>,
+    email_change_sent: Arc<StdMutex<Vec<(String, String)>>>,
+    email_changed_notified: Arc<StdMutex<Vec<(String, String)>>>,
 }
 
 #[async_trait::async_trait]
@@ -117,6 +119,26 @@ impl EmailService for SpyEmailService {
     }
 
     async fn send_password_changed_email(&self, _to: &str) -> Result<(), AppError> {
+        Ok(())
+    }
+
+    async fn send_email_change_verification(&self, to: &str, token: &str) -> Result<(), AppError> {
+        self.email_change_sent
+            .lock()
+            .unwrap()
+            .push((to.to_string(), token.to_string()));
+        Ok(())
+    }
+
+    async fn send_email_changed_notification(
+        &self,
+        to: &str,
+        new_email: &str,
+    ) -> Result<(), AppError> {
+        self.email_changed_notified
+            .lock()
+            .unwrap()
+            .push((to.to_string(), new_email.to_string()));
         Ok(())
     }
 }
@@ -200,6 +222,8 @@ impl TestApp {
             last_code: last_reset_code.clone(),
             welcome_sent: welcome_sent.clone(),
             verification_sent: verification_sent.clone(),
+            email_change_sent: Arc::new(StdMutex::new(Vec::new())),
+            email_changed_notified: Arc::new(StdMutex::new(Vec::new())),
         });
 
         let oauth_verifier = Arc::new(OAuthVerifier::new(

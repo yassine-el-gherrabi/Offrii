@@ -1080,6 +1080,178 @@ impl traits::AuthService for PgAuthService {
 
         Ok(())
     }
+
+    async fn request_email_change(&self, user_id: Uuid, new_email: &str) -> Result<(), AppError> {
+        let new_email = new_email.trim().to_lowercase();
+
+        // Fetch current user
+        let user = self
+            .user_repo
+            .find_by_id(user_id)
+            .await
+            .map_err(AppError::Internal)?
+            .ok_or_else(|| AppError::NotFound("user not found".into()))?;
+
+        // Reject if same as current
+        if new_email == user.email {
+            return Err(AppError::BadRequest(
+                "new email is the same as current".into(),
+            ));
+        }
+
+        // Check uniqueness
+        if let Some(_existing) = self
+            .user_repo
+            .find_by_email(&new_email)
+            .await
+            .map_err(AppError::Internal)?
+        {
+            return Err(AppError::Conflict("email already in use".into()));
+        }
+
+        // Rate limit: check for recent token (< 5 min)
+        let recent = sqlx::query_scalar::<_, i64>(
+            "SELECT COUNT(*) FROM email_change_tokens \
+             WHERE user_id = $1 AND created_at > NOW() - INTERVAL '5 minutes'",
+        )
+        .bind(user_id)
+        .fetch_one(&self.pool)
+        .await
+        .map_err(|e| AppError::Internal(e.into()))?;
+
+        if recent > 0 {
+            return Err(AppError::TooManyRequests(
+                "please wait before requesting another email change".into(),
+            ));
+        }
+
+        // Delete any existing tokens for this user
+        sqlx::query("DELETE FROM email_change_tokens WHERE user_id = $1")
+            .bind(user_id)
+            .execute(&self.pool)
+            .await
+            .map_err(|e| AppError::Internal(e.into()))?;
+
+        // Generate and insert new token
+        let token = generate_verification_token();
+        sqlx::query(
+            "INSERT INTO email_change_tokens (user_id, new_email, token) VALUES ($1, $2, $3)",
+        )
+        .bind(user_id)
+        .bind(&new_email)
+        .bind(&token)
+        .execute(&self.pool)
+        .await
+        .map_err(|e| AppError::Internal(e.into()))?;
+
+        // Fire-and-forget: send verification to new email
+        let email_svc = self.email_service.clone();
+        let to = new_email.clone();
+        let token_clone = token.clone();
+        tokio::spawn(async move {
+            if let Err(e) = email_svc
+                .send_email_change_verification(&to, &token_clone)
+                .await
+            {
+                tracing::error!("failed to send email change verification: {e}");
+            }
+        });
+
+        Ok(())
+    }
+
+    async fn confirm_email_change(&self, token: &str) -> Result<(), AppError> {
+        // Look up token
+        let row = sqlx::query_as::<_, (Uuid, String, chrono::DateTime<chrono::Utc>)>(
+            "SELECT user_id, new_email, expires_at FROM email_change_tokens WHERE token = $1",
+        )
+        .bind(token)
+        .fetch_optional(&self.pool)
+        .await
+        .map_err(|e| AppError::Internal(e.into()))?;
+
+        let (user_id, new_email, expires_at) = match row {
+            Some(r) => r,
+            None => return Err(AppError::BadRequest("invalid or expired token".into())),
+        };
+
+        // Check expiry
+        if chrono::Utc::now() > expires_at {
+            sqlx::query("DELETE FROM email_change_tokens WHERE token = $1")
+                .bind(token)
+                .execute(&self.pool)
+                .await
+                .map_err(|e| AppError::Internal(e.into()))?;
+            return Err(AppError::BadRequest("invalid or expired token".into()));
+        }
+
+        // Get old email for notification
+        let old_email = self
+            .user_repo
+            .find_by_id(user_id)
+            .await
+            .map_err(AppError::Internal)?
+            .map(|u| u.email)
+            .unwrap_or_default();
+
+        // Transaction: update email + delete token + cleanup verification tokens
+        let mut tx = self
+            .pool
+            .begin()
+            .await
+            .map_err(|e| AppError::Internal(e.into()))?;
+
+        let result = sqlx::query(
+            "UPDATE users SET email = $1, email_verified = true, updated_at = NOW() WHERE id = $2",
+        )
+        .bind(&new_email)
+        .bind(user_id)
+        .execute(&mut *tx)
+        .await;
+
+        if let Err(e) = result {
+            let err = anyhow::Error::from(e);
+            if is_unique_violation(&err) {
+                return Err(AppError::Conflict("email already in use".into()));
+            }
+            return Err(AppError::Internal(err));
+        }
+
+        sqlx::query("DELETE FROM email_change_tokens WHERE token = $1")
+            .bind(token)
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| AppError::Internal(e.into()))?;
+
+        sqlx::query("DELETE FROM email_verification_tokens WHERE user_id = $1")
+            .bind(user_id)
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| AppError::Internal(e.into()))?;
+
+        tx.commit()
+            .await
+            .map_err(|e| AppError::Internal(e.into()))?;
+
+        // Invalidate all sessions
+        self.invalidate_all_tokens(user_id).await?;
+
+        // Fire-and-forget: notify old email
+        if !old_email.is_empty() {
+            let email_svc = self.email_service.clone();
+            let new_email_clone = new_email.clone();
+            tokio::spawn(async move {
+                if let Err(e) = email_svc
+                    .send_email_changed_notification(&old_email, &new_email_clone)
+                    .await
+                {
+                    tracing::error!("failed to send email changed notification: {e}");
+                }
+            });
+        }
+
+        Ok(())
+    }
 }
 
 // ── Username helpers ──────────────────────────────────────────────────

@@ -193,6 +193,14 @@ struct UpdateProfileBody: Encodable {
     }
 }
 
+struct ChangeEmailBody: Encodable {
+    let newEmail: String
+
+    enum CodingKeys: String, CodingKey {
+        case newEmail = "new_email"
+    }
+}
+
 // MARK: - Push Token Body Types
 
 struct RegisterPushTokenBody: Encodable {
