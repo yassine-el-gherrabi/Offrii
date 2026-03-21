@@ -3,7 +3,7 @@ use rust_decimal::Decimal;
 use sqlx::FromRow;
 use uuid::Uuid;
 
-#[derive(Debug, FromRow)]
+#[derive(Debug, Clone, FromRow)]
 pub struct Item {
     pub id: Uuid,
     pub user_id: Uuid,

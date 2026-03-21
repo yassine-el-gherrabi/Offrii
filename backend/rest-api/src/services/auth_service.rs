@@ -454,7 +454,7 @@ impl traits::AuthService for PgAuthService {
         user_id: Uuid,
         current_password: &str,
         new_password: &str,
-    ) -> Result<(), AppError> {
+    ) -> Result<AuthResponse, AppError> {
         // 1. Fetch user
         let user = self
             .user_repo
@@ -519,7 +519,30 @@ impl traits::AuthService for PgAuthService {
         // 5. Invalidate all tokens (force re-login everywhere)
         self.invalidate_all_tokens(user_id).await?;
 
-        // 6. Notify user (fire-and-forget)
+        // 6. Issue new tokens for the current session (so user stays logged in)
+        let updated_user = self
+            .user_repo
+            .find_by_id(user_id)
+            .await
+            .map_err(AppError::Internal)?
+            .ok_or_else(|| AppError::NotFound("user not found".into()))?;
+
+        let tokens = generate_token_pair(
+            &self.jwt,
+            user_id,
+            updated_user.token_version,
+            updated_user.is_admin,
+        )
+        .map_err(AppError::Internal)?;
+
+        // Store new refresh token
+        let refresh_hash = sha256_hex(&tokens.refresh_token);
+        self.refresh_token_repo
+            .insert(user_id, &refresh_hash, refresh_expires_at())
+            .await
+            .map_err(AppError::Internal)?;
+
+        // 7. Notify user (fire-and-forget)
         let email_svc = self.email_service.clone();
         let to = user.email.clone();
         tokio::spawn(async move {
@@ -528,7 +551,11 @@ impl traits::AuthService for PgAuthService {
             }
         });
 
-        Ok(())
+        Ok(AuthResponse {
+            tokens,
+            user: UserResponse::from(&updated_user),
+            is_new_user: false,
+        })
     }
 
     #[tracing::instrument(skip(self))]

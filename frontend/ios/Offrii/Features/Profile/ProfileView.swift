@@ -46,38 +46,13 @@ struct ProfileView: View {
                         icon: "person.fill"
                     ) {
                         VStack(spacing: 0) {
-                            // Display name
-                            Button {
-                                viewModel.editedDisplayName = viewModel.displayName
-                                viewModel.isEditingDisplayName = true
-                            } label: {
-                                profileRow(
-                                    title: NSLocalizedString("profile.displayName", comment: ""),
-                                    value: viewModel.displayName.isEmpty ? nil : viewModel.displayName
-                                )
-                            }
-
-                            Divider().padding(.leading, OffriiTheme.spacingBase)
-
-                            // Username
                             NavigationLink {
-                                UsernameEditView(viewModel: viewModel)
+                                ProfileEditView(viewModel: viewModel)
+                                    .environment(authManager)
                             } label: {
                                 profileRow(
-                                    title: NSLocalizedString("profile.username", comment: ""),
-                                    value: viewModel.username.isEmpty ? nil : "@\(viewModel.username)"
-                                )
-                            }
-
-                            Divider().padding(.leading, OffriiTheme.spacingBase)
-
-                            // Email
-                            NavigationLink {
-                                EmailEditView(viewModel: viewModel)
-                            } label: {
-                                profileRow(
-                                    title: NSLocalizedString("profile.email", comment: ""),
-                                    value: viewModel.truncatedEmail
+                                    title: NSLocalizedString("profile.editProfile", comment: ""),
+                                    value: nil
                                 )
                             }
 
@@ -89,6 +64,18 @@ struct ProfileView: View {
                             } label: {
                                 profileRow(
                                     title: NSLocalizedString("profile.photo", comment: ""),
+                                    value: nil
+                                )
+                            }
+
+                            Divider().padding(.leading, OffriiTheme.spacingBase)
+
+                            NavigationLink {
+                                ChangePasswordView()
+                                    .environment(authManager)
+                            } label: {
+                                profileRow(
+                                    title: NSLocalizedString("profile.changePassword", comment: ""),
                                     value: nil
                                 )
                             }
@@ -224,19 +211,6 @@ struct ProfileView: View {
         }
         .navigationTitle(NSLocalizedString("profile.navTitle", comment: ""))
         .navigationBarTitleDisplayMode(.inline)
-        .alert(
-            NSLocalizedString("profile.displayName.edit", comment: ""),
-            isPresented: $viewModel.isEditingDisplayName
-        ) {
-            TextField(
-                NSLocalizedString("profile.displayName", comment: ""),
-                text: $viewModel.editedDisplayName
-            )
-            Button(NSLocalizedString("common.cancel", comment: ""), role: .cancel) {}
-            Button(NSLocalizedString("common.save", comment: "")) {
-                Task { await saveDisplayName() }
-            }
-        }
         .confirmationDialog(
             NSLocalizedString("imagePicker.add", comment: ""),
             isPresented: $showAvatarSourceSheet,
@@ -341,10 +315,10 @@ struct ProfileView: View {
                     .disabled(isUploadingAvatar)
                 }
 
-                // Display name (tappable)
-                Button {
-                    viewModel.editedDisplayName = viewModel.displayName
-                    viewModel.isEditingDisplayName = true
+                // Display name (tappable → edit profile)
+                NavigationLink {
+                    ProfileEditView(viewModel: viewModel)
+                        .environment(authManager)
                 } label: {
                     Text(viewModel.displayName.isEmpty ? viewModel.email : viewModel.displayName)
                         .font(OffriiTypography.title)
@@ -554,17 +528,6 @@ struct ProfileView: View {
     }
 
     // MARK: - Display Name
-
-    private func saveDisplayName() async {
-        let trimmed = viewModel.editedDisplayName.trimmingCharacters(in: .whitespaces)
-        guard !trimmed.isEmpty else { return }
-        viewModel.isSavingDisplayName = true
-        do {
-            try await viewModel.updateDisplayName(trimmed)
-            try? await authManager.loadCurrentUser()
-        } catch {}
-        viewModel.isSavingDisplayName = false
-    }
 
     // MARK: - Email Verification
 

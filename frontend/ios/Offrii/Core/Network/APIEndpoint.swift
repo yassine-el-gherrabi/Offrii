@@ -511,7 +511,7 @@ extension APIEndpoint {
         guard let url = Bundle.main.infoDictionary?["API_BASE_URL"] as? String,
               !url.isEmpty else {
             #if DEBUG
-            return "https://nylah-archetypic-unfrequently.ngrok-free.dev"
+            return "http://localhost:3000"
             #else
             fatalError("API_BASE_URL is not configured in Info.plist")
             #endif

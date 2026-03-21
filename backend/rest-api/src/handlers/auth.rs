@@ -185,15 +185,15 @@ async fn change_password(
     State(state): State<AppState>,
     auth_user: AuthUser,
     Json(req): Json<ChangePasswordRequest>,
-) -> Result<StatusCode, AppError> {
+) -> Result<Json<AuthResponse>, AppError> {
     validate_request(&req)?;
 
-    state
+    let response = state
         .auth
         .change_password(auth_user.user_id, &req.current_password, &req.new_password)
         .await?;
 
-    Ok(StatusCode::NO_CONTENT)
+    Ok(Json(response))
 }
 
 #[utoipa::path(

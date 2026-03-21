@@ -42,6 +42,17 @@ final class AuthManager {
         logger.info("User registered: \(response.user.id)")
     }
 
+    // MARK: - Change Password
+
+    func changePassword(currentPassword: String, newPassword: String) async throws {
+        let body = ChangePasswordBody(currentPassword: currentPassword, newPassword: newPassword)
+        let response: AuthResponse = try await client.request(.changePassword(body))
+        storeTokens(response.tokens)
+        let user = response.user.toUser()
+        currentUser = user
+        cacheUser(user)
+    }
+
     // MARK: - Login
 
     /// Authenticates with email/username and password, stores the returned tokens.

@@ -2,7 +2,7 @@ use chrono::{DateTime, Utc};
 use sqlx::FromRow;
 use uuid::Uuid;
 
-#[derive(Debug, FromRow)]
+#[derive(Debug, Clone, FromRow)]
 pub struct Category {
     pub id: Uuid,
     pub name: String,

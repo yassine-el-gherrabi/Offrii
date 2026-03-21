@@ -57,6 +57,7 @@
 		B10000000000000000000008 /* APIError.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000008 /* APIError.swift */; };
 		B10000000000000000000010 /* OffriiButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000010 /* OffriiButton.swift */; };
 		B10000000000000000000011 /* OffriiCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000011 /* OffriiCard.swift */; };
+		B10000000000000000000054 /* LimitedTextEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000054 /* LimitedTextEditor.swift */; };
 		B10000000000000000000012 /* OffriiChip.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000012 /* OffriiChip.swift */; };
 		B10000000000000000000013 /* OffriiTextField.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000013 /* OffriiTextField.swift */; };
 		B10000000000000000000014 /* TabBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000014 /* TabBarView.swift */; };
@@ -89,6 +90,8 @@
 		B10000000000000000000046 /* SSOButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000046 /* SSOButton.swift */; };
 		B10000000000000000000049 /* UsernameEditView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000049 /* UsernameEditView.swift */; };
 		B10000000000000000000053 /* EmailEditView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000053 /* EmailEditView.swift */; };
+		B10000000000000000000055 /* ProfileEditView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000055 /* ProfileEditView.swift */; };
+		B10000000000000000000056 /* ChangePasswordView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000056 /* ChangePasswordView.swift */; };
 		B10000000000000000000050 /* APIRequestBodies.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000050 /* APIRequestBodies.swift */; };
 		B10000000000000000000051 /* SSOService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000051 /* SSOService.swift */; };
 		B10000000000000000000052 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000052 /* AppDelegate.swift */; };
@@ -225,6 +228,7 @@
 		A10000000000000000000008 /* APIError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIError.swift; sourceTree = "<group>"; };
 		A10000000000000000000010 /* OffriiButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OffriiButton.swift; sourceTree = "<group>"; };
 		A10000000000000000000011 /* OffriiCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OffriiCard.swift; sourceTree = "<group>"; };
+		A10000000000000000000054 /* LimitedTextEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LimitedTextEditor.swift; sourceTree = "<group>"; };
 		A10000000000000000000012 /* OffriiChip.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OffriiChip.swift; sourceTree = "<group>"; };
 		A10000000000000000000013 /* OffriiTextField.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OffriiTextField.swift; sourceTree = "<group>"; };
 		A10000000000000000000014 /* TabBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabBarView.swift; sourceTree = "<group>"; };
@@ -257,6 +261,8 @@
 		A10000000000000000000046 /* SSOButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SSOButton.swift; sourceTree = "<group>"; };
 		A10000000000000000000049 /* UsernameEditView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsernameEditView.swift; sourceTree = "<group>"; };
 		A10000000000000000000053 /* EmailEditView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmailEditView.swift; sourceTree = "<group>"; };
+		A10000000000000000000055 /* ProfileEditView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileEditView.swift; sourceTree = "<group>"; };
+		A10000000000000000000056 /* ChangePasswordView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChangePasswordView.swift; sourceTree = "<group>"; };
 		A10000000000000000000050 /* APIRequestBodies.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIRequestBodies.swift; sourceTree = "<group>"; };
 		A10000000000000000000051 /* SSOService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SSOService.swift; sourceTree = "<group>"; };
 		A10000000000000000000052 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
@@ -518,6 +524,7 @@
 				58F0F5B130F191CB76DB83CC /* MessageBubble.swift */,
 				A10000000000000000000010 /* OffriiButton.swift */,
 				A10000000000000000000011 /* OffriiCard.swift */,
+				A10000000000000000000054 /* LimitedTextEditor.swift */,
 				A10000000000000000000012 /* OffriiChip.swift */,
 				A10000000000000000000013 /* OffriiTextField.swift */,
 				FF0000000000000000000002 /* ShinyIcon.swift */,
@@ -630,6 +637,8 @@
 				A10000000000000000000028 /* ProfileViewModel.swift */,
 				A10000000000000000000049 /* UsernameEditView.swift */,
 				A10000000000000000000053 /* EmailEditView.swift */,
+				A10000000000000000000055 /* ProfileEditView.swift */,
+				A10000000000000000000056 /* ChangePasswordView.swift */,
 			);
 			path = Profile;
 			sourceTree = "<group>";
@@ -896,6 +905,7 @@
 				B10000000000000000000008 /* APIError.swift in Sources */,
 				B10000000000000000000010 /* OffriiButton.swift in Sources */,
 				B10000000000000000000011 /* OffriiCard.swift in Sources */,
+				B10000000000000000000054 /* LimitedTextEditor.swift in Sources */,
 				B10000000000000000000012 /* OffriiChip.swift in Sources */,
 				B10000000000000000000013 /* OffriiTextField.swift in Sources */,
 				B10000000000000000000014 /* TabBarView.swift in Sources */,
@@ -912,6 +922,8 @@
 				B10000000000000000000028 /* ProfileViewModel.swift in Sources */,
 				B10000000000000000000049 /* UsernameEditView.swift in Sources */,
 				B10000000000000000000053 /* EmailEditView.swift in Sources */,
+				B10000000000000000000055 /* ProfileEditView.swift in Sources */,
+				B10000000000000000000056 /* ChangePasswordView.swift in Sources */,
 				B10000000000000000000030 /* ItemDetailView.swift in Sources */,
 				B10000000000000000000031 /* ItemDetailViewModel.swift in Sources */,
 				B10000000000000000000032 /* ItemEditView.swift in Sources */,

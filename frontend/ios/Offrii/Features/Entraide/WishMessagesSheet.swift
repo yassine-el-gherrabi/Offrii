@@ -113,16 +113,12 @@ struct WishMessagesSheet: View {
     private var inputBar: some View {
         VStack(spacing: 0) {
             HStack(spacing: OffriiTheme.spacingSM) {
-                TextField(
-                    NSLocalizedString("entraide.messages.placeholder", comment: ""),
+                LimitedTextEditor(
+                    placeholder: NSLocalizedString("entraide.messages.placeholder", comment: ""),
                     text: $messageText,
-                    axis: .vertical
+                    maxLength: messageMaxLength,
+                    lineLimit: 1...4
                 )
-                .font(OffriiTypography.body)
-                .lineLimit(1...4)
-                .padding(OffriiTheme.spacingSM)
-                .background(OffriiTheme.surface)
-                .cornerRadius(OffriiTheme.cornerRadiusMD)
 
                 Button {
                     Task { await sendMessage() }
@@ -140,16 +136,6 @@ struct WishMessagesSheet: View {
                     messageText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
                         || isMessageOverLimit || isSending || sendCooldown
                 )
-            }
-
-            if messageText.count > messageMaxLength * 4 / 5 {
-                HStack {
-                    Spacer()
-                    Text("\(messageText.count)/\(messageMaxLength)")
-                        .font(.system(size: 11))
-                        .foregroundColor(isMessageOverLimit ? OffriiTheme.danger : OffriiTheme.textMuted)
-                }
-                .padding(.top, 4)
             }
         }
         .padding(.horizontal, OffriiTheme.spacingBase)

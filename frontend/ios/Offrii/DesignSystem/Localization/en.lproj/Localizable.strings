@@ -172,6 +172,15 @@
 "profile.terms" = "Terms of use";
 "profile.username" = "Username";
 "profile.editUsername" = "Edit username";
+"profile.editProfile" = "Edit profile";
+"profile.changePassword" = "Password";
+"profile.currentPassword" = "Current password";
+"profile.newPassword" = "New password";
+"profile.confirmPassword" = "Confirm new password";
+"profile.passwordChanged" = "Your password has been changed successfully.";
+"profile.displayNamePlaceholder" = "Your first name or nickname";
+"profile.emailChangeHint" = "A verification email will be sent to this new address.";
+"error.wrongPassword" = "Current password is incorrect";
 "profile.usernamePlaceholder" = "e.g. marie_dupont";
 "profile.editEmail" = "Edit email";
 "profile.emailPlaceholder" = "e.g. marie@example.com";

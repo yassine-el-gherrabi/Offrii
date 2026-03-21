@@ -213,7 +213,7 @@ A très vite sur Offrii !
         token: &str,
     ) -> Result<(), AppError> {
         let name = display_name.unwrap_or("là");
-        let verification_url = format!("{}/auth/verify-email?token={token}", self.base_url);
+        let verification_url = format!("{}/v1/auth/verify-email?token={token}", self.base_url);
 
         let body = format!(
             r#"<h1 style="margin:0 0 8px;font-size:22px;font-weight:700;color:#1a1a2e;">
@@ -259,7 +259,7 @@ Ce lien expire dans <strong>24 heures</strong>.
     }
 
     async fn send_verification_email(&self, to: &str, token: &str) -> Result<(), AppError> {
-        let verification_url = format!("{}/auth/verify-email?token={token}", self.base_url);
+        let verification_url = format!("{}/v1/auth/verify-email?token={token}", self.base_url);
 
         let body = format!(
             r#"<h1 style="margin:0 0 8px;font-size:22px;font-weight:700;color:#1a1a2e;">
@@ -307,7 +307,10 @@ Si vous n'êtes pas à l'origine de ce changement, contactez-nous immédiatement
     }
 
     async fn send_email_change_verification(&self, to: &str, token: &str) -> Result<(), AppError> {
-        let verify_url = format!("{}/auth/verify-email-change?token={token}", self.base_url);
+        let verify_url = format!(
+            "{}/v1/auth/verify-email-change?token={token}",
+            self.base_url
+        );
 
         let body = format!(
             r#"<h1 style="margin:0 0 8px;font-size:22px;font-weight:700;color:#1a1a2e;">

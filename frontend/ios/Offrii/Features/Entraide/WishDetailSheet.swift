@@ -308,19 +308,9 @@ struct WishDetailSheet: View {
                 .font(OffriiTypography.caption)
                 .foregroundColor(OffriiTheme.textSecondary)
 
-            TextField(
-                NSLocalizedString("entraide.offer.messagePlaceholder", comment: ""),
-                text: $offerMessage,
-                axis: .vertical
-            )
-            .font(OffriiTypography.body)
-            .lineLimit(2...4)
-            .padding(OffriiTheme.spacingSM)
-            .background(OffriiTheme.surface)
-            .cornerRadius(OffriiTheme.cornerRadiusMD)
-            .overlay(
-                RoundedRectangle(cornerRadius: OffriiTheme.cornerRadiusMD)
-                    .stroke(OffriiTheme.border, lineWidth: 1)
+            LimitedTextEditor(
+                placeholder: NSLocalizedString("entraide.offer.messagePlaceholder", comment: ""),
+                text: $offerMessage
             )
 
             HStack(spacing: OffriiTheme.spacingSM) {

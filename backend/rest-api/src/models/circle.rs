@@ -2,7 +2,7 @@ use chrono::{DateTime, Utc};
 use sqlx::FromRow;
 use uuid::Uuid;
 
-#[derive(Debug, FromRow)]
+#[derive(Debug, Clone, FromRow)]
 pub struct Circle {
     pub id: Uuid,
     pub name: Option<String>,
@@ -12,7 +12,7 @@ pub struct Circle {
     pub created_at: DateTime<Utc>,
 }
 
-#[derive(Debug, FromRow)]
+#[derive(Debug, Clone, FromRow)]
 pub struct CircleMember {
     pub circle_id: Uuid,
     pub user_id: Uuid,
@@ -20,7 +20,7 @@ pub struct CircleMember {
     pub joined_at: DateTime<Utc>,
 }
 
-#[derive(Debug, FromRow)]
+#[derive(Debug, Clone, FromRow)]
 pub struct CircleInvite {
     pub id: Uuid,
     pub circle_id: Uuid,

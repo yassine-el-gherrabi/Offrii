@@ -47,7 +47,7 @@ impl WishStatus {
     }
 }
 
-#[derive(Debug, FromRow)]
+#[derive(Debug, Clone, FromRow)]
 pub struct CommunityWish {
     pub id: Uuid,
     pub owner_id: Uuid,
@@ -70,7 +70,7 @@ pub struct CommunityWish {
     pub updated_at: DateTime<Utc>,
 }
 
-#[derive(Debug, FromRow)]
+#[derive(Debug, Clone, FromRow)]
 pub struct WishReport {
     pub id: Uuid,
     pub wish_id: Uuid,
@@ -80,7 +80,7 @@ pub struct WishReport {
     pub created_at: DateTime<Utc>,
 }
 
-#[derive(Debug, FromRow)]
+#[derive(Debug, Clone, FromRow)]
 pub struct WishMessage {
     pub id: Uuid,
     pub wish_id: Uuid,

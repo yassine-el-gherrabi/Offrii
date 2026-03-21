@@ -2,7 +2,7 @@ use chrono::{DateTime, Utc};
 use sqlx::FromRow;
 use uuid::Uuid;
 
-#[derive(Debug, FromRow)]
+#[derive(Debug, Clone, FromRow)]
 pub struct CircleItem {
     pub circle_id: Uuid,
     pub item_id: Uuid,
