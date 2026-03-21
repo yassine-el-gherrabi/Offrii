@@ -331,9 +331,7 @@ impl PgCommunityWishService {
 
         let age = Utc::now() - created_at;
         if age.num_hours() < MIN_ACCOUNT_AGE_HOURS {
-            return Err(AppError::Forbidden(
-                "account must be at least 24 hours old".into(),
-            ));
+            return Err(AppError::Forbidden("action not available yet".into()));
         }
         Ok(())
     }
@@ -365,7 +363,7 @@ impl PgCommunityWishService {
             title: wish.title.clone(),
             description: wish.description.clone(),
             category: wish.category.clone(),
-            status: wish.status.clone(),
+            status: wish.status,
             is_mine: caller_id == Some(wish.owner_id),
             is_matched_by_me: caller_id.is_some() && wish.matched_with == caller_id,
             image_url: wish.image_url.clone(),
@@ -552,12 +550,12 @@ impl traits::CommunityWishService for PgCommunityWishService {
             .ok_or_else(|| AppError::NotFound("wish not found".into()))?;
 
         // Only show publicly visible statuses (or if caller is owner/donor)
-        let status = WishStatus::parse(&wish.status);
+        let status = wish.status;
         let is_owner = caller_id == Some(wish.owner_id);
         let is_donor = caller_id.is_some() && wish.matched_with == caller_id;
 
         match status {
-            Some(WishStatus::Open | WishStatus::Matched) => {}
+            WishStatus::Open | WishStatus::Matched => {}
             _ if is_owner || is_donor => {}
             _ => return Err(AppError::NotFound("wish not found".into())),
         }
@@ -642,7 +640,7 @@ impl traits::CommunityWishService for PgCommunityWishService {
                 title: wish.title.clone(),
                 description: wish.description.clone(),
                 category: wish.category.clone(),
-                status: wish.status.clone(),
+                status: wish.status,
                 is_anonymous: wish.is_anonymous,
                 matched_with_display_name: donor_dn,
                 report_count: wish.report_count,
@@ -758,8 +756,7 @@ impl traits::CommunityWishService for PgCommunityWishService {
             return Err(AppError::Forbidden("not the wish owner".into()));
         }
 
-        let status = WishStatus::parse(&wish.status)
-            .ok_or_else(|| AppError::Internal(anyhow::anyhow!("invalid wish status")))?;
+        let status = wish.status;
         if !matches!(
             status,
             WishStatus::Open | WishStatus::Review | WishStatus::Closed
@@ -822,7 +819,7 @@ impl traits::CommunityWishService for PgCommunityWishService {
             title: updated.title,
             description: updated.description,
             category: updated.category,
-            status: "pending".to_string(), // reflect the actual new status
+            status: WishStatus::Pending, // reflect the actual new status
             is_anonymous: updated.is_anonymous,
             matched_with_display_name: donor_dn,
             report_count: 0, // reports were reset
@@ -850,8 +847,7 @@ impl traits::CommunityWishService for PgCommunityWishService {
             return Err(AppError::Forbidden("not the wish owner".into()));
         }
 
-        let status = WishStatus::parse(&wish.status)
-            .ok_or_else(|| AppError::Internal(anyhow::anyhow!("invalid wish status")))?;
+        let status = wish.status;
         if status.is_terminal() {
             return Err(AppError::BadRequest(
                 "wish is already in a terminal state".into(),
@@ -895,8 +891,7 @@ impl traits::CommunityWishService for PgCommunityWishService {
         }
 
         // Cannot delete matched or fulfilled wishes
-        let status = WishStatus::parse(&wish.status)
-            .ok_or_else(|| AppError::Internal(anyhow::anyhow!("invalid wish status")))?;
+        let status = wish.status;
         if status == WishStatus::Matched {
             return Err(AppError::BadRequest(
                 "cannot delete a matched wish — close it first".into(),
@@ -935,8 +930,7 @@ impl traits::CommunityWishService for PgCommunityWishService {
             return Err(AppError::Forbidden("not the wish owner".into()));
         }
 
-        let status = WishStatus::parse(&wish.status)
-            .ok_or_else(|| AppError::Internal(anyhow::anyhow!("invalid wish status")))?;
+        let status = wish.status;
         if !matches!(status, WishStatus::Review | WishStatus::Closed) {
             return Err(AppError::BadRequest(
                 "can only reopen wishes in review or closed status".into(),
@@ -954,7 +948,7 @@ impl traits::CommunityWishService for PgCommunityWishService {
             let elapsed = Utc::now() - last_reopen;
             if elapsed.num_hours() < REOPEN_COOLDOWN_HOURS {
                 return Err(AppError::BadRequest(
-                    "please wait 24 hours before reopening again".into(),
+                    "please wait before reopening again".into(),
                 ));
             }
         }
@@ -1023,8 +1017,7 @@ impl traits::CommunityWishService for PgCommunityWishService {
             ));
         }
 
-        let status = WishStatus::parse(&wish.status)
-            .ok_or_else(|| AppError::Internal(anyhow::anyhow!("invalid wish status")))?;
+        let status = wish.status;
         if status != WishStatus::Open {
             return Err(AppError::BadRequest("wish is not open for offers".into()));
         }
@@ -1068,8 +1061,7 @@ impl traits::CommunityWishService for PgCommunityWishService {
             .map_err(AppError::Internal)?
             .ok_or_else(|| AppError::NotFound("wish not found".into()))?;
 
-        let status = WishStatus::parse(&wish.status)
-            .ok_or_else(|| AppError::Internal(anyhow::anyhow!("invalid wish status")))?;
+        let status = wish.status;
         if status != WishStatus::Matched {
             return Err(AppError::BadRequest("wish is not in matched status".into()));
         }
@@ -1118,8 +1110,7 @@ impl traits::CommunityWishService for PgCommunityWishService {
             return Err(AppError::Forbidden("not the wish owner".into()));
         }
 
-        let status = WishStatus::parse(&wish.status)
-            .ok_or_else(|| AppError::Internal(anyhow::anyhow!("invalid wish status")))?;
+        let status = wish.status;
         if status != WishStatus::Matched {
             return Err(AppError::BadRequest("wish is not in matched status".into()));
         }
@@ -1168,8 +1159,7 @@ impl traits::CommunityWishService for PgCommunityWishService {
             return Err(AppError::Forbidden("not the wish owner".into()));
         }
 
-        let status = WishStatus::parse(&wish.status)
-            .ok_or_else(|| AppError::Internal(anyhow::anyhow!("invalid wish status")))?;
+        let status = wish.status;
         if status != WishStatus::Matched {
             return Err(AppError::BadRequest("wish is not in matched status".into()));
         }
@@ -1218,8 +1208,7 @@ impl traits::CommunityWishService for PgCommunityWishService {
             return Err(AppError::BadRequest("cannot report your own wish".into()));
         }
 
-        let status = WishStatus::parse(&wish.status)
-            .ok_or_else(|| AppError::Internal(anyhow::anyhow!("invalid wish status")))?;
+        let status = wish.status;
         if status != WishStatus::Open {
             return Err(AppError::BadRequest("can only report open wishes".into()));
         }
@@ -1370,8 +1359,7 @@ impl traits::CommunityWishService for PgCommunityWishService {
             .map_err(AppError::Internal)?
             .ok_or_else(|| AppError::NotFound("wish not found".into()))?;
 
-        let status = WishStatus::parse(&wish.status)
-            .ok_or_else(|| AppError::Internal(anyhow::anyhow!("invalid wish status")))?;
+        let status = wish.status;
         if !matches!(status, WishStatus::Flagged | WishStatus::Review) {
             return Err(AppError::BadRequest(
                 "can only approve flagged or review wishes".into(),
@@ -1406,8 +1394,7 @@ impl traits::CommunityWishService for PgCommunityWishService {
             .map_err(AppError::Internal)?
             .ok_or_else(|| AppError::NotFound("wish not found".into()))?;
 
-        let status = WishStatus::parse(&wish.status)
-            .ok_or_else(|| AppError::Internal(anyhow::anyhow!("invalid wish status")))?;
+        let status = wish.status;
         if !matches!(status, WishStatus::Flagged | WishStatus::Review) {
             return Err(AppError::BadRequest(
                 "can only reject flagged or review wishes".into(),
