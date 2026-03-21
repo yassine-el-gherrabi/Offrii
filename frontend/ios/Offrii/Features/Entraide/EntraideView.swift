@@ -109,7 +109,17 @@ struct EntraideView: View {
                                 eligibilityBanner
                             }
 
-                            categoryChipsBar
+                            CategoryChipsBar(
+                                items: WishCategory.allCases.map { $0 },
+                                selectedId: Binding(
+                                    get: { viewModel.selectedCategory?.id },
+                                    set: { newId in
+                                        let cat = newId.flatMap { id in WishCategory.allCases.first { $0.id == id } }
+                                        Task { await viewModel.selectCategory(cat) }
+                                    }
+                                ),
+                                allLabel: NSLocalizedString("entraide.category.all", comment: "")
+                            )
                             statsBar
                         }
                         .background(OffriiTheme.background)
@@ -242,65 +252,7 @@ struct EntraideView: View {
         }
     }
 
-    // MARK: - Category Chips (same as WishlistView pattern)
-
-    private var categoryChipsBar: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: OffriiTheme.spacingSM) {
-                let allSelected = viewModel.selectedCategory == nil
-
-                Button {
-                    Task { await viewModel.selectCategory(nil) }
-                } label: {
-                    HStack(spacing: 4) {
-                        Image(systemName: "sparkles")
-                            .font(.system(size: 11))
-                        Text(NSLocalizedString("entraide.category.all", comment: ""))
-                            .font(.system(size: 13, weight: allSelected ? .semibold : .regular))
-                    }
-                    .foregroundColor(allSelected ? .white : OffriiTheme.textSecondary)
-                    .padding(.horizontal, OffriiTheme.spacingMD)
-                    .padding(.vertical, OffriiTheme.spacingSM)
-                    .background(allSelected ? OffriiTheme.primary : .white)
-                    .cornerRadius(OffriiTheme.cornerRadiusXL)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: OffriiTheme.cornerRadiusXL)
-                            .strokeBorder(allSelected ? .clear : OffriiTheme.border, lineWidth: 1)
-                    )
-                }
-                .buttonStyle(.plain)
-
-                ForEach(WishCategory.allCases) { category in
-                    let isSelected = viewModel.selectedCategory == category
-                    let color = category.color
-
-                    HStack(spacing: 4) {
-                        Image(systemName: category.icon)
-                            .font(.system(size: 11))
-                        Text(category.label)
-                            .font(.system(size: 13, weight: isSelected ? .semibold : .regular))
-                    }
-                    .foregroundColor(isSelected ? .white : OffriiTheme.textSecondary)
-                    .padding(.horizontal, OffriiTheme.spacingMD)
-                    .padding(.vertical, OffriiTheme.spacingSM)
-                    .background(isSelected ? color : .white)
-                    .cornerRadius(OffriiTheme.cornerRadiusXL)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: OffriiTheme.cornerRadiusXL)
-                            .strokeBorder(isSelected ? .clear : OffriiTheme.border, lineWidth: 1)
-                    )
-                    .onTapGesture {
-                        Task { await viewModel.selectCategory(category) }
-                    }
-                    .animation(OffriiAnimation.snappy, value: isSelected)
-                }
-            }
-            .padding(.horizontal, OffriiTheme.spacingBase)
-            .padding(.vertical, OffriiTheme.spacingXS)
-        }
-    }
-
-    // MARK: - Stats Bar (same pattern as WishlistView)
+    // MARK: - Stats Bar
 
     private var statsBar: some View {
         HStack {

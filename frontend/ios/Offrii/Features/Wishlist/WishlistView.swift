@@ -29,7 +29,11 @@ struct WishlistView: View {
                         gridInnerContent
                     } header: {
                         VStack(spacing: 0) {
-                            categoryChipsBar
+                            CategoryChipsBar(
+                                items: viewModel.categories,
+                                selectedId: Bindable(viewModel).selectedCategoryId,
+                                allLabel: NSLocalizedString("wishlist.allCategories", comment: "")
+                            )
                             statsBar
                         }
                         .background(OffriiTheme.background)
@@ -221,67 +225,6 @@ struct WishlistView: View {
             if !viewModel.items.isEmpty {
                 Task { await viewModel.loadItems() }
             }
-        }
-    }
-
-    // MARK: - Category Chips
-
-    private var categoryChipsBar: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: OffriiTheme.spacingSM) {
-                let allSelected = viewModel.selectedCategoryIds.isEmpty
-                Button {
-                    viewModel.clearCategoryFilters()
-                } label: {
-                    HStack(spacing: 4) {
-                        Image(systemName: "sparkles")
-                            .font(.system(size: 11))
-                        Text(NSLocalizedString("wishlist.allCategories", comment: ""))
-                            .font(.system(size: 13, weight: allSelected ? .semibold : .regular))
-                    }
-                    .foregroundColor(allSelected ? .white : OffriiTheme.textSecondary)
-                    .padding(.horizontal, OffriiTheme.spacingMD)
-                    .padding(.vertical, OffriiTheme.spacingSM)
-                    .background(allSelected ? OffriiTheme.primary : .white)
-                    .cornerRadius(OffriiTheme.cornerRadiusXL)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: OffriiTheme.cornerRadiusXL)
-                            .strokeBorder(allSelected ? .clear : OffriiTheme.border, lineWidth: 1)
-                    )
-                }
-                .buttonStyle(.plain)
-
-                ForEach(viewModel.categories, id: \.id) { cat in
-                    let isSelected = viewModel.selectedCategoryIds.contains(cat.id)
-                    let style = CategoryStyle(icon: cat.icon)
-
-                    HStack(spacing: 4) {
-                        Image(systemName: style.sfSymbol)
-                            .font(.system(size: 11))
-                        Text(cat.name)
-                            .font(.system(size: 13, weight: isSelected ? .semibold : .regular))
-                    }
-                    .foregroundColor(isSelected ? .white : OffriiTheme.textSecondary)
-                    .padding(.horizontal, OffriiTheme.spacingMD)
-                    .padding(.vertical, OffriiTheme.spacingSM)
-                    .background(isSelected ? style.chipColor : .white)
-                    .cornerRadius(OffriiTheme.cornerRadiusXL)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: OffriiTheme.cornerRadiusXL)
-                            .strokeBorder(isSelected ? .clear : OffriiTheme.border, lineWidth: 1)
-                    )
-                    .onTapGesture {
-                        viewModel.toggleCategory(cat.id)
-                    }
-                    .onLongPressGesture(minimumDuration: 0.5) {
-                        OffriiHaptics.tap()
-                        viewModel.selectOnlyCategory(cat.id)
-                    }
-                    .animation(OffriiAnimation.snappy, value: isSelected)
-                }
-            }
-            .padding(.horizontal, OffriiTheme.spacingBase)
-            .padding(.vertical, OffriiTheme.spacingXS)
         }
     }
 

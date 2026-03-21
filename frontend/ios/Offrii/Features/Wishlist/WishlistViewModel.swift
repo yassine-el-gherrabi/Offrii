@@ -5,7 +5,7 @@ import Foundation
 final class WishlistViewModel {
     var items: [Item] = []
     var categories: [CategoryResponse] = []
-    var selectedCategoryIds: Set<UUID> = []
+    var selectedCategoryId: UUID?
     var selectedStatus: String = "active"
     var sortField: String = "created_at"
     var sortOrder: String = "desc"
@@ -51,11 +51,8 @@ final class WishlistViewModel {
             result = result.filter { $0.name.localizedCaseInsensitiveContains(searchQuery) }
         }
 
-        if !selectedCategoryIds.isEmpty {
-            result = result.filter { item in
-                guard let catId = item.categoryId else { return false }
-                return selectedCategoryIds.contains(catId)
-            }
+        if let selectedCategoryId {
+            result = result.filter { $0.categoryId == selectedCategoryId }
         }
 
         return result
@@ -224,23 +221,6 @@ final class WishlistViewModel {
     }
 
     // MARK: - Filters
-
-    func toggleCategory(_ id: UUID) {
-        if selectedCategoryIds.contains(id) {
-            selectedCategoryIds.remove(id)
-        } else {
-            selectedCategoryIds.insert(id)
-        }
-        // No API reload needed — filtering is local
-    }
-
-    func clearCategoryFilters() {
-        selectedCategoryIds.removeAll()
-    }
-
-    func selectOnlyCategory(_ id: UUID) {
-        selectedCategoryIds = [id]
-    }
 
     func changeSegment(_ index: Int) {
         filteredSegmentIndex = index
