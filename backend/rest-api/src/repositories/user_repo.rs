@@ -154,8 +154,8 @@ pub(crate) async fn create_user(
     display_name: Option<&str>,
 ) -> Result<User> {
     let sql = format!(
-        "INSERT INTO users (email, username, password_hash, display_name, terms_accepted_at) \
-         VALUES ($1, $2, $3, $4, NOW()) \
+        "INSERT INTO users (email, username, password_hash, display_name, terms_accepted_at, last_active_at) \
+         VALUES ($1, $2, $3, $4, NOW(), NOW()) \
          RETURNING {USER_COLS}"
     );
     let user = sqlx::query_as::<_, User>(&sql)
@@ -336,8 +336,8 @@ pub(crate) async fn create_oauth_user(
     avatar_url: Option<&str>,
 ) -> Result<User> {
     let sql = format!(
-        "INSERT INTO users (email, username, display_name, oauth_provider, oauth_provider_id, email_verified, avatar_url, terms_accepted_at) \
-         VALUES ($1, $2, $3, $4, $5, true, $6, NOW()) \
+        "INSERT INTO users (email, username, display_name, oauth_provider, oauth_provider_id, email_verified, avatar_url, terms_accepted_at, last_active_at) \
+         VALUES ($1, $2, $3, $4, $5, true, $6, NOW(), NOW()) \
          RETURNING {USER_COLS}"
     );
     let user = sqlx::query_as::<_, User>(&sql)
