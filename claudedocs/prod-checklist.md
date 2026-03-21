@@ -190,20 +190,11 @@
 
 ## Schema + API Audit (2026-03-21)
 
-### Critical (à faire)
-- [ ] **Drop `items.url` column** — data migrée vers `links[]`, colonne morte
-  - Backend : migration SQL + retirer du model Rust `Item` + retirer de `ITEM_COLS`
-  - Frontend : vérifier que `url` n'est pas utilisé dans `Item.swift` (probable, à checker)
-- [ ] **Drop 3 index redondants** — doublons des UNIQUE constraints
-  - `idx_circle_invites_token`, `idx_verification_token`, `idx_email_change_token`
-  - Backend only, aucun impact frontend
-- [ ] **`PUT /items/{id}` → `PATCH`** — accepte des updates partielles, devrait être PATCH
-  - Backend : changer `put(update_item)` → `patch(update_item)` dans le router
-  - Frontend : changer `APIEndpoint` de `.put` à `.patch` pour updateItem
-- [ ] **Protéger `/metrics`** — actuellement public, expose les métriques internes
-  - Backend : restreindre à localhost ou ajouter un bearer token
-  - Caddy : bloquer `/metrics` de l'extérieur (seul Prometheus interne y accède)
-  - Aucun impact frontend
+### Critical ✅
+- [x] **Drop `items.url`** — migration + model + DTOs + frontend Item.swift nettoyés
+- [x] **Drop 3 index redondants** — migration 20260322000004
+- [x] **PUT → PATCH /items/{id}** — backend router + frontend APIEndpoint
+- [x] **Protéger `/metrics`** — Caddy respond 404 (Prometheus passe par Docker interne)
 
 ### Important (avant scale)
 - [ ] **Pagination manquante sur 11 endpoints** — OK < 1000 users, problème après
