@@ -622,8 +622,7 @@ struct ProfileView: View {
         do {
             let url = try await APIClient.shared.uploadImage(data, type: "avatar")
             let body = UpdateProfileBody(
-                displayName: nil, username: nil, avatarUrl: .some(url),
-                reminderFreq: nil, reminderTime: nil, timezone: nil, locale: nil
+                displayName: nil, username: nil, avatarUrl: .some(url)
             )
             _ = try await APIClient.shared.request(.updateProfile(body)) as UserProfileResponse
             viewModel.avatarUrlString = url
@@ -639,8 +638,7 @@ struct ProfileView: View {
         isUploadingAvatar = true
         do {
             let body = UpdateProfileBody(
-                displayName: nil, username: nil, avatarUrl: .some(nil),
-                reminderFreq: nil, reminderTime: nil, timezone: nil, locale: nil
+                displayName: nil, username: nil, avatarUrl: .some(nil)
             )
             _ = try await APIClient.shared.request(.updateProfile(body)) as UserProfileResponse
             viewModel.avatarUrlString = nil

@@ -152,9 +152,6 @@
 
 /* Profile */
 "profile.title" = "Profil";
-"profile.reminders" = "Rappels";
-"profile.reminderFrequency" = "Fréquence";
-"profile.reminderTime" = "Heure";
 "profile.shares" = "Partages";
 "profile.data" = "Données";
 "profile.exportData" = "Exporter mes données";
@@ -171,12 +168,6 @@
 "profile.account" = "Compte";
 "profile.replayTutorial" = "Revoir le tutoriel";
 "profile.resetTips" = "Réinitialiser les astuces";
-
-/* Reminder frequency */
-"reminder.never" = "Jamais";
-"reminder.daily" = "Quotidien";
-"reminder.weekly" = "Hebdomadaire";
-"reminder.monthly" = "Mensuel";
 
 /* Placeholder */
 "comingSoon.title" = "Bientôt disponible";
@@ -434,8 +425,6 @@
 "tip.entraide.browse" = "Filtre les besoins par catégorie pour trouver qui aider";
 "tip.entraide.offer" = "Propose ton aide. Tu pourras envoyer un message à la personne";
 "tip.profile.username" = "Choisis un username pour que tes amis te trouvent";
-"tip.profile.reminders" = "Active les rappels pour ne jamais oublier l'envie d'un ami";
-
 /* Profile - Données & Légal */
 "profile.dataAndLegal" = "Données & Légal";
 
@@ -521,8 +510,6 @@
 "progress.step.firstFriend.sub" = "Recherche par nom d'utilisateur";
 "progress.step.firstCircle" = "Crée un cercle";
 "progress.step.firstCircle.sub" = "Famille, amis, collègues...";
-"progress.step.reminders" = "Active les rappels";
-"progress.step.reminders.sub" = "Pour ne rien oublier";
 "progress.step.pushNotifications" = "Active les notifications";
 "progress.step.pushNotifications.sub" = "Sois alerté quand quelqu'un réserve une envie";
 "progress.emailSent.title" = "Email envoyé";

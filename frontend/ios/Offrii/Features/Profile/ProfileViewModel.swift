@@ -7,8 +7,6 @@ final class ProfileViewModel {
     var username = ""
     var email = ""
     var avatarUrlString: String?
-    var reminderFreq = "never"
-    var reminderTime = "09:00"
     var isLoggingOut = false
     var loadError: String?
     var createdAt: Date?
@@ -37,15 +35,6 @@ final class ProfileViewModel {
             return String(parts[0].prefix(1) + parts[1].prefix(1)).uppercased()
         }
         return String(name.prefix(2)).uppercased()
-    }
-
-    var reminderFreqLabel: String {
-        switch reminderFreq {
-        case "daily": return NSLocalizedString("reminder.daily", comment: "")
-        case "weekly": return NSLocalizedString("reminder.weekly", comment: "")
-        case "monthly": return NSLocalizedString("reminder.monthly", comment: "")
-        default: return NSLocalizedString("reminder.never", comment: "")
-        }
     }
 
     var memberSinceText: String {
@@ -82,8 +71,6 @@ final class ProfileViewModel {
             username = profile.username
             email = profile.email
             avatarUrlString = profile.avatarUrl
-            reminderFreq = profile.reminderFreq ?? "never"
-            reminderTime = profile.reminderTime ?? "09:00"
             createdAt = profile.createdAt
             emailVerified = profile.emailVerified
         } catch {

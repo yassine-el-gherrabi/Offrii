@@ -176,19 +176,11 @@ struct UpdateProfileBody: Encodable {
     let username: String?
     /// `nil` = don't touch, `.some(nil)` = clear, `.some("url")` = set
     let avatarUrl: String??
-    let reminderFreq: String?
-    let reminderTime: String?
-    let timezone: String?
-    let locale: String?
 
     enum CodingKeys: String, CodingKey {
         case displayName = "display_name"
         case username
         case avatarUrl = "avatar_url"
-        case reminderFreq = "reminder_freq"
-        case reminderTime = "reminder_time"
-        case timezone
-        case locale
     }
 
     func encode(to encoder: Encoder) throws {
@@ -198,10 +190,6 @@ struct UpdateProfileBody: Encodable {
         if let avatarUrl {
             try container.encode(avatarUrl, forKey: .avatarUrl)
         }
-        try container.encodeIfPresent(reminderFreq, forKey: .reminderFreq)
-        try container.encodeIfPresent(reminderTime, forKey: .reminderTime)
-        try container.encodeIfPresent(timezone, forKey: .timezone)
-        try container.encodeIfPresent(locale, forKey: .locale)
     }
 }
 

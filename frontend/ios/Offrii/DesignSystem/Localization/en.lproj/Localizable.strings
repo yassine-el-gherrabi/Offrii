@@ -152,9 +152,6 @@
 
 /* Profile */
 "profile.title" = "Profile";
-"profile.reminders" = "Reminders";
-"profile.reminderFrequency" = "Frequency";
-"profile.reminderTime" = "Time";
 "profile.shares" = "Shares";
 "profile.data" = "Data";
 "profile.exportData" = "Export my data";
@@ -171,12 +168,6 @@
 "profile.account" = "Account";
 "profile.replayTutorial" = "Replay tutorial";
 "profile.resetTips" = "Reset tips";
-
-/* Reminder frequency */
-"reminder.never" = "Never";
-"reminder.daily" = "Daily";
-"reminder.weekly" = "Weekly";
-"reminder.monthly" = "Monthly";
 
 /* Placeholder */
 "comingSoon.title" = "Coming soon";
@@ -434,8 +425,6 @@
 "tip.entraide.browse" = "Filter needs by category to find who to help";
 "tip.entraide.offer" = "Offer your help. You can message the person";
 "tip.profile.username" = "Choose a username so friends can find you";
-"tip.profile.reminders" = "Enable reminders to never forget a friend's wish";
-
 /* Profile - Data & Legal */
 "profile.dataAndLegal" = "Data & Legal";
 
@@ -521,8 +510,6 @@
 "progress.step.firstFriend.sub" = "Search by username";
 "progress.step.firstCircle" = "Create a circle";
 "progress.step.firstCircle.sub" = "Family, friends, colleagues...";
-"progress.step.reminders" = "Enable reminders";
-"progress.step.reminders.sub" = "So you don't forget anything";
 "progress.step.pushNotifications" = "Enable notifications";
 "progress.step.pushNotifications.sub" = "Get alerted when someone claims a wish";
 "progress.emailSent.title" = "Email sent";

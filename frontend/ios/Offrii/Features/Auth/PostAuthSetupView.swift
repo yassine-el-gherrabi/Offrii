@@ -207,11 +207,7 @@ struct PostAuthSetupView: View {
             let body = UpdateProfileBody(
                 displayName: trimmed,
                 username: nil,
-                avatarUrl: nil,
-                reminderFreq: nil,
-                reminderTime: nil,
-                timezone: nil,
-                locale: nil
+                avatarUrl: nil
             )
             try await APIClient.shared.requestVoid(.updateProfile(body))
             try? await authManager.loadCurrentUser()
@@ -235,11 +231,7 @@ struct PostAuthSetupView: View {
             let body = UpdateProfileBody(
                 displayName: nil,
                 username: trimmed,
-                avatarUrl: nil,
-                reminderFreq: nil,
-                reminderTime: nil,
-                timezone: nil,
-                locale: nil
+                avatarUrl: nil
             )
             try await APIClient.shared.requestVoid(.updateProfile(body))
             try? await authManager.loadCurrentUser()

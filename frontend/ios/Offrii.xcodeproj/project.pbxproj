@@ -69,7 +69,6 @@
 		B10000000000000000000026 /* DataManagementView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000026 /* DataManagementView.swift */; };
 		B10000000000000000000027 /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000027 /* ProfileView.swift */; };
 		B10000000000000000000028 /* ProfileViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000028 /* ProfileViewModel.swift */; };
-		B10000000000000000000029 /* ReminderSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000029 /* ReminderSettingsView.swift */; };
 		B10000000000000000000030 /* ItemDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000030 /* ItemDetailView.swift */; };
 		B10000000000000000000031 /* ItemDetailViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000031 /* ItemDetailViewModel.swift */; };
 		B10000000000000000000032 /* ItemEditView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000032 /* ItemEditView.swift */; };
@@ -236,7 +235,6 @@
 		A10000000000000000000026 /* DataManagementView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataManagementView.swift; sourceTree = "<group>"; };
 		A10000000000000000000027 /* ProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileView.swift; sourceTree = "<group>"; };
 		A10000000000000000000028 /* ProfileViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileViewModel.swift; sourceTree = "<group>"; };
-		A10000000000000000000029 /* ReminderSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReminderSettingsView.swift; sourceTree = "<group>"; };
 		A10000000000000000000030 /* ItemDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ItemDetailView.swift; sourceTree = "<group>"; };
 		A10000000000000000000031 /* ItemDetailViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ItemDetailViewModel.swift; sourceTree = "<group>"; };
 		A10000000000000000000032 /* ItemEditView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ItemEditView.swift; sourceTree = "<group>"; };
@@ -625,7 +623,6 @@
 				A10000000000000000000026 /* DataManagementView.swift */,
 				A10000000000000000000027 /* ProfileView.swift */,
 				A10000000000000000000028 /* ProfileViewModel.swift */,
-				A10000000000000000000029 /* ReminderSettingsView.swift */,
 				A10000000000000000000049 /* UsernameEditView.swift */,
 			);
 			path = Profile;
@@ -907,7 +904,6 @@
 				B10000000000000000000026 /* DataManagementView.swift in Sources */,
 				B10000000000000000000027 /* ProfileView.swift in Sources */,
 				B10000000000000000000028 /* ProfileViewModel.swift in Sources */,
-				B10000000000000000000029 /* ReminderSettingsView.swift in Sources */,
 				B10000000000000000000049 /* UsernameEditView.swift in Sources */,
 				B10000000000000000000030 /* ItemDetailView.swift in Sources */,
 				B10000000000000000000031 /* ItemDetailViewModel.swift in Sources */,

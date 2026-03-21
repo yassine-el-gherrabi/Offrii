@@ -22,21 +22,15 @@ struct UserProfileResponse: Codable {
     let username: String
     let displayName: String?
     let avatarUrl: String?
-    let reminderFreq: String?
-    let reminderTime: String?
-    let timezone: String?
-    let locale: String?
     let emailVerified: Bool?
     let usernameCustomized: Bool?
     let createdAt: Date
     let updatedAt: Date?
 
     enum CodingKeys: String, CodingKey {
-        case id, email, username, timezone, locale
+        case id, email, username
         case displayName = "display_name"
         case avatarUrl = "avatar_url"
-        case reminderFreq = "reminder_freq"
-        case reminderTime = "reminder_time"
         case emailVerified = "email_verified"
         case usernameCustomized = "username_customized"
         case createdAt = "created_at"
@@ -47,10 +41,6 @@ struct UserProfileResponse: Codable {
         User(
             id: id, email: email, username: username,
             displayName: displayName, avatarUrl: avatarUrl,
-            reminderFreq: reminderFreq ?? "never",
-            reminderTime: reminderTime ?? "09:00",
-            timezone: timezone ?? TimeZone.current.identifier,
-            locale: locale ?? Locale.current.language.languageCode?.identifier ?? "fr",
             emailVerified: emailVerified,
             usernameCustomized: usernameCustomized,
             createdAt: createdAt, updatedAt: updatedAt ?? createdAt

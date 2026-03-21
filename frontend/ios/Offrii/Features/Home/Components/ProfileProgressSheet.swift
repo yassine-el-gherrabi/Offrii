@@ -377,8 +377,7 @@ struct ProfileProgressSheet: View {
         guard !trimmed.isEmpty else { return }
         do {
             let body = UpdateProfileBody(
-                displayName: trimmed, username: nil, avatarUrl: nil,
-                reminderFreq: nil, reminderTime: nil, timezone: nil, locale: nil
+                displayName: trimmed, username: nil, avatarUrl: nil
             )
             _ = try await APIClient.shared.request(.updateProfile(body)) as UserProfileResponse
             try? await authManager.loadCurrentUser()
@@ -416,8 +415,7 @@ struct ProfileProgressSheet: View {
         do {
             let url = try await APIClient.shared.uploadImage(data, type: "avatar")
             let body = UpdateProfileBody(
-                displayName: nil, username: nil, avatarUrl: .some(url),
-                reminderFreq: nil, reminderTime: nil, timezone: nil, locale: nil
+                displayName: nil, username: nil, avatarUrl: .some(url)
             )
             _ = try await APIClient.shared.request(.updateProfile(body)) as UserProfileResponse
             try? await authManager.loadCurrentUser()
