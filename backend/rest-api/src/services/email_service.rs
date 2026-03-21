@@ -361,6 +361,28 @@ Si vous n'êtes pas à l'origine de ce changement, contactez-nous immédiatement
 
         self.send_with_retry(email).await
     }
+
+    async fn send_inactivity_warning(&self, to: &str) -> Result<(), AppError> {
+        let body = r#"<h1 style="margin:0 0 8px;font-size:22px;font-weight:700;color:#1a1a2e;">
+Votre compte Offrii sera bientôt supprimé
+</h1>
+<p style="margin:0 0 16px;font-size:15px;color:#6b7280;line-height:1.6;">
+Votre compte Offrii est inactif depuis plus de 23 mois. Sans connexion dans les 30 prochains jours, votre compte et toutes vos données seront définitivement supprimés.
+</p>
+<p style="margin:0 0 0;font-size:15px;color:#6b7280;line-height:1.6;">
+Pour conserver votre compte, il vous suffit de vous connecter à l'application.
+</p>"#;
+
+        let html = email_template(body);
+        let email = CreateEmailBaseOptions::new(
+            &self.from,
+            [to],
+            "Votre compte Offrii sera bientôt supprimé",
+        )
+        .with_html(&html);
+
+        self.send_with_retry(email).await
+    }
 }
 
 #[cfg(test)]

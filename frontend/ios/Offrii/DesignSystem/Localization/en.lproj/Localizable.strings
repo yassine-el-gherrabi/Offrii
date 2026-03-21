@@ -44,9 +44,9 @@
 "auth.welcomeNew" = "Welcome!";
 "auth.emailOrUsername" = "Email or username";
 "auth.passwordHint" = "At least 8 characters";
-"auth.terms.accept" = "I accept the";
-"auth.terms.cgu" = "Terms of Use";
-"auth.terms.and" = " and the ";
+"auth.terms.prefix" = "By creating an account, you agree to our ";
+"auth.terms.cgu" = "Terms";
+"auth.terms.and" = " and ";
 "auth.terms.privacy" = "Privacy Policy";
 
 /* Errors */

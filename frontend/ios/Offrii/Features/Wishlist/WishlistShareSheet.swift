@@ -801,7 +801,10 @@ struct WishlistShareSheet: View {
 
     private func loadShareLinks() async {
         isLoadingLinks = true
-        do { shareLinks = try await APIClient.shared.request(.listShareLinks) } catch {}
+        do {
+            let response: PaginatedResponse<ShareLinkResponse> = try await APIClient.shared.request(.listShareLinks)
+            shareLinks = response.data
+        } catch {}
         isLoadingLinks = false
     }
 

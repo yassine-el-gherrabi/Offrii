@@ -96,6 +96,9 @@ pub trait UserRepo: Send + Sync {
         avatar_url: Option<&str>,
         display_name: Option<&str>,
     ) -> Result<User>;
+
+    /// Bulk-fetch display names (display_name ?? username) for a list of user IDs.
+    async fn find_display_names(&self, ids: &[Uuid]) -> Result<HashMap<Uuid, String>>;
 }
 
 #[async_trait]
@@ -408,6 +411,9 @@ pub trait UserService: Send + Sync {
     async fn delete_account(&self, user_id: Uuid) -> Result<(), AppError>;
 
     async fn export_data(&self, user_id: Uuid) -> Result<UserDataExport, AppError>;
+
+    /// Bulk-fetch display names (display_name ?? username) for a list of user IDs.
+    async fn find_display_names(&self, ids: &[Uuid]) -> Result<HashMap<Uuid, String>, AppError>;
 }
 
 #[async_trait]
@@ -434,6 +440,15 @@ pub trait FriendRepo: Send + Sync {
 
     async fn find_pending_requests(&self, to_user_id: Uuid) -> Result<Vec<FriendRequest>>;
 
+    async fn find_pending_requests_paginated(
+        &self,
+        to_user_id: Uuid,
+        limit: i64,
+        offset: i64,
+    ) -> Result<Vec<FriendRequest>>;
+
+    async fn count_pending_requests(&self, to_user_id: Uuid) -> Result<i64>;
+
     async fn find_request_by_id(&self, id: Uuid) -> Result<Option<FriendRequest>>;
 
     async fn update_request_status(&self, id: Uuid, status: FriendRequestStatus) -> Result<bool>;
@@ -446,9 +461,27 @@ pub trait FriendRepo: Send + Sync {
 
     async fn list_friends_with_since(&self, user_id: Uuid) -> Result<Vec<FriendWithSince>>;
 
+    async fn list_friends_with_since_paginated(
+        &self,
+        user_id: Uuid,
+        limit: i64,
+        offset: i64,
+    ) -> Result<Vec<FriendWithSince>>;
+
+    async fn count_friends(&self, user_id: Uuid) -> Result<i64>;
+
     async fn are_friends(&self, user_a_id: Uuid, user_b_id: Uuid) -> Result<bool>;
 
     async fn find_sent_requests(&self, from_user_id: Uuid) -> Result<Vec<FriendRequest>>;
+
+    async fn find_sent_requests_paginated(
+        &self,
+        from_user_id: Uuid,
+        limit: i64,
+        offset: i64,
+    ) -> Result<Vec<FriendRequest>>;
+
+    async fn count_sent_requests(&self, from_user_id: Uuid) -> Result<i64>;
 
     async fn find_pending_between(
         &self,
@@ -480,7 +513,9 @@ pub trait FriendService: Send + Sync {
     async fn list_pending_requests(
         &self,
         user_id: Uuid,
-    ) -> Result<Vec<FriendRequestResponse>, AppError>;
+        limit: i64,
+        offset: i64,
+    ) -> Result<(Vec<FriendRequestResponse>, i64), AppError>;
 
     async fn accept_request(
         &self,
@@ -490,12 +525,19 @@ pub trait FriendService: Send + Sync {
 
     async fn decline_request(&self, request_id: Uuid, user_id: Uuid) -> Result<(), AppError>;
 
-    async fn list_friends(&self, user_id: Uuid) -> Result<Vec<FriendResponse>, AppError>;
+    async fn list_friends(
+        &self,
+        user_id: Uuid,
+        limit: i64,
+        offset: i64,
+    ) -> Result<(Vec<FriendResponse>, i64), AppError>;
 
     async fn list_sent_requests(
         &self,
         user_id: Uuid,
-    ) -> Result<Vec<SentFriendRequestResponse>, AppError>;
+        limit: i64,
+        offset: i64,
+    ) -> Result<(Vec<SentFriendRequestResponse>, i64), AppError>;
 
     async fn cancel_request(&self, request_id: Uuid, user_id: Uuid) -> Result<(), AppError>;
 
@@ -539,6 +581,8 @@ pub trait CircleMemberRepo: Send + Sync {
     async fn count_members(&self, circle_id: Uuid) -> Result<i64>;
 
     async fn find_direct_circle_between(&self, user_a: Uuid, user_b: Uuid) -> Result<Option<Uuid>>;
+
+    async fn is_member(&self, circle_id: Uuid, user_id: Uuid) -> Result<bool>;
 }
 
 #[async_trait]
@@ -573,6 +617,7 @@ pub trait CircleShareRuleRepo: Send + Sync {
         category_ids: &[Uuid],
     ) -> Result<CircleShareRule>;
     async fn delete(&self, circle_id: Uuid, user_id: Uuid) -> Result<bool>;
+    async fn list_by_user(&self, user_id: Uuid) -> Result<Vec<CircleShareRule>>;
 }
 
 #[async_trait]
@@ -592,6 +637,8 @@ pub trait CircleItemRepo: Send + Sync {
     async fn find(&self, circle_id: Uuid, item_id: Uuid) -> Result<Option<CircleItem>>;
 
     async fn list_circles_for_item(&self, item_id: Uuid) -> Result<Vec<Uuid>>;
+
+    async fn delete_by_circle_and_user(&self, circle_id: Uuid, user_id: Uuid) -> Result<u64>;
 
     /// Batch fetch circle names for multiple items.
     /// Returns: item_id → Vec<(circle_id, name, is_direct)>
@@ -628,7 +675,12 @@ pub trait CircleEventRepo: Send + Sync {
 pub trait CircleService: Send + Sync {
     async fn create_circle(&self, user_id: Uuid, name: &str) -> Result<CircleResponse, AppError>;
 
-    async fn list_circles(&self, user_id: Uuid) -> Result<Vec<CircleResponse>, AppError>;
+    async fn list_circles(
+        &self,
+        user_id: Uuid,
+        limit: i64,
+        offset: i64,
+    ) -> Result<(Vec<CircleResponse>, i64), AppError>;
 
     async fn get_circle(
         &self,
@@ -673,7 +725,9 @@ pub trait CircleService: Send + Sync {
         &self,
         circle_id: Uuid,
         user_id: Uuid,
-    ) -> Result<Vec<InviteResponse>, AppError>;
+        limit: i64,
+        offset: i64,
+    ) -> Result<(Vec<InviteResponse>, i64), AppError>;
 
     async fn revoke_invite(
         &self,
@@ -700,7 +754,9 @@ pub trait CircleService: Send + Sync {
         &self,
         circle_id: Uuid,
         user_id: Uuid,
-    ) -> Result<Vec<CircleItemResponse>, AppError>;
+        limit: i64,
+        offset: i64,
+    ) -> Result<(Vec<CircleItemResponse>, i64), AppError>;
 
     async fn get_circle_item(
         &self,
@@ -756,7 +812,12 @@ pub trait CircleService: Send + Sync {
     async fn list_reservations(
         &self,
         user_id: Uuid,
-    ) -> Result<Vec<crate::dto::circles::ReservationResponse>, AppError>;
+        limit: i64,
+        offset: i64,
+    ) -> Result<(Vec<crate::dto::circles::ReservationResponse>, i64), AppError>;
+
+    /// Delete all circle_items shared by a user in a given circle.
+    async fn unshare_all_for_user(&self, circle_id: Uuid, user_id: Uuid) -> Result<(), AppError>;
 }
 
 // ── Share link traits ───────────────────────────────────────────────
@@ -776,6 +837,15 @@ pub trait ShareLinkRepo: Send + Sync {
     ) -> Result<ShareLink>;
 
     async fn list_by_user(&self, user_id: Uuid) -> Result<Vec<ShareLink>>;
+
+    async fn list_by_user_paginated(
+        &self,
+        user_id: Uuid,
+        limit: i64,
+        offset: i64,
+    ) -> Result<Vec<ShareLink>>;
+
+    async fn count_by_user(&self, user_id: Uuid) -> Result<i64>;
 
     async fn find_by_id(&self, id: Uuid, user_id: Uuid) -> Result<Option<ShareLink>>;
 
@@ -806,7 +876,12 @@ pub trait ShareLinkService: Send + Sync {
         scope_data: Option<&serde_json::Value>,
     ) -> Result<ShareLinkResponse, AppError>;
 
-    async fn list_share_links(&self, user_id: Uuid) -> Result<Vec<ShareLinkListItem>, AppError>;
+    async fn list_share_links(
+        &self,
+        user_id: Uuid,
+        limit: i64,
+        offset: i64,
+    ) -> Result<(Vec<ShareLinkListItem>, i64), AppError>;
 
     async fn delete_share_link(&self, id: Uuid, user_id: Uuid) -> Result<(), AppError>;
 
@@ -916,7 +991,26 @@ pub trait CommunityWishRepo: Send + Sync {
     async fn count_open(&self, category: Option<&str>, caller_id: Option<Uuid>) -> Result<i64>;
 
     async fn list_by_owner(&self, owner_id: Uuid) -> Result<Vec<CommunityWish>>;
+
+    async fn list_by_owner_paginated(
+        &self,
+        owner_id: Uuid,
+        limit: i64,
+        offset: i64,
+    ) -> Result<Vec<CommunityWish>>;
+
+    async fn count_by_owner(&self, owner_id: Uuid) -> Result<i64>;
+
     async fn list_by_donor(&self, donor_id: Uuid) -> Result<Vec<CommunityWish>>;
+
+    async fn list_by_donor_paginated(
+        &self,
+        donor_id: Uuid,
+        limit: i64,
+        offset: i64,
+    ) -> Result<Vec<CommunityWish>>;
+
+    async fn count_by_donor(&self, donor_id: Uuid) -> Result<i64>;
 
     async fn count_active_by_owner(&self, owner_id: Uuid) -> Result<i64>;
 
@@ -1047,12 +1141,16 @@ pub trait CommunityWishService: Send + Sync {
     async fn list_my_wishes(
         &self,
         user_id: Uuid,
-    ) -> Result<Vec<crate::dto::community_wishes::MyWishResponse>, crate::errors::AppError>;
+        limit: i64,
+        offset: i64,
+    ) -> Result<(Vec<crate::dto::community_wishes::MyWishResponse>, i64), crate::errors::AppError>;
 
     async fn list_my_offers(
         &self,
         user_id: Uuid,
-    ) -> Result<Vec<crate::dto::community_wishes::WishResponse>, crate::errors::AppError>;
+        limit: i64,
+        offset: i64,
+    ) -> Result<(Vec<crate::dto::community_wishes::WishResponse>, i64), crate::errors::AppError>;
 
     async fn list_recent_fulfilled(
         &self,

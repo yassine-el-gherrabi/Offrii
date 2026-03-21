@@ -27,6 +27,7 @@ services:
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       MODERATION_ENABLED: "true"
       OPENAI_API_KEY: ${OPENAI_API_KEY}
+      SEED_DEV_DATA: "true"
     ports:
       - "3000:3000"
     depends_on:

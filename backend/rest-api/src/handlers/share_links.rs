@@ -1,15 +1,23 @@
-use axum::extract::{Path, State};
+use axum::extract::{Path, Query, State};
 use axum::http::StatusCode;
 use axum::routing::get;
 use axum::{Json, Router};
+use serde::Deserialize;
 use uuid::Uuid;
 
 use crate::AppState;
+use crate::dto::pagination::{PaginatedResponse, normalize_pagination};
 use crate::dto::share_links::{
     CreateShareLinkRequest, ShareLinkListItem, ShareLinkResponse, UpdateShareLinkRequest,
 };
 use crate::errors::AppError;
 use crate::middleware::AuthUser;
+
+#[derive(Debug, Deserialize)]
+struct PaginationQuery {
+    page: Option<i64>,
+    limit: Option<i64>,
+}
 
 pub fn router() -> Router<AppState> {
     Router::new()
@@ -69,13 +77,14 @@ async fn create_share_link(
 async fn list_share_links(
     State(state): State<AppState>,
     auth_user: AuthUser,
-) -> Result<Json<Vec<ShareLinkListItem>>, AppError> {
-    let response = state
+    Query(q): Query<PaginationQuery>,
+) -> Result<Json<PaginatedResponse<ShareLinkListItem>>, AppError> {
+    let (page, limit, offset) = normalize_pagination(q.page, q.limit);
+    let (data, total) = state
         .share_links
-        .list_share_links(auth_user.user_id)
+        .list_share_links(auth_user.user_id, limit, offset)
         .await?;
-
-    Ok(Json(response))
+    Ok(Json(PaginatedResponse::new(data, total, page, limit)))
 }
 
 #[utoipa::path(

@@ -385,18 +385,33 @@ impl traits::ShareLinkService for PgShareLinkService {
     }
 
     #[tracing::instrument(skip(self))]
-    async fn list_share_links(&self, user_id: Uuid) -> Result<Vec<ShareLinkListItem>, AppError> {
-        let links = self
-            .share_link_repo
-            .list_by_user(user_id)
-            .await
-            .map_err(AppError::Internal)?;
+    async fn list_share_links(
+        &self,
+        user_id: Uuid,
+        limit: i64,
+        offset: i64,
+    ) -> Result<(Vec<ShareLinkListItem>, i64), AppError> {
+        let (links, total) = tokio::try_join!(
+            async {
+                self.share_link_repo
+                    .list_by_user_paginated(user_id, limit, offset)
+                    .await
+                    .map_err(AppError::Internal)
+            },
+            async {
+                self.share_link_repo
+                    .count_by_user(user_id)
+                    .await
+                    .map_err(AppError::Internal)
+            },
+        )?;
 
         let base_url = &self.app_base_url;
-        Ok(links
+        let items = links
             .into_iter()
             .map(|l| ShareLinkListItem::from_model(l, base_url))
-            .collect())
+            .collect();
+        Ok((items, total))
     }
 
     #[tracing::instrument(skip(self))]

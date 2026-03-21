@@ -18,18 +18,18 @@ fn validate_request(req: &impl Validate) -> Result<(), AppError> {
 pub fn router() -> Router<AppState> {
     Router::new()
         .route(
-            "/me",
+            "/profile",
             get(get_profile)
                 .patch(update_profile)
                 .delete(delete_account),
         )
-        .route("/me/export", get(export_data))
-        .route("/me/email", post(request_email_change))
+        .route("/export", get(export_data))
+        .route("/email", post(request_email_change))
 }
 
 #[utoipa::path(
     get,
-    path = "/users/me",
+    path = "/me/profile",
     responses(
         (status = 200, body = UserProfileResponse),
     ),
@@ -47,7 +47,7 @@ async fn get_profile(
 
 #[utoipa::path(
     patch,
-    path = "/users/me",
+    path = "/me/profile",
     request_body = UpdateProfileRequest,
     responses(
         (status = 200, body = UserProfileResponse),
@@ -91,7 +91,7 @@ async fn update_profile(
 
 #[utoipa::path(
     get,
-    path = "/users/me/export",
+    path = "/me/export",
     responses(
         (status = 200, body = UserDataExport),
     ),
@@ -109,7 +109,7 @@ async fn export_data(
 
 #[utoipa::path(
     delete,
-    path = "/users/me",
+    path = "/me/profile",
     responses(
         (status = 204, description = "Account deleted"),
     ),
@@ -127,7 +127,7 @@ async fn delete_account(
 
 #[utoipa::path(
     post,
-    path = "/users/me/email",
+    path = "/me/email",
     request_body = ChangeEmailRequest,
     responses(
         (status = 204, description = "Verification email sent to new address"),

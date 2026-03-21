@@ -7,6 +7,8 @@ use uuid::Uuid;
 use validator::Validate;
 
 use crate::AppState;
+use serde::Deserialize;
+
 use crate::dto::circles::{
     AddMemberRequest, BatchShareRequest, CircleDetailResponse, CircleEventResponse,
     CircleItemResponse, CircleResponse, CircleShareRuleSummary, CreateCircleRequest,
@@ -17,6 +19,12 @@ use crate::dto::circles::{
 use crate::dto::pagination::{PaginatedResponse, normalize_pagination};
 use crate::errors::AppError;
 use crate::middleware::AuthUser;
+
+#[derive(Debug, Deserialize)]
+struct PaginationQuery {
+    page: Option<i64>,
+    limit: Option<i64>,
+}
 
 fn validate_request(req: &impl Validate) -> Result<(), AppError> {
     req.validate()
@@ -78,7 +86,7 @@ async fn create_circle(
     get,
     path = "/circles",
     responses(
-        (status = 200, body = Vec<CircleResponse>),
+        (status = 200, description = "Paginated response"),
     ),
     security(("bearer_auth" = [])),
     tag = "Circles"
@@ -87,9 +95,14 @@ async fn create_circle(
 async fn list_circles(
     State(state): State<AppState>,
     auth_user: AuthUser,
-) -> Result<Json<Vec<CircleResponse>>, AppError> {
-    let response = state.circles.list_circles(auth_user.user_id).await?;
-    Ok(Json(response))
+    Query(q): Query<PaginationQuery>,
+) -> Result<Json<PaginatedResponse<CircleResponse>>, AppError> {
+    let (page, limit, offset) = normalize_pagination(q.page, q.limit);
+    let (data, total) = state
+        .circles
+        .list_circles(auth_user.user_id, limit, offset)
+        .await?;
+    Ok(Json(PaginatedResponse::new(data, total, page, limit)))
 }
 
 #[utoipa::path(
@@ -319,7 +332,7 @@ async fn remove_member(
     path = "/circles/{id}/invites",
     params(("id" = Uuid, Path, description = "Circle ID")),
     responses(
-        (status = 200, body = Vec<InviteResponse>),
+        (status = 200, description = "Paginated response"),
     ),
     security(("bearer_auth" = [])),
     tag = "Circles"
@@ -329,16 +342,16 @@ async fn list_invites(
     State(state): State<AppState>,
     auth_user: AuthUser,
     Path(id): Path<Uuid>,
-) -> Result<Json<Vec<InviteResponse>>, AppError> {
+    Query(q): Query<PaginationQuery>,
+) -> Result<Json<PaginatedResponse<InviteResponse>>, AppError> {
+    let (page, limit, offset) = normalize_pagination(q.page, q.limit);
     let base_url = &state.app_base_url;
-    let response: Vec<InviteResponse> = state
+    let (data, total) = state
         .circles
-        .list_invites(id, auth_user.user_id)
-        .await?
-        .into_iter()
-        .map(|r| r.with_url(base_url))
-        .collect();
-    Ok(Json(response))
+        .list_invites(id, auth_user.user_id, limit, offset)
+        .await?;
+    let data: Vec<InviteResponse> = data.into_iter().map(|r| r.with_url(base_url)).collect();
+    Ok(Json(PaginatedResponse::new(data, total, page, limit)))
 }
 
 #[utoipa::path(
@@ -433,19 +446,9 @@ async fn get_share_rule(
     auth_user: AuthUser,
     Path(id): Path<Uuid>,
 ) -> Result<Json<crate::dto::circles::ShareRuleResponse>, AppError> {
-    // Membership check
-    let is_member: bool = sqlx::query_scalar(
-        "SELECT EXISTS(SELECT 1 FROM circle_members WHERE circle_id = $1 AND user_id = $2)",
-    )
-    .bind(id)
-    .bind(auth_user.user_id)
-    .fetch_one(&state.db)
-    .await
-    .map_err(|e| AppError::Internal(e.into()))?;
-
-    if !is_member {
-        return Err(AppError::Forbidden("not a member of this circle".into()));
-    }
+    // Membership check via circle service (no raw SQL in handlers)
+    let circle = state.circles.get_circle(id, auth_user.user_id).await?;
+    let _ = circle; // ensure membership; get_circle already checks
 
     let rule = state
         .share_rules
@@ -485,18 +488,9 @@ async fn set_share_rule(
     Path(id): Path<Uuid>,
     Json(req): Json<crate::dto::circles::SetShareRuleRequest>,
 ) -> Result<StatusCode, AppError> {
-    let is_member: bool = sqlx::query_scalar(
-        "SELECT EXISTS(SELECT 1 FROM circle_members WHERE circle_id = $1 AND user_id = $2)",
-    )
-    .bind(id)
-    .bind(auth_user.user_id)
-    .fetch_one(&state.db)
-    .await
-    .map_err(|e| AppError::Internal(e.into()))?;
-
-    if !is_member {
-        return Err(AppError::Forbidden("not a member of this circle".into()));
-    }
+    // Membership check via circle service (no raw SQL in handlers)
+    let circle = state.circles.get_circle(id, auth_user.user_id).await?;
+    let _ = circle;
 
     // Validate share_mode
     let valid_modes = ["none", "all", "categories", "selection"];
@@ -507,14 +501,13 @@ async fn set_share_rule(
     }
 
     // Clean up circle_items when switching away from selection mode
-    // (or stopping sharing entirely)
+    // (or stopping sharing entirely) — via repo, not raw SQL
     if req.share_mode != "selection" {
-        sqlx::query("DELETE FROM circle_items WHERE circle_id = $1 AND shared_by = $2")
-            .bind(id)
-            .bind(auth_user.user_id)
-            .execute(&state.db)
-            .await
-            .map_err(|e| AppError::Internal(e.into()))?;
+        // circle_items deletion is best-effort
+        let _ = state
+            .circles
+            .unshare_all_for_user(id, auth_user.user_id)
+            .await;
     }
 
     if req.share_mode == "none" {
@@ -539,7 +532,7 @@ async fn set_share_rule(
     path = "/circles/{id}/items",
     params(("id" = Uuid, Path, description = "Circle ID")),
     responses(
-        (status = 200, body = Vec<CircleItemResponse>),
+        (status = 200, description = "Paginated response"),
     ),
     security(("bearer_auth" = [])),
     tag = "Circles"
@@ -549,12 +542,14 @@ async fn list_circle_items(
     State(state): State<AppState>,
     auth_user: AuthUser,
     Path(id): Path<Uuid>,
-) -> Result<Json<Vec<crate::dto::circles::CircleItemResponse>>, AppError> {
-    let response = state
+    Query(q): Query<PaginationQuery>,
+) -> Result<Json<PaginatedResponse<CircleItemResponse>>, AppError> {
+    let (page, limit, offset) = normalize_pagination(q.page, q.limit);
+    let (data, total) = state
         .circles
-        .list_circle_items(id, auth_user.user_id)
+        .list_circle_items(id, auth_user.user_id, limit, offset)
         .await?;
-    Ok(Json(response))
+    Ok(Json(PaginatedResponse::new(data, total, page, limit)))
 }
 
 #[utoipa::path(
@@ -663,7 +658,7 @@ async fn transfer_ownership(
     get,
     path = "/circles/my-reservations",
     responses(
-        (status = 200, body = Vec<ReservationResponse>),
+        (status = 200, description = "Paginated response"),
     ),
     security(("bearer_auth" = [])),
     tag = "Circles"
@@ -672,16 +667,21 @@ async fn transfer_ownership(
 async fn list_reservations(
     State(state): State<AppState>,
     auth_user: AuthUser,
-) -> Result<Json<Vec<ReservationResponse>>, AppError> {
-    let reservations = state.circles.list_reservations(auth_user.user_id).await?;
-    Ok(Json(reservations))
+    Query(q): Query<PaginationQuery>,
+) -> Result<Json<PaginatedResponse<ReservationResponse>>, AppError> {
+    let (page, limit, offset) = normalize_pagination(q.page, q.limit);
+    let (data, total) = state
+        .circles
+        .list_reservations(auth_user.user_id, limit, offset)
+        .await?;
+    Ok(Json(PaginatedResponse::new(data, total, page, limit)))
 }
 
 #[utoipa::path(
     get,
     path = "/circles/my-share-rules",
     responses(
-        (status = 200, body = Vec<CircleShareRuleSummary>),
+        (status = 200, description = "Paginated response"),
     ),
     security(("bearer_auth" = [])),
     tag = "Circles"
@@ -689,27 +689,31 @@ async fn list_reservations(
 async fn list_my_share_rules(
     State(state): State<AppState>,
     auth_user: AuthUser,
-) -> Result<Json<Vec<crate::dto::circles::CircleShareRuleSummary>>, AppError> {
-    let rules: Vec<(Uuid, String, Vec<Uuid>)> = sqlx::query_as(
-        "SELECT circle_id, share_mode, category_ids FROM circle_share_rules WHERE user_id = $1",
-    )
-    .bind(auth_user.user_id)
-    .fetch_all(&state.db)
-    .await
-    .map_err(|e| AppError::Internal(e.into()))?;
+    Query(q): Query<PaginationQuery>,
+) -> Result<Json<PaginatedResponse<CircleShareRuleSummary>>, AppError> {
+    let (page, limit, offset) = normalize_pagination(q.page, q.limit);
+    let rules = state
+        .share_rules
+        .list_by_user(auth_user.user_id)
+        .await
+        .map_err(AppError::Internal)?;
 
-    Ok(Json(
-        rules
-            .into_iter()
-            .map(|(circle_id, share_mode, category_ids)| {
-                crate::dto::circles::CircleShareRuleSummary {
-                    circle_id,
-                    share_mode,
-                    category_count: category_ids.len(),
-                }
-            })
-            .collect(),
-    ))
+    let all: Vec<CircleShareRuleSummary> = rules
+        .into_iter()
+        .map(|r| CircleShareRuleSummary {
+            circle_id: r.circle_id,
+            share_mode: r.share_mode,
+            category_count: r.category_ids.len(),
+        })
+        .collect();
+
+    let total = all.len() as i64;
+    let data = all
+        .into_iter()
+        .skip(offset as usize)
+        .take(limit as usize)
+        .collect();
+    Ok(Json(PaginatedResponse::new(data, total, page, limit)))
 }
 
 /// Public HTML page for circle invite links: GET /join/{token}

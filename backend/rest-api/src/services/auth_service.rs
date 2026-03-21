@@ -99,6 +99,17 @@ impl PgAuthService {
             oauth_verifier,
         }
     }
+
+    async fn log_connection(&self, user_id: Uuid, ip: &str, user_agent: &str) {
+        let _ = sqlx::query(
+            "INSERT INTO connection_logs (user_id, ip, user_agent) VALUES ($1, $2, $3)",
+        )
+        .bind(user_id)
+        .bind(ip)
+        .bind(user_agent)
+        .execute(&self.pool)
+        .await;
+    }
 }
 
 #[async_trait]
@@ -110,6 +121,8 @@ impl traits::AuthService for PgAuthService {
         password: &str,
         display_name: Option<&str>,
         requested_username: Option<&str>,
+        ip: &str,
+        user_agent: &str,
     ) -> Result<AuthResponse, AppError> {
         let email = email.trim().to_lowercase();
 
@@ -234,6 +247,8 @@ impl traits::AuthService for PgAuthService {
             }
         });
 
+        self.log_connection(user.id, ip, user_agent).await;
+
         Ok(AuthResponse {
             tokens,
             user: UserResponse::from(&user),
@@ -242,7 +257,13 @@ impl traits::AuthService for PgAuthService {
     }
 
     #[tracing::instrument(skip(self, password))]
-    async fn login(&self, identifier: &str, password: &str) -> Result<AuthResponse, AppError> {
+    async fn login(
+        &self,
+        identifier: &str,
+        password: &str,
+        ip: &str,
+        user_agent: &str,
+    ) -> Result<AuthResponse, AppError> {
         let identifier = identifier.trim().to_lowercase();
         let invalid_credentials =
             || AppError::Unauthorized("invalid email/username or password".into());
@@ -323,6 +344,8 @@ impl traits::AuthService for PgAuthService {
             .revoke_excess_for_user(user.id, MAX_REFRESH_TOKENS_PER_USER)
             .await
             .map_err(AppError::Internal)?;
+
+        self.log_connection(user.id, ip, user_agent).await;
 
         Ok(AuthResponse {
             tokens,
@@ -809,6 +832,8 @@ impl traits::AuthService for PgAuthService {
         provider: &str,
         id_token: &str,
         display_name: Option<&str>,
+        ip: &str,
+        user_agent: &str,
     ) -> Result<AuthResponse, AppError> {
         // 1. Verify the token according to provider
         let claims = match provider {
@@ -930,6 +955,8 @@ impl traits::AuthService for PgAuthService {
             .revoke_excess_for_user(user.id, MAX_REFRESH_TOKENS_PER_USER)
             .await
             .map_err(AppError::Internal)?;
+
+        self.log_connection(user.id, ip, user_agent).await;
 
         Ok(AuthResponse {
             tokens,

@@ -17,6 +17,8 @@ pub struct User {
     pub username_customized: bool,
     pub avatar_url: Option<String>,
     pub terms_accepted_at: Option<DateTime<Utc>>,
+    pub last_active_at: Option<DateTime<Utc>>,
+    pub inactivity_notice_sent_at: Option<DateTime<Utc>>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }

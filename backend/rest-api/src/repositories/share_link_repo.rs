@@ -51,6 +51,19 @@ impl traits::ShareLinkRepo for PgShareLinkRepo {
         list_by_user(&self.pool, user_id).await
     }
 
+    async fn list_by_user_paginated(
+        &self,
+        user_id: Uuid,
+        limit: i64,
+        offset: i64,
+    ) -> Result<Vec<ShareLink>> {
+        list_by_user_paginated(&self.pool, user_id, limit, offset).await
+    }
+
+    async fn count_by_user(&self, user_id: Uuid) -> Result<i64> {
+        count_by_user(&self.pool, user_id).await
+    }
+
     async fn find_by_id(&self, id: Uuid, user_id: Uuid) -> Result<Option<ShareLink>> {
         find_by_id(&self.pool, id, user_id).await
     }
@@ -132,6 +145,34 @@ pub(crate) async fn list_by_user(
         .await?;
 
     Ok(links)
+}
+
+pub(crate) async fn list_by_user_paginated(
+    exec: impl PgExecutor<'_>,
+    user_id: Uuid,
+    limit: i64,
+    offset: i64,
+) -> Result<Vec<ShareLink>> {
+    let sql = format!(
+        "SELECT {SHARE_LINK_COLS} FROM share_links \
+         WHERE user_id = $1 \
+         ORDER BY created_at DESC LIMIT $2 OFFSET $3"
+    );
+    let links = sqlx::query_as::<_, ShareLink>(&sql)
+        .bind(user_id)
+        .bind(limit)
+        .bind(offset)
+        .fetch_all(exec)
+        .await?;
+    Ok(links)
+}
+
+pub(crate) async fn count_by_user(exec: impl PgExecutor<'_>, user_id: Uuid) -> Result<i64> {
+    let (count,): (i64,) = sqlx::query_as("SELECT COUNT(*) FROM share_links WHERE user_id = $1")
+        .bind(user_id)
+        .fetch_one(exec)
+        .await?;
+    Ok(count)
 }
 
 pub(crate) async fn find_by_id(

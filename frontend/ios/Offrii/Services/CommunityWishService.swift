@@ -23,7 +23,8 @@ final class CommunityWishService: Sendable {
     // MARK: - List My Wishes
 
     func listMyWishes() async throws -> [MyWish] {
-        try await client.request(.listMyCommunityWishes)
+        let response: PaginatedResponse<MyWish> = try await client.request(.listMyCommunityWishes)
+        return response.data
     }
 
     func listRecentFulfilled() async throws -> [CommunityWish] {
@@ -31,7 +32,8 @@ final class CommunityWishService: Sendable {
     }
 
     func listMyOffers() async throws -> [CommunityWish] {
-        try await client.request(.listMyCommunityOffers)
+        let response: PaginatedResponse<CommunityWish> = try await client.request(.listMyCommunityOffers)
+        return response.data
     }
 
     // MARK: - Get Wish Detail

@@ -34,6 +34,19 @@ impl traits::FriendRepo for PgFriendRepo {
         find_pending_requests(&self.pool, to_user_id).await
     }
 
+    async fn find_pending_requests_paginated(
+        &self,
+        to_user_id: Uuid,
+        limit: i64,
+        offset: i64,
+    ) -> Result<Vec<FriendRequest>> {
+        find_pending_requests_paginated(&self.pool, to_user_id, limit, offset).await
+    }
+
+    async fn count_pending_requests(&self, to_user_id: Uuid) -> Result<i64> {
+        count_pending_requests(&self.pool, to_user_id).await
+    }
+
     async fn find_request_by_id(&self, id: Uuid) -> Result<Option<FriendRequest>> {
         find_request_by_id(&self.pool, id).await
     }
@@ -62,8 +75,34 @@ impl traits::FriendRepo for PgFriendRepo {
         list_friends_with_since(&self.pool, user_id).await
     }
 
+    async fn list_friends_with_since_paginated(
+        &self,
+        user_id: Uuid,
+        limit: i64,
+        offset: i64,
+    ) -> Result<Vec<FriendWithSince>> {
+        list_friends_with_since_paginated(&self.pool, user_id, limit, offset).await
+    }
+
+    async fn count_friends(&self, user_id: Uuid) -> Result<i64> {
+        count_friends(&self.pool, user_id).await
+    }
+
     async fn find_sent_requests(&self, from_user_id: Uuid) -> Result<Vec<FriendRequest>> {
         find_sent_requests(&self.pool, from_user_id).await
+    }
+
+    async fn find_sent_requests_paginated(
+        &self,
+        from_user_id: Uuid,
+        limit: i64,
+        offset: i64,
+    ) -> Result<Vec<FriendRequest>> {
+        find_sent_requests_paginated(&self.pool, from_user_id, limit, offset).await
+    }
+
+    async fn count_sent_requests(&self, from_user_id: Uuid) -> Result<i64> {
+        count_sent_requests(&self.pool, from_user_id).await
     }
 
     async fn find_pending_between(
@@ -281,6 +320,102 @@ pub(crate) async fn find_pending_between(
     .await?;
 
     Ok(req)
+}
+
+pub(crate) async fn find_pending_requests_paginated(
+    exec: impl PgExecutor<'_>,
+    to_user_id: Uuid,
+    limit: i64,
+    offset: i64,
+) -> Result<Vec<FriendRequest>> {
+    let reqs = sqlx::query_as::<_, FriendRequest>(
+        "SELECT id, from_user_id, to_user_id, status, created_at \
+         FROM friend_requests \
+         WHERE to_user_id = $1 AND status = 'pending' \
+         ORDER BY created_at DESC LIMIT $2 OFFSET $3",
+    )
+    .bind(to_user_id)
+    .bind(limit)
+    .bind(offset)
+    .fetch_all(exec)
+    .await?;
+    Ok(reqs)
+}
+
+pub(crate) async fn count_pending_requests(
+    exec: impl PgExecutor<'_>,
+    to_user_id: Uuid,
+) -> Result<i64> {
+    let (count,): (i64,) = sqlx::query_as(
+        "SELECT COUNT(*) FROM friend_requests WHERE to_user_id = $1 AND status = 'pending'",
+    )
+    .bind(to_user_id)
+    .fetch_one(exec)
+    .await?;
+    Ok(count)
+}
+
+pub(crate) async fn list_friends_with_since_paginated(
+    exec: impl PgExecutor<'_>,
+    user_id: Uuid,
+    limit: i64,
+    offset: i64,
+) -> Result<Vec<FriendWithSince>> {
+    let rows = sqlx::query_as::<_, FriendWithSince>(
+        "SELECT u.id AS user_id, u.username, u.display_name, f.created_at AS since \
+         FROM friendships f \
+         JOIN users u ON u.id = CASE WHEN f.user_a_id = $1 THEN f.user_b_id ELSE f.user_a_id END \
+         WHERE f.user_a_id = $1 OR f.user_b_id = $1 \
+         ORDER BY f.created_at DESC LIMIT $2 OFFSET $3",
+    )
+    .bind(user_id)
+    .bind(limit)
+    .bind(offset)
+    .fetch_all(exec)
+    .await?;
+    Ok(rows)
+}
+
+pub(crate) async fn count_friends(exec: impl PgExecutor<'_>, user_id: Uuid) -> Result<i64> {
+    let (count,): (i64,) =
+        sqlx::query_as("SELECT COUNT(*) FROM friendships WHERE user_a_id = $1 OR user_b_id = $1")
+            .bind(user_id)
+            .fetch_one(exec)
+            .await?;
+    Ok(count)
+}
+
+pub(crate) async fn find_sent_requests_paginated(
+    exec: impl PgExecutor<'_>,
+    from_user_id: Uuid,
+    limit: i64,
+    offset: i64,
+) -> Result<Vec<FriendRequest>> {
+    let reqs = sqlx::query_as::<_, FriendRequest>(
+        "SELECT id, from_user_id, to_user_id, status, created_at \
+         FROM friend_requests \
+         WHERE from_user_id = $1 AND status = 'pending' \
+         ORDER BY created_at DESC LIMIT $2 OFFSET $3",
+    )
+    .bind(from_user_id)
+    .bind(limit)
+    .bind(offset)
+    .fetch_all(exec)
+    .await?;
+    Ok(reqs)
+}
+
+pub(crate) async fn count_sent_requests(
+    exec: impl PgExecutor<'_>,
+    from_user_id: Uuid,
+) -> Result<i64> {
+    let (count,): (i64,) = sqlx::query_as(
+        "SELECT COUNT(*) FROM friend_requests WHERE from_user_id = $1 AND status = 'pending'",
+    )
+    .bind(from_user_id)
+    .fetch_one(exec)
+    .await?;
+    Ok(count)
 }
 
 /// Count items shared via direct (1:1) circles between each friend and the viewer.

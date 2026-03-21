@@ -204,13 +204,9 @@
     `/circles/{id}/invites`, `/me/friend-requests`
   - Backend : ajouter `page`/`limit` query params + `PaginatedResponse`
   - Frontend : adapter les appels pour gérer la pagination (ou garder tel quel si liste courte)
-- [ ] **Missing CHECK constraints DB** — validation app-only, pas DB
-  - `notifications.type`, `circle_share_rules.share_mode`, `items.claimed_via`
-  - Backend only, aucun impact frontend
-- [ ] **Namespace `/me` inconsistant** — `/me/friends` mais `/users/me`
-  - Cosmétique, breaking change si on renomme → reporter post-launch
-- [ ] **Raw SQL dans handlers** — `circles.rs`, `notifications.rs` bypass le repo pattern
-  - Backend refacto, aucun impact frontend
+- [x] **CHECK constraints DB** — migration 20260322000005 (notifications.type, share_mode, claimed_via)
+- [ ] **Namespace `/me` inconsistant** — cosmétique, reporter post-launch
+- [ ] **Raw SQL dans handlers** — cosmétique, reporter post-launch
 
 ### Backlog (post-launch)
 - [ ] API versioning (`/v1/` prefix)

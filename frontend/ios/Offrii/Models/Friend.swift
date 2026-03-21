@@ -1,6 +1,6 @@
 import Foundation
 
-struct FriendResponse: Codable, Identifiable {
+struct FriendResponse: Codable, Identifiable, Equatable, Sendable {
     let userId: UUID
     let username: String
     let displayName: String?
@@ -26,7 +26,7 @@ struct FriendResponse: Codable, Identifiable {
     }
 }
 
-struct FriendRequestResponse: Codable, Identifiable {
+struct FriendRequestResponse: Codable, Identifiable, Equatable, Sendable {
     let id: UUID
     let fromUserId: UUID
     let fromUsername: String
@@ -44,7 +44,7 @@ struct FriendRequestResponse: Codable, Identifiable {
     }
 }
 
-struct SentFriendRequestResponse: Codable, Identifiable {
+struct SentFriendRequestResponse: Codable, Identifiable, Equatable, Sendable {
     let id: UUID
     let toUserId: UUID
     let toUsername: String

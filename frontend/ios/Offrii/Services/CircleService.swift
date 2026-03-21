@@ -6,7 +6,8 @@ final class CircleService: Sendable {
     private init() {}
 
     func listCircles() async throws -> [OffriiCircle] {
-        try await client.request(.listCircles)
+        let response: PaginatedResponse<OffriiCircle> = try await client.request(.listCircles)
+        return response.data
     }
 
     func createCircle(name: String) async throws -> OffriiCircle {
@@ -44,7 +45,8 @@ final class CircleService: Sendable {
     }
 
     func listInvites(circleId: UUID) async throws -> [CircleInviteResponse] {
-        try await client.request(.listCircleInvites(circleId: circleId))
+        let response: PaginatedResponse<CircleInviteResponse> = try await client.request(.listCircleInvites(circleId: circleId))
+        return response.data
     }
 
     func revokeInvite(circleId: UUID, inviteId: UUID) async throws {
@@ -60,7 +62,8 @@ final class CircleService: Sendable {
     }
 
     func listReservations() async throws -> [ReservationResponse] {
-        try await client.request(.listReservations)
+        let response: PaginatedResponse<ReservationResponse> = try await client.request(.listReservations)
+        return response.data
     }
 
     func shareItem(circleId: UUID, itemId: UUID) async throws {
@@ -72,7 +75,8 @@ final class CircleService: Sendable {
     }
 
     func listItems(circleId: UUID) async throws -> [CircleItemResponse] {
-        try await client.request(.listCircleItems(circleId: circleId))
+        let response: PaginatedResponse<CircleItemResponse> = try await client.request(.listCircleItems(circleId: circleId))
+        return response.data
     }
 
     func getItem(circleId: UUID, itemId: UUID) async throws -> CircleItemResponse {
@@ -84,7 +88,8 @@ final class CircleService: Sendable {
     }
 
     func listMyShareRules() async throws -> [CircleShareRuleSummary] {
-        try await client.request(.listMyShareRules)
+        let response: PaginatedResponse<CircleShareRuleSummary> = try await client.request(.listMyShareRules)
+        return response.data
     }
 
     func getShareRule(circleId: UUID) async throws -> ShareRuleResponse {

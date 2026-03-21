@@ -579,14 +579,20 @@ impl traits::CircleService for PgCircleService {
     }
 
     #[tracing::instrument(skip(self))]
-    async fn list_circles(&self, user_id: Uuid) -> Result<Vec<CircleResponse>, AppError> {
+    async fn list_circles(
+        &self,
+        user_id: Uuid,
+        limit: i64,
+        offset: i64,
+    ) -> Result<(Vec<CircleResponse>, i64), AppError> {
         let rows = self
             .circle_repo
             .list_by_member(user_id)
             .await
             .map_err(AppError::Internal)?;
 
-        let responses = rows
+        let total = rows.len() as i64;
+        let responses: Vec<CircleResponse> = rows
             .into_iter()
             .map(|row| {
                 let name = if row.circle.is_direct {
@@ -637,7 +643,14 @@ impl traits::CircleService for PgCircleService {
             })
             .collect();
 
-        Ok(responses)
+        let page = responses
+            .iter()
+            .skip(offset as usize)
+            .take(limit as usize)
+            .cloned()
+            .collect();
+
+        Ok((page, total))
     }
 
     #[tracing::instrument(skip(self))]
@@ -1089,7 +1102,9 @@ impl traits::CircleService for PgCircleService {
         &self,
         circle_id: Uuid,
         user_id: Uuid,
-    ) -> Result<Vec<InviteResponse>, AppError> {
+        limit: i64,
+        offset: i64,
+    ) -> Result<(Vec<InviteResponse>, i64), AppError> {
         self.require_membership(circle_id, user_id).await?;
 
         let invites = self
@@ -1122,9 +1137,16 @@ impl traits::CircleService for PgCircleService {
                     created_at: inv.created_at,
                 }
             })
+            .collect::<Vec<_>>();
+
+        let total = responses.len() as i64;
+        let page = responses
+            .into_iter()
+            .skip(offset as usize)
+            .take(limit as usize)
             .collect();
 
-        Ok(responses)
+        Ok((page, total))
     }
 
     #[tracing::instrument(skip(self))]
@@ -1291,11 +1313,20 @@ impl traits::CircleService for PgCircleService {
         &self,
         circle_id: Uuid,
         user_id: Uuid,
-    ) -> Result<Vec<CircleItemResponse>, AppError> {
+        limit: i64,
+        offset: i64,
+    ) -> Result<(Vec<CircleItemResponse>, i64), AppError> {
         self.require_membership(circle_id, user_id).await?;
 
         // All circles (direct + group) use share rules with backward-compat fallback
-        self.list_circle_items_via_rules(circle_id, user_id).await
+        let all = self.list_circle_items_via_rules(circle_id, user_id).await?;
+        let total = all.len() as i64;
+        let page = all
+            .into_iter()
+            .skip(offset as usize)
+            .take(limit as usize)
+            .collect();
+        Ok((page, total))
     }
 
     #[tracing::instrument(skip(self))]
@@ -1306,6 +1337,7 @@ impl traits::CircleService for PgCircleService {
         user_id: Uuid,
     ) -> Result<CircleItemResponse, AppError> {
         // Use the same rule-based resolution as list_circle_items to find the item
+        self.require_membership(circle_id, user_id).await?;
         let all_items = self.list_circle_items_via_rules(circle_id, user_id).await?;
         let item_response = all_items
             .into_iter()
@@ -1896,7 +1928,12 @@ impl traits::CircleService for PgCircleService {
     }
 
     #[tracing::instrument(skip(self))]
-    async fn list_reservations(&self, user_id: Uuid) -> Result<Vec<ReservationResponse>, AppError> {
+    async fn list_reservations(
+        &self,
+        user_id: Uuid,
+        limit: i64,
+        offset: i64,
+    ) -> Result<(Vec<ReservationResponse>, i64), AppError> {
         let rows = sqlx::query_as::<
             _,
             (
@@ -1960,8 +1997,23 @@ impl traits::CircleService for PgCircleService {
                     }
                 },
             )
+            .collect::<Vec<_>>();
+
+        let total = reservations.len() as i64;
+        let page = reservations
+            .into_iter()
+            .skip(offset as usize)
+            .take(limit as usize)
             .collect();
 
-        Ok(reservations)
+        Ok((page, total))
+    }
+
+    async fn unshare_all_for_user(&self, circle_id: Uuid, user_id: Uuid) -> Result<(), AppError> {
+        self.circle_item_repo
+            .delete_by_circle_and_user(circle_id, user_id)
+            .await
+            .map_err(AppError::Internal)?;
+        Ok(())
     }
 }

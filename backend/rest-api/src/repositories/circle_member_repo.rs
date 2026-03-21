@@ -45,6 +45,10 @@ impl traits::CircleMemberRepo for PgCircleMemberRepo {
     async fn find_direct_circle_between(&self, user_a: Uuid, user_b: Uuid) -> Result<Option<Uuid>> {
         find_direct_circle_between(&self.pool, user_a, user_b).await
     }
+
+    async fn is_member(&self, circle_id: Uuid, user_id: Uuid) -> Result<bool> {
+        is_member(&self.pool, circle_id, user_id).await
+    }
 }
 
 // ── Free functions (kept pub(crate) for transactional use) ───────────
@@ -143,4 +147,19 @@ pub(crate) async fn find_direct_circle_between(
     .await?;
 
     Ok(row.map(|r| r.get("id")))
+}
+
+pub(crate) async fn is_member(
+    exec: impl PgExecutor<'_>,
+    circle_id: Uuid,
+    user_id: Uuid,
+) -> Result<bool> {
+    let exists: bool = sqlx::query_scalar(
+        "SELECT EXISTS(SELECT 1 FROM circle_members WHERE circle_id = $1 AND user_id = $2)",
+    )
+    .bind(circle_id)
+    .bind(user_id)
+    .fetch_one(exec)
+    .await?;
+    Ok(exists)
 }

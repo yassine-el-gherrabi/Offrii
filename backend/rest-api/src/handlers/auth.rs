@@ -1,5 +1,5 @@
 use axum::extract::{Query, State};
-use axum::http::StatusCode;
+use axum::http::{HeaderMap, StatusCode};
 use axum::response::Html;
 use axum::routing::{get, post};
 use axum::{Json, Router};
@@ -13,6 +13,23 @@ use crate::dto::auth::{
 };
 use crate::errors::AppError;
 use crate::middleware::AuthUser;
+
+fn extract_client_ip(headers: &HeaderMap) -> String {
+    headers
+        .get("x-forwarded-for")
+        .and_then(|v| v.to_str().ok())
+        .and_then(|s| s.split(',').next())
+        .map(|s| s.trim().to_string())
+        .unwrap_or_else(|| "unknown".to_string())
+}
+
+fn extract_user_agent(headers: &HeaderMap) -> String {
+    headers
+        .get(axum::http::header::USER_AGENT)
+        .and_then(|v| v.to_str().ok())
+        .map(|s| s.to_string())
+        .unwrap_or_default()
+}
 
 fn validate_request(req: &impl Validate) -> Result<(), AppError> {
     req.validate()
@@ -46,9 +63,10 @@ pub fn router() -> Router<AppState> {
     ),
     tag = "Auth"
 )]
-#[tracing::instrument(skip(state, req))]
+#[tracing::instrument(skip(state, headers, req))]
 async fn register(
     State(state): State<AppState>,
+    headers: HeaderMap,
     Json(req): Json<RegisterRequest>,
 ) -> Result<(StatusCode, Json<AuthResponse>), AppError> {
     validate_request(&req)?;
@@ -58,6 +76,9 @@ async fn register(
         return Err(AppError::BadRequest("terms_accepted is required".into()));
     }
 
+    let ip = extract_client_ip(&headers);
+    let ua = extract_user_agent(&headers);
+
     let response = state
         .auth
         .register(
@@ -65,6 +86,8 @@ async fn register(
             &req.password,
             req.display_name.as_deref(),
             req.username.as_deref(),
+            &ip,
+            &ua,
         )
         .await?;
 
@@ -82,14 +105,21 @@ async fn register(
     ),
     tag = "Auth"
 )]
-#[tracing::instrument(skip(state, req))]
+#[tracing::instrument(skip(state, headers, req))]
 async fn login(
     State(state): State<AppState>,
+    headers: HeaderMap,
     Json(req): Json<LoginRequest>,
 ) -> Result<Json<AuthResponse>, AppError> {
     validate_request(&req)?;
 
-    let response = state.auth.login(&req.identifier, &req.password).await?;
+    let ip = extract_client_ip(&headers);
+    let ua = extract_user_agent(&headers);
+
+    let response = state
+        .auth
+        .login(&req.identifier, &req.password, &ip, &ua)
+        .await?;
 
     Ok(Json(response))
 }
@@ -390,16 +420,26 @@ async fn resend_verification(
     ),
     tag = "Auth"
 )]
-#[tracing::instrument(skip(state, req))]
+#[tracing::instrument(skip(state, headers, req))]
 async fn google_auth(
     State(state): State<AppState>,
+    headers: HeaderMap,
     Json(req): Json<GoogleAuthRequest>,
 ) -> Result<(StatusCode, Json<AuthResponse>), AppError> {
     validate_request(&req)?;
 
+    let ip = extract_client_ip(&headers);
+    let ua = extract_user_agent(&headers);
+
     let response = state
         .auth
-        .oauth_login("google", &req.id_token, req.display_name.as_deref())
+        .oauth_login(
+            "google",
+            &req.id_token,
+            req.display_name.as_deref(),
+            &ip,
+            &ua,
+        )
         .await?;
 
     let status = if response.is_new_user {
@@ -421,16 +461,26 @@ async fn google_auth(
     ),
     tag = "Auth"
 )]
-#[tracing::instrument(skip(state, req))]
+#[tracing::instrument(skip(state, headers, req))]
 async fn apple_auth(
     State(state): State<AppState>,
+    headers: HeaderMap,
     Json(req): Json<AppleAuthRequest>,
 ) -> Result<(StatusCode, Json<AuthResponse>), AppError> {
     validate_request(&req)?;
 
+    let ip = extract_client_ip(&headers);
+    let ua = extract_user_agent(&headers);
+
     let response = state
         .auth
-        .oauth_login("apple", &req.id_token, req.display_name.as_deref())
+        .oauth_login(
+            "apple",
+            &req.id_token,
+            req.display_name.as_deref(),
+            &ip,
+            &ua,
+        )
         .await?;
 
     let status = if response.is_new_user {

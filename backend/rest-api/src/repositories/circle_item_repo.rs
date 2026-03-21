@@ -54,6 +54,10 @@ impl traits::CircleItemRepo for PgCircleItemRepo {
     async fn list_circle_names_for_items(&self, item_ids: &[Uuid]) -> Result<CircleInfoMap> {
         list_circle_names_for_items(&self.pool, item_ids).await
     }
+
+    async fn delete_by_circle_and_user(&self, circle_id: Uuid, user_id: Uuid) -> Result<u64> {
+        delete_by_circle_and_user(&self.pool, circle_id, user_id).await
+    }
 }
 
 // ── Free functions (kept pub(crate) for transactional use) ───────────
@@ -178,4 +182,17 @@ pub(crate) async fn list_circle_names_for_items(
     }
 
     Ok(map)
+}
+
+pub(crate) async fn delete_by_circle_and_user(
+    exec: impl PgExecutor<'_>,
+    circle_id: Uuid,
+    user_id: Uuid,
+) -> Result<u64> {
+    let result = sqlx::query("DELETE FROM circle_items WHERE circle_id = $1 AND shared_by = $2")
+        .bind(circle_id)
+        .bind(user_id)
+        .execute(exec)
+        .await?;
+    Ok(result.rows_affected())
 }

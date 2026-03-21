@@ -144,7 +144,8 @@ struct ProfileProgress {
         // Wishlist
         progress.update(id: "firstItem", completed: totalItems > 0)
         let shareRules = (try? await CircleService.shared.listMyShareRules()) ?? []
-        let shareLinks: [ShareLinkResponse] = (try? await APIClient.shared.request(.listShareLinks)) ?? []
+        let shareLinksResponse: PaginatedResponse<ShareLinkResponse>? = try? await APIClient.shared.request(.listShareLinks)
+        let shareLinks = shareLinksResponse?.data ?? []
         let hasShared = shareRules.contains { $0.shareMode != "none" } || !shareLinks.isEmpty
         progress.update(id: "shareList", completed: hasShared)
 

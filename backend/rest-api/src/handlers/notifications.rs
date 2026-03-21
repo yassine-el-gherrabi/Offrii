@@ -6,7 +6,7 @@ use uuid::Uuid;
 
 use crate::AppState;
 use crate::dto::notifications::{NotificationResponse, UnreadCountResponse};
-use crate::dto::pagination::PaginatedResponse;
+use crate::dto::pagination::{PaginatedResponse, normalize_pagination};
 use crate::errors::AppError;
 use crate::middleware::AuthUser;
 
@@ -43,9 +43,7 @@ async fn list_notifications(
     auth_user: AuthUser,
     Query(q): Query<ListQuery>,
 ) -> Result<Json<PaginatedResponse<NotificationResponse>>, AppError> {
-    let page = q.page.unwrap_or(1).max(1);
-    let limit = q.limit.unwrap_or(20).clamp(1, 50);
-    let offset = (page - 1) * limit;
+    let (page, limit, offset) = normalize_pagination(q.page, q.limit);
 
     let (notifs, total) = tokio::try_join!(
         async {
@@ -64,22 +62,13 @@ async fn list_notifications(
         },
     )?;
 
-    // Look up actor names for display
+    // Look up actor names via UserRepo (no raw SQL in handlers)
     let actor_ids: Vec<Uuid> = notifs.iter().filter_map(|n| n.actor_id).collect();
-    let actor_map: std::collections::HashMap<Uuid, String> = if actor_ids.is_empty() {
-        std::collections::HashMap::new()
-    } else {
-        let rows: Vec<(Uuid, String, Option<String>)> =
-            sqlx::query_as("SELECT id, username, display_name FROM users WHERE id = ANY($1)")
-                .bind(&actor_ids)
-                .fetch_all(&state.db)
-                .await
-                .map_err(|e| AppError::Internal(e.into()))?;
-
-        rows.into_iter()
-            .map(|(id, username, display_name)| (id, display_name.unwrap_or(username)))
-            .collect()
-    };
+    let actor_map = state
+        .users
+        .find_display_names(&actor_ids)
+        .await
+        .unwrap_or_default();
 
     let responses: Vec<NotificationResponse> = notifs
         .into_iter()

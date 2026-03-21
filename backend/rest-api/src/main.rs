@@ -101,6 +101,7 @@ async fn main() -> anyhow::Result<()> {
         config.email_from.clone(),
         config.app_base_url.clone(),
     ));
+    let email_service_for_cron = email_service.clone();
 
     let oauth_verifier = Arc::new(OAuthVerifier::new(
         config.google_client_id.clone(),
@@ -305,32 +306,36 @@ async fn main() -> anyhow::Result<()> {
         .with_default_metrics()
         .build_pair();
 
-    // Main application router with CORS and auth middleware.
-    let app = Router::new()
-        .route("/health", get(health_check))
-        .route("/health/live", get(health_live))
-        .route("/health/ready", get(health_check))
+    // Versioned API routes under /v1
+    let v1_routes = Router::new()
         .nest("/auth", auth::router())
         .nest("/items", items::router())
         .nest("/categories", categories::router())
-        .nest("/users", users::router())
+        .nest("/me", users::router())
         .nest("/push-tokens", push_tokens::router())
         .nest("/me/notifications", notifications::router())
         .nest("/share-links", share_links::router())
         .nest("/shared", shared::router())
         .nest("/circles", circles::router())
+        .nest("/me", friends::router())
+        .nest("/users", friends::search_router())
+        .nest("/community/wishes", community_wishes::router())
+        .merge(wish_messages::router())
+        .nest("/upload", upload::router())
+        .nest("/admin", admin::router());
+
+    // Main application router with CORS and auth middleware.
+    let app = Router::new()
+        .route("/health", get(health_check))
+        .route("/health/live", get(health_live))
+        .route("/health/ready", get(health_check))
         .route("/join/{token}", get(circles::join_page))
         .route("/favicon.png", get(serve_favicon))
         .route("/favicon.ico", get(serve_favicon))
         .route("/legal/privacy", get(legal_privacy))
         .route("/legal/terms", get(legal_terms))
         .route("/legal/mentions", get(legal_mentions))
-        .nest("/me", friends::router())
-        .nest("/users", friends::search_router())
-        .nest("/community/wishes", community_wishes::router())
-        .merge(wish_messages::router())
-        .nest("/upload", upload::router())
-        .nest("/admin", admin::router())
+        .nest("/v1", v1_routes)
         .layer(axum::extract::DefaultBodyLimit::max(10 * 1024 * 1024)) // 10 MB
         .layer(TraceLayer::new_for_http())
         .layer(
@@ -430,6 +435,87 @@ async fn main() -> anyhow::Result<()> {
                     Err(e) => {
                         tracing::warn!(error = %e, "old notifications cleanup failed")
                     }
+                }
+            })
+        })?)
+        .await?;
+
+    // Purge connection_logs > 12 months (monthly, 1st at 4:00 AM)
+    let cleanup_pool_logs = db.clone();
+    sched
+        .add(Job::new_async("0 0 4 1 * *", move |_, _| {
+            let pool = cleanup_pool_logs.clone();
+            Box::pin(async move {
+                match sqlx::query(
+                    "DELETE FROM connection_logs WHERE created_at < NOW() - INTERVAL '12 months'",
+                )
+                .execute(&pool)
+                .await
+                {
+                    Ok(r) => {
+                        tracing::info!(rows = r.rows_affected(), "connection logs purge complete")
+                    }
+                    Err(e) => tracing::warn!(error = %e, "connection logs purge failed"),
+                }
+            })
+        })?)
+        .await?;
+
+    // Inactivity warning (monthly, 1st at 4:30 AM)
+    let inactivity_pool = db.clone();
+    let inactivity_email = email_service_for_cron.clone();
+    sched
+        .add(Job::new_async("0 30 4 1 * *", move |_, _| {
+            let pool = inactivity_pool.clone();
+            let email_svc = inactivity_email.clone();
+            Box::pin(async move {
+                let users: Vec<(uuid::Uuid, String)> = sqlx::query_as(
+                    "SELECT id, email FROM users \
+                     WHERE last_active_at < NOW() - INTERVAL '23 months' \
+                     AND inactivity_notice_sent_at IS NULL",
+                )
+                .fetch_all(&pool)
+                .await
+                .unwrap_or_default();
+
+                for (user_id, email) in &users {
+                    let _ = email_svc.send_inactivity_warning(email).await;
+                    let _ = sqlx::query(
+                        "UPDATE users SET inactivity_notice_sent_at = NOW() WHERE id = $1",
+                    )
+                    .bind(user_id)
+                    .execute(&pool)
+                    .await;
+                }
+
+                if !users.is_empty() {
+                    tracing::info!(count = users.len(), "inactivity warnings sent");
+                }
+            })
+        })?)
+        .await?;
+
+    // Delete inactive accounts (monthly, 1st at 5:00 AM)
+    let deletion_pool = db.clone();
+    sched
+        .add(Job::new_async("0 0 5 1 * *", move |_, _| {
+            let pool = deletion_pool.clone();
+            Box::pin(async move {
+                match sqlx::query(
+                    "DELETE FROM users \
+                     WHERE inactivity_notice_sent_at IS NOT NULL \
+                     AND inactivity_notice_sent_at < NOW() - INTERVAL '30 days' \
+                     AND last_active_at < NOW() - INTERVAL '24 months'",
+                )
+                .execute(&pool)
+                .await
+                {
+                    Ok(r) => {
+                        if r.rows_affected() > 0 {
+                            tracing::info!(rows = r.rows_affected(), "inactive accounts deleted");
+                        }
+                    }
+                    Err(e) => tracing::warn!(error = %e, "inactive account deletion failed"),
                 }
             })
         })?)

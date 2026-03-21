@@ -129,12 +129,14 @@ async fn get_wish(
 async fn list_my_wishes(
     State(state): State<AppState>,
     auth_user: AuthUser,
-) -> Result<Json<Vec<MyWishResponse>>, AppError> {
-    let response = state
+    Query(q): Query<crate::dto::community_wishes::ListWishesQuery>,
+) -> Result<Json<PaginatedResponse<MyWishResponse>>, AppError> {
+    let (page, limit, offset) = normalize_pagination(q.page, q.limit);
+    let (data, total) = state
         .community_wishes
-        .list_my_wishes(auth_user.user_id)
+        .list_my_wishes(auth_user.user_id, limit, offset)
         .await?;
-    Ok(Json(response))
+    Ok(Json(PaginatedResponse::new(data, total, page, limit)))
 }
 
 #[utoipa::path(
@@ -150,12 +152,14 @@ async fn list_my_wishes(
 async fn list_my_offers(
     State(state): State<AppState>,
     auth_user: AuthUser,
-) -> Result<Json<Vec<WishResponse>>, AppError> {
-    let response = state
+    Query(q): Query<crate::dto::community_wishes::ListWishesQuery>,
+) -> Result<Json<PaginatedResponse<WishResponse>>, AppError> {
+    let (page, limit, offset) = normalize_pagination(q.page, q.limit);
+    let (data, total) = state
         .community_wishes
-        .list_my_offers(auth_user.user_id)
+        .list_my_offers(auth_user.user_id, limit, offset)
         .await?;
-    Ok(Json(response))
+    Ok(Json(PaginatedResponse::new(data, total, page, limit)))
 }
 
 #[utoipa::path(

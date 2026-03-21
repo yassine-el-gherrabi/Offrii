@@ -33,6 +33,10 @@ impl crate::traits::CircleShareRuleRepo for PgCircleShareRuleRepo {
     async fn delete(&self, circle_id: Uuid, user_id: Uuid) -> Result<bool> {
         delete(&self.pool, circle_id, user_id).await
     }
+
+    async fn list_by_user(&self, user_id: Uuid) -> Result<Vec<CircleShareRule>> {
+        list_by_user(&self.pool, user_id).await
+    }
 }
 
 pub(crate) async fn get(
@@ -88,4 +92,16 @@ pub(crate) async fn delete(
             .await?;
 
     Ok(result.rows_affected() > 0)
+}
+
+pub(crate) async fn list_by_user(
+    exec: impl PgExecutor<'_>,
+    user_id: Uuid,
+) -> Result<Vec<CircleShareRule>> {
+    let rules =
+        sqlx::query_as::<_, CircleShareRule>("SELECT * FROM circle_share_rules WHERE user_id = $1")
+            .bind(user_id)
+            .fetch_all(exec)
+            .await?;
+    Ok(rules)
 }

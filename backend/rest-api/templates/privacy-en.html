@@ -28,7 +28,6 @@ th { background: #f8f8f8; }
 <tr><th>Identity</th><td>Yassine EL GHERRABI, Sole Proprietor (Entrepreneur individuel)</td></tr>
 <tr><th>Address</th><td>24 Rue Senac de Meilhan, 13001 Marseille, France</td></tr>
 <tr><th>Email</th><td>contact@offrii.com</td></tr>
-<tr><th>Phone</th><td>+33 6 82 83 66 80</td></tr>
 <tr><th>SIRET</th><td>940 109 150 00018</td></tr>
 </table>
 <p>No Data Protection Officer (DPO) has been appointed, as this designation is not mandatory for the publisher. For any questions regarding your personal data, you may contact the data controller directly at the email address above.</p>
@@ -42,7 +41,7 @@ th { background: #f8f8f8; }
 <li><strong>OAuth data</strong>: when signing in via Google or Apple, we receive only your email address, name, and profile photo. We do not access any other data from your Google or Apple account.</li>
 <li><strong>Wishlists</strong>: title, description, category, priority, URL link, associated images</li>
 <li><strong>Circles</strong>: circle name, invited members</li>
-<li><strong>Community help</strong>: description of the need, category, location (if provided), associated images</li>
+<li><strong>Community help</strong>: description of the need, category, associated images</li>
 <li><strong>Messages</strong>: content of messages exchanged within the community help feature</li>
 </ul>
 
@@ -101,10 +100,11 @@ th { background: #f8f8f8; }
 <tr><td>Active account data</td><td>For the duration of the account's activity</td><td>Performance of contract</td></tr>
 <tr><td>Inactive account</td><td>24 months of inactivity, then deletion after a 30-day notice sent by email</td><td>Legitimate interest (resource management)</td></tr>
 <tr><td>Connection logs (IP, timestamps)</td><td>12 months</td><td>Legal obligation (LCEN, Decree No. 2011-219)</td></tr>
-<tr><td>Session tokens (access token)</td><td>7 days (or 30 days if "stay signed in" option is selected)</td><td>Performance of contract</td></tr>
+<tr><td>Access token</td><td>15 minutes</td><td>Performance of contract</td></tr>
+<tr><td>Refresh token</td><td>7 days</td><td>Performance of contract</td></tr>
 <tr><td>Email verification token</td><td>24 hours</td><td>Performance of contract</td></tr>
-<tr><td>Password reset token</td><td>1 hour</td><td>Performance of contract</td></tr>
-<tr><td>Email verification code</td><td>30 minutes</td><td>Performance of contract</td></tr>
+<tr><td>Email change token</td><td>1 hour</td><td>Performance of contract</td></tr>
+<tr><td>Password reset code</td><td>30 minutes</td><td>Performance of contract</td></tr>
 <tr><td>Messages after sender account deletion</td><td>Anonymized (sender ID replaced with NULL) — content is retained for conversation continuity</td><td>Legitimate interest (exchange integrity)</td></tr>
 <tr><td>Notifications</td><td>6 months</td><td>Performance of contract</td></tr>
 <tr><td>Data after account deletion</td><td>Immediate and irreversible deletion of all personal data, except connection logs retained in accordance with the law</td><td>Respect for user rights</td></tr>
@@ -157,8 +157,10 @@ th { background: #f8f8f8; }
 <p>Offrii is a native mobile application. It <strong>does not use any tracking cookies, advertising cookies, or third-party trackers</strong>.</p>
 <p>The only local storage used is:</p>
 <ul>
-<li><strong>Authentication token</strong>: stored securely on your device (iOS Keychain) to maintain your signed-in session. This is a strictly necessary technical storage, exempt from consent under the ePrivacy Directive (Article 5(3) of Directive 2002/58/EC).</li>
+<li><strong>Authentication token</strong>: stored securely on your device (iOS Keychain) to maintain your signed-in session.</li>
+<li><strong>Web claim token</strong>: when an unauthenticated visitor claims an item via a public share page (<code>/shared/[token]</code>), a temporary token is stored in the browser's <code>localStorage</code> to allow subsequent cancellation of the claim. This token does not contain any personal data.</li>
 </ul>
+<p>These storage mechanisms are strictly necessary for the operation of the service and are exempt from consent under the ePrivacy Directive (Article 5(3) of Directive 2002/58/EC).</p>
 <p>No behavioral analysis, cross-app tracking, or targeted advertising is performed.</p>
 
 <h2>13. Changes to This Policy</h2>
@@ -168,8 +170,7 @@ th { background: #f8f8f8; }
 <h2>14. Contact</h2>
 <p>For any questions regarding this privacy policy or the processing of your personal data, you may contact:</p>
 <ul>
-<li><strong>Email</strong>: contact@offrii.com</li>
-<li><strong>Mail</strong>: Yassine EL GHERRABI, 24 Rue Senac de Meilhan, 13001 Marseille, France</li>
+<li><strong>Email</strong>: <a href="mailto:contact@offrii.com">contact@offrii.com</a></li>
 </ul>
 
 </body>

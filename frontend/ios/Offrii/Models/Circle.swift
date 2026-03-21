@@ -1,6 +1,6 @@
 import Foundation
 
-struct OffriiCircle: Codable, Identifiable, Equatable {
+struct OffriiCircle: Codable, Identifiable, Equatable, Sendable {
     let id: UUID
     let name: String?
     let isDirect: Bool

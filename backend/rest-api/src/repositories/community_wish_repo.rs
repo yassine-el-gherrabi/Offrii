@@ -73,8 +73,34 @@ impl traits::CommunityWishRepo for PgCommunityWishRepo {
         list_by_owner(&self.pool, owner_id).await
     }
 
+    async fn list_by_owner_paginated(
+        &self,
+        owner_id: Uuid,
+        limit: i64,
+        offset: i64,
+    ) -> Result<Vec<CommunityWish>> {
+        list_by_owner_paginated(&self.pool, owner_id, limit, offset).await
+    }
+
+    async fn count_by_owner(&self, owner_id: Uuid) -> Result<i64> {
+        count_by_owner(&self.pool, owner_id).await
+    }
+
     async fn list_by_donor(&self, donor_id: Uuid) -> Result<Vec<CommunityWish>> {
         list_by_donor(&self.pool, donor_id).await
+    }
+
+    async fn list_by_donor_paginated(
+        &self,
+        donor_id: Uuid,
+        limit: i64,
+        offset: i64,
+    ) -> Result<Vec<CommunityWish>> {
+        list_by_donor_paginated(&self.pool, donor_id, limit, offset).await
+    }
+
+    async fn count_by_donor(&self, donor_id: Uuid) -> Result<i64> {
+        count_by_donor(&self.pool, donor_id).await
     }
 
     async fn count_active_by_owner(&self, owner_id: Uuid) -> Result<i64> {
@@ -366,6 +392,64 @@ pub(crate) async fn list_by_donor(
         .fetch_all(exec)
         .await?;
     Ok(wishes)
+}
+
+pub(crate) async fn list_by_owner_paginated(
+    exec: impl PgExecutor<'_>,
+    owner_id: Uuid,
+    limit: i64,
+    offset: i64,
+) -> Result<Vec<CommunityWish>> {
+    let sql = format!(
+        "SELECT {WISH_COLS} FROM community_wishes \
+         WHERE owner_id = $1 \
+         ORDER BY created_at DESC LIMIT $2 OFFSET $3"
+    );
+    let wishes = sqlx::query_as::<_, CommunityWish>(&sql)
+        .bind(owner_id)
+        .bind(limit)
+        .bind(offset)
+        .fetch_all(exec)
+        .await?;
+    Ok(wishes)
+}
+
+pub(crate) async fn count_by_owner(exec: impl PgExecutor<'_>, owner_id: Uuid) -> Result<i64> {
+    let (count,): (i64,) =
+        sqlx::query_as("SELECT COUNT(*) FROM community_wishes WHERE owner_id = $1")
+            .bind(owner_id)
+            .fetch_one(exec)
+            .await?;
+    Ok(count)
+}
+
+pub(crate) async fn list_by_donor_paginated(
+    exec: impl PgExecutor<'_>,
+    donor_id: Uuid,
+    limit: i64,
+    offset: i64,
+) -> Result<Vec<CommunityWish>> {
+    let sql = format!(
+        "SELECT {WISH_COLS} FROM community_wishes \
+         WHERE matched_with = $1 \
+         ORDER BY created_at DESC LIMIT $2 OFFSET $3"
+    );
+    let wishes = sqlx::query_as::<_, CommunityWish>(&sql)
+        .bind(donor_id)
+        .bind(limit)
+        .bind(offset)
+        .fetch_all(exec)
+        .await?;
+    Ok(wishes)
+}
+
+pub(crate) async fn count_by_donor(exec: impl PgExecutor<'_>, donor_id: Uuid) -> Result<i64> {
+    let (count,): (i64,) =
+        sqlx::query_as("SELECT COUNT(*) FROM community_wishes WHERE matched_with = $1")
+            .bind(donor_id)
+            .fetch_one(exec)
+            .await?;
+    Ok(count)
 }
 
 pub(crate) async fn count_active_by_owner(

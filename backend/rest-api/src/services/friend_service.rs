@@ -267,15 +267,26 @@ impl traits::FriendService for PgFriendService {
     async fn list_pending_requests(
         &self,
         user_id: Uuid,
-    ) -> Result<Vec<FriendRequestResponse>, AppError> {
-        let reqs = self
-            .friend_repo
-            .find_pending_requests(user_id)
-            .await
-            .map_err(AppError::Internal)?;
+        limit: i64,
+        offset: i64,
+    ) -> Result<(Vec<FriendRequestResponse>, i64), AppError> {
+        let (reqs, total) = tokio::try_join!(
+            async {
+                self.friend_repo
+                    .find_pending_requests_paginated(user_id, limit, offset)
+                    .await
+                    .map_err(AppError::Internal)
+            },
+            async {
+                self.friend_repo
+                    .count_pending_requests(user_id)
+                    .await
+                    .map_err(AppError::Internal)
+            },
+        )?;
 
         if reqs.is_empty() {
-            return Ok(vec![]);
+            return Ok((vec![], total));
         }
 
         let sender_ids: Vec<Uuid> = reqs.iter().map(|r| r.from_user_id).collect();
@@ -308,7 +319,7 @@ impl traits::FriendService for PgFriendService {
             })
             .collect();
 
-        Ok(responses)
+        Ok((responses, total))
     }
 
     #[tracing::instrument(skip(self))]
@@ -467,12 +478,26 @@ impl traits::FriendService for PgFriendService {
     }
 
     #[tracing::instrument(skip(self))]
-    async fn list_friends(&self, user_id: Uuid) -> Result<Vec<FriendResponse>, AppError> {
-        let friends = self
-            .friend_repo
-            .list_friends_with_since(user_id)
-            .await
-            .map_err(AppError::Internal)?;
+    async fn list_friends(
+        &self,
+        user_id: Uuid,
+        limit: i64,
+        offset: i64,
+    ) -> Result<(Vec<FriendResponse>, i64), AppError> {
+        let (friends, total) = tokio::try_join!(
+            async {
+                self.friend_repo
+                    .list_friends_with_since_paginated(user_id, limit, offset)
+                    .await
+                    .map_err(AppError::Internal)
+            },
+            async {
+                self.friend_repo
+                    .count_friends(user_id)
+                    .await
+                    .map_err(AppError::Internal)
+            },
+        )?;
 
         // Count items shared via direct circles only
         let friend_ids: Vec<Uuid> = friends.iter().map(|f| f.user_id).collect();
@@ -482,7 +507,7 @@ impl traits::FriendService for PgFriendService {
             .await
             .unwrap_or_default();
 
-        Ok(friends
+        let responses = friends
             .into_iter()
             .map(|f| {
                 let count = item_counts.get(&f.user_id).copied().unwrap_or(0);
@@ -494,22 +519,35 @@ impl traits::FriendService for PgFriendService {
                     shared_item_count: count,
                 }
             })
-            .collect())
+            .collect();
+
+        Ok((responses, total))
     }
 
     #[tracing::instrument(skip(self))]
     async fn list_sent_requests(
         &self,
         user_id: Uuid,
-    ) -> Result<Vec<SentFriendRequestResponse>, AppError> {
-        let reqs = self
-            .friend_repo
-            .find_sent_requests(user_id)
-            .await
-            .map_err(AppError::Internal)?;
+        limit: i64,
+        offset: i64,
+    ) -> Result<(Vec<SentFriendRequestResponse>, i64), AppError> {
+        let (reqs, total) = tokio::try_join!(
+            async {
+                self.friend_repo
+                    .find_sent_requests_paginated(user_id, limit, offset)
+                    .await
+                    .map_err(AppError::Internal)
+            },
+            async {
+                self.friend_repo
+                    .count_sent_requests(user_id)
+                    .await
+                    .map_err(AppError::Internal)
+            },
+        )?;
 
         if reqs.is_empty() {
-            return Ok(vec![]);
+            return Ok((vec![], total));
         }
 
         let target_ids: Vec<Uuid> = reqs.iter().map(|r| r.to_user_id).collect();
@@ -542,7 +580,7 @@ impl traits::FriendService for PgFriendService {
             })
             .collect();
 
-        Ok(responses)
+        Ok((responses, total))
     }
 
     #[tracing::instrument(skip(self))]

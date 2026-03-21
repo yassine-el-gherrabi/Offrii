@@ -11,7 +11,8 @@ use crate::traits;
 const USER_COLS: &str = "id, email, username, password_hash, display_name, \
                          oauth_provider, oauth_provider_id, email_verified, \
                          token_version, is_admin, username_customized, \
-                         avatar_url, terms_accepted_at, created_at, updated_at";
+                         avatar_url, terms_accepted_at, last_active_at, \
+                         inactivity_notice_sent_at, created_at, updated_at";
 
 // ── Concrete implementation ──────────────────────────────────────────
 
@@ -133,6 +134,13 @@ impl traits::UserRepo for PgUserRepo {
             display_name,
         )
         .await
+    }
+
+    async fn find_display_names(
+        &self,
+        ids: &[Uuid],
+    ) -> Result<std::collections::HashMap<Uuid, String>> {
+        find_display_names(&self.pool, ids).await
     }
 }
 
@@ -415,4 +423,22 @@ pub(crate) async fn link_oauth_provider(
         .await?;
 
     Ok(user)
+}
+
+pub(crate) async fn find_display_names(
+    exec: impl PgExecutor<'_>,
+    ids: &[Uuid],
+) -> Result<std::collections::HashMap<Uuid, String>> {
+    if ids.is_empty() {
+        return Ok(std::collections::HashMap::new());
+    }
+    let rows: Vec<(Uuid, String, Option<String>)> =
+        sqlx::query_as("SELECT id, username, display_name FROM users WHERE id = ANY($1)")
+            .bind(ids)
+            .fetch_all(exec)
+            .await?;
+    Ok(rows
+        .into_iter()
+        .map(|(id, username, display_name)| (id, display_name.unwrap_or(username)))
+        .collect())
 }

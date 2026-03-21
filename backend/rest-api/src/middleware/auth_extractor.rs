@@ -95,7 +95,35 @@ impl FromRequestParts<AppState> for AuthUser {
             .and_then(|v| v.to_str().ok())
             .ok_or_else(|| AppError::Unauthorized("missing authorization header".into()))?;
 
-        Self::from_header(header, state).await
+        let auth_user = Self::from_header(header, state).await?;
+
+        // Throttled last_active_at update (every 15 minutes via Redis)
+        let redis = state.redis.clone();
+        let db = state.db.clone();
+        let uid = auth_user.user_id;
+        tokio::spawn(async move {
+            let active_key = format!("active:{uid}");
+            if let Ok(mut conn) = redis.get_multiplexed_async_connection().await {
+                let already_set: bool = redis::cmd("SET")
+                    .arg(&active_key)
+                    .arg("1")
+                    .arg("EX")
+                    .arg(900) // 15 minutes
+                    .arg("NX")
+                    .query_async(&mut conn)
+                    .await
+                    .unwrap_or(false);
+
+                if already_set {
+                    let _ = sqlx::query("UPDATE users SET last_active_at = NOW() WHERE id = $1")
+                        .bind(uid)
+                        .execute(&db)
+                        .await;
+                }
+            }
+        });
+
+        Ok(auth_user)
     }
 }
 

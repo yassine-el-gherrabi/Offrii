@@ -39,7 +39,7 @@ struct CircleDetailResponse: Codable {
     }
 }
 
-struct CircleItemResponse: Codable, Identifiable {
+struct CircleItemResponse: Codable, Identifiable, Equatable, Sendable {
     let id: UUID
     let name: String
     let description: String?
@@ -106,7 +106,7 @@ struct CircleItemResponse: Codable, Identifiable {
     }
 }
 
-struct ClaimedByInfo: Codable, Equatable {
+struct ClaimedByInfo: Codable, Equatable, Sendable {
     let userId: UUID
     let username: String
     let displayName: String?
@@ -156,7 +156,7 @@ struct FeedResponse: Codable {
     var page: Int { pagination.page }
 }
 
-struct CircleInviteResponse: Codable, Identifiable {
+struct CircleInviteResponse: Codable, Identifiable, Equatable, Sendable {
     let id: UUID
     let token: String
     let url: String
@@ -190,7 +190,7 @@ struct JoinCircleResponse: Codable {
     }
 }
 
-struct ReservationResponse: Codable, Identifiable {
+struct ReservationResponse: Codable, Identifiable, Equatable, Sendable {
     let itemId: UUID
     let itemName: String
     let itemImageUrl: String?
@@ -249,7 +249,7 @@ struct ShareRuleResponse: Codable {
     }
 }
 
-struct CircleShareRuleSummary: Codable, Identifiable {
+struct CircleShareRuleSummary: Codable, Identifiable, Equatable, Sendable {
     let circleId: UUID
     let shareMode: String
     let categoryCount: Int

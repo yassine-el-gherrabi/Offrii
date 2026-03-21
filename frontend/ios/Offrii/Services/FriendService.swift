@@ -14,11 +14,13 @@ final class FriendService: Sendable {
     }
 
     func listPendingRequests() async throws -> [FriendRequestResponse] {
-        try await client.request(.listPendingFriendRequests)
+        let response: PaginatedResponse<FriendRequestResponse> = try await client.request(.listPendingFriendRequests)
+        return response.data
     }
 
     func listSentRequests() async throws -> [SentFriendRequestResponse] {
-        try await client.request(.listSentFriendRequests)
+        let response: PaginatedResponse<SentFriendRequestResponse> = try await client.request(.listSentFriendRequests)
+        return response.data
     }
 
     func cancelRequest(id: UUID) async throws {
@@ -34,7 +36,8 @@ final class FriendService: Sendable {
     }
 
     func listFriends() async throws -> [FriendResponse] {
-        try await client.request(.listFriends)
+        let response: PaginatedResponse<FriendResponse> = try await client.request(.listFriends)
+        return response.data
     }
 
     func removeFriend(userId: UUID) async throws {

@@ -124,11 +124,14 @@ impl traits::UserService for PgUserService {
             .await
             .map_err(AppError::Internal)?;
 
-        let circles = self.circle_svc.list_circles(user_id).await?;
+        let (circles, _) = self.circle_svc.list_circles(user_id, i64::MAX, 0).await?;
 
-        let friends = self.friend_svc.list_friends(user_id).await?;
+        let (friends, _) = self.friend_svc.list_friends(user_id, i64::MAX, 0).await?;
 
-        let community_wishes = self.community_wish_svc.list_my_wishes(user_id).await?;
+        let (community_wishes, _) = self
+            .community_wish_svc
+            .list_my_wishes(user_id, i64::MAX, 0)
+            .await?;
 
         // Collect messages from all user's wishes
         let mut wish_messages = Vec::new();
@@ -166,5 +169,15 @@ impl traits::UserService for PgUserService {
         }
 
         Ok(())
+    }
+
+    async fn find_display_names(
+        &self,
+        ids: &[Uuid],
+    ) -> Result<std::collections::HashMap<Uuid, String>, AppError> {
+        self.user_repo
+            .find_display_names(ids)
+            .await
+            .map_err(AppError::Internal)
     }
 }

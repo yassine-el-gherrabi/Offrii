@@ -28,7 +28,6 @@ th { background: #f8f8f8; }
 <tr><th>Identité</th><td>Yassine EL GHERRABI, Entrepreneur individuel</td></tr>
 <tr><th>Adresse</th><td>24 Rue Senac de Meilhan, 13001 Marseille, France</td></tr>
 <tr><th>Email</th><td>contact@offrii.com</td></tr>
-<tr><th>Téléphone</th><td>+33 6 82 83 66 80</td></tr>
 <tr><th>SIRET</th><td>940 109 150 00018</td></tr>
 </table>
 <p>Aucun Délégué à la protection des données (DPO) n'a été désigné, cette désignation n'étant pas obligatoire pour l'éditeur. Pour toute question relative à vos données personnelles, vous pouvez contacter directement le responsable du traitement à l'adresse email ci-dessus.</p>
@@ -42,7 +41,7 @@ th { background: #f8f8f8; }
 <li><strong>Données OAuth</strong> : en cas de connexion via Google ou Apple, nous recevons uniquement votre adresse email, votre nom et votre photo de profil. Nous n'accédons à aucune autre donnée de votre compte Google ou Apple.</li>
 <li><strong>Listes de souhaits (envies)</strong> : titre, description, catégorie, priorité, lien URL, images associées</li>
 <li><strong>Cercles</strong> : nom du cercle, membres invités</li>
-<li><strong>Entraide communautaire</strong> : description du besoin, catégorie, localisation (si fournie), images associées</li>
+<li><strong>Entraide communautaire</strong> : description du besoin, catégorie, images associées</li>
 <li><strong>Messages</strong> : contenu des messages échangés dans le cadre de l'entraide</li>
 </ul>
 
@@ -101,10 +100,11 @@ th { background: #f8f8f8; }
 <tr><td>Données de compte actif</td><td>Pendant toute la durée d'activité du compte</td><td>Exécution du contrat</td></tr>
 <tr><td>Compte inactif</td><td>24 mois d'inactivité, puis suppression après un préavis de 30 jours envoyé par email</td><td>Intérêt légitime (gestion des ressources)</td></tr>
 <tr><td>Journaux de connexion (IP, horodatage)</td><td>12 mois</td><td>Obligation légale (LCEN, décret n° 2011-219)</td></tr>
-<tr><td>Jetons de session (access token)</td><td>7 jours (ou 30 jours si option « rester connecté »)</td><td>Exécution du contrat</td></tr>
+<tr><td>Jeton d'accès (access token)</td><td>15 minutes</td><td>Exécution du contrat</td></tr>
+<tr><td>Jeton de rafraîchissement (refresh token)</td><td>7 jours</td><td>Exécution du contrat</td></tr>
 <tr><td>Jeton de vérification email</td><td>24 heures</td><td>Exécution du contrat</td></tr>
-<tr><td>Jeton de réinitialisation mot de passe</td><td>1 heure</td><td>Exécution du contrat</td></tr>
-<tr><td>Code de vérification email</td><td>30 minutes</td><td>Exécution du contrat</td></tr>
+<tr><td>Jeton de changement d'email</td><td>1 heure</td><td>Exécution du contrat</td></tr>
+<tr><td>Code de réinitialisation mot de passe</td><td>30 minutes</td><td>Exécution du contrat</td></tr>
 <tr><td>Messages après suppression du compte de l'expéditeur</td><td>Anonymisés (identifiant expéditeur remplacé par NULL) — le contenu est conservé pour la continuité des conversations</td><td>Intérêt légitime (intégrité des échanges)</td></tr>
 <tr><td>Notifications</td><td>6 mois</td><td>Exécution du contrat</td></tr>
 <tr><td>Données après suppression du compte</td><td>Suppression immédiate et irréversible de toutes les données personnelles, à l'exception des journaux de connexion conservés conformément à la loi</td><td>Respect des droits de l'utilisateur</td></tr>
@@ -157,8 +157,10 @@ th { background: #f8f8f8; }
 <p>Offrii est une application mobile native. Elle <strong>n'utilise aucun cookie de suivi, aucun cookie publicitaire et aucun traceur tiers</strong>.</p>
 <p>Les seuls stockages locaux utilisés sont :</p>
 <ul>
-<li><strong>Jeton d'authentification</strong> : stocké de manière sécurisée sur votre appareil (Keychain iOS) pour maintenir votre session connectée. Il s'agit d'un stockage technique strictement nécessaire au fonctionnement du service, exempt de consentement au titre de l'article 82 de la loi Informatique et Libertés.</li>
+<li><strong>Jeton d'authentification</strong> : stocké de manière sécurisée sur votre appareil (Keychain iOS) pour maintenir votre session connectée.</li>
+<li><strong>Jeton de réservation web</strong> : lorsqu'un visiteur non connecté réserve un article via une page de partage publique (<code>/shared/[token]</code>), un jeton temporaire est stocké dans le <code>localStorage</code> du navigateur pour permettre l'annulation ultérieure de la réservation. Ce jeton ne contient aucune donnée personnelle.</li>
 </ul>
+<p>Ces stockages sont strictement nécessaires au fonctionnement du service et sont exempts de consentement au titre de l'article 82 de la loi Informatique et Libertés.</p>
 <p>Aucune analyse comportementale, aucun suivi inter-applications et aucune publicité ciblée ne sont réalisés.</p>
 
 <h2>13. Modifications de la présente politique</h2>
@@ -168,8 +170,7 @@ th { background: #f8f8f8; }
 <h2>14. Contact</h2>
 <p>Pour toute question relative à la présente politique de confidentialité ou au traitement de vos données personnelles, vous pouvez contacter :</p>
 <ul>
-<li><strong>Email</strong> : contact@offrii.com</li>
-<li><strong>Courrier</strong> : Yassine EL GHERRABI, 24 Rue Senac de Meilhan, 13001 Marseille, France</li>
+<li><strong>Email</strong> : <a href="mailto:contact@offrii.com">contact@offrii.com</a></li>
 </ul>
 
 </body>

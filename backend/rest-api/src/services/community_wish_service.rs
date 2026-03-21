@@ -603,12 +603,26 @@ impl traits::CommunityWishService for PgCommunityWishService {
     }
 
     #[tracing::instrument(skip(self))]
-    async fn list_my_wishes(&self, user_id: Uuid) -> Result<Vec<MyWishResponse>, AppError> {
-        let wishes = self
-            .wish_repo
-            .list_by_owner(user_id)
-            .await
-            .map_err(AppError::Internal)?;
+    async fn list_my_wishes(
+        &self,
+        user_id: Uuid,
+        limit: i64,
+        offset: i64,
+    ) -> Result<(Vec<MyWishResponse>, i64), AppError> {
+        let (wishes, total) = tokio::try_join!(
+            async {
+                self.wish_repo
+                    .list_by_owner_paginated(user_id, limit, offset)
+                    .await
+                    .map_err(AppError::Internal)
+            },
+            async {
+                self.wish_repo
+                    .count_by_owner(user_id)
+                    .await
+                    .map_err(AppError::Internal)
+            },
+        )?;
 
         let mut responses = Vec::with_capacity(wishes.len());
         for wish in &wishes {
@@ -636,16 +650,30 @@ impl traits::CommunityWishService for PgCommunityWishService {
                 closed_at: wish.closed_at,
             });
         }
-        Ok(responses)
+        Ok((responses, total))
     }
 
     #[tracing::instrument(skip(self))]
-    async fn list_my_offers(&self, user_id: Uuid) -> Result<Vec<WishResponse>, AppError> {
-        let wishes = self
-            .wish_repo
-            .list_by_donor(user_id)
-            .await
-            .map_err(AppError::Internal)?;
+    async fn list_my_offers(
+        &self,
+        user_id: Uuid,
+        limit: i64,
+        offset: i64,
+    ) -> Result<(Vec<WishResponse>, i64), AppError> {
+        let (wishes, total) = tokio::try_join!(
+            async {
+                self.wish_repo
+                    .list_by_donor_paginated(user_id, limit, offset)
+                    .await
+                    .map_err(AppError::Internal)
+            },
+            async {
+                self.wish_repo
+                    .count_by_donor(user_id)
+                    .await
+                    .map_err(AppError::Internal)
+            },
+        )?;
 
         let responses = wishes
             .into_iter()
@@ -673,7 +701,7 @@ impl traits::CommunityWishService for PgCommunityWishService {
             })
             .collect();
 
-        Ok(responses)
+        Ok((responses, total))
     }
 
     async fn list_recent_fulfilled(&self) -> Result<Vec<WishResponse>, AppError> {

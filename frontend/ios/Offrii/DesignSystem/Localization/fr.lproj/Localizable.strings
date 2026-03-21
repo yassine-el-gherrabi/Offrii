@@ -44,10 +44,10 @@
 "auth.welcomeNew" = "Bienvenue !";
 "auth.emailOrUsername" = "Email ou nom d'utilisateur";
 "auth.passwordHint" = "8 caractères minimum";
-"auth.terms.accept" = "J'accepte les";
-"auth.terms.cgu" = "Conditions Générales d'Utilisation";
-"auth.terms.and" = " et la ";
-"auth.terms.privacy" = "Politique de Confidentialité";
+"auth.terms.prefix" = "En créant un compte, vous acceptez nos ";
+"auth.terms.cgu" = "CGU";
+"auth.terms.and" = " et notre ";
+"auth.terms.privacy" = "Politique de confidentialité";
 
 /* Errors */
 "error.emailTaken" = "Cet email est déjà utilisé";

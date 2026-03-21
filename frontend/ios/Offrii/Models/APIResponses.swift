@@ -95,7 +95,7 @@ struct CategoryResponse: Codable, Equatable, CategoryChipItem {
     var chipColor: Color { CategoryStyle(icon: icon).chipColor }
 }
 
-struct ShareLinkResponse: Codable, Identifiable {
+struct ShareLinkResponse: Codable, Identifiable, Equatable, Sendable {
     let id: UUID
     let token: String
     let url: String?
