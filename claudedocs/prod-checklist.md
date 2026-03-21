@@ -106,27 +106,27 @@
 ## P1 — Observabilite (cette semaine)
 
 ### Grafana dashboards
-- [ ] Dashboard host (CPU, RAM, disk, network) via node-exporter
-- [ ] Dashboard backend (requests, latency, errors) — nécessite P1.3
+- [x] Datasources provisioning (Prometheus + Loki) — auto-configured on deploy
+- [x] Dashboard host (CPU, RAM, disk, network) via node-exporter — ID 1860
+- [ ] Dashboard backend (requests, latency, errors) — nécessite backend /metrics
 - [ ] Dashboard PostgreSQL — nécessite postgres_exporter
 - [ ] Dashboard Redis — nécessite redis_exporter
 
 ### Loki log streaming
-- [ ] Configurer Docker logging driver → Loki
-- [ ] Ou : deployer Promtail pour collecter les logs containers
-- **Actuellement** : Loki tourne mais ne collecte rien
+- [x] Promtail container déployé — collecte logs de tous les containers via Docker socket
 
 ### Backend /metrics
-- [ ] Ajouter endpoint Prometheus /metrics dans le backend Rust
+- [ ] Ajouter endpoint Prometheus /metrics dans le backend Rust (axum-prometheus)
 - [ ] Configurer Prometheus pour scraper backend:3000/metrics
 - [ ] Métriques : request count, latency histogram, error rate, DB pool
 
 ### Alertes
-- [ ] Alertmanager ou Grafana alerting
-- [ ] Alerte disk > 80%
-- [ ] Alerte backend down (health check fail)
-- [ ] Alerte error rate > 5%
-- [ ] Alerte PostgreSQL connections > 80
+- [x] Grafana unified alerting activé
+- [x] Contact point : email → yassineelgherrabi@gmail.com
+- [x] Alerte disk > 80%
+- [x] Alerte CPU > 90% pendant 5min
+- [ ] Alerte backend down (nécessite backend /metrics)
+- [ ] Alerte error rate > 5% (nécessite backend /metrics)
 
 ---
 
