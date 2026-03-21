@@ -55,17 +55,6 @@ struct NotificationCenterView: View {
                         dismiss()
                     }
                 }
-                ToolbarItem(placement: .primaryAction) {
-                    if !notifications.isEmpty {
-                        Button {
-                            Task { await markAllRead() }
-                        } label: {
-                            Image(systemName: "envelope.open")
-                                .font(.system(size: 16))
-                                .foregroundColor(OffriiTheme.primary)
-                        }
-                    }
-                }
             }
             .task {
                 await loadNotifications()
