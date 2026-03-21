@@ -176,6 +176,15 @@
 
 ---
 
+## Audit final (2026-03-21)
+
+- [x] Trivy container image scanning dans CD (advisory)
+- [x] PR review requirement retiré (solo dev)
+- [ ] Mettre à jour privacy policy avec liste sous-traitants RGPD (Resend, OpenAI, Cloudflare, Hetzner, APNs)
+- [ ] Uptime monitoring externe (UptimeRobot sur https://api.offrii.com/health/ready) — à faire manuellement
+
+---
+
 ## P4 — Nice to have (backlog)
 
 - [ ] Staging environment complet (docker-compose.staging.yml)

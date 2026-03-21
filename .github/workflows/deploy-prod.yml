@@ -81,6 +81,14 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      - name: Scan image for vulnerabilities
+        uses: aquasecurity/trivy-action@master
+        continue-on-error: true
+        with:
+          image-ref: ${{ env.IMAGE_NAME }}:latest
+          format: table
+          severity: CRITICAL,HIGH
+
   deploy:
     needs: build
     runs-on: ubuntu-latest
