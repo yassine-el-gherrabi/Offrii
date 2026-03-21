@@ -188,11 +188,44 @@
 
 ---
 
-## P4 — Nice to have (backlog)
+## Schema + API Audit (2026-03-21)
 
+### Critical (à faire)
+- [ ] **Drop `items.url` column** — data migrée vers `links[]`, colonne morte
+  - Backend : migration SQL + retirer du model Rust `Item` + retirer de `ITEM_COLS`
+  - Frontend : vérifier que `url` n'est pas utilisé dans `Item.swift` (probable, à checker)
+- [ ] **Drop 3 index redondants** — doublons des UNIQUE constraints
+  - `idx_circle_invites_token`, `idx_verification_token`, `idx_email_change_token`
+  - Backend only, aucun impact frontend
+- [ ] **`PUT /items/{id}` → `PATCH`** — accepte des updates partielles, devrait être PATCH
+  - Backend : changer `put(update_item)` → `patch(update_item)` dans le router
+  - Frontend : changer `APIEndpoint` de `.put` à `.patch` pour updateItem
+- [ ] **Protéger `/metrics`** — actuellement public, expose les métriques internes
+  - Backend : restreindre à localhost ou ajouter un bearer token
+  - Caddy : bloquer `/metrics` de l'extérieur (seul Prometheus interne y accède)
+  - Aucun impact frontend
+
+### Important (avant scale)
+- [ ] **Pagination manquante sur 11 endpoints** — OK < 1000 users, problème après
+  - `/circles`, `/me/friends`, `/share-links`, `/community/wishes/mine`,
+    `/community/wishes/my-offers`, `/community/wishes/recent-fulfilled`,
+    `/circles/my-reservations`, `/circles/my-share-rules`, `/circles/{id}/items`,
+    `/circles/{id}/invites`, `/me/friend-requests`
+  - Backend : ajouter `page`/`limit` query params + `PaginatedResponse`
+  - Frontend : adapter les appels pour gérer la pagination (ou garder tel quel si liste courte)
+- [ ] **Missing CHECK constraints DB** — validation app-only, pas DB
+  - `notifications.type`, `circle_share_rules.share_mode`, `items.claimed_via`
+  - Backend only, aucun impact frontend
+- [ ] **Namespace `/me` inconsistant** — `/me/friends` mais `/users/me`
+  - Cosmétique, breaking change si on renomme → reporter post-launch
+- [ ] **Raw SQL dans handlers** — `circles.rs`, `notifications.rs` bypass le repo pattern
+  - Backend refacto, aucun impact frontend
+
+### Backlog (post-launch)
+- [ ] API versioning (`/v1/` prefix)
+- [ ] ETags / conditional requests pour réduire la bande passante mobile
 - [ ] Staging environment complet (docker-compose.staging.yml)
 - [ ] Canary deployments / blue-green
-- [ ] postgres_exporter + redis_exporter dans le compose
 - [ ] OpenTelemetry tracing
 - [ ] DDoS protection (Cloudflare proxy)
 - [ ] Multi-instance backend (horizontal scaling)
