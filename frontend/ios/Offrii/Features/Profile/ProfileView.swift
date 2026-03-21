@@ -99,21 +99,6 @@ struct ProfileView: View {
                         }
                     }
 
-                    // Section 6: Mes engagements
-                    profileSection(
-                        title: NSLocalizedString("profile.myCommitments", comment: ""),
-                        icon: "heart.circle.fill"
-                    ) {
-                        NavigationLink {
-                            ReservationsListView()
-                        } label: {
-                            profileRow(
-                                title: NSLocalizedString("profile.commitments.reservations", comment: ""),
-                                value: nil
-                            )
-                        }
-                    }
-
                     // Section 7: Données & confidentialité
                     profileSection(
                         title: NSLocalizedString("profile.dataPrivacy", comment: ""),
