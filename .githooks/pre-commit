@@ -1,41 +1,61 @@
 #!/usr/bin/env bash
 set -e
 
-check_tool() {
-    if ! command -v "$1" &> /dev/null; then
-        echo "Warning: $1 not found, skipping. Install with: cargo install $1"
-        return 1
-    fi
-}
+REPO_ROOT="$(git rev-parse --show-toplevel)"
 
-# Backend checks (only if backend files are staged)
-if git diff --cached --name-only | grep -q '^backend/'; then
+# Get staged files (Added, Modified, Copied, Renamed — not Deleted)
+STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACMR)
+
+HAS_BACKEND=false
+HAS_FRONTEND=false
+
+for f in $STAGED_FILES; do
+    case "$f" in
+        backend/*) HAS_BACKEND=true ;;
+        frontend/ios/*) HAS_FRONTEND=true ;;
+    esac
+done
+
+# ── Backend checks (only if backend files are staged) ────────────────
+if $HAS_BACKEND; then
     echo "==> Backend pre-commit checks"
-    (
-        cd backend
-        echo "  cargo fmt --check"
-        cargo fmt --all -- --check
-        if check_tool cargo-sort; then
-            echo "  cargo sort --check"
-            cargo sort --workspace --check
-        fi
-        echo "  cargo clippy"
-        cargo clippy --workspace --all-targets -- -D warnings
-    )
+
+    # Auto-format staged backend files and re-add them
+    echo "  cargo fmt --check"
+    if ! (cd "$REPO_ROOT/backend" && cargo fmt --check 2>/dev/null); then
+        echo "  cargo fmt (auto-fixing)"
+        (cd "$REPO_ROOT/backend" && cargo fmt)
+        for f in $STAGED_FILES; do
+            case "$f" in
+                backend/*.rs) git add "$REPO_ROOT/$f" ;;
+            esac
+        done
+    fi
+
+    echo "  cargo sort --check"
+    (cd "$REPO_ROOT/backend" && cargo sort --check) || { echo "❌ cargo sort failed — run 'cargo sort'"; exit 1; }
+
+    echo "  cargo clippy"
+    (cd "$REPO_ROOT/backend" && cargo clippy -- -D warnings) || { echo "❌ cargo clippy failed"; exit 1; }
+
     echo "==> Backend checks passed"
+else
+    echo "==> Skipping backend checks (no backend files staged)"
 fi
 
-# iOS frontend checks (only if frontend/ios files are staged)
-if git diff --cached --name-only | grep -q '^frontend/ios/'; then
+# ── iOS frontend checks (only if frontend files are staged) ──────────
+if $HAS_FRONTEND; then
     echo "==> iOS frontend pre-commit checks"
-    (
-        cd frontend/ios
-        if command -v swiftlint &> /dev/null; then
-            echo "  swiftlint"
-            swiftlint lint --quiet --config .swiftlint.yml
-        else
-            echo "  swiftlint not found, skipping"
-        fi
-    )
+
+    if command -v swiftlint &>/dev/null; then
+        echo "  swiftlint lint --strict"
+        (cd "$REPO_ROOT/frontend/ios" && swiftlint lint --strict Offrii/) || { echo "❌ swiftlint failed"; exit 1; }
+    else
+        echo "  ⚠️  swiftlint not found — install with 'brew install swiftlint'"
+        exit 1
+    fi
+
     echo "==> iOS frontend checks passed"
+else
+    echo "==> Skipping iOS frontend checks (no frontend files staged)"
 fi
