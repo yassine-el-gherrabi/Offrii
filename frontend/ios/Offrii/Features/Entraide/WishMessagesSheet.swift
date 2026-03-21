@@ -16,6 +16,7 @@ struct WishMessagesSheet: View {
     @State private var hasMorePages = false
     @State private var pollingTask: Task<Void, Never>?
     @State private var lastActivityTime = Date()
+    @State private var showError = false
 
     var body: some View {
         NavigationStack {
@@ -59,6 +60,14 @@ struct WishMessagesSheet: View {
         }
         .onDisappear {
             pollingTask?.cancel()
+        }
+        .alert(
+            NSLocalizedString("common.error", comment: ""),
+            isPresented: $showError
+        ) {
+            Button(NSLocalizedString("common.ok", comment: ""), role: .cancel) {}
+        } message: {
+            Text(NSLocalizedString("error.serverError", comment: ""))
         }
     }
 
@@ -161,7 +170,7 @@ struct WishMessagesSheet: View {
             )
             messages = response.data
             hasMorePages = response.pagination.hasMore
-        } catch {}
+        } catch { /* Best-effort refresh */ }
         isLoading = false
     }
 
@@ -174,7 +183,7 @@ struct WishMessagesSheet: View {
             messages.insert(contentsOf: response.data, at: 0)
             hasMorePages = response.pagination.hasMore
             currentPage = nextPage
-        } catch {}
+        } catch { /* Best-effort refresh */ }
     }
 
     private func sendMessage() async {
@@ -193,7 +202,9 @@ struct WishMessagesSheet: View {
             sendCooldown = true
             try? await Task.sleep(for: .seconds(2))
             sendCooldown = false
-        } catch {}
+        } catch {
+            showError = true
+        }
         isSending = false
     }
 

@@ -1,12 +1,14 @@
 use std::sync::Arc;
+use std::time::Duration;
 
 use axum::Router;
-use axum::http::{Method, header};
+use axum::http::{Method, StatusCode, header};
 use axum::response::IntoResponse;
 use axum::routing::get;
 use axum_prometheus::PrometheusMetricLayerBuilder;
 use tokio::net::TcpListener;
 use tower_http::cors::CorsLayer;
+use tower_http::timeout::TimeoutLayer;
 use tower_http::trace::TraceLayer;
 use tracing_subscriber::EnvFilter;
 use tracing_subscriber::layer::SubscriberExt as _;
@@ -337,6 +339,10 @@ async fn main() -> anyhow::Result<()> {
         .route("/legal/mentions", get(legal_mentions))
         .nest("/v1", v1_routes)
         .layer(axum::extract::DefaultBodyLimit::max(10 * 1024 * 1024)) // 10 MB
+        .layer(TimeoutLayer::with_status_code(
+            StatusCode::REQUEST_TIMEOUT,
+            Duration::from_secs(30),
+        ))
         .layer(TraceLayer::new_for_http())
         .layer(
             CorsLayer::new()

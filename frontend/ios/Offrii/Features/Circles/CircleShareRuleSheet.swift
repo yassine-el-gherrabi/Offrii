@@ -17,6 +17,7 @@ struct CircleShareRuleSheet: View {
     @State private var isLoading = true
     @State private var isSaving = false
     @State private var privateCount = 0
+    @State private var showError = false
 
     var body: some View {
         NavigationStack {
@@ -54,6 +55,14 @@ struct CircleShareRuleSheet: View {
                 }
             }
             .task { await loadData() }
+            .alert(
+                NSLocalizedString("common.error", comment: ""),
+                isPresented: $showError
+            ) {
+                Button(NSLocalizedString("common.ok", comment: ""), role: .cancel) {}
+            } message: {
+                Text(NSLocalizedString("error.serverError", comment: ""))
+            }
         }
     }
 
@@ -317,7 +326,9 @@ struct CircleShareRuleSheet: View {
 
             OffriiHaptics.success()
             dismiss()
-        } catch {}
+        } catch {
+            showError = true
+        }
         isSaving = false
     }
 }

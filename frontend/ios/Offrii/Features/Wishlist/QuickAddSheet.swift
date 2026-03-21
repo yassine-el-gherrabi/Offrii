@@ -166,7 +166,7 @@ struct QuickAddSheet: View {
             .task {
                 do {
                     categories = try await CategoryService.shared.listCategories()
-                } catch {}
+                } catch { /* Best-effort refresh */ }
             }
         }
         .presentationDetents([.medium, .large])

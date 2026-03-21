@@ -134,7 +134,7 @@ struct NotificationCenterView: View {
             notifications = response.data
             hasMore = response.data.count == 20
             page = 1
-        } catch {}
+        } catch { /* Best-effort refresh */ }
         isLoading = false
     }
 
@@ -145,14 +145,14 @@ struct NotificationCenterView: View {
             notifications.append(contentsOf: response.data)
             hasMore = response.data.count == 20
             page = nextPage
-        } catch {}
+        } catch { /* Best-effort refresh */ }
     }
 
     private func deleteNotification(_ notif: AppNotification) async {
         do {
             try await NotificationCenterService.shared.delete(id: notif.id)
             notifications.removeAll { $0.id == notif.id }
-        } catch {}
+        } catch { /* Non-critical: notification stays visible */ }
     }
 
     private func markAllRead() async {
@@ -168,6 +168,6 @@ struct NotificationCenterView: View {
             }
             OffriiHaptics.success()
             NotificationCenter.default.post(name: .notificationsRead, object: nil)
-        } catch {}
+        } catch { /* Non-critical: badges refresh on next open */ }
     }
 }

@@ -227,9 +227,10 @@ struct EntraideView: View {
             Button(NSLocalizedString("common.cancel", comment: ""), role: .cancel) {}
         }
         .task {
-            await viewModel.loadWishes()
-            await viewModel.loadMyOffers()
-            await myNeedsViewModel.loadMyWishes()
+            async let wishes: Void = viewModel.loadWishes()
+            async let offers: Void = viewModel.loadMyOffers()
+            async let needs: Void = myNeedsViewModel.loadMyWishes()
+            _ = await (wishes, offers, needs)
             if let userId = authManager.currentUser?.id.uuidString {
                 let key = "entraide.hasVisited.\(userId)"
                 if !UserDefaults.standard.bool(forKey: key) {

@@ -92,7 +92,7 @@ struct ReservationsListView: View {
         isLoading = true
         do {
             reservations = try await CircleService.shared.listReservations()
-        } catch {}
+        } catch { /* Best-effort refresh */ }
         isLoading = false
     }
 }

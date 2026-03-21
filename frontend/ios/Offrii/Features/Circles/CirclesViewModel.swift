@@ -100,13 +100,13 @@ final class CirclesViewModel {
     func loadPendingRequests() async {
         do {
             pendingRequests = try await FriendService.shared.listPendingRequests()
-        } catch {}
+        } catch { /* Best-effort refresh */ }
     }
 
     func loadSentRequests() async {
         do {
             sentRequests = try await FriendService.shared.listSentRequests()
-        } catch {}
+        } catch { /* Best-effort refresh */ }
     }
 
     // MARK: - Friend Actions

@@ -78,7 +78,7 @@ final class EntraideViewModel {
             wishes.append(contentsOf: response.data)
             hasMore = response.pagination.hasMore
             currentPage = nextPage
-        } catch {}
+        } catch { /* Best-effort refresh */ }
         isLoadingMore = false
     }
 
@@ -88,7 +88,7 @@ final class EntraideViewModel {
         isLoadingOffers = true
         do {
             myOfferWishes = try await CommunityWishService.shared.listMyOffers()
-        } catch {}
+        } catch { /* Best-effort refresh */ }
         isLoadingOffers = false
     }
 

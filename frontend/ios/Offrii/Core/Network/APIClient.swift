@@ -145,6 +145,7 @@ final class APIClient: Sendable {
 
         var request = URLRequest(url: url)
         request.httpMethod = endpoint.method.rawValue
+        request.timeoutInterval = 15
         request.setValue("application/json", forHTTPHeaderField: "Accept")
 
         // Inject bearer token for authenticated endpoints.

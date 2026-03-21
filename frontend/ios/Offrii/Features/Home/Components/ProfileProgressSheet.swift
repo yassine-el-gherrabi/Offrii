@@ -30,6 +30,7 @@ struct ProfileProgressSheet: View {
     @State private var showEmailSentConfirmation = false
     @State private var emailCooldown = false
     @State private var emailCooldownSeconds = 0
+    @State private var showError = false
 
     private var groupedSteps: [(ProfileProgressStep.StepGroup, [ProfileProgressStep])] {
         var groups: [(ProfileProgressStep.StepGroup, [ProfileProgressStep])] = []
@@ -235,6 +236,14 @@ struct ProfileProgressSheet: View {
         } message: {
             Text(NSLocalizedString("progress.emailSent.message", comment: ""))
         }
+        .alert(
+            NSLocalizedString("common.error", comment: ""),
+            isPresented: $showError
+        ) {
+            Button(NSLocalizedString("common.ok", comment: ""), role: .cancel) {}
+        } message: {
+            Text(NSLocalizedString("error.serverError", comment: ""))
+        }
     }
 
     // MARK: - Username ViewModel (for inline editing)
@@ -350,7 +359,9 @@ struct ProfileProgressSheet: View {
                 if case .tooManyRequests = error {
                     startEmailCooldown(seconds: 60)
                 }
-            } catch {}
+            } catch {
+                showError = true
+            }
         }
     }
 
@@ -383,7 +394,9 @@ struct ProfileProgressSheet: View {
             try? await authManager.loadCurrentUser()
             refreshProgress()
             OffriiHaptics.success()
-        } catch {}
+        } catch {
+            showError = true
+        }
     }
 
     // MARK: - Email Cooldown

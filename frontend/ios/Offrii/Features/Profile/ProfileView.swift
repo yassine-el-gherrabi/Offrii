@@ -16,6 +16,7 @@ struct ProfileView: View {
     @State private var showAvatarPhotoPicker = false
     @State private var pushEnabled = false
     @State private var isResendingVerification = false
+    @State private var showError = false
 
     var body: some View {
         ZStack {
@@ -248,6 +249,14 @@ struct ProfileView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
             Task { await refreshPushStatus() }
+        }
+        .alert(
+            NSLocalizedString("common.error", comment: ""),
+            isPresented: $showError
+        ) {
+            Button(NSLocalizedString("common.ok", comment: ""), role: .cancel) {}
+        } message: {
+            Text(NSLocalizedString("error.serverError", comment: ""))
         }
     }
 
@@ -520,7 +529,9 @@ struct ProfileView: View {
         isResendingVerification = true
         do {
             try await UserService.shared.resendVerification()
-        } catch {}
+        } catch {
+            showError = true
+        }
         isResendingVerification = false
     }
 
@@ -593,7 +604,9 @@ struct ProfileView: View {
             viewModel.avatarUrlString = nil
             selectedAvatarImage = nil
             try? await authManager.loadCurrentUser()
-        } catch {}
+        } catch {
+            showError = true
+        }
         isUploadingAvatar = false
     }
 

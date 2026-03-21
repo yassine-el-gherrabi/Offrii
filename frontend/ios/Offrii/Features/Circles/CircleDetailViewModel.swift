@@ -56,7 +56,7 @@ final class CircleDetailViewModel {
     func loadCategories() async {
         do {
             categories = try await CategoryService.shared.listCategories()
-        } catch {}
+        } catch { /* Best-effort refresh */ }
     }
 
     func loadDetail(circleId: UUID) async {

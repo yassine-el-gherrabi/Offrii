@@ -795,7 +795,7 @@ struct WishlistShareSheet: View {
             circles = try await circlesTask
             let rules = try await rulesTask
             shareRules = Dictionary(uniqueKeysWithValues: rules.map { ($0.circleId, $0) })
-        } catch {}
+        } catch { /* Best-effort refresh */ }
         isLoadingCircles = false
     }
 
@@ -804,7 +804,7 @@ struct WishlistShareSheet: View {
         do {
             let response: PaginatedResponse<ShareLinkResponse> = try await APIClient.shared.request(.listShareLinks)
             shareLinks = response.data
-        } catch {}
+        } catch { /* Best-effort refresh */ }
         isLoadingLinks = false
     }
 
@@ -834,7 +834,9 @@ struct WishlistShareSheet: View {
                         )
                     }
                 }
-            } catch {}
+            } catch {
+                showToast(NSLocalizedString("error.serverError", comment: ""))
+            }
         }
 
         // Refresh share rules state

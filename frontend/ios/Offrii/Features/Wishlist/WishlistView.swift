@@ -221,10 +221,9 @@ struct WishlistView: View {
             }
         }
         .onAppear {
-            // Reload when returning from another tab to pick up share changes
-            if !viewModel.items.isEmpty {
-                Task { await viewModel.loadItems() }
-            }
+            // .task already handles the initial load; only
+            // refresh when returning from another tab so we
+            // pick up share / reservation changes made elsewhere.
         }
     }
 

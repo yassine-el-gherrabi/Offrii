@@ -14,6 +14,7 @@ struct ShareToCircleSheet: View {
     @State private var isSharing = false
     @State private var sharedCircleIds: Set<UUID> = []
     @State private var pendingUnshareIds: Set<UUID> = []
+    @State private var showError = false
 
     var body: some View {
         NavigationStack {
@@ -120,12 +121,20 @@ struct ShareToCircleSheet: View {
                     .foregroundColor(OffriiTheme.primary)
                 }
             }
+            .alert(
+                NSLocalizedString("common.error", comment: ""),
+                isPresented: $showError
+            ) {
+                Button(NSLocalizedString("common.ok", comment: ""), role: .cancel) {}
+            } message: {
+                Text(NSLocalizedString("error.serverError", comment: ""))
+            }
             .task {
                 sharedCircleIds = alreadySharedCircleIds
                 isLoading = true
                 do {
                     circles = try await CircleService.shared.listCircles()
-                } catch {}
+                } catch { /* Best-effort refresh */ }
                 isLoading = false
             }
         }
@@ -151,7 +160,9 @@ struct ShareToCircleSheet: View {
         for circleId in pendingUnshareIds {
             do {
                 try await CircleService.shared.unshareItem(circleId: circleId, itemId: itemId)
-            } catch {}
+            } catch {
+                showError = true
+            }
         }
 
         // Share
@@ -161,7 +172,9 @@ struct ShareToCircleSheet: View {
                 _ = withAnimation {
                     sharedCircleIds.insert(circleId)
                 }
-            } catch {}
+            } catch {
+                showError = true
+            }
         }
 
         OffriiHaptics.success()

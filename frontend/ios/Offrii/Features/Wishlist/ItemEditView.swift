@@ -302,7 +302,7 @@ struct ItemEditView: View {
         .task {
             do {
                 categories = try await CategoryService.shared.listCategories()
-            } catch {}
+            } catch { /* Best-effort refresh */ }
         }
         .alert(
             NSLocalizedString("common.error", comment: ""),
