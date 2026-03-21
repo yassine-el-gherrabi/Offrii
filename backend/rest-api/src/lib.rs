@@ -2,7 +2,6 @@ pub mod config;
 pub mod dto;
 pub mod errors;
 pub mod handlers;
-pub mod jobs;
 pub mod middleware;
 pub mod models;
 pub mod openapi;

@@ -1,6 +1,6 @@
 use anyhow::Result;
 use async_trait::async_trait;
-use chrono::{DateTime, NaiveTime, Utc};
+use chrono::{DateTime, Utc};
 use sqlx::{PgExecutor, PgPool, QueryBuilder};
 use uuid::Uuid;
 
@@ -10,10 +10,8 @@ use crate::traits;
 /// Shared column list for all user queries (avoids duplication).
 const USER_COLS: &str = "id, email, username, password_hash, display_name, \
                          oauth_provider, oauth_provider_id, email_verified, \
-                         reminder_freq, reminder_time, timezone, \
-                         utc_reminder_hour, locale, token_version, \
-                         is_admin, username_customized, avatar_url, \
-                         created_at, updated_at";
+                         token_version, is_admin, username_customized, \
+                         avatar_url, created_at, updated_at";
 
 // ── Concrete implementation ──────────────────────────────────────────
 
@@ -68,34 +66,13 @@ impl traits::UserRepo for PgUserRepo {
         id: Uuid,
         display_name: Option<&str>,
         username: Option<&str>,
-        reminder_freq: Option<&str>,
-        reminder_time: Option<NaiveTime>,
-        timezone: Option<&str>,
-        utc_reminder_hour: Option<i16>,
-        locale: Option<&str>,
         avatar_url: Option<Option<&str>>,
     ) -> Result<Option<User>> {
-        update_profile(
-            &self.pool,
-            id,
-            display_name,
-            username,
-            reminder_freq,
-            reminder_time,
-            timezone,
-            utc_reminder_hour,
-            locale,
-            avatar_url,
-        )
-        .await
+        update_profile(&self.pool, id, display_name, username, avatar_url).await
     }
 
     async fn delete_user(&self, id: Uuid) -> Result<bool> {
         delete_user(&self.pool, id).await
-    }
-
-    async fn find_eligible_for_reminder(&self, utc_hour: i16) -> Result<Vec<User>> {
-        find_eligible_for_reminder(&self.pool, utc_hour).await
     }
 
     async fn update_password_hash(&self, id: Uuid, password_hash: &str) -> Result<bool> {
@@ -253,29 +230,15 @@ pub(crate) async fn find_by_ids(exec: impl PgExecutor<'_>, ids: &[Uuid]) -> Resu
     Ok(users)
 }
 
-#[allow(clippy::too_many_arguments)]
 pub(crate) async fn update_profile(
     exec: impl PgExecutor<'_>,
     id: Uuid,
     display_name: Option<&str>,
     username: Option<&str>,
-    reminder_freq: Option<&str>,
-    reminder_time: Option<NaiveTime>,
-    timezone: Option<&str>,
-    utc_reminder_hour: Option<i16>,
-    locale: Option<&str>,
     avatar_url: Option<Option<&str>>,
 ) -> Result<Option<User>> {
     // If nothing to update, short-circuit with a SELECT instead of invalid SQL
-    if display_name.is_none()
-        && username.is_none()
-        && reminder_freq.is_none()
-        && reminder_time.is_none()
-        && timezone.is_none()
-        && utc_reminder_hour.is_none()
-        && locale.is_none()
-        && avatar_url.is_none()
-    {
+    if display_name.is_none() && username.is_none() && avatar_url.is_none() {
         return find_by_id(exec, id).await;
     }
 
@@ -291,26 +254,6 @@ pub(crate) async fn update_profile(
         separated.push_bind_unseparated(v);
         separated.push("username_customized = ");
         separated.push_bind_unseparated(true);
-    }
-    if let Some(v) = reminder_freq {
-        separated.push("reminder_freq = ");
-        separated.push_bind_unseparated(v);
-    }
-    if let Some(v) = reminder_time {
-        separated.push("reminder_time = ");
-        separated.push_bind_unseparated(v);
-    }
-    if let Some(v) = timezone {
-        separated.push("timezone = ");
-        separated.push_bind_unseparated(v);
-    }
-    if let Some(v) = utc_reminder_hour {
-        separated.push("utc_reminder_hour = ");
-        separated.push_bind_unseparated(v);
-    }
-    if let Some(v) = locale {
-        separated.push("locale = ");
-        separated.push_bind_unseparated(v);
     }
     if let Some(v) = avatar_url {
         // Some(Some("url")) = set, Some(None) = clear to NULL
@@ -349,24 +292,6 @@ pub(crate) async fn delete_user(exec: impl PgExecutor<'_>, id: Uuid) -> Result<b
         .await?;
 
     Ok(result.rows_affected() > 0)
-}
-
-pub(crate) async fn find_eligible_for_reminder(
-    exec: impl PgExecutor<'_>,
-    utc_hour: i16,
-) -> Result<Vec<User>> {
-    let sql = format!(
-        "SELECT {USER_COLS} FROM users u \
-         WHERE u.utc_reminder_hour = $1 \
-           AND u.reminder_freq != 'never' \
-           AND EXISTS (SELECT 1 FROM push_tokens pt WHERE pt.user_id = u.id)"
-    );
-    let users = sqlx::query_as::<_, User>(&sql)
-        .bind(utc_hour)
-        .fetch_all(exec)
-        .await?;
-
-    Ok(users)
 }
 
 pub(crate) async fn increment_token_version(exec: impl PgExecutor<'_>, id: Uuid) -> Result<i32> {

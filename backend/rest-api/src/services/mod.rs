@@ -11,7 +11,6 @@ pub mod moderation_service;
 pub mod oauth_verifier;
 pub mod og_service;
 pub mod push_token_service;
-pub mod reminder_service;
 pub mod share_link_service;
 pub mod upload_service;
 pub mod user_service;

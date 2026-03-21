@@ -1,4 +1,4 @@
-use chrono::{DateTime, NaiveTime, Utc};
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use validator::Validate;
@@ -19,11 +19,6 @@ pub struct UpdateProfileRequest {
         message = "username must be between 3 and 30 characters"
     ))]
     pub username: Option<String>,
-    pub reminder_freq: Option<String>,
-    pub reminder_time: Option<NaiveTime>,
-    pub timezone: Option<String>,
-    #[validate(length(max = 10, message = "locale must be at most 10 characters"))]
-    pub locale: Option<String>,
     #[serde(default, deserialize_with = "crate::dto::nullable::deserialize")]
     pub avatar_url: Option<Option<String>>,
 }
@@ -38,10 +33,6 @@ pub struct UserProfileResponse {
     pub display_name: Option<String>,
     pub username_customized: bool,
     pub email_verified: bool,
-    pub reminder_freq: String,
-    pub reminder_time: NaiveTime,
-    pub timezone: String,
-    pub locale: String,
     pub avatar_url: Option<String>,
     pub created_at: DateTime<Utc>,
 }
@@ -63,10 +54,6 @@ impl From<&User> for UserProfileResponse {
             display_name: u.display_name.clone(),
             username_customized: u.username_customized,
             email_verified: u.email_verified,
-            reminder_freq: u.reminder_freq.clone(),
-            reminder_time: u.reminder_time,
-            timezone: u.timezone.clone(),
-            locale: u.locale.clone(),
             avatar_url: u.avatar_url.clone(),
             created_at: u.created_at,
         }

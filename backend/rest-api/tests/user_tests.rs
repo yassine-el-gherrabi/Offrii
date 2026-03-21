@@ -14,9 +14,6 @@ async fn get_profile_returns_defaults() {
 
     assert_eq!(status, StatusCode::OK);
     assert_eq!(body["email"], "user@example.com");
-    assert_eq!(body["reminder_freq"], "weekly");
-    assert_eq!(body["timezone"], "UTC");
-    assert_eq!(body["locale"], "fr");
     assert!(body["id"].is_string());
     assert!(body["created_at"].is_string());
 }
@@ -35,63 +32,6 @@ async fn update_display_name() {
 
     assert_eq!(status, StatusCode::OK);
     assert_eq!(body["display_name"], "Alice");
-}
-
-#[tokio::test]
-async fn update_timezone_recomputes_utc_hour() {
-    let app = TestApp::new().await;
-    let token = app
-        .setup_user_token("user@example.com", TEST_PASSWORD)
-        .await;
-
-    let patch_body = serde_json::json!({
-        "timezone": "Europe/Paris",
-        "reminder_time": "10:00:00"
-    });
-    let (status, body) = app
-        .patch_json_with_auth("/users/me", &patch_body, &token)
-        .await;
-
-    assert_eq!(status, StatusCode::OK);
-    assert_eq!(body["timezone"], "Europe/Paris");
-    assert_eq!(body["reminder_time"], "10:00:00");
-
-    // Verify via GET that the profile persisted correctly
-    let (status, body) = app.get_with_auth("/users/me", &token).await;
-    assert_eq!(status, StatusCode::OK);
-    assert_eq!(body["timezone"], "Europe/Paris");
-}
-
-#[tokio::test]
-async fn update_reminder_freq_never() {
-    let app = TestApp::new().await;
-    let token = app
-        .setup_user_token("user@example.com", TEST_PASSWORD)
-        .await;
-
-    let patch_body = serde_json::json!({ "reminder_freq": "never" });
-    let (status, body) = app
-        .patch_json_with_auth("/users/me", &patch_body, &token)
-        .await;
-
-    assert_eq!(status, StatusCode::OK);
-    assert_eq!(body["reminder_freq"], "never");
-}
-
-#[tokio::test]
-async fn update_invalid_timezone_400() {
-    let app = TestApp::new().await;
-    let token = app
-        .setup_user_token("user@example.com", TEST_PASSWORD)
-        .await;
-
-    let patch_body = serde_json::json!({ "timezone": "Invalid/Timezone" });
-    let (status, body) = app
-        .patch_json_with_auth("/users/me", &patch_body, &token)
-        .await;
-
-    assert_eq!(status, StatusCode::BAD_REQUEST);
-    common::assert_error(&body, "BAD_REQUEST");
 }
 
 #[tokio::test]
@@ -252,22 +192,6 @@ async fn delete_account_without_auth_401() {
 // ── Validation edge cases (400) ─────────────────────────────────────
 
 #[tokio::test]
-async fn update_invalid_reminder_freq_400() {
-    let app = TestApp::new().await;
-    let token = app
-        .setup_user_token("user@example.com", TEST_PASSWORD)
-        .await;
-
-    let patch_body = serde_json::json!({ "reminder_freq": "hourly" });
-    let (status, body) = app
-        .patch_json_with_auth("/users/me", &patch_body, &token)
-        .await;
-
-    assert_eq!(status, StatusCode::BAD_REQUEST);
-    assert_error(&body, "BAD_REQUEST");
-}
-
-#[tokio::test]
 async fn update_display_name_too_long_400() {
     let app = TestApp::new().await;
     let token = app
@@ -276,22 +200,6 @@ async fn update_display_name_too_long_400() {
 
     let long_name = "A".repeat(101);
     let patch_body = serde_json::json!({ "display_name": long_name });
-    let (status, body) = app
-        .patch_json_with_auth("/users/me", &patch_body, &token)
-        .await;
-
-    assert_eq!(status, StatusCode::BAD_REQUEST);
-    assert_error(&body, "BAD_REQUEST");
-}
-
-#[tokio::test]
-async fn update_locale_too_long_400() {
-    let app = TestApp::new().await;
-    let token = app
-        .setup_user_token("user@example.com", TEST_PASSWORD)
-        .await;
-
-    let patch_body = serde_json::json!({ "locale": "fr-FR-extra-long" });
     let (status, body) = app
         .patch_json_with_auth("/users/me", &patch_body, &token)
         .await;
@@ -314,7 +222,6 @@ async fn update_empty_body_returns_current_profile() {
 
     assert_eq!(status, StatusCode::OK);
     assert_eq!(body["email"], "user@example.com");
-    assert_eq!(body["reminder_freq"], "weekly");
 }
 
 #[tokio::test]
@@ -326,10 +233,7 @@ async fn update_multiple_fields_at_once() {
 
     let patch_body = serde_json::json!({
         "display_name": "Jean",
-        "reminder_freq": "daily",
-        "timezone": "America/New_York",
-        "reminder_time": "08:00:00",
-        "locale": "en"
+        "username": "jeantest",
     });
     let (status, body) = app
         .patch_json_with_auth("/users/me", &patch_body, &token)
@@ -337,10 +241,7 @@ async fn update_multiple_fields_at_once() {
 
     assert_eq!(status, StatusCode::OK);
     assert_eq!(body["display_name"], "Jean");
-    assert_eq!(body["reminder_freq"], "daily");
-    assert_eq!(body["timezone"], "America/New_York");
-    assert_eq!(body["reminder_time"], "08:00:00");
-    assert_eq!(body["locale"], "en");
+    assert_eq!(body["username"], "jeantest");
 }
 
 // ── Export data tests ─────────────────────────────────────────────────
@@ -585,8 +486,6 @@ async fn update_profile_persists_across_requests() {
 
     let patch = serde_json::json!({
         "display_name": "Persisted",
-        "locale": "en",
-        "reminder_freq": "daily",
     });
     let (status, _) = app.patch_json_with_auth("/users/me", &patch, &token).await;
     assert_eq!(status, StatusCode::OK);
@@ -595,8 +494,6 @@ async fn update_profile_persists_across_requests() {
     let (status, body) = app.get_with_auth("/users/me", &token).await;
     assert_eq!(status, StatusCode::OK);
     assert_eq!(body["display_name"], "Persisted");
-    assert_eq!(body["locale"], "en");
-    assert_eq!(body["reminder_freq"], "daily");
 }
 
 #[tokio::test]

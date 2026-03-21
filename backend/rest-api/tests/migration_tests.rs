@@ -214,11 +214,6 @@ async fn migration_001_creates_users_table() {
     mdb.assert_nullable("users", "oauth_provider").await;
     mdb.assert_nullable("users", "oauth_provider_id").await;
     mdb.assert_not_null("users", "username").await;
-    mdb.assert_not_null("users", "reminder_freq").await;
-    mdb.assert_not_null("users", "reminder_time").await;
-    mdb.assert_not_null("users", "timezone").await;
-    mdb.assert_not_null("users", "utc_reminder_hour").await;
-    mdb.assert_not_null("users", "locale").await;
     mdb.assert_not_null("users", "token_version").await;
     mdb.assert_not_null("users", "created_at").await;
     mdb.assert_not_null("users", "updated_at").await;
@@ -228,19 +223,8 @@ async fn migration_001_creates_users_table() {
     assert_eq!(dt, "uuid");
     let (dt, _, _) = mdb.column_info("users", "email").await.unwrap();
     assert_eq!(dt, "character varying");
-    let (dt, _, _) = mdb.column_info("users", "reminder_freq").await.unwrap();
-    assert_eq!(dt, "character varying");
-    let (dt, _, _) = mdb.column_info("users", "reminder_time").await.unwrap();
-    assert!(dt.starts_with("time"), "expected time type, got {dt}");
     let (dt, _, _) = mdb.column_info("users", "created_at").await.unwrap();
     assert!(dt.contains("timestamp"), "expected timestamptz, got {dt}");
-
-    // defaults
-    let (_, _, default) = mdb.column_info("users", "reminder_freq").await.unwrap();
-    assert!(
-        default.as_deref().unwrap_or("").contains("weekly"),
-        "expected default 'weekly', got {default:?}"
-    );
 
     // UNIQUE on email and username
     assert!(mdb.unique_constraint_exists("users", &["email"]).await);
@@ -653,18 +637,6 @@ async fn check_constraints_reject_invalid_data() {
     .await
     .unwrap();
     let uid = user_id.0;
-
-    // -- users: invalid reminder_freq ----------------------------------------
-    let result = sqlx::query(
-        "INSERT INTO users (email, password_hash, username, reminder_freq)
-         VALUES ('bad_freq@test.com', 'hash', 'badfreq_user', 'hourly')",
-    )
-    .execute(&mdb.db)
-    .await;
-    assert!(
-        result.is_err(),
-        "reminder_freq='hourly' should violate CHECK constraint"
-    );
 
     // -- items: invalid priority (0) -----------------------------------------
     let result =

@@ -1,4 +1,4 @@
-use chrono::{DateTime, NaiveTime, Utc};
+use chrono::{DateTime, Utc};
 use sqlx::FromRow;
 use uuid::Uuid;
 
@@ -12,11 +12,6 @@ pub struct User {
     pub oauth_provider: Option<String>,
     pub oauth_provider_id: Option<String>,
     pub email_verified: bool,
-    pub reminder_freq: String,
-    pub reminder_time: NaiveTime,
-    pub timezone: String,
-    pub utc_reminder_hour: i16,
-    pub locale: String,
     pub token_version: i32,
     pub is_admin: bool,
     pub username_customized: bool,

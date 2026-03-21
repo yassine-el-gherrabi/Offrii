@@ -147,14 +147,14 @@
 - [x] **Q2: `list_recent_fulfilled`** → moved to service/repo layer
 - [x] **Q1: Admin `is_admin`** → JWT claims (no more DB query per admin request)
 
-### Low
-- [ ] **S7: ngrok URL hardcodée dans debug** → utiliser localhost
-- [ ] **P3: Index manquant `community_wishes(fulfilled_at)`** → migration
-- [ ] **P4: Index/cleanup `refresh_tokens`** → job de nettoyage
-- [ ] **Q3: Emails fire-and-forget sans retry** → retry avec backoff
-- [ ] **Q4: `DefaultHasher` non-déterministe cache keys** → utiliser xxhash/fnv
-- [ ] **A1: HTML templates inline dans handlers** → include_str! ou askama
-- [ ] **A2: AppState god object (17 services)** → sous-states groupés
+### Low ✅
+- [x] ~~S7: ngrok URL~~ → déjà supprimé du code
+- [x] **P3: Index `fulfilled_at`** → migration 20260321000002
+- [x] **P4: Cleanup `refresh_tokens`** → migration 20260321000003 (index existait déjà)
+- [x] **Q3: Email retry** → 3 attempts, 1s/2s backoff via send_with_retry
+- [x] **Q4: Cache keys** → format!() déterministe au lieu de DefaultHasher
+- [x] **A1: HTML templates** → extract to templates/ dir, include_str!
+- [ ] ~~A2: AppState god object~~ → skip, refacto post-Series A
 
 ---
 

@@ -50,7 +50,6 @@ use rest_api::services::item_service::PgItemService;
 use rest_api::services::moderation_service::{NoopModerationService, OpenAIModerationService};
 use rest_api::services::oauth_verifier::OAuthVerifier;
 use rest_api::services::push_token_service::PgPushTokenService;
-use rest_api::services::reminder_service::PgReminderService;
 use rest_api::services::share_link_service::PgShareLinkService;
 use rest_api::services::upload_service::{NoopUploadService, R2UploadService};
 use rest_api::services::user_service::PgUserService;
@@ -60,8 +59,8 @@ use rest_api::traits::{
     CircleMemberRepo, CircleRepo, CircleService, CommunityWishRepo, CommunityWishService,
     EmailService, FriendRepo, FriendService, HealthCheck, ItemRepo, ItemService, ModerationService,
     NotificationRepo, NotificationService, PushTokenRepo, PushTokenService, RefreshTokenRepo,
-    ReminderService, ShareLinkRepo, ShareLinkService, UploadService, UserRepo, UserService,
-    WishMessageRepo, WishMessageService, WishReportRepo,
+    ShareLinkRepo, ShareLinkService, UploadService, UserRepo, UserService, WishMessageRepo,
+    WishMessageService, WishReportRepo,
 };
 use rest_api::utils::jwt::JwtKeys;
 
@@ -239,15 +238,6 @@ async fn main() -> anyhow::Result<()> {
         notification_repo.clone(),
     ));
 
-    // Reminder service (not in AppState — used only by the CRON job)
-    let reminder_svc: Arc<dyn ReminderService> = Arc::new(PgReminderService::new(
-        user_repo,
-        item_repo,
-        push_token_repo,
-        redis.clone(),
-        notification_svc,
-    ));
-
     // Upload service — use R2 if credentials are configured, otherwise noop
     let upload_svc: Arc<dyn UploadService> = {
         let r2_account_id = std::env::var("R2_ACCOUNT_ID").ok();
@@ -350,15 +340,26 @@ async fn main() -> anyhow::Result<()> {
             rest_api::openapi::ApiDoc::openapi(),
         ));
 
-    // CRON scheduler: run reminder job every hour at minute 0
+    // CRON scheduler: cleanup expired refresh tokens daily at 3 AM UTC
     let sched = JobScheduler::new().await?;
-    let reminder_redis = redis;
+    let cleanup_pool = db.clone();
     sched
-        .add(Job::new_async("0 0 * * * *", move |_, _| {
-            let svc = reminder_svc.clone();
-            let r = reminder_redis.clone();
+        .add(Job::new_async("0 0 3 * * *", move |_, _| {
+            let pool = cleanup_pool.clone();
             Box::pin(async move {
-                rest_api::jobs::reminder_job::run(svc, r).await;
+                let result: Result<sqlx::postgres::PgQueryResult, sqlx::Error> =
+                    sqlx::query("DELETE FROM refresh_tokens WHERE expires_at < NOW()")
+                        .execute(&pool)
+                        .await;
+                match result {
+                    Ok(r) => tracing::info!(
+                        deleted = r.rows_affected(),
+                        "cleaned up expired refresh tokens"
+                    ),
+                    Err(e) => {
+                        tracing::error!(error = %e, "failed to cleanup expired refresh tokens")
+                    }
+                }
             })
         })?)
         .await?;

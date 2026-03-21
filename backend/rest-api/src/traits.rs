@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use anyhow::Result;
 use async_trait::async_trait;
-use chrono::{DateTime, NaiveTime, Utc};
+use chrono::{DateTime, Utc};
 use uuid::Uuid;
 
 use crate::dto::auth::{AuthResponse, RefreshResponse};
@@ -55,23 +55,15 @@ pub trait UserRepo: Send + Sync {
         exclude_user_id: Option<Uuid>,
     ) -> Result<bool>;
 
-    #[allow(clippy::too_many_arguments)]
     async fn update_profile(
         &self,
         id: Uuid,
         display_name: Option<&str>,
         username: Option<&str>,
-        reminder_freq: Option<&str>,
-        reminder_time: Option<NaiveTime>,
-        timezone: Option<&str>,
-        utc_reminder_hour: Option<i16>,
-        locale: Option<&str>,
         avatar_url: Option<Option<&str>>,
     ) -> Result<Option<User>>;
 
     async fn delete_user(&self, id: Uuid) -> Result<bool>;
-
-    async fn find_eligible_for_reminder(&self, utc_hour: i16) -> Result<Vec<User>>;
 
     async fn update_password_hash(&self, id: Uuid, password_hash: &str) -> Result<bool>;
 
@@ -867,11 +859,6 @@ pub struct NotificationRequest {
 #[async_trait]
 pub trait NotificationService: Send + Sync {
     async fn send_batch(&self, messages: &[NotificationRequest]) -> Vec<NotificationOutcome>;
-}
-
-#[async_trait]
-pub trait ReminderService: Send + Sync {
-    async fn execute_hourly_tick(&self);
 }
 
 // ── Health trait ─────────────────────────────────────────────────────
