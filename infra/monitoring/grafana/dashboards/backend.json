@@ -20,7 +20,14 @@
       "fieldConfig": {
         "defaults": {
           "unit": "reqps",
-          "custom": { "drawStyle": "line", "fillOpacity": 10, "stacking": { "mode": "normal" } }
+          "custom": { "drawStyle": "line", "fillOpacity": 10, "stacking": { "mode": "normal" } },
+          "links": [
+            {
+              "title": "View ${__series.name} logs in Loki",
+              "url": "/explore?orgId=1&left={\"datasource\":\"loki\",\"queries\":[{\"refId\":\"A\",\"expr\":\"{container_name=\\\"offrii-backend\\\"} |~ \\\"${__series.name}\\\"\"}],\"range\":{\"from\":\"${__from}\",\"to\":\"${__to}\"}}",
+              "targetBlank": true
+            }
+          ]
         },
         "overrides": [
           { "matcher": { "id": "byRegexp", "options": "^5.." }, "properties": [{ "id": "color", "value": { "fixedColor": "red", "mode": "fixed" } }] },
@@ -43,7 +50,14 @@
       "fieldConfig": {
         "defaults": {
           "unit": "percent",
-          "thresholds": { "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 1 }, { "color": "red", "value": 5 }] }
+          "thresholds": { "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 1 }, { "color": "red", "value": 5 }] },
+          "links": [
+            {
+              "title": "View 5xx error logs",
+              "url": "/explore?orgId=1&left={\"datasource\":\"loki\",\"queries\":[{\"refId\":\"A\",\"expr\":\"{container_name=\\\"offrii-backend\\\"} |~ \\\"status=5[0-9][0-9]\\\"\"}],\"range\":{\"from\":\"${__from}\",\"to\":\"${__to}\"}}",
+              "targetBlank": true
+            }
+          ]
         }
       }
     },
@@ -108,7 +122,14 @@
       "fieldConfig": {
         "defaults": {
           "unit": "reqps",
-          "custom": { "drawStyle": "line", "fillOpacity": 0 }
+          "custom": { "drawStyle": "line", "fillOpacity": 0 },
+          "links": [
+            {
+              "title": "View logs for ${__series.name}",
+              "url": "/explore?orgId=1&left={\"datasource\":\"loki\",\"queries\":[{\"refId\":\"A\",\"expr\":\"{container_name=\\\"offrii-backend\\\"} |~ \\\"${__series.name}\\\"\"}],\"range\":{\"from\":\"${__from}\",\"to\":\"${__to}\"}}",
+              "targetBlank": true
+            }
+          ]
         }
       }
     },
@@ -131,6 +152,21 @@
       "fieldConfig": {
         "defaults": { "unit": "s" },
         "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "Endpoint" },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "View logs for ${__value.text}",
+                    "url": "/explore?orgId=1&left={\"datasource\":\"loki\",\"queries\":[{\"refId\":\"A\",\"expr\":\"{container_name=\\\"offrii-backend\\\"} |~ \\\"${__value.text}\\\"\"}],\"range\":{\"from\":\"${__from}\",\"to\":\"${__to}\"}}",
+                    "targetBlank": true
+                  }
+                ]
+              }
+            ]
+          },
           { "matcher": { "id": "byName", "options": "P95 (s)" }, "properties": [{ "id": "thresholds", "value": { "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 0.5 }, { "color": "red", "value": 2 }] } }, { "id": "custom.displayMode", "value": "color-background" }] }
         ]
       }
@@ -151,7 +187,14 @@
         "defaults": {
           "unit": "reqps",
           "custom": { "drawStyle": "bars", "fillOpacity": 50 },
-          "color": { "mode": "fixed", "fixedColor": "red" }
+          "color": { "mode": "fixed", "fixedColor": "red" },
+          "links": [
+            {
+              "title": "View 5xx logs for ${__series.name}",
+              "url": "/explore?orgId=1&left={\"datasource\":\"loki\",\"queries\":[{\"refId\":\"A\",\"expr\":\"{container_name=\\\"offrii-backend\\\"} |~ \\\"${__series.name}\\\" |~ \\\"status=5[0-9][0-9]\\\"\"}],\"range\":{\"from\":\"${__from}\",\"to\":\"${__to}\"}}",
+              "targetBlank": true
+            }
+          ]
         }
       }
     }
