@@ -1,1 +1,0 @@
-ALTER TABLE circles DROP COLUMN IF EXISTS image_url;

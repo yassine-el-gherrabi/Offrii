@@ -1,0 +1,10 @@
+DROP TABLE IF EXISTS circle_invites;
+DROP TABLE IF EXISTS circle_share_rules;
+DROP TABLE IF EXISTS circle_events;
+DROP TABLE IF EXISTS circle_items;
+DROP TRIGGER IF EXISTS trg_check_direct_circle_member_limit ON circle_members;
+DROP FUNCTION IF EXISTS fn_check_direct_circle_member_limit();
+DROP TRIGGER IF EXISTS trg_circles_add_owner_member ON circles;
+DROP FUNCTION IF EXISTS add_circle_owner_as_member();
+DROP TABLE IF EXISTS circle_members;
+DROP TABLE IF EXISTS circles;

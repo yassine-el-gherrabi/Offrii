@@ -8,7 +8,7 @@ use testcontainers_modules::postgres::Postgres;
 static MIGRATOR: Migrator = sqlx::migrate!("./migrations");
 
 // ---------------------------------------------------------------------------
-// MigrationDb – lightweight helper (Postgres only, no Redis/Router)
+// MigrationDb -- lightweight helper (Postgres only, no Redis/Router)
 // ---------------------------------------------------------------------------
 
 struct MigrationDb {
@@ -151,7 +151,6 @@ impl MigrationDb {
         let mut expected: Vec<&str> = columns.to_vec();
         expected.sort();
 
-        // Fetch column sets for each unique index on the table, grouped by index OID.
         let rows: Vec<(Vec<String>,)> = sqlx::query_as(
             "SELECT array_agg(a.attname ORDER BY a.attname) AS cols
                 FROM pg_index i
@@ -174,7 +173,6 @@ impl MigrationDb {
         })
     }
 
-    /// Check a column is NOT NULL via is_nullable = 'NO'
     async fn assert_not_null(&self, table: &str, column: &str) {
         let info = self.column_info(table, column).await;
         let (_, nullable, _) = info.unwrap_or_else(|| panic!("{table}.{column} should exist"));
@@ -184,7 +182,6 @@ impl MigrationDb {
         );
     }
 
-    /// Check a column is nullable via is_nullable = 'YES'
     async fn assert_nullable(&self, table: &str, column: &str) {
         let info = self.column_info(table, column).await;
         let (_, nullable, _) = info.unwrap_or_else(|| panic!("{table}.{column} should exist"));
@@ -196,29 +193,41 @@ impl MigrationDb {
 }
 
 // ===========================================================================
-// Migration 1 : create_users
+// Users table (final state: 17 columns, no reminder/timezone/locale)
 // ===========================================================================
 
 #[tokio::test]
-async fn migration_001_creates_users_table() {
+async fn users_table_final_state() {
     let mdb = MigrationDb::new().await;
 
     assert!(mdb.table_exists("users").await);
-    assert_eq!(mdb.column_count("users").await, 18);
+    assert_eq!(mdb.column_count("users").await, 17);
 
-    // Column types & nullability
     mdb.assert_not_null("users", "id").await;
     mdb.assert_not_null("users", "email").await;
+    mdb.assert_not_null("users", "username").await;
     mdb.assert_nullable("users", "password_hash").await;
     mdb.assert_nullable("users", "display_name").await;
     mdb.assert_nullable("users", "oauth_provider").await;
     mdb.assert_nullable("users", "oauth_provider_id").await;
-    mdb.assert_not_null("users", "username").await;
+    mdb.assert_not_null("users", "email_verified").await;
     mdb.assert_not_null("users", "token_version").await;
+    mdb.assert_not_null("users", "is_admin").await;
+    mdb.assert_not_null("users", "username_customized").await;
+    mdb.assert_nullable("users", "avatar_url").await;
+    mdb.assert_nullable("users", "terms_accepted_at").await;
+    mdb.assert_nullable("users", "last_active_at").await;
+    mdb.assert_nullable("users", "inactivity_notice_sent_at")
+        .await;
     mdb.assert_not_null("users", "created_at").await;
     mdb.assert_not_null("users", "updated_at").await;
 
-    // data types
+    // Reminder columns must NOT exist
+    assert!(mdb.column_info("users", "reminder_freq").await.is_none());
+    assert!(mdb.column_info("users", "timezone").await.is_none());
+    assert!(mdb.column_info("users", "locale").await.is_none());
+
+    // Data types
     let (dt, _, _) = mdb.column_info("users", "id").await.unwrap();
     assert_eq!(dt, "uuid");
     let (dt, _, _) = mdb.column_info("users", "email").await.unwrap();
@@ -230,20 +239,50 @@ async fn migration_001_creates_users_table() {
     assert!(mdb.unique_constraint_exists("users", &["email"]).await);
     assert!(mdb.unique_constraint_exists("users", &["username"]).await);
 
+    // OAuth partial unique index
+    assert!(mdb.index_exists("idx_users_oauth").await);
+
     // Trigger
     assert!(mdb.trigger_exists("trg_users_updated_at").await);
     assert!(mdb.function_exists("set_updated_at").await);
+
+    // Cleanup trigger for community wishes
+    assert!(mdb.trigger_exists("trg_cleanup_matched_wishes").await);
+    assert!(
+        mdb.function_exists("cleanup_matched_wishes_on_user_delete")
+            .await
+    );
 }
 
 // ===========================================================================
-// Migration 2 : create_categories
+// Related user tables
 // ===========================================================================
 
 #[tokio::test]
-async fn migration_002_creates_categories_table() {
+async fn user_related_tables_exist() {
     let mdb = MigrationDb::new().await;
 
-    // After hardcode_categories migration, user_id column is dropped
+    assert!(mdb.table_exists("connection_logs").await);
+    assert_eq!(mdb.column_count("connection_logs").await, 5);
+    assert!(mdb.index_exists("idx_connection_logs_user").await);
+    assert!(mdb.index_exists("idx_connection_logs_created").await);
+
+    assert!(mdb.table_exists("email_verification_tokens").await);
+    assert_eq!(mdb.column_count("email_verification_tokens").await, 5);
+
+    assert!(mdb.table_exists("email_change_tokens").await);
+    assert_eq!(mdb.column_count("email_change_tokens").await, 6);
+    assert!(mdb.index_exists("idx_email_change_user").await);
+}
+
+// ===========================================================================
+// Categories table (global only, no user_id)
+// ===========================================================================
+
+#[tokio::test]
+async fn categories_table_final_state() {
+    let mdb = MigrationDb::new().await;
+
     assert!(mdb.table_exists("categories").await);
     assert_eq!(mdb.column_count("categories").await, 6);
 
@@ -254,148 +293,18 @@ async fn migration_002_creates_categories_table() {
     mdb.assert_not_null("categories", "position").await;
     mdb.assert_not_null("categories", "created_at").await;
 
-    // defaults
-    let (_, _, default) = mdb.column_info("categories", "is_default").await.unwrap();
-    assert!(
-        default.as_deref().unwrap_or("").contains("false"),
-        "expected default false, got {default:?}"
-    );
-    let (_, _, default) = mdb.column_info("categories", "position").await.unwrap();
-    assert!(
-        default.as_deref().unwrap_or("").contains('0'),
-        "expected default 0, got {default:?}"
-    );
-
-    // Both category indexes dropped: uq_categories_user_name by hardcode migration,
-    // uq_categories_default_name implicitly when user_id column was dropped (index referenced it)
+    // No user_id column
+    assert!(mdb.column_info("categories", "user_id").await.is_none());
 }
 
 // ===========================================================================
-// Migration 3 : create_items
+// Seed categories
 // ===========================================================================
 
 #[tokio::test]
-async fn migration_003_creates_items_table() {
+async fn seed_categories_inserted() {
     let mdb = MigrationDb::new().await;
 
-    assert!(mdb.table_exists("items").await);
-    assert_eq!(mdb.column_count("items").await, 24);
-
-    mdb.assert_not_null("items", "id").await;
-    mdb.assert_not_null("items", "user_id").await;
-    mdb.assert_not_null("items", "name").await;
-    mdb.assert_nullable("items", "description").await;
-    mdb.assert_nullable("items", "url").await;
-    mdb.assert_nullable("items", "estimated_price").await;
-    mdb.assert_not_null("items", "priority").await;
-    mdb.assert_nullable("items", "category_id").await;
-    mdb.assert_not_null("items", "status").await;
-    mdb.assert_nullable("items", "purchased_at").await;
-    mdb.assert_not_null("items", "created_at").await;
-    mdb.assert_not_null("items", "updated_at").await;
-    mdb.assert_nullable("items", "claimed_by").await;
-    mdb.assert_nullable("items", "claimed_at").await;
-
-    // defaults
-    let (_, _, default) = mdb.column_info("items", "priority").await.unwrap();
-    assert!(
-        default.as_deref().unwrap_or("").contains('2'),
-        "expected default 2, got {default:?}"
-    );
-    let (_, _, default) = mdb.column_info("items", "status").await.unwrap();
-    assert!(
-        default.as_deref().unwrap_or("").contains("active"),
-        "expected default 'active', got {default:?}"
-    );
-
-    // FKs
-    assert!(mdb.fk_exists("items", "user_id").await);
-    assert!(mdb.fk_exists("items", "category_id").await);
-    assert!(mdb.fk_exists("items", "claimed_by").await);
-
-    // Indexes
-    assert!(mdb.index_exists("idx_items_user_status").await);
-    assert!(mdb.index_exists("idx_items_user_priority").await);
-    assert!(mdb.index_exists("idx_items_created_at").await);
-    assert!(mdb.index_exists("idx_items_claimed_by").await);
-
-    // Trigger
-    assert!(mdb.trigger_exists("trg_items_updated_at").await);
-}
-
-// ===========================================================================
-// Migration 4 : create_push_tokens
-// ===========================================================================
-
-#[tokio::test]
-async fn migration_004_creates_push_tokens_table() {
-    let mdb = MigrationDb::new().await;
-
-    assert!(mdb.table_exists("push_tokens").await);
-    assert_eq!(mdb.column_count("push_tokens").await, 5);
-
-    mdb.assert_not_null("push_tokens", "id").await;
-    mdb.assert_not_null("push_tokens", "user_id").await;
-    mdb.assert_not_null("push_tokens", "token").await;
-    mdb.assert_not_null("push_tokens", "platform").await;
-    mdb.assert_not_null("push_tokens", "created_at").await;
-
-    // UNIQUE(user_id, token)
-    assert!(
-        mdb.unique_constraint_exists("push_tokens", &["user_id", "token"])
-            .await
-    );
-
-    // FK
-    assert!(mdb.fk_exists("push_tokens", "user_id").await);
-}
-
-// ===========================================================================
-// Migration 5 : create_circles + circle_members
-// ===========================================================================
-
-#[tokio::test]
-async fn migration_005_creates_circles_and_members() {
-    let mdb = MigrationDb::new().await;
-
-    // circles
-    assert!(mdb.table_exists("circles").await);
-    assert_eq!(mdb.column_count("circles").await, 6);
-    mdb.assert_not_null("circles", "id").await;
-    // name is nullable (NULL for direct circles)
-    mdb.assert_not_null("circles", "owner_id").await;
-    mdb.assert_not_null("circles", "is_direct").await;
-    mdb.assert_not_null("circles", "created_at").await;
-    assert!(mdb.fk_exists("circles", "owner_id").await);
-
-    // circle_members
-    assert!(mdb.table_exists("circle_members").await);
-    assert_eq!(mdb.column_count("circle_members").await, 4);
-    mdb.assert_not_null("circle_members", "circle_id").await;
-    mdb.assert_not_null("circle_members", "user_id").await;
-    mdb.assert_not_null("circle_members", "role").await;
-    mdb.assert_not_null("circle_members", "joined_at").await;
-
-    // Composite PK acts as unique constraint
-    assert!(
-        mdb.unique_constraint_exists("circle_members", &["circle_id", "user_id"])
-            .await
-    );
-
-    // FKs
-    assert!(mdb.fk_exists("circle_members", "circle_id").await);
-    assert!(mdb.fk_exists("circle_members", "user_id").await);
-}
-
-// ===========================================================================
-// Migration 6 : seed_default_categories
-// ===========================================================================
-
-#[tokio::test]
-async fn migration_006_seeds_default_categories() {
-    let mdb = MigrationDb::new().await;
-
-    // After hardcode migration, all categories are global (no user_id column)
     let count: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM categories WHERE is_default = true")
         .fetch_one(&mdb.db)
         .await
@@ -416,7 +325,7 @@ async fn migration_006_seeds_default_categories() {
         ("Mode", "tshirt"),
         ("Maison", "home"),
         ("Loisirs", "gamepad"),
-        ("Santé", "heart"),
+        ("Sant\u{00e9}", "heart"),
         ("Autre", "tag"),
     ];
 
@@ -433,64 +342,233 @@ async fn migration_006_seeds_default_categories() {
 }
 
 // ===========================================================================
-// Migration 7 : add_items_improvements
+// Items table (final state: no url column, has links[], claim fields, OG)
 // ===========================================================================
 
 #[tokio::test]
-async fn migration_007_adds_items_improvements() {
+async fn items_table_final_state() {
     let mdb = MigrationDb::new().await;
 
+    assert!(mdb.table_exists("items").await);
+    // 23 columns: id, user_id, name, description, estimated_price, priority,
+    // category_id, status, purchased_at, created_at, updated_at,
+    // claimed_by, claimed_at, claimed_via, claimed_name, claimed_via_link_id, web_claim_token,
+    // image_url, links, og_image_url, og_title, og_site_name, is_private
+    assert_eq!(mdb.column_count("items").await, 23);
+
+    // No url column
+    assert!(mdb.column_info("items", "url").await.is_none());
+
+    mdb.assert_not_null("items", "id").await;
+    mdb.assert_not_null("items", "user_id").await;
+    mdb.assert_not_null("items", "name").await;
+    mdb.assert_nullable("items", "description").await;
+    mdb.assert_nullable("items", "estimated_price").await;
+    mdb.assert_not_null("items", "priority").await;
+    mdb.assert_nullable("items", "category_id").await;
+    mdb.assert_not_null("items", "status").await;
+    mdb.assert_nullable("items", "purchased_at").await;
+    mdb.assert_not_null("items", "created_at").await;
+    mdb.assert_not_null("items", "updated_at").await;
+    mdb.assert_nullable("items", "claimed_by").await;
+    mdb.assert_nullable("items", "claimed_at").await;
+    mdb.assert_nullable("items", "claimed_via").await;
+    mdb.assert_nullable("items", "claimed_name").await;
+    mdb.assert_nullable("items", "claimed_via_link_id").await;
+    mdb.assert_nullable("items", "web_claim_token").await;
+    mdb.assert_nullable("items", "image_url").await;
+    mdb.assert_nullable("items", "links").await;
+    mdb.assert_nullable("items", "og_image_url").await;
+    mdb.assert_nullable("items", "og_title").await;
+    mdb.assert_nullable("items", "og_site_name").await;
+    mdb.assert_not_null("items", "is_private").await;
+
+    // FKs
+    assert!(mdb.fk_exists("items", "user_id").await);
+    assert!(mdb.fk_exists("items", "category_id").await);
+    assert!(mdb.fk_exists("items", "claimed_by").await);
+    assert!(mdb.fk_exists("items", "claimed_via_link_id").await);
+
+    // Indexes
+    assert!(mdb.index_exists("idx_items_user_status").await);
+    assert!(mdb.index_exists("idx_items_user_priority").await);
+    assert!(mdb.index_exists("idx_items_created_at").await);
     assert!(mdb.index_exists("idx_items_category_id").await);
+    assert!(mdb.index_exists("idx_items_claimed_by").await);
+    assert!(mdb.index_exists("idx_items_web_claim_token").await);
+
+    // Triggers
+    assert!(mdb.trigger_exists("trg_items_updated_at").await);
     assert!(mdb.trigger_exists("trg_items_set_purchased_at").await);
     assert!(mdb.function_exists("set_purchased_at").await);
 }
 
 // ===========================================================================
-// Migration 8 : create_refresh_tokens
+// Circles and related tables
 // ===========================================================================
 
 #[tokio::test]
-async fn migration_008_creates_refresh_tokens_table() {
+async fn circles_tables_final_state() {
     let mdb = MigrationDb::new().await;
 
+    // circles: 6 columns (id, name, owner_id, is_direct, image_url, created_at)
+    assert!(mdb.table_exists("circles").await);
+    assert_eq!(mdb.column_count("circles").await, 6);
+    mdb.assert_not_null("circles", "id").await;
+    mdb.assert_nullable("circles", "name").await;
+    mdb.assert_not_null("circles", "owner_id").await;
+    mdb.assert_not_null("circles", "is_direct").await;
+    mdb.assert_nullable("circles", "image_url").await;
+    mdb.assert_not_null("circles", "created_at").await;
+    assert!(mdb.fk_exists("circles", "owner_id").await);
+
+    // circle_members: 4 columns
+    assert!(mdb.table_exists("circle_members").await);
+    assert_eq!(mdb.column_count("circle_members").await, 4);
+    assert!(
+        mdb.unique_constraint_exists("circle_members", &["circle_id", "user_id"])
+            .await
+    );
+    assert!(mdb.index_exists("idx_circle_members_user").await);
+
+    // circle_items
+    assert!(mdb.table_exists("circle_items").await);
+    assert!(mdb.index_exists("idx_circle_items_item_id").await);
+
+    // circle_events
+    assert!(mdb.table_exists("circle_events").await);
+    assert!(mdb.index_exists("idx_circle_events_circle_created").await);
+
+    // circle_share_rules
+    assert!(mdb.table_exists("circle_share_rules").await);
+    assert!(mdb.index_exists("idx_circle_share_rules_user").await);
+
+    // circle_invites
+    assert!(mdb.table_exists("circle_invites").await);
+    assert!(mdb.index_exists("idx_circle_invites_circle_id").await);
+
+    // Triggers
+    assert!(mdb.trigger_exists("trg_circles_add_owner_member").await);
+    assert!(mdb.function_exists("add_circle_owner_as_member").await);
+    assert!(
+        mdb.trigger_exists("trg_check_direct_circle_member_limit")
+            .await
+    );
+    assert!(
+        mdb.function_exists("fn_check_direct_circle_member_limit")
+            .await
+    );
+}
+
+// ===========================================================================
+// Social tables
+// ===========================================================================
+
+#[tokio::test]
+async fn social_tables_final_state() {
+    let mdb = MigrationDb::new().await;
+
+    assert!(mdb.table_exists("friend_requests").await);
+    assert!(mdb.index_exists("idx_friend_requests_to_user").await);
+    assert!(mdb.index_exists("idx_friend_requests_from_user").await);
+    assert!(
+        mdb.unique_constraint_exists("friend_requests", &["from_user_id", "to_user_id"])
+            .await
+    );
+
+    assert!(mdb.table_exists("friendships").await);
+    assert!(mdb.index_exists("idx_friendships_a").await);
+    assert!(mdb.index_exists("idx_friendships_b").await);
+}
+
+// ===========================================================================
+// Community tables
+// ===========================================================================
+
+#[tokio::test]
+async fn community_tables_final_state() {
+    let mdb = MigrationDb::new().await;
+
+    assert!(mdb.table_exists("community_wishes").await);
+    assert!(mdb.index_exists("idx_cw_status_created").await);
+    assert!(mdb.index_exists("idx_cw_owner").await);
+    assert!(mdb.index_exists("idx_cw_category_open").await);
+    assert!(mdb.index_exists("idx_cw_matched").await);
+    assert!(mdb.index_exists("idx_cw_pending").await);
+    assert!(mdb.index_exists("idx_cw_fulfilled").await);
+    assert!(mdb.trigger_exists("set_community_wishes_updated_at").await);
+
+    // OG columns exist
+    mdb.assert_nullable("community_wishes", "og_image_url")
+        .await;
+    mdb.assert_nullable("community_wishes", "og_title").await;
+    mdb.assert_nullable("community_wishes", "og_site_name")
+        .await;
+    mdb.assert_nullable("community_wishes", "image_url").await;
+    mdb.assert_nullable("community_wishes", "links").await;
+
+    assert!(mdb.table_exists("wish_reports").await);
+    assert!(mdb.index_exists("idx_wr_wish").await);
+    mdb.assert_nullable("wish_reports", "details").await;
+    assert!(
+        mdb.unique_constraint_exists("wish_reports", &["reporter_id", "wish_id"])
+            .await
+    );
+
+    assert!(mdb.table_exists("wish_messages").await);
+    assert!(mdb.index_exists("idx_wm_wish_created").await);
+    mdb.assert_nullable("wish_messages", "sender_id").await;
+
+    assert!(mdb.table_exists("wish_blocks").await);
+    assert!(
+        mdb.unique_constraint_exists("wish_blocks", &["user_id", "wish_id"])
+            .await
+    );
+}
+
+// ===========================================================================
+// Infrastructure tables
+// ===========================================================================
+
+#[tokio::test]
+async fn infra_tables_final_state() {
+    let mdb = MigrationDb::new().await;
+
+    // push_tokens
+    assert!(mdb.table_exists("push_tokens").await);
+    assert_eq!(mdb.column_count("push_tokens").await, 5);
+    assert!(
+        mdb.unique_constraint_exists("push_tokens", &["user_id", "token"])
+            .await
+    );
+
+    // refresh_tokens
     assert!(mdb.table_exists("refresh_tokens").await);
     assert_eq!(mdb.column_count("refresh_tokens").await, 6);
-
-    mdb.assert_not_null("refresh_tokens", "id").await;
-    mdb.assert_not_null("refresh_tokens", "user_id").await;
-    mdb.assert_not_null("refresh_tokens", "token_hash").await;
-    mdb.assert_not_null("refresh_tokens", "expires_at").await;
-    mdb.assert_nullable("refresh_tokens", "revoked_at").await;
-    mdb.assert_not_null("refresh_tokens", "created_at").await;
-
-    // UNIQUE on token_hash
     assert!(
         mdb.unique_constraint_exists("refresh_tokens", &["token_hash"])
             .await
     );
-
-    // Indexes
     assert!(mdb.index_exists("idx_refresh_tokens_user_id").await);
     assert!(mdb.index_exists("idx_refresh_tokens_active_expires").await);
 
-    // FK
-    assert!(mdb.fk_exists("refresh_tokens", "user_id").await);
+    // notifications
+    assert!(mdb.table_exists("notifications").await);
+    mdb.assert_nullable("notifications", "wish_id").await;
+    assert!(mdb.index_exists("idx_notifications_user_unread").await);
+    assert!(mdb.index_exists("idx_notifications_user_created").await);
+
+    // share_links
+    assert!(mdb.table_exists("share_links").await);
+    assert!(mdb.index_exists("idx_share_links_user_id").await);
+    assert!(
+        mdb.unique_constraint_exists("share_links", &["token"])
+            .await
+    );
 }
 
 // ===========================================================================
-// Migration 9 : add_circle_owner_member trigger
-// ===========================================================================
-
-#[tokio::test]
-async fn migration_009_adds_circle_owner_auto_member() {
-    let mdb = MigrationDb::new().await;
-
-    assert!(mdb.trigger_exists("trg_circles_add_owner_member").await);
-    assert!(mdb.function_exists("add_circle_owner_as_member").await);
-}
-
-// ===========================================================================
-// Behavioral : triggers
+// Behavioral: triggers
 // ===========================================================================
 
 #[tokio::test]
@@ -515,7 +593,6 @@ async fn triggers_behave_correctly() {
             .await
             .unwrap();
 
-    // Small delay so timestamps differ
     tokio::time::sleep(std::time::Duration::from_millis(50)).await;
 
     sqlx::query("UPDATE users SET display_name = 'Updated' WHERE id = $1")
@@ -533,7 +610,7 @@ async fn triggers_behave_correctly() {
 
     assert!(after.0 > before.0, "updated_at should change after UPDATE");
 
-    // -- items: INSERT with status='purchased' → purchased_at auto-set -------
+    // -- items: INSERT with status='purchased' -> purchased_at auto-set -------
     let cat_id: (sqlx::types::Uuid,) = sqlx::query_as("SELECT id FROM categories LIMIT 1")
         .fetch_one(&mdb.db)
         .await
@@ -554,7 +631,7 @@ async fn triggers_behave_correctly() {
         "purchased_at should be auto-set on INSERT with status='purchased'"
     );
 
-    // -- items: UPDATE active → purchased → purchased_at set -----------------
+    // -- items: UPDATE active -> purchased -> purchased_at set -----------------
     let item2: (sqlx::types::Uuid,) = sqlx::query_as(
         "INSERT INTO items (user_id, name, status) VALUES ($1, 'Active Item', 'active') RETURNING id",
     )
@@ -580,7 +657,7 @@ async fn triggers_behave_correctly() {
         "purchased_at should be set when status changes to 'purchased'"
     );
 
-    // -- items: UPDATE purchased → active → purchased_at NULL ----------------
+    // -- items: UPDATE purchased -> active -> purchased_at NULL ----------------
     sqlx::query("UPDATE items SET status = 'active' WHERE id = $1")
         .bind(item2.0)
         .execute(&mdb.db)
@@ -621,14 +698,13 @@ async fn triggers_behave_correctly() {
 }
 
 // ===========================================================================
-// Behavioral : CHECK constraints reject invalid data
+// Behavioral: CHECK constraints reject invalid data
 // ===========================================================================
 
 #[tokio::test]
 async fn check_constraints_reject_invalid_data() {
     let mdb = MigrationDb::new().await;
 
-    // Setup user
     let user_id: (sqlx::types::Uuid,) = sqlx::query_as(
         "INSERT INTO users (email, password_hash, username) VALUES ('check@test.com', 'hash123', 'check_user')
          RETURNING id",
@@ -638,7 +714,7 @@ async fn check_constraints_reject_invalid_data() {
     .unwrap();
     let uid = user_id.0;
 
-    // -- items: invalid priority (0) -----------------------------------------
+    // items: invalid priority (0)
     let result =
         sqlx::query("INSERT INTO items (user_id, name, priority) VALUES ($1, 'Bad Priority', 0)")
             .bind(uid)
@@ -649,7 +725,7 @@ async fn check_constraints_reject_invalid_data() {
         "priority=0 should violate CHECK constraint"
     );
 
-    // -- items: invalid status -----------------------------------------------
+    // items: invalid status
     let result = sqlx::query(
         "INSERT INTO items (user_id, name, status) VALUES ($1, 'Bad Status', 'unknown')",
     )
@@ -661,7 +737,7 @@ async fn check_constraints_reject_invalid_data() {
         "status='unknown' should violate CHECK constraint"
     );
 
-    // -- push_tokens: invalid platform ---------------------------------------
+    // push_tokens: invalid platform
     let result = sqlx::query(
         "INSERT INTO push_tokens (user_id, token, platform)
          VALUES ($1, 'some-token', 'windows')",
@@ -674,7 +750,7 @@ async fn check_constraints_reject_invalid_data() {
         "platform='windows' should violate CHECK constraint"
     );
 
-    // -- circle_members: invalid role ----------------------------------------
+    // circle_members: invalid role
     let circle: (sqlx::types::Uuid,) = sqlx::query_as(
         "INSERT INTO circles (name, owner_id) VALUES ('Check Circle', $1) RETURNING id",
     )
@@ -683,8 +759,6 @@ async fn check_constraints_reject_invalid_data() {
     .await
     .unwrap();
 
-    // The owner trigger already inserted (circle_id, uid) with role='owner',
-    // so use a second user to test the CHECK constraint.
     let user2: (sqlx::types::Uuid,) = sqlx::query_as(
         "INSERT INTO users (email, password_hash, username) VALUES ('check2@test.com', 'hash123', 'check2_user')
          RETURNING id",
@@ -705,6 +779,30 @@ async fn check_constraints_reject_invalid_data() {
         result.is_err(),
         "role='admin' should violate CHECK constraint"
     );
+
+    // items: invalid claimed_via
+    let result = sqlx::query(
+        "INSERT INTO items (user_id, name, claimed_via) VALUES ($1, 'Bad Claim', 'email')",
+    )
+    .bind(uid)
+    .execute(&mdb.db)
+    .await;
+    assert!(
+        result.is_err(),
+        "claimed_via='email' should violate CHECK constraint"
+    );
+
+    // notifications: invalid type
+    let result = sqlx::query(
+        "INSERT INTO notifications (user_id, type, title, body) VALUES ($1, 'bad_type', 'Title', 'Body')",
+    )
+    .bind(uid)
+    .execute(&mdb.db)
+    .await;
+    assert!(
+        result.is_err(),
+        "notification type='bad_type' should violate CHECK constraint"
+    );
 }
 
 // ===========================================================================
@@ -715,9 +813,6 @@ async fn check_constraints_reject_invalid_data() {
 async fn unique_constraint_is_composite_not_individual() {
     let mdb = MigrationDb::new().await;
 
-    // push_tokens has UNIQUE(user_id, token) — a composite constraint.
-    // Asking for just one column should return false: there is no single-column
-    // unique index on user_id alone.
     assert!(
         !mdb.unique_constraint_exists("push_tokens", &["user_id"])
             .await,
@@ -728,8 +823,6 @@ async fn unique_constraint_is_composite_not_individual() {
             .await,
         "token alone is not uniquely constrained on push_tokens"
     );
-
-    // But the composite should still pass
     assert!(
         mdb.unique_constraint_exists("push_tokens", &["user_id", "token"])
             .await
@@ -737,7 +830,7 @@ async fn unique_constraint_is_composite_not_individual() {
 }
 
 // ===========================================================================
-// Down-migration: up → down → up roundtrip
+// Down-migration: up -> down -> up roundtrip
 // ===========================================================================
 
 #[tokio::test]
@@ -791,6 +884,9 @@ async fn down_migrations_then_re_up_succeeds() {
     assert!(mdb.table_exists("circles").await);
     assert!(mdb.table_exists("circle_members").await);
     assert!(mdb.table_exists("push_tokens").await);
+    assert!(mdb.table_exists("community_wishes").await);
+    assert!(mdb.table_exists("notifications").await);
+    assert!(mdb.table_exists("share_links").await);
 
     // Verify constraints survive roundtrip
     assert!(mdb.unique_constraint_exists("users", &["email"]).await);

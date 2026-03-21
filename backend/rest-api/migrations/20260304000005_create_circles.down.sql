@@ -1,2 +1,0 @@
-DROP TABLE IF EXISTS circle_members;
-DROP TABLE IF EXISTS circles;
