@@ -59,18 +59,8 @@ services:
     networks:
       - offrii-net
 
-  node-exporter:
-    image: prom/node-exporter:v1.9.0
-    container_name: offrii-node-exporter
-    restart: unless-stopped
-    command:
-      - --path.rootfs=/host
-      - --collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)
-    volumes:
-      - /:/host:ro,rslave
-    pid: host
-    networks:
-      - offrii-net
+  # node-exporter: disabled on macOS (requires Linux bind mount of /)
+  # Works on the production Linux server via docker-compose.prod.yml
 
   postgres-exporter:
     image: prometheuscommunity/postgres-exporter:v0.16.0

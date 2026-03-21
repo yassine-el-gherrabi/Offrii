@@ -21,7 +21,7 @@ policies:
 groups:
   - orgId: 1
     name: infrastructure
-    folder: ''
+    folder: Offrii
     interval: 1m
     rules:
       - uid: disk-usage-high
@@ -88,7 +88,7 @@ groups:
 
   - orgId: 1
     name: backend
-    folder: ''
+    folder: Offrii
     interval: 1m
     rules:
       - uid: backend-down
