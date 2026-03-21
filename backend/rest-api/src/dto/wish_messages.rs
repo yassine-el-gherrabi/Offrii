@@ -7,7 +7,7 @@ use validator::Validate;
 
 #[derive(Debug, Deserialize, Validate, utoipa::ToSchema, utoipa::IntoParams)]
 pub struct SendMessageRequest {
-    #[validate(length(min = 1, max = 2000, message = "message must be 1-2000 characters"))]
+    #[validate(length(min = 1, max = 500, message = "message must be 1-500 characters"))]
     pub body: String,
 }
 

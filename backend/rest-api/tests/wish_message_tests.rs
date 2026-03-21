@@ -291,7 +291,8 @@ async fn send_message_body_too_long_400() {
     let app = TestApp::new().await;
     let (wish_id, owner_token, _donor_token) = setup_matched_wish(&app).await;
 
-    let long_body = "x".repeat(2001);
+    // 501 chars should be rejected (limit is 500)
+    let long_body = "x".repeat(501);
     let body = json!({ "body": long_body });
     let (status, resp) = app
         .post_json_with_auth(
@@ -302,6 +303,24 @@ async fn send_message_body_too_long_400() {
         .await;
     assert_eq!(status, StatusCode::BAD_REQUEST);
     assert_error(&resp, "BAD_REQUEST");
+}
+
+#[tokio::test]
+async fn send_message_at_max_length_201() {
+    let app = TestApp::new().await;
+    let (wish_id, owner_token, _donor_token) = setup_matched_wish(&app).await;
+
+    // Exactly 500 chars should be accepted
+    let max_body = "x".repeat(500);
+    let body = json!({ "body": max_body });
+    let (status, _) = app
+        .post_json_with_auth(
+            &format!("/community/wishes/{wish_id}/messages"),
+            &body,
+            &owner_token,
+        )
+        .await;
+    assert_eq!(status, StatusCode::CREATED);
 }
 
 #[tokio::test]

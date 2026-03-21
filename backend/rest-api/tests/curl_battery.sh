@@ -626,8 +626,8 @@ parse_response "$(do_post "/community/wishes/$WISH_ID/messages" "$OWNER_TOKEN" \
   '{"body":""}')"
 assert_status "send_msg_empty_400" "400" "$HTTP_CODE"
 
-# Body too long (2001 chars)
-LONG_MSG=$(printf 'z%.0s' {1..2001})
+# Body too long (501 chars, limit is 500)
+LONG_MSG=$(printf 'z%.0s' {1..501})
 parse_response "$(do_post "/community/wishes/$WISH_ID/messages" "$OWNER_TOKEN" \
   "{\"body\":\"$LONG_MSG\"}")"
 assert_status "send_msg_too_long_400" "400" "$HTTP_CODE"

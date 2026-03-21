@@ -104,7 +104,7 @@ struct WishMessagesSheet: View {
 
     // MARK: - Input Bar
 
-    private let messageMaxLength = 2000
+    private let messageMaxLength = 500
 
     private var isMessageOverLimit: Bool {
         messageText.count > messageMaxLength
