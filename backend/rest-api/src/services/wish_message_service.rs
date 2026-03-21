@@ -46,6 +46,7 @@ impl PgWishMessageService {
         body: String,
         wish_id: Uuid,
         actor_id: Uuid,
+        sender_name: String,
     ) {
         let push_token_repo = self.push_token_repo.clone();
         let notification_svc = self.notification_svc.clone();
@@ -75,14 +76,26 @@ impl PgWishMessageService {
                 }
             };
 
+            // Build custom data for iOS deep link on tap
+            let mut custom_data = std::collections::HashMap::new();
+            custom_data.insert("type".to_string(), "wish_message".to_string());
+            custom_data.insert("wish_id".to_string(), wish_id.to_string());
+
+            // APNs loc-key for client-side localization
+            let loc_key = Some("push.wish_message.body".to_string());
+            let title_loc_key = Some("push.wish_message.title".to_string());
+            let loc_args = vec![sender_name];
+
             let requests: Vec<NotificationRequest> = tokens
                 .into_iter()
                 .map(|pt| NotificationRequest {
                     device_token: pt.token,
                     title: title.clone(),
                     body: body.clone(),
-                    custom_data: std::collections::HashMap::new(),
-                    ..Default::default()
+                    custom_data: custom_data.clone(),
+                    loc_key: loc_key.clone(),
+                    loc_args: loc_args.clone(),
+                    title_loc_key: title_loc_key.clone(),
                 })
                 .collect();
 
@@ -141,20 +154,28 @@ impl traits::WishMessageService for PgWishMessageService {
             .and_then(|u| u.display_name)
             .unwrap_or_else(|| "Quelqu'un".to_string());
 
-        // Notify the other participant
+        // Notify the other participant (fire-and-forget)
         let other_id = if is_owner {
             wish.matched_with
         } else {
             Some(wish.owner_id)
         };
         if let Some(recipient_id) = other_id {
-            self.notify_user(
-                recipient_id,
-                "Nouveau message".to_string(),
-                "Nouveau message sur votre demande d'entraide".to_string(),
-                wish_id,
-                sender_id,
-            );
+            // Guard: never notify yourself
+            if recipient_id != sender_id {
+                // Truncate message preview for notification body
+                let preview: String = body.chars().take(80).collect();
+                let notif_body = format!("{sender_name}: {preview}");
+
+                self.notify_user(
+                    recipient_id,
+                    "Nouveau message".to_string(),
+                    notif_body,
+                    wish_id,
+                    sender_id,
+                    sender_name.clone(),
+                );
+            }
         }
 
         Ok(MessageResponse {

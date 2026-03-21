@@ -560,10 +560,10 @@ struct CircleDetailView: View {
                             ))
                             .font(OffriiTypography.caption)
                             .fontWeight(.medium)
-                            .foregroundColor(OffriiTheme.accent)
+                            .foregroundColor(OffriiTheme.primary)
                             .padding(.horizontal, OffriiTheme.spacingSM)
                             .padding(.vertical, OffriiTheme.spacingXXS)
-                            .background(OffriiTheme.accent.opacity(0.1))
+                            .background(OffriiTheme.primary.opacity(0.1))
                             .cornerRadius(OffriiTheme.cornerRadiusFull)
                         }
 

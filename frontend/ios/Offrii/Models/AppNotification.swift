@@ -55,6 +55,8 @@ struct AppNotification: Codable, Identifiable, Equatable {
             return "gift"
         case "item_received":
             return "checkmark.circle.fill"
+        case "wish_message":
+            return "message.fill"
         default:
             return "bell.fill"
         }

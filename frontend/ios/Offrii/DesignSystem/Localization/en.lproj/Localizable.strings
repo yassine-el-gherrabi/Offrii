@@ -769,6 +769,9 @@
 "notif.item_unclaimed" = "Your wish is available again";
 "notif.item_received" = "Gift received!";
 "notif.item_unarchived" = "A wish is back in the wishlist";
+"push.wish_message.title" = "New message";
+"push.wish_message.body" = "%@ sent you a message";
+"notif.wish_message" = "%@ sent you a message";
 
 /* Push notifications setting */
 "profile.notifications" = "Notifications";

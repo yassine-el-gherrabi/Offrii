@@ -214,6 +214,16 @@ async fn claim_via_share(
         .share_links
         .claim_via_share(&token, item_id, auth_user.user_id)
         .await?;
+
+    // Best-effort circle events — don't fail the claim if this errors
+    if let Err(e) = state
+        .circles
+        .on_item_claimed(item_id, auth_user.user_id)
+        .await
+    {
+        tracing::warn!(%item_id, error = %e, "failed to create circle claim events (share link)");
+    }
+
     Ok(StatusCode::NO_CONTENT)
 }
 
@@ -240,6 +250,16 @@ async fn unclaim_via_share(
         .share_links
         .unclaim_via_share(&token, item_id, auth_user.user_id)
         .await?;
+
+    // Best-effort circle events — don't fail the unclaim if this errors
+    if let Err(e) = state
+        .circles
+        .on_item_unclaimed(item_id, auth_user.user_id)
+        .await
+    {
+        tracing::warn!(%item_id, error = %e, "failed to create circle unclaim events (share link)");
+    }
+
     Ok(StatusCode::NO_CONTENT)
 }
 

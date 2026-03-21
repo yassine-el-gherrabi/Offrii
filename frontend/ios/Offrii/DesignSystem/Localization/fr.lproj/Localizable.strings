@@ -769,6 +769,9 @@
 "notif.item_unclaimed" = "Ton envie n'est plus réservée";
 "notif.item_received" = "Cadeau reçu !";
 "notif.item_unarchived" = "Une envie est de retour";
+"push.wish_message.title" = "Nouveau message";
+"push.wish_message.body" = "%@ vous a envoyé un message";
+"notif.wish_message" = "%@ vous a envoyé un message";
 
 /* Réglage notifications push */
 "profile.notifications" = "Notifications";

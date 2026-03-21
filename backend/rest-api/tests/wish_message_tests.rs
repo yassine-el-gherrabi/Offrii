@@ -2,7 +2,7 @@ mod common;
 
 use axum::http::StatusCode;
 use common::{TEST_PASSWORD, TestApp, assert_error};
-use serde_json::json;
+use serde_json::{Value, json};
 use uuid::Uuid;
 
 // ── Helpers ───────────────────────────────────────────────────────────
@@ -957,5 +957,181 @@ async fn owner_sees_empty_conversation_after_withdraw() {
         count_messages_in_db(&app, wish_id).await,
         0,
         "messages must be purged so owner cannot see stale conversation"
+    );
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// Cat. 8: Message Notifications
+// ═══════════════════════════════════════════════════════════════════════
+
+/// Helper: wait for a notification to appear in the DB for the given user (fire-and-forget spawned task).
+async fn wait_for_notification(app: &TestApp, user_id: Uuid, notif_type: &str) -> Option<Value> {
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(5);
+    loop {
+        let row: Option<(Uuid, String, String, String, Option<Uuid>, Option<Uuid>)> =
+            sqlx::query_as(
+                "SELECT id, notification_type, title, body, wish_id, actor_id \
+             FROM notifications WHERE user_id = $1 AND notification_type = $2 \
+             ORDER BY created_at DESC LIMIT 1",
+            )
+            .bind(user_id)
+            .bind(notif_type)
+            .fetch_optional(&app.db)
+            .await
+            .unwrap();
+
+        if let Some((id, ntype, title, body, wish_id, actor_id)) = row {
+            return Some(json!({
+                "id": id.to_string(),
+                "notification_type": ntype,
+                "title": title,
+                "body": body,
+                "wish_id": wish_id.map(|w| w.to_string()),
+                "actor_id": actor_id.map(|a| a.to_string()),
+            }));
+        }
+        if std::time::Instant::now() >= deadline {
+            return None;
+        }
+        tokio::time::sleep(std::time::Duration::from_millis(20)).await;
+    }
+}
+
+#[tokio::test]
+async fn message_creates_notification_for_recipient() {
+    let app = TestApp::new().await;
+    let (wish_id, owner_token, _donor_token) = setup_matched_wish(&app).await;
+    let donor_id = get_user_id(&app, "donor@test.com").await;
+
+    // Owner sends message → donor should get notification
+    let body = json!({ "body": "Thanks for offering!" });
+    let (status, _) = app
+        .post_json_with_auth(
+            &format!("/community/wishes/{wish_id}/messages"),
+            &body,
+            &owner_token,
+        )
+        .await;
+    assert_eq!(status, StatusCode::CREATED);
+
+    let notif = wait_for_notification(&app, donor_id, "wish_message").await;
+    assert!(
+        notif.is_some(),
+        "donor should have received a wish_message notification"
+    );
+    let notif = notif.unwrap();
+    assert_eq!(
+        notif["wish_id"].as_str(),
+        Some(wish_id.to_string().as_str())
+    );
+}
+
+#[tokio::test]
+async fn message_creates_notification_for_owner() {
+    let app = TestApp::new().await;
+    let (wish_id, _owner_token, donor_token) = setup_matched_wish(&app).await;
+    let owner_id = get_user_id(&app, "owner@test.com").await;
+
+    // Donor sends message → owner should get notification
+    let body = json!({ "body": "Happy to help!" });
+    let (status, _) = app
+        .post_json_with_auth(
+            &format!("/community/wishes/{wish_id}/messages"),
+            &body,
+            &donor_token,
+        )
+        .await;
+    assert_eq!(status, StatusCode::CREATED);
+
+    let notif = wait_for_notification(&app, owner_id, "wish_message").await;
+    assert!(
+        notif.is_some(),
+        "owner should have received a wish_message notification"
+    );
+    let notif = notif.unwrap();
+    assert_eq!(
+        notif["wish_id"].as_str(),
+        Some(wish_id.to_string().as_str())
+    );
+}
+
+#[tokio::test]
+async fn message_notification_has_correct_type() {
+    let app = TestApp::new().await;
+    let (wish_id, owner_token, _donor_token) = setup_matched_wish(&app).await;
+    let donor_id = get_user_id(&app, "donor@test.com").await;
+
+    let body = json!({ "body": "Hello!" });
+    let (status, _) = app
+        .post_json_with_auth(
+            &format!("/community/wishes/{wish_id}/messages"),
+            &body,
+            &owner_token,
+        )
+        .await;
+    assert_eq!(status, StatusCode::CREATED);
+
+    let notif = wait_for_notification(&app, donor_id, "wish_message").await;
+    assert!(notif.is_some(), "notification should exist");
+    let notif = notif.unwrap();
+    assert_eq!(notif["notification_type"].as_str(), Some("wish_message"));
+}
+
+#[tokio::test]
+async fn no_self_notification() {
+    let app = TestApp::new().await;
+    let owner_token = setup_aged_user_with_name(&app, "owner@test.com", "Alice").await;
+    let owner_id = get_user_id(&app, "owner@test.com").await;
+    let wish_id = create_open_wish(&app, &owner_token).await;
+
+    // Force match owner with themselves (data integrity edge case)
+    force_match(&app, wish_id, owner_id).await;
+
+    let body = json!({ "body": "talking to myself" });
+    let (status, _) = app
+        .post_json_with_auth(
+            &format!("/community/wishes/{wish_id}/messages"),
+            &body,
+            &owner_token,
+        )
+        .await;
+    assert_eq!(status, StatusCode::CREATED);
+
+    // Wait briefly then verify no notification was created
+    tokio::time::sleep(std::time::Duration::from_millis(200)).await;
+    let notif = wait_for_notification(&app, owner_id, "wish_message").await;
+    assert!(
+        notif.is_none(),
+        "should not create notification when sender == recipient"
+    );
+}
+
+#[tokio::test]
+async fn notification_includes_sender_name() {
+    let app = TestApp::new().await;
+    let (wish_id, owner_token, _donor_token) = setup_matched_wish(&app).await;
+    let donor_id = get_user_id(&app, "donor@test.com").await;
+
+    let body = json!({ "body": "Merci beaucoup!" });
+    let (status, _) = app
+        .post_json_with_auth(
+            &format!("/community/wishes/{wish_id}/messages"),
+            &body,
+            &owner_token,
+        )
+        .await;
+    assert_eq!(status, StatusCode::CREATED);
+
+    let notif = wait_for_notification(&app, donor_id, "wish_message").await;
+    assert!(notif.is_some(), "notification should exist");
+    let notif = notif.unwrap();
+    let notif_body = notif["body"].as_str().unwrap();
+    assert!(
+        notif_body.contains("Alice"),
+        "notification body should contain sender name 'Alice', got: {notif_body}"
+    );
+    assert!(
+        notif_body.contains("Merci beaucoup!"),
+        "notification body should contain message preview, got: {notif_body}"
     );
 }
