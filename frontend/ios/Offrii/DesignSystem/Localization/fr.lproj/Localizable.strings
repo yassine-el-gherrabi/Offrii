@@ -69,6 +69,8 @@
 "error.loadProfileFailed" = "Impossible de charger le profil";
 "error.emailUsesGoogle" = "Cet email est lié à un compte Google. Connecte-toi avec Google.";
 "error.emailUsesApple" = "Cet email est lié à un compte Apple. Connecte-toi avec Apple.";
+"error.oauthOnlyGoogle" = "Ce compte utilise Google. Connecte-toi avec Google.";
+"error.oauthOnlyApple" = "Ce compte utilise Apple. Connecte-toi avec Apple.";
 
 /* Onboarding */
 "onboarding.step1.title" = "Tes envies, au même endroit";

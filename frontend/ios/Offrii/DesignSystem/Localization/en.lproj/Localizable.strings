@@ -69,6 +69,8 @@
 "error.loadProfileFailed" = "Failed to load profile";
 "error.emailUsesGoogle" = "This email is linked to a Google account. Please sign in with Google.";
 "error.emailUsesApple" = "This email is linked to an Apple account. Please sign in with Apple.";
+"error.oauthOnlyGoogle" = "This account uses Google. Please sign in with Google.";
+"error.oauthOnlyApple" = "This account uses Apple. Please sign in with Apple.";
 
 /* Onboarding */
 "onboarding.step1.title" = "Your wishes, all in one place";

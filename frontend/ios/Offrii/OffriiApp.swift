@@ -59,6 +59,7 @@ struct OffriiApp: App {
 }
 
 struct MainTabView: View {
+    @Environment(AuthManager.self) private var authManager
     @Environment(AppRouter.self) private var router
     @State private var selectedTab: TabItem = .home
     @State private var showCreateSheet = false
@@ -108,6 +109,8 @@ struct MainTabView: View {
                 }
                 // Refresh app icon badge count
                 await AppDelegate.refreshBadgeCount()
+                // Refresh current user (picks up email verification, etc.)
+                try? await authManager.loadCurrentUser()
             }
         }
         .task {

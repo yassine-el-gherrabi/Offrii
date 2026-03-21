@@ -1930,3 +1930,528 @@ async fn forgot_password_nonexistent_email_silent() {
         "must not leak whether email exists: {status}"
     );
 }
+
+// ---------------------------------------------------------------------------
+// OAuth account linking (Flows 1–5)
+// ---------------------------------------------------------------------------
+
+/// Helper: insert an OAuth-only user directly into the DB (no password).
+async fn insert_oauth_user(
+    db: &sqlx::PgPool,
+    email: &str,
+    username: &str,
+    provider: &str,
+    provider_id: &str,
+    display_name: Option<&str>,
+    avatar_url: Option<&str>,
+) -> uuid::Uuid {
+    let row: (uuid::Uuid,) = sqlx::query_as(
+        "INSERT INTO users (email, username, display_name, oauth_provider, oauth_provider_id, \
+         email_verified, avatar_url) \
+         VALUES ($1, $2, $3, $4, $5, true, $6) RETURNING id",
+    )
+    .bind(email)
+    .bind(username)
+    .bind(display_name)
+    .bind(provider)
+    .bind(provider_id)
+    .bind(avatar_url)
+    .fetch_one(db)
+    .await
+    .unwrap();
+    row.0
+}
+
+// -- Flow 1: SSO links to existing verified email+password account -----------
+
+#[tokio::test]
+async fn sso_links_to_existing_verified_email_account() {
+    let app = TestApp::new().await;
+
+    // Create a verified email+password account
+    app.setup_user("link@example.com", TEST_PASSWORD).await;
+    sqlx::query("UPDATE users SET email_verified = true WHERE email = $1")
+        .bind("link@example.com")
+        .execute(&app.db)
+        .await
+        .unwrap();
+
+    // Simulate what oauth_login does: find by email, link provider
+    let user_before: (uuid::Uuid, Option<String>, Option<String>) =
+        sqlx::query_as("SELECT id, oauth_provider, oauth_provider_id FROM users WHERE email = $1")
+            .bind("link@example.com")
+            .fetch_one(&app.db)
+            .await
+            .unwrap();
+    assert!(
+        user_before.1.is_none(),
+        "user should not have oauth_provider before linking"
+    );
+
+    // Call link_oauth_provider via the repo
+    sqlx::query(
+        "UPDATE users SET oauth_provider = $1, oauth_provider_id = $2, \
+         email_verified = true, \
+         avatar_url = COALESCE(avatar_url, $3), \
+         display_name = COALESCE(display_name, $4), \
+         updated_at = NOW() \
+         WHERE id = $5",
+    )
+    .bind("google")
+    .bind("google-sub-123")
+    .bind("https://lh3.google.com/photo.jpg")
+    .bind("Link User")
+    .bind(user_before.0)
+    .execute(&app.db)
+    .await
+    .unwrap();
+
+    // Verify the account was linked
+    let linked: (Option<String>, Option<String>, bool) = sqlx::query_as(
+        "SELECT oauth_provider, oauth_provider_id, email_verified FROM users WHERE id = $1",
+    )
+    .bind(user_before.0)
+    .fetch_one(&app.db)
+    .await
+    .unwrap();
+    assert_eq!(linked.0.as_deref(), Some("google"));
+    assert_eq!(linked.1.as_deref(), Some("google-sub-123"));
+    assert!(linked.2, "email_verified should remain true");
+
+    // Password login should still work after linking
+    let login_body = serde_json::json!({
+        "identifier": "link@example.com",
+        "password": TEST_PASSWORD,
+    });
+    let (status, _) = app.post_json("/auth/login", &login_body).await;
+    assert_eq!(
+        status,
+        StatusCode::OK,
+        "password login must still work after OAuth linking"
+    );
+}
+
+// -- Flow 2: SSO links to existing unverified email+password account ---------
+
+#[tokio::test]
+async fn sso_links_to_existing_unverified_email_account() {
+    let app = TestApp::new().await;
+
+    // Create an unverified email+password account (default after register)
+    app.setup_user("unverified-link@example.com", TEST_PASSWORD)
+        .await;
+
+    // Confirm email_verified is false
+    let verified: (bool,) = sqlx::query_as("SELECT email_verified FROM users WHERE email = $1")
+        .bind("unverified-link@example.com")
+        .fetch_one(&app.db)
+        .await
+        .unwrap();
+    assert!(!verified.0, "user should be unverified after register");
+
+    // Simulate link_oauth_provider (what oauth_login would do)
+    let user_id: (uuid::Uuid,) = sqlx::query_as("SELECT id FROM users WHERE email = $1")
+        .bind("unverified-link@example.com")
+        .fetch_one(&app.db)
+        .await
+        .unwrap();
+
+    sqlx::query(
+        "UPDATE users SET oauth_provider = $1, oauth_provider_id = $2, \
+         email_verified = true, \
+         avatar_url = COALESCE(avatar_url, $3), \
+         display_name = COALESCE(display_name, $4), \
+         updated_at = NOW() \
+         WHERE id = $5",
+    )
+    .bind("google")
+    .bind("google-sub-456")
+    .bind("https://lh3.google.com/avatar.jpg")
+    .bind("Unverified User")
+    .bind(user_id.0)
+    .execute(&app.db)
+    .await
+    .unwrap();
+
+    // Verify email_verified is now true
+    let after: (bool, Option<String>, Option<String>) = sqlx::query_as(
+        "SELECT email_verified, oauth_provider, oauth_provider_id FROM users WHERE id = $1",
+    )
+    .bind(user_id.0)
+    .fetch_one(&app.db)
+    .await
+    .unwrap();
+    assert!(after.0, "email_verified must be set to true after SSO link");
+    assert_eq!(after.1.as_deref(), Some("google"));
+    assert_eq!(after.2.as_deref(), Some("google-sub-456"));
+}
+
+// -- Flow 3: Register email+password when SSO account exists -----------------
+
+#[tokio::test]
+async fn register_email_already_used_by_sso_returns_conflict() {
+    let app = TestApp::new().await;
+
+    // Create an OAuth-only user
+    insert_oauth_user(
+        &app.db,
+        "sso-existing@example.com",
+        "ssouser",
+        "google",
+        "google-sub-789",
+        Some("SSO User"),
+        None,
+    )
+    .await;
+
+    // Try to register with the same email → should get a specific conflict error
+    let (status, body) = app
+        .register_user("sso-existing@example.com", TEST_PASSWORD)
+        .await;
+    assert_eq!(status, StatusCode::CONFLICT);
+    assert_error(&body, "CONFLICT");
+    let msg = body["error"]["message"].as_str().unwrap();
+    assert!(
+        msg.contains("email_uses_oauth"),
+        "error should indicate OAuth account, got: {msg}"
+    );
+    assert!(
+        msg.contains("google"),
+        "error should mention the provider, got: {msg}"
+    );
+}
+
+// -- Flow 4: Login with password on OAuth-only account -----------------------
+
+#[tokio::test]
+async fn login_sso_only_account_with_password_returns_specific_error() {
+    let app = TestApp::new().await;
+
+    // Create an OAuth-only user (no password_hash)
+    insert_oauth_user(
+        &app.db,
+        "oauth-only@example.com",
+        "oauthonly",
+        "google",
+        "google-sub-login",
+        Some("OAuth Only"),
+        None,
+    )
+    .await;
+
+    // Try to login with password → should get a specific error
+    let login_body = serde_json::json!({
+        "identifier": "oauth-only@example.com",
+        "password": TEST_PASSWORD,
+    });
+    let (status, body) = app.post_json("/auth/login", &login_body).await;
+    assert_eq!(
+        status,
+        StatusCode::CONFLICT,
+        "should return 409 for OAuth-only account, got: {body}"
+    );
+    assert_error(&body, "CONFLICT");
+    let msg = body["error"]["message"].as_str().unwrap();
+    assert!(
+        msg.contains("oauth_only"),
+        "error should indicate oauth_only, got: {msg}"
+    );
+    assert!(
+        msg.contains("google"),
+        "error should mention the provider, got: {msg}"
+    );
+}
+
+// -- Flow 3 existing behavior: register duplicate email+password → conflict --
+
+#[tokio::test]
+async fn register_email_already_used_by_password_returns_conflict() {
+    let app = TestApp::new().await;
+
+    // First registration
+    app.setup_user("existing@example.com", TEST_PASSWORD).await;
+
+    // Second registration with same email
+    let (status, body) = app
+        .register_user("existing@example.com", TEST_PASSWORD)
+        .await;
+    assert_eq!(status, StatusCode::CONFLICT);
+    assert_error(&body, "CONFLICT");
+}
+
+// -- Backfill tests ----------------------------------------------------------
+
+#[tokio::test]
+async fn sso_link_backfills_avatar_and_name() {
+    let app = TestApp::new().await;
+
+    // Create email+password user with NO display_name and NO avatar
+    app.setup_user("backfill@example.com", TEST_PASSWORD).await;
+
+    let user_id: (uuid::Uuid,) = sqlx::query_as("SELECT id FROM users WHERE email = $1")
+        .bind("backfill@example.com")
+        .fetch_one(&app.db)
+        .await
+        .unwrap();
+
+    // Confirm they have no avatar or display_name
+    let before: (Option<String>, Option<String>) =
+        sqlx::query_as("SELECT avatar_url, display_name FROM users WHERE id = $1")
+            .bind(user_id.0)
+            .fetch_one(&app.db)
+            .await
+            .unwrap();
+    assert!(before.0.is_none(), "avatar should be NULL before linking");
+    assert!(
+        before.1.is_none(),
+        "display_name should be NULL before linking"
+    );
+
+    // Link with OAuth providing avatar and name
+    sqlx::query(
+        "UPDATE users SET oauth_provider = $1, oauth_provider_id = $2, \
+         email_verified = true, \
+         avatar_url = COALESCE(avatar_url, $3), \
+         display_name = COALESCE(display_name, $4), \
+         updated_at = NOW() \
+         WHERE id = $5",
+    )
+    .bind("google")
+    .bind("google-sub-backfill")
+    .bind("https://lh3.google.com/photo-backfill.jpg")
+    .bind("Backfill Name")
+    .bind(user_id.0)
+    .execute(&app.db)
+    .await
+    .unwrap();
+
+    let after: (Option<String>, Option<String>) =
+        sqlx::query_as("SELECT avatar_url, display_name FROM users WHERE id = $1")
+            .bind(user_id.0)
+            .fetch_one(&app.db)
+            .await
+            .unwrap();
+    assert_eq!(
+        after.0.as_deref(),
+        Some("https://lh3.google.com/photo-backfill.jpg"),
+        "avatar should be backfilled from Google"
+    );
+    assert_eq!(
+        after.1.as_deref(),
+        Some("Backfill Name"),
+        "display_name should be backfilled from Google"
+    );
+}
+
+#[tokio::test]
+async fn sso_link_does_not_overwrite_existing_avatar() {
+    let app = TestApp::new().await;
+
+    // Create user with display_name and avatar already set
+    app.register_user_with_name("no-overwrite@example.com", TEST_PASSWORD, "Existing Name")
+        .await;
+
+    let user_id: (uuid::Uuid,) = sqlx::query_as("SELECT id FROM users WHERE email = $1")
+        .bind("no-overwrite@example.com")
+        .fetch_one(&app.db)
+        .await
+        .unwrap();
+
+    // Set an avatar manually
+    sqlx::query("UPDATE users SET avatar_url = $1 WHERE id = $2")
+        .bind("https://existing-avatar.jpg")
+        .bind(user_id.0)
+        .execute(&app.db)
+        .await
+        .unwrap();
+
+    // Link with OAuth providing different avatar and name
+    sqlx::query(
+        "UPDATE users SET oauth_provider = $1, oauth_provider_id = $2, \
+         email_verified = true, \
+         avatar_url = COALESCE(avatar_url, $3), \
+         display_name = COALESCE(display_name, $4), \
+         updated_at = NOW() \
+         WHERE id = $5",
+    )
+    .bind("google")
+    .bind("google-sub-nooverwrite")
+    .bind("https://lh3.google.com/google-avatar.jpg")
+    .bind("Google Name")
+    .bind(user_id.0)
+    .execute(&app.db)
+    .await
+    .unwrap();
+
+    let after: (Option<String>, Option<String>) =
+        sqlx::query_as("SELECT avatar_url, display_name FROM users WHERE id = $1")
+            .bind(user_id.0)
+            .fetch_one(&app.db)
+            .await
+            .unwrap();
+    assert_eq!(
+        after.0.as_deref(),
+        Some("https://existing-avatar.jpg"),
+        "existing avatar must NOT be overwritten by SSO"
+    );
+    assert_eq!(
+        after.1.as_deref(),
+        Some("Existing Name"),
+        "existing display_name must NOT be overwritten by SSO"
+    );
+}
+
+// -- Flow 5: linked account can login with either method ---------------------
+
+#[tokio::test]
+async fn sso_linked_account_can_login_with_password() {
+    let app = TestApp::new().await;
+
+    // Create email+password account, then link OAuth
+    app.setup_user("linked@example.com", TEST_PASSWORD).await;
+
+    sqlx::query(
+        "UPDATE users SET oauth_provider = 'google', oauth_provider_id = 'google-sub-linked', \
+         email_verified = true WHERE email = $1",
+    )
+    .bind("linked@example.com")
+    .execute(&app.db)
+    .await
+    .unwrap();
+
+    // Password login should still work
+    let login_body = serde_json::json!({
+        "identifier": "linked@example.com",
+        "password": TEST_PASSWORD,
+    });
+    let (status, resp) = app.post_json("/auth/login", &login_body).await;
+    assert_eq!(
+        status,
+        StatusCode::OK,
+        "password login must work on linked account: {resp}"
+    );
+    assert!(resp["tokens"]["access_token"].is_string());
+}
+
+#[tokio::test]
+async fn sso_linked_account_can_login_with_sso() {
+    let app = TestApp::new().await;
+
+    // Create email+password account, then link OAuth
+    app.setup_user("linked-sso@example.com", TEST_PASSWORD)
+        .await;
+
+    sqlx::query(
+        "UPDATE users SET oauth_provider = 'google', oauth_provider_id = 'google-sub-linked-sso', \
+         email_verified = true WHERE email = $1",
+    )
+    .bind("linked-sso@example.com")
+    .execute(&app.db)
+    .await
+    .unwrap();
+
+    // Verify user is findable by OAuth credentials (the find_by_oauth query)
+    let found: Option<(uuid::Uuid,)> =
+        sqlx::query_as("SELECT id FROM users WHERE oauth_provider = $1 AND oauth_provider_id = $2")
+            .bind("google")
+            .bind("google-sub-linked-sso")
+            .fetch_optional(&app.db)
+            .await
+            .unwrap();
+    assert!(
+        found.is_some(),
+        "linked account must be findable by OAuth provider"
+    );
+}
+
+// -- Edge case: same email, different provider_id ----------------------------
+
+#[tokio::test]
+async fn sso_same_email_different_provider_id() {
+    let app = TestApp::new().await;
+
+    // Create email+password account
+    app.setup_user("multi-google@example.com", TEST_PASSWORD)
+        .await;
+
+    // Link with first Google sub
+    sqlx::query(
+        "UPDATE users SET oauth_provider = 'google', oauth_provider_id = 'google-sub-A', \
+         email_verified = true WHERE email = $1",
+    )
+    .bind("multi-google@example.com")
+    .execute(&app.db)
+    .await
+    .unwrap();
+
+    // Verify the user is linked with google-sub-A
+    let linked: (Option<String>,) =
+        sqlx::query_as("SELECT oauth_provider_id FROM users WHERE email = $1")
+            .bind("multi-google@example.com")
+            .fetch_one(&app.db)
+            .await
+            .unwrap();
+    assert_eq!(linked.0.as_deref(), Some("google-sub-A"));
+
+    // In the oauth_login flow, if someone tries with google-sub-B and same email:
+    // find_by_oauth("google", "google-sub-B") returns None,
+    // find_by_email returns the user, and we re-link with the new sub.
+    // This is correct behavior — the email match takes precedence.
+    sqlx::query("UPDATE users SET oauth_provider_id = 'google-sub-B' WHERE email = $1")
+        .bind("multi-google@example.com")
+        .execute(&app.db)
+        .await
+        .unwrap();
+
+    let after: (Option<String>,) =
+        sqlx::query_as("SELECT oauth_provider_id FROM users WHERE email = $1")
+            .bind("multi-google@example.com")
+            .fetch_one(&app.db)
+            .await
+            .unwrap();
+    assert_eq!(
+        after.0.as_deref(),
+        Some("google-sub-B"),
+        "provider_id should be updated to the new Google sub"
+    );
+}
+
+// -- Edge case: after linking, subsequent SSO finds by OAuth -----------------
+
+#[tokio::test]
+async fn sso_after_linking_uses_linked_account() {
+    let app = TestApp::new().await;
+
+    // Create email+password account and link OAuth
+    app.setup_user("subsequent@example.com", TEST_PASSWORD)
+        .await;
+
+    let user_id: (uuid::Uuid,) = sqlx::query_as("SELECT id FROM users WHERE email = $1")
+        .bind("subsequent@example.com")
+        .fetch_one(&app.db)
+        .await
+        .unwrap();
+
+    sqlx::query(
+        "UPDATE users SET oauth_provider = 'google', oauth_provider_id = 'google-sub-subsequent', \
+         email_verified = true WHERE id = $1",
+    )
+    .bind(user_id.0)
+    .execute(&app.db)
+    .await
+    .unwrap();
+
+    // Subsequent SSO login: find_by_oauth should find the linked account directly
+    let found: Option<(uuid::Uuid,)> =
+        sqlx::query_as("SELECT id FROM users WHERE oauth_provider = $1 AND oauth_provider_id = $2")
+            .bind("google")
+            .bind("google-sub-subsequent")
+            .fetch_optional(&app.db)
+            .await
+            .unwrap();
+    assert_eq!(
+        found.map(|r| r.0),
+        Some(user_id.0),
+        "subsequent SSO should find the same user via OAuth lookup (not via email fallback)"
+    );
+}

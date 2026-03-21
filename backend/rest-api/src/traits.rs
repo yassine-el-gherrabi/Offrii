@@ -92,6 +92,18 @@ pub trait UserRepo: Send + Sync {
     async fn find_by_oauth(&self, provider: &str, provider_id: &str) -> Result<Option<User>>;
 
     async fn link_oauth(&self, user_id: Uuid, provider: &str, provider_id: &str) -> Result<bool>;
+
+    /// Link an OAuth provider to an existing user, setting email_verified = true
+    /// and backfilling avatar_url / display_name if the user doesn't have them.
+    /// Returns the updated User.
+    async fn link_oauth_provider(
+        &self,
+        user_id: Uuid,
+        provider: &str,
+        provider_id: &str,
+        avatar_url: Option<&str>,
+        display_name: Option<&str>,
+    ) -> Result<User>;
 }
 
 #[async_trait]

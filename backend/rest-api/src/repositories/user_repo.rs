@@ -138,6 +138,25 @@ impl traits::UserRepo for PgUserRepo {
     async fn link_oauth(&self, user_id: Uuid, provider: &str, provider_id: &str) -> Result<bool> {
         link_oauth(&self.pool, user_id, provider, provider_id).await
     }
+
+    async fn link_oauth_provider(
+        &self,
+        user_id: Uuid,
+        provider: &str,
+        provider_id: &str,
+        avatar_url: Option<&str>,
+        display_name: Option<&str>,
+    ) -> Result<User> {
+        link_oauth_provider(
+            &self.pool,
+            user_id,
+            provider,
+            provider_id,
+            avatar_url,
+            display_name,
+        )
+        .await
+    }
 }
 
 // ── Free functions (kept pub(crate) for transactional use) ───────────
@@ -435,4 +454,40 @@ pub(crate) async fn link_oauth(
     .await?;
 
     Ok(result.rows_affected() > 0)
+}
+
+/// Link an OAuth provider to an existing user account.
+///
+/// Sets oauth_provider, oauth_provider_id, email_verified = true,
+/// and backfills avatar_url / display_name only when the user's current
+/// values are NULL.
+pub(crate) async fn link_oauth_provider(
+    exec: impl PgExecutor<'_>,
+    user_id: Uuid,
+    provider: &str,
+    provider_id: &str,
+    avatar_url: Option<&str>,
+    display_name: Option<&str>,
+) -> Result<User> {
+    let sql = format!(
+        "UPDATE users SET \
+         oauth_provider = $1, \
+         oauth_provider_id = $2, \
+         email_verified = true, \
+         avatar_url = COALESCE(avatar_url, $3), \
+         display_name = COALESCE(display_name, $4), \
+         updated_at = NOW() \
+         WHERE id = $5 \
+         RETURNING {USER_COLS}"
+    );
+    let user = sqlx::query_as::<_, User>(&sql)
+        .bind(provider)
+        .bind(provider_id)
+        .bind(avatar_url)
+        .bind(display_name)
+        .bind(user_id)
+        .fetch_one(exec)
+        .await?;
+
+    Ok(user)
 }

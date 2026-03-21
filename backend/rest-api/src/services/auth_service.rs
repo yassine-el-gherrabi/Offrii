@@ -275,6 +275,12 @@ impl traits::AuthService for PgAuthService {
 
         let user = match (valid, user) {
             (true, Some(u)) => u,
+            (false, Some(u)) if u.password_hash.is_none() && u.oauth_provider.is_some() => {
+                // User exists but has no password (OAuth-only account).
+                // Return a specific error so the frontend can guide the user.
+                let provider = u.oauth_provider.as_deref().unwrap_or("SSO");
+                return Err(AppError::Conflict(format!("oauth_only:{provider}")));
+            }
             _ => return Err(invalid_credentials()),
         };
 
@@ -819,13 +825,21 @@ impl traits::AuthService for PgAuthService {
                 .await
                 .map_err(AppError::Internal)?;
 
-            if let Some(user) = email_user.filter(|u| u.email_verified) {
-                // Email is verified → safe to link OAuth provider
-                self.user_repo
-                    .link_oauth(user.id, provider, &claims.sub)
+            if let Some(user) = email_user {
+                // Existing account with same email — SSO proves email ownership,
+                // so it is safe to link regardless of email_verified status.
+                let updated_user = self
+                    .user_repo
+                    .link_oauth_provider(
+                        user.id,
+                        provider,
+                        &claims.sub,
+                        claims.picture.as_deref(),
+                        claims.name.as_deref(),
+                    )
                     .await
                     .map_err(AppError::Internal)?;
-                (user, false)
+                (updated_user, false)
             } else {
                 // 4. New user → create OAuth user
                 let name = display_name.map(|s| s.to_string()).or(claims.name.clone());

@@ -325,6 +325,12 @@ final class AuthViewModel {
 
     private func mapConflict(_ msg: String) -> String {
         let lower = msg.lowercased()
+        if lower.contains("oauth_only:google") {
+            return NSLocalizedString("error.oauthOnlyGoogle", comment: "")
+        }
+        if lower.contains("oauth_only:apple") {
+            return NSLocalizedString("error.oauthOnlyApple", comment: "")
+        }
         if lower.contains("email_uses_oauth:google") {
             return NSLocalizedString("error.emailUsesGoogle", comment: "")
         }
