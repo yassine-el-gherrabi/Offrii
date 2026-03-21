@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 
 struct AuthResponse: Codable {
     let user: UserProfileResponse
@@ -79,7 +80,7 @@ struct PaginationResponse: Codable {
     }
 }
 
-struct CategoryResponse: Codable {
+struct CategoryResponse: Codable, Equatable, CategoryChipItem {
     let id: UUID
     let name: String
     let icon: String?
@@ -96,6 +97,12 @@ struct CategoryResponse: Codable {
     func toCategory() -> Category {
         Category(id: id, name: name, icon: icon, isDefault: isDefault, position: position, createdAt: createdAt)
     }
+
+    // MARK: - CategoryChipItem
+
+    var chipLabel: String { name }
+    var chipIcon: String { CategoryStyle(icon: icon).sfSymbol }
+    var chipColor: Color { CategoryStyle(icon: icon).chipColor }
 }
 
 struct ShareLinkResponse: Codable, Identifiable {

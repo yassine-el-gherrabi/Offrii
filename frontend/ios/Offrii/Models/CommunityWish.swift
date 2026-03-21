@@ -3,7 +3,7 @@ import SwiftUI
 
 // MARK: - Wish Category
 
-enum WishCategory: String, Codable, CaseIterable, Identifiable {
+enum WishCategory: String, Codable, CaseIterable, Identifiable, CategoryChipItem {
     case education
     case clothing
     case health
@@ -13,6 +13,10 @@ enum WishCategory: String, Codable, CaseIterable, Identifiable {
     case other
 
     var id: String { rawValue }
+
+    var chipLabel: String { label }
+    var chipIcon: String { icon }
+    var chipColor: Color { color }
 
     var label: String {
         switch self {
