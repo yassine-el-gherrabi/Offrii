@@ -58,7 +58,14 @@ pub async fn fetch_og_metadata(url: &str) -> Result<OgMetadata, anyhow::Error> {
 
     let resp = client.get(url).send().await?;
 
-    // Limit body size to 1 MB
+    // Reject early if Content-Length header indicates body too large
+    if let Some(len) = resp.content_length()
+        && len > 1_048_576
+    {
+        anyhow::bail!("response body too large ({len} bytes)");
+    }
+
+    // Download and enforce 1 MB limit (Content-Length can be absent or lie)
     let bytes = resp.bytes().await?;
     if bytes.len() > 1_048_576 {
         anyhow::bail!("response body too large");

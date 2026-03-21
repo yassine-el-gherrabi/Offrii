@@ -130,7 +130,35 @@
 
 ---
 
-## P2 — Hardening (ce sprint)
+## P2 — Security Audit Fixes (code analysis 2026-03-21)
+
+### Critical ✅
+- [x] **S1: CORS** → restreint à offrii.com, api, cdn, staging
+- [x] **S2: Login rate limit** → 10 attempts/5min par identifiant via Redis
+- [x] **S3: SSRF** → blocage IPs privées + validation scheme http/https
+
+### High
+- [x] **P1: Index `circle_members(user_id)`** → migration 20260321000001
+- [x] ~~S5: Register rate limit~~ → couvert par Caddy IP rate limit + unique email constraint
+
+### Medium
+- [ ] **S6: OG fetch body size check post-download** → vérifier content-length avant
+- [ ] **P2: 4 queries par `list_items`** → tokio::join! enrichissement cercles
+- [ ] **Q2: `list_recent_fulfilled` bypass service layer** → refactor dans service
+- [ ] **Q1: Admin `is_admin` check = query DB extra** → inclure dans JWT claims
+
+### Low
+- [ ] **S7: ngrok URL hardcodée dans debug** → utiliser localhost
+- [ ] **P3: Index manquant `community_wishes(fulfilled_at)`** → migration
+- [ ] **P4: Index/cleanup `refresh_tokens`** → job de nettoyage
+- [ ] **Q3: Emails fire-and-forget sans retry** → retry avec backoff
+- [ ] **Q4: `DefaultHasher` non-déterministe cache keys** → utiliser xxhash/fnv
+- [ ] **A1: HTML templates inline dans handlers** → include_str! ou askama
+- [ ] **A2: AppState god object (17 services)** → sous-states groupés
+
+---
+
+## P3 — Hardening (ce sprint)
 
 ### Exporters
 - [ ] postgres_exporter (connexions, queries, locks, replication lag)
@@ -140,7 +168,6 @@
 - [ ] Rotation JWT keys (versionning, grace period)
 - [ ] Documenter procédure rotation API keys
 - [ ] Vérifier DMARC/SPF pour emails Resend
-- [ ] Rate limit par user (pas seulement par IP)
 
 ### Ops
 - [ ] Test de restore backup (snapshot Hetzner → nouveau serveur)
@@ -149,7 +176,7 @@
 
 ---
 
-## P3 — Nice to have (backlog)
+## P4 — Nice to have (backlog)
 
 - [ ] Staging environment complet (docker-compose.staging.yml)
 - [ ] Canary deployments / blue-green

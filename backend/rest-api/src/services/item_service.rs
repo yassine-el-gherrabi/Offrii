@@ -128,30 +128,18 @@ impl PgItemService {
         }
         let item_ids: Vec<Uuid> = items.iter().map(|i| i.id).collect();
 
-        // 1. Explicit circle_items shares (selection mode)
-        let circle_map = self
-            .circle_item_repo
-            .list_circle_names_for_items(&item_ids)
-            .await
-            .unwrap_or_default();
+        // Fetch both enrichments in parallel (2 DB round-trips → 1)
+        let circle_map_fut = self.circle_item_repo.list_circle_names_for_items(&item_ids);
 
-        for item in items.iter_mut() {
-            if let Some(circles) = circle_map.get(&item.id) {
-                item.shared_circles = circles
-                    .iter()
-                    .map(|(id, name, is_direct, image_url)| SharedCircleInfo {
-                        id: *id,
-                        name: name.clone(),
-                        is_direct: *is_direct,
-                        image_url: image_url.clone(),
-                    })
-                    .collect();
-            }
-        }
-
-        // 2. Rule-based shares (all/categories modes) — add circles not already present
         #[allow(clippy::type_complexity)]
-        let rule_circles: Vec<(Uuid, String, bool, Option<String>, String, Vec<Uuid>)> =
+        let rule_circles_fut: std::pin::Pin<
+            Box<
+                dyn std::future::Future<
+                        Output = Vec<(Uuid, String, bool, Option<String>, String, Vec<Uuid>)>,
+                    > + Send
+                    + '_,
+            >,
+        > = Box::pin(async {
             sqlx::query_as(
                 "SELECT c.id, \
                    CASE WHEN c.name IS NOT NULL THEN c.name \
@@ -168,7 +156,28 @@ impl PgItemService {
             .bind(user_id)
             .fetch_all(&self.pool)
             .await
-            .unwrap_or_default();
+            .unwrap_or_default()
+        });
+
+        let (circle_map, rule_circles) = tokio::join!(circle_map_fut, rule_circles_fut);
+        let circle_map = circle_map.unwrap_or_default();
+
+        // 1. Explicit circle_items shares (selection mode)
+        for item in items.iter_mut() {
+            if let Some(circles) = circle_map.get(&item.id) {
+                item.shared_circles = circles
+                    .iter()
+                    .map(|(id, name, is_direct, image_url)| SharedCircleInfo {
+                        id: *id,
+                        name: name.clone(),
+                        is_direct: *is_direct,
+                        image_url: image_url.clone(),
+                    })
+                    .collect();
+            }
+        }
+
+        // 2. Rule-based shares (all/categories modes) — add circles not already present
 
         for item in items.iter_mut() {
             if item.is_private {
