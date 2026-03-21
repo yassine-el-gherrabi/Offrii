@@ -1306,81 +1306,13 @@ impl traits::CircleService for PgCircleService {
         item_id: Uuid,
         user_id: Uuid,
     ) -> Result<CircleItemResponse, AppError> {
-        self.require_membership(circle_id, user_id).await?;
-
-        let circle_item = self
-            .circle_item_repo
-            .find(circle_id, item_id)
-            .await
-            .map_err(AppError::Internal)?
+        // Use the same rule-based resolution as list_circle_items to find the item
+        let all_items = self.list_circle_items_via_rules(circle_id, user_id).await?;
+        let item_response = all_items
+            .into_iter()
+            .find(|i| i.id == item_id)
             .ok_or_else(|| AppError::NotFound("item not shared in this circle".into()))?;
-
-        let item = self
-            .item_repo
-            .find_by_id_any_user(item_id)
-            .await
-            .map_err(AppError::Internal)?
-            .ok_or_else(|| AppError::NotFound("item not found".into()))?;
-
-        let is_claimed = item.claimed_by.is_some();
-
-        // Anti-spoiler: item owner can't see who claimed their item
-        let claimed_by = if user_id == item.user_id {
-            None
-        } else if let Some(cid) = item.claimed_by {
-            let claimer_map = self.user_lookup(&[cid]).await?;
-            claimer_map
-                .get(&cid)
-                .map(|(username, display_name)| ClaimedByInfo {
-                    user_id: cid,
-                    username: username.clone(),
-                    display_name: display_name.clone(),
-                })
-        } else {
-            None
-        };
-
-        // Fetch category icon
-        let category_icon = if let Some(cid) = item.category_id {
-            sqlx::query_scalar::<_, String>("SELECT icon FROM categories WHERE id = $1")
-                .bind(cid)
-                .fetch_optional(&self.pool)
-                .await
-                .ok()
-                .flatten()
-        } else {
-            None
-        };
-
-        let owner = self
-            .user_repo
-            .find_by_id(circle_item.shared_by)
-            .await
-            .ok()
-            .flatten();
-
-        Ok(CircleItemResponse {
-            id: item.id,
-            name: item.name,
-            description: item.description,
-            url: item.url,
-            estimated_price: item.estimated_price,
-            priority: item.priority,
-            category_id: item.category_id,
-            category_icon,
-            status: item.status,
-            is_claimed,
-            claimed_by,
-            image_url: item.image_url,
-            links: item.links,
-            og_image_url: item.og_image_url,
-            og_title: item.og_title,
-            og_site_name: item.og_site_name,
-            shared_at: circle_item.shared_at,
-            shared_by: circle_item.shared_by,
-            shared_by_name: owner.as_ref().and_then(|u| u.display_name.clone()),
-            shared_by_avatar_url: owner.and_then(|u| u.avatar_url),
-        })
+        Ok(item_response)
     }
 
     #[tracing::instrument(skip(self))]
