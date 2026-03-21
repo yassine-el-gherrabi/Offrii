@@ -3,6 +3,8 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use validator::Validate;
 
+use crate::models::community_wish::WishStatus;
+
 // ── Request DTOs ─────────────────────────────────────────────────────
 
 #[derive(Debug, Deserialize, Validate, utoipa::ToSchema, utoipa::IntoParams)]
@@ -66,7 +68,7 @@ pub struct WishResponse {
     pub title: String,
     pub description: Option<String>,
     pub category: String,
-    pub status: String,
+    pub status: WishStatus,
     pub is_mine: bool,
     pub is_matched_by_me: bool,
     pub image_url: Option<String>,
@@ -82,7 +84,7 @@ pub struct WishDetailResponse {
     pub title: String,
     pub description: Option<String>,
     pub category: String,
-    pub status: String,
+    pub status: WishStatus,
     pub is_mine: bool,
     pub is_matched_by_me: bool,
     pub matched_with_display_name: Option<String>,
@@ -100,7 +102,7 @@ pub struct MyWishResponse {
     pub title: String,
     pub description: Option<String>,
     pub category: String,
-    pub status: String,
+    pub status: WishStatus,
     pub is_anonymous: bool,
     pub matched_with_display_name: Option<String>,
     pub report_count: i32,
@@ -121,7 +123,7 @@ pub struct AdminWishResponse {
     pub title: String,
     pub description: Option<String>,
     pub category: String,
-    pub status: String,
+    pub status: WishStatus,
     pub moderation_note: Option<String>,
     pub image_url: Option<String>,
     pub links: Option<Vec<String>>,

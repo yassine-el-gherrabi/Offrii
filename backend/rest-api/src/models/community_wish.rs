@@ -1,8 +1,15 @@
 use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 use uuid::Uuid;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// Typed status for community wishes. Serializes to/from lowercase strings
+/// and maps to TEXT columns in PostgreSQL.
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, sqlx::Type, utoipa::ToSchema,
+)]
+#[sqlx(type_name = "text", rename_all = "lowercase")]
+#[serde(rename_all = "lowercase")]
 pub enum WishStatus {
     Pending,
     Flagged,
@@ -47,6 +54,12 @@ impl WishStatus {
     }
 }
 
+impl std::fmt::Display for WishStatus {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.as_str())
+    }
+}
+
 #[derive(Debug, Clone, FromRow)]
 pub struct CommunityWish {
     pub id: Uuid,
@@ -54,7 +67,7 @@ pub struct CommunityWish {
     pub title: String,
     pub description: Option<String>,
     pub category: String,
-    pub status: String,
+    pub status: WishStatus,
     pub is_anonymous: bool,
     pub matched_with: Option<Uuid>,
     pub matched_at: Option<DateTime<Utc>>,

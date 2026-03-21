@@ -1,4 +1,5 @@
 use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 use uuid::Uuid;
 
@@ -12,11 +13,38 @@ pub struct Circle {
     pub created_at: DateTime<Utc>,
 }
 
+/// Typed role for circle members. Serializes to/from lowercase strings
+/// and maps to TEXT columns in PostgreSQL.
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, sqlx::Type, utoipa::ToSchema,
+)]
+#[sqlx(type_name = "text", rename_all = "lowercase")]
+#[serde(rename_all = "lowercase")]
+pub enum CircleMemberRole {
+    Owner,
+    Member,
+}
+
+impl CircleMemberRole {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            Self::Owner => "owner",
+            Self::Member => "member",
+        }
+    }
+}
+
+impl std::fmt::Display for CircleMemberRole {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.as_str())
+    }
+}
+
 #[derive(Debug, Clone, FromRow)]
 pub struct CircleMember {
     pub circle_id: Uuid,
     pub user_id: Uuid,
-    pub role: String,
+    pub role: CircleMemberRole,
     pub joined_at: DateTime<Utc>,
 }
 

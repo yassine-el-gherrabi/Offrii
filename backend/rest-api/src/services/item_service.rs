@@ -8,6 +8,7 @@ use uuid::Uuid;
 use crate::dto::items::{ItemResponse, ListItemsQuery, SharedCircleInfo};
 use crate::dto::pagination::{PaginatedResponse, normalize_pagination};
 use crate::errors::AppError;
+use crate::models::item::ItemStatus;
 use crate::traits;
 
 /// Allowed sort columns (whitelist to prevent SQL injection).
@@ -374,6 +375,8 @@ impl traits::ItemService for PgItemService {
                 "status filter must be 'active' or 'purchased'".into(),
             ));
         }
+        // Note: query.status remains a String for query parameter parsing;
+        // it is passed as &str to the repo layer where SQL comparisons happen.
 
         // Try Redis cache (fail-open). Treat missing version key as 0 so the
         // cache can be hit even before the first mutation.
@@ -438,7 +441,7 @@ impl traits::ItemService for PgItemService {
         estimated_price: Option<Decimal>,
         priority: Option<i16>,
         category_id: Option<Option<Uuid>>,
-        status: Option<&str>,
+        status: Option<ItemStatus>,
         image_url: Option<Option<&str>>,
         links: Option<&[String]>,
         is_private: Option<bool>,
@@ -458,8 +461,7 @@ impl traits::ItemService for PgItemService {
         }
 
         if let Some(s) = status
-            && s != "active"
-            && s != "purchased"
+            && !matches!(s, ItemStatus::Active | ItemStatus::Purchased)
         {
             return Err(AppError::BadRequest(
                 "status must be 'active' or 'purchased'".into(),

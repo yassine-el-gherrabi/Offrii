@@ -6,6 +6,7 @@ use sqlx::{PgExecutor, PgPool, QueryBuilder, Row};
 use uuid::Uuid;
 
 use crate::models::Item;
+use crate::models::item::ItemStatus;
 use crate::traits;
 
 /// Shared column list for all item queries (avoids duplication).
@@ -100,7 +101,7 @@ impl traits::ItemRepo for PgItemRepo {
         estimated_price: Option<Decimal>,
         priority: Option<i16>,
         category_id: Option<Option<Uuid>>,
-        status: Option<&str>,
+        status: Option<ItemStatus>,
         image_url: Option<Option<&str>>,
         links: Option<&[String]>,
         is_private: Option<bool>,
@@ -331,7 +332,7 @@ pub(crate) async fn update(
     estimated_price: Option<Decimal>,
     priority: Option<i16>,
     category_id: Option<Option<Uuid>>,
-    status: Option<&str>,
+    status: Option<ItemStatus>,
     image_url: Option<Option<&str>>,
     links: Option<&[String]>,
     is_private: Option<bool>,

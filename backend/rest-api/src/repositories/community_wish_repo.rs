@@ -113,7 +113,7 @@ impl traits::CommunityWishRepo for PgCommunityWishRepo {
         status: WishStatus,
         moderation_note: Option<&str>,
     ) -> Result<bool> {
-        update_status(&self.pool, id, status.as_str(), moderation_note).await
+        update_status(&self.pool, id, &status, moderation_note).await
     }
 
     async fn set_matched(
@@ -469,7 +469,7 @@ pub(crate) async fn count_active_by_owner(
 pub(crate) async fn update_status(
     exec: impl PgExecutor<'_>,
     id: Uuid,
-    status: &str,
+    status: &WishStatus,
     moderation_note: Option<&str>,
 ) -> Result<bool> {
     let rows = if let Some(note) = moderation_note {

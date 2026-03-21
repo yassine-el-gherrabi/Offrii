@@ -12,6 +12,7 @@ use crate::dto::items::{
 use crate::dto::pagination::PaginatedResponse;
 use crate::errors::AppError;
 use crate::middleware::AuthUser;
+use crate::models::item::ItemStatus;
 
 fn validate_request(req: &impl Validate) -> Result<(), AppError> {
     req.validate()
@@ -163,7 +164,7 @@ async fn update_item(
             req.estimated_price,
             req.priority,
             req.category_id.map(Some),
-            req.status.as_deref(),
+            req.status,
             req.image_url.as_ref().map(|v| v.as_deref()),
             resolved_links.as_deref(),
             req.is_private,
@@ -179,14 +180,14 @@ async fn update_item(
     }
 
     // If status changed to "purchased", fire the received event
-    if req.status.as_deref() == Some("purchased")
+    if req.status == Some(ItemStatus::Purchased)
         && let Err(e) = state.circles.on_item_received(id, auth_user.user_id).await
     {
         tracing::warn!(error = %e, "on_item_received failed (non-fatal)");
     }
 
     // If status changed back to "active" (unarchive), notify claimer
-    if req.status.as_deref() == Some("active")
+    if req.status == Some(ItemStatus::Active)
         && let Err(e) = state
             .circles
             .on_item_unarchived(id, auth_user.user_id)

@@ -6,6 +6,7 @@ use uuid::Uuid;
 use crate::dto::items::{ItemResponse, ListItemsQuery};
 use crate::dto::pagination::PaginatedResponse;
 use crate::errors::AppError;
+use crate::models::item::ItemStatus;
 use crate::models::{CircleItem, Item};
 
 #[allow(clippy::too_many_arguments)]
@@ -53,7 +54,7 @@ pub trait ItemRepo: Send + Sync {
         estimated_price: Option<rust_decimal::Decimal>,
         priority: Option<i16>,
         category_id: Option<Option<Uuid>>,
-        status: Option<&str>,
+        status: Option<ItemStatus>,
         image_url: Option<Option<&str>>,
         links: Option<&[String]>,
         is_private: Option<bool>,
@@ -133,7 +134,7 @@ pub trait ItemService: Send + Sync {
         estimated_price: Option<rust_decimal::Decimal>,
         priority: Option<i16>,
         category_id: Option<Option<Uuid>>,
-        status: Option<&str>,
+        status: Option<ItemStatus>,
         image_url: Option<Option<&str>>,
         links: Option<&[String]>,
         is_private: Option<bool>,

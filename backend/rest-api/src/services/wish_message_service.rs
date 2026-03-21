@@ -123,8 +123,7 @@ impl traits::WishMessageService for PgWishMessageService {
             .ok_or_else(|| AppError::NotFound("wish not found".into()))?;
 
         // Only allow sending messages when matched
-        let status = WishStatus::parse(&wish.status)
-            .ok_or_else(|| AppError::Internal(anyhow::anyhow!("invalid wish status")))?;
+        let status = wish.status;
         if status != WishStatus::Matched {
             return Err(AppError::BadRequest(
                 "can only send messages when wish is matched".into(),
@@ -204,8 +203,7 @@ impl traits::WishMessageService for PgWishMessageService {
             .ok_or_else(|| AppError::NotFound("wish not found".into()))?;
 
         // Allow reading messages if matched, fulfilled, or closed (for history)
-        let status = WishStatus::parse(&wish.status)
-            .ok_or_else(|| AppError::Internal(anyhow::anyhow!("invalid wish status")))?;
+        let status = wish.status;
         if !matches!(
             status,
             WishStatus::Matched | WishStatus::Fulfilled | WishStatus::Closed

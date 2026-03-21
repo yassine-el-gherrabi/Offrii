@@ -181,7 +181,7 @@ pub(crate) async fn update_request_status(
 ) -> Result<bool> {
     let result =
         sqlx::query("UPDATE friend_requests SET status = $1 WHERE id = $2 AND status = 'pending'")
-            .bind(status.as_str())
+            .bind(status)
             .bind(id)
             .execute(exec)
             .await?;

@@ -1,8 +1,15 @@
 use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 use uuid::Uuid;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// Typed status for friend requests. Serializes to/from lowercase strings
+/// and maps to TEXT columns in PostgreSQL.
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, sqlx::Type, utoipa::ToSchema,
+)]
+#[sqlx(type_name = "text", rename_all = "lowercase")]
+#[serde(rename_all = "lowercase")]
 pub enum FriendRequestStatus {
     Pending,
     Accepted,
@@ -21,12 +28,18 @@ impl FriendRequestStatus {
     }
 }
 
+impl std::fmt::Display for FriendRequestStatus {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.as_str())
+    }
+}
+
 #[derive(Debug, Clone, FromRow)]
 pub struct FriendRequest {
     pub id: Uuid,
     pub from_user_id: Uuid,
     pub to_user_id: Uuid,
-    pub status: String,
+    pub status: FriendRequestStatus,
     pub created_at: DateTime<Utc>,
 }
 

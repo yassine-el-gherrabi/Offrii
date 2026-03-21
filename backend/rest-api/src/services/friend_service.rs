@@ -193,7 +193,7 @@ impl traits::FriendService for PgFriendService {
 
         // Check for pending requests in either direction
         for req in &existing {
-            if req.status == "pending" {
+            if req.status == FriendRequestStatus::Pending {
                 if req.from_user_id == from_user_id {
                     return Err(AppError::Conflict("friend request already pending".into()));
                 } else {
@@ -342,7 +342,7 @@ impl traits::FriendService for PgFriendService {
             ));
         }
 
-        if req.status != "pending" {
+        if req.status != FriendRequestStatus::Pending {
             return Err(AppError::BadRequest(
                 "friend request is no longer pending".into(),
             ));
@@ -461,7 +461,7 @@ impl traits::FriendService for PgFriendService {
             ));
         }
 
-        if req.status != "pending" {
+        if req.status != FriendRequestStatus::Pending {
             return Err(AppError::BadRequest(
                 "friend request is no longer pending".into(),
             ));
@@ -598,7 +598,7 @@ impl traits::FriendService for PgFriendService {
             ));
         }
 
-        if req.status != "pending" {
+        if req.status != FriendRequestStatus::Pending {
             return Err(AppError::BadRequest(
                 "friend request is no longer pending".into(),
             ));

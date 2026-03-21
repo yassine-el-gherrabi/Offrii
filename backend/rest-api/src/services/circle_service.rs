@@ -13,6 +13,7 @@ use crate::dto::circles::{
 };
 use crate::dto::pagination::PaginatedResponse;
 use crate::errors::AppError;
+use crate::models::circle::CircleMemberRole;
 use crate::repositories::{circle_event_repo, circle_invite_repo, circle_member_repo};
 use crate::traits::{self, NotificationRequest};
 
@@ -869,7 +870,7 @@ impl traits::CircleService for PgCircleService {
             &mut *tx,
             circle.id,
             other_user_id,
-            "member",
+            CircleMemberRole::Member,
         )
         .await
         .map_err(AppError::Internal)?;
@@ -991,9 +992,14 @@ impl traits::CircleService for PgCircleService {
             return Err(AppError::Gone("invite is no longer valid".into()));
         }
 
-        circle_member_repo::add_member(&mut *tx, invite.circle_id, user_id, "member")
-            .await
-            .map_err(AppError::Internal)?;
+        circle_member_repo::add_member(
+            &mut *tx,
+            invite.circle_id,
+            user_id,
+            CircleMemberRole::Member,
+        )
+        .await
+        .map_err(AppError::Internal)?;
 
         circle_event_repo::insert(
             &mut *tx,
@@ -1456,7 +1462,7 @@ impl traits::CircleService for PgCircleService {
             .await
             .map_err(|e| AppError::Internal(e.into()))?;
 
-        circle_member_repo::add_member(&mut *tx, circle_id, user_id, "member")
+        circle_member_repo::add_member(&mut *tx, circle_id, user_id, CircleMemberRole::Member)
             .await
             .map_err(AppError::Internal)?;
 
@@ -1951,7 +1957,7 @@ impl traits::CircleService for PgCircleService {
                 String,
                 Option<String>,
                 Option<rust_decimal::Decimal>,
-                String,
+                crate::models::item::ItemStatus,
                 String,
                 Option<String>,
                 Uuid,

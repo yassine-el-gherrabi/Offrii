@@ -8,6 +8,7 @@ use crate::dto::circles::{
 };
 use crate::dto::pagination::PaginatedResponse;
 use crate::errors::AppError;
+use crate::models::circle::CircleMemberRole;
 use crate::models::{Circle, CircleInvite, CircleMember, CircleShareRule};
 
 #[async_trait]
@@ -34,7 +35,12 @@ pub trait CircleRepo: Send + Sync {
 
 #[async_trait]
 pub trait CircleMemberRepo: Send + Sync {
-    async fn add_member(&self, circle_id: Uuid, user_id: Uuid, role: &str) -> Result<CircleMember>;
+    async fn add_member(
+        &self,
+        circle_id: Uuid,
+        user_id: Uuid,
+        role: CircleMemberRole,
+    ) -> Result<CircleMember>;
 
     async fn remove_member(&self, circle_id: Uuid, user_id: Uuid) -> Result<bool>;
 

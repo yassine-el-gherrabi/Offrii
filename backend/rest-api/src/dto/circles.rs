@@ -4,6 +4,9 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use validator::Validate;
 
+use crate::models::circle::CircleMemberRole;
+use crate::models::item::ItemStatus;
+
 // ── Request DTOs ─────────────────────────────────────────────────────
 
 #[derive(Debug, Deserialize, Validate, utoipa::ToSchema, utoipa::IntoParams)]
@@ -104,7 +107,7 @@ pub struct CircleMemberResponse {
     pub username: String,
     pub display_name: Option<String>,
     pub avatar_url: Option<String>,
-    pub role: String,
+    pub role: CircleMemberRole,
     pub joined_at: DateTime<Utc>,
 }
 
@@ -139,7 +142,7 @@ pub struct CircleItemResponse {
     pub priority: i16,
     pub category_id: Option<Uuid>,
     pub category_icon: Option<String>,
-    pub status: String,
+    pub status: ItemStatus,
     pub is_claimed: bool,
     pub claimed_by: Option<ClaimedByInfo>,
     pub image_url: Option<String>,
@@ -191,7 +194,7 @@ pub struct ReservationResponse {
     pub item_image_url: Option<String>,
 
     pub item_estimated_price: Option<Decimal>,
-    pub item_status: String,
+    pub item_status: ItemStatus,
     pub owner_name: String,
     pub owner_avatar_url: Option<String>,
     pub circle_id: Uuid,

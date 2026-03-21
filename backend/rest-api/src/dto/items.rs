@@ -5,6 +5,7 @@ use uuid::Uuid;
 use validator::Validate;
 
 use crate::models::Item;
+use crate::models::item::ItemStatus;
 
 // ── Request DTOs ─────────────────────────────────────────────────────
 
@@ -80,7 +81,7 @@ pub struct UpdateItemRequest {
     pub estimated_price: Option<Decimal>,
     pub priority: Option<i16>,
     pub category_id: Option<Uuid>,
-    pub status: Option<String>,
+    pub status: Option<ItemStatus>,
     #[serde(default, deserialize_with = "crate::dto::nullable::deserialize")]
     pub image_url: Option<Option<String>>,
     pub links: Option<Vec<String>>,
@@ -160,7 +161,7 @@ pub struct ItemResponse {
     pub estimated_price: Option<Decimal>,
     pub priority: i16,
     pub category_id: Option<Uuid>,
-    pub status: String,
+    pub status: ItemStatus,
     pub purchased_at: Option<DateTime<Utc>>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,

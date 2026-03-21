@@ -3,6 +3,8 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use validator::Validate;
 
+use crate::models::friend::FriendRequestStatus;
+
 // ── Request DTOs ─────────────────────────────────────────────────────
 
 #[derive(Debug, Deserialize, Validate, utoipa::ToSchema, utoipa::IntoParams)]
@@ -25,7 +27,7 @@ pub struct FriendRequestResponse {
     pub from_user_id: Uuid,
     pub from_username: String,
     pub from_display_name: Option<String>,
-    pub status: String,
+    pub status: FriendRequestStatus,
     pub created_at: DateTime<Utc>,
 }
 
@@ -35,7 +37,7 @@ pub struct SentFriendRequestResponse {
     pub to_user_id: Uuid,
     pub to_username: String,
     pub to_display_name: Option<String>,
-    pub status: String,
+    pub status: FriendRequestStatus,
     pub created_at: DateTime<Utc>,
 }
 

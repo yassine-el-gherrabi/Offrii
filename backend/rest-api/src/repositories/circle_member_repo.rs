@@ -4,6 +4,7 @@ use sqlx::{PgExecutor, PgPool, Row};
 use uuid::Uuid;
 
 use crate::models::CircleMember;
+use crate::models::circle::CircleMemberRole;
 use crate::traits;
 
 const MEMBER_COLS: &str = "circle_id, user_id, role, joined_at";
@@ -22,7 +23,12 @@ impl PgCircleMemberRepo {
 
 #[async_trait]
 impl traits::CircleMemberRepo for PgCircleMemberRepo {
-    async fn add_member(&self, circle_id: Uuid, user_id: Uuid, role: &str) -> Result<CircleMember> {
+    async fn add_member(
+        &self,
+        circle_id: Uuid,
+        user_id: Uuid,
+        role: CircleMemberRole,
+    ) -> Result<CircleMember> {
         add_member(&self.pool, circle_id, user_id, role).await
     }
 
@@ -57,7 +63,7 @@ pub(crate) async fn add_member(
     exec: impl PgExecutor<'_>,
     circle_id: Uuid,
     user_id: Uuid,
-    role: &str,
+    role: CircleMemberRole,
 ) -> Result<CircleMember> {
     let sql = format!(
         "INSERT INTO circle_members (circle_id, user_id, role) \
