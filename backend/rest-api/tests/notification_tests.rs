@@ -430,9 +430,8 @@ async fn notification_has_expected_fields() {
         notif["created_at"].is_string(),
         "notification should have created_at"
     );
-    assert_eq!(
-        notif["read"].as_bool().unwrap(),
-        false,
+    assert!(
+        !notif["read"].as_bool().unwrap(),
         "new notification should be unread"
     );
     // circle_id should be present for the "added to circle" notification

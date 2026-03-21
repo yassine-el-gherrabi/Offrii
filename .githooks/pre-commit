@@ -21,10 +21,10 @@ if $HAS_BACKEND; then
     echo "==> Backend pre-commit checks"
 
     # Auto-format staged backend files and re-add them
-    echo "  cargo fmt --check"
-    if ! (cd "$REPO_ROOT/backend" && cargo fmt --check 2>/dev/null); then
-        echo "  cargo fmt (auto-fixing)"
-        (cd "$REPO_ROOT/backend" && cargo fmt)
+    echo "  cargo fmt --all --check"
+    if ! (cd "$REPO_ROOT/backend" && cargo fmt --all -- --check 2>/dev/null); then
+        echo "  cargo fmt --all (auto-fixing)"
+        (cd "$REPO_ROOT/backend" && cargo fmt --all)
         for f in $STAGED_FILES; do
             case "$f" in
                 backend/*.rs) git add "$REPO_ROOT/$f" ;;
@@ -32,11 +32,11 @@ if $HAS_BACKEND; then
         done
     fi
 
-    echo "  cargo sort --check"
-    (cd "$REPO_ROOT/backend" && cargo sort --check) || { echo "❌ cargo sort failed — run 'cargo sort'"; exit 1; }
+    echo "  cargo sort --workspace --check"
+    (cd "$REPO_ROOT/backend" && cargo sort --workspace --check) || { echo "❌ cargo sort failed — run 'cargo sort'"; exit 1; }
 
-    echo "  cargo clippy"
-    (cd "$REPO_ROOT/backend" && cargo clippy -- -D warnings) || { echo "❌ cargo clippy failed"; exit 1; }
+    echo "  cargo clippy --workspace"
+    (cd "$REPO_ROOT/backend" && cargo clippy --workspace --all-targets -- -D warnings) || { echo "❌ cargo clippy failed"; exit 1; }
 
     echo "==> Backend checks passed"
 else

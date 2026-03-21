@@ -987,6 +987,7 @@ async fn owner_sees_empty_conversation_after_withdraw() {
 async fn wait_for_notification(app: &TestApp, user_id: Uuid, notif_type: &str) -> Option<Value> {
     let deadline = std::time::Instant::now() + std::time::Duration::from_secs(5);
     loop {
+        #[allow(clippy::type_complexity)]
         let row: Option<(Uuid, String, String, String, Option<Uuid>, Option<Uuid>)> =
             sqlx::query_as(
                 "SELECT id, notification_type, title, body, wish_id, actor_id \

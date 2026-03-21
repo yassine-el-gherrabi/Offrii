@@ -439,9 +439,11 @@ mod tests {
 
     #[test]
     fn max_attempts_is_at_least_two() {
-        assert!(
-            MAX_ATTEMPTS >= 2,
-            "retry logic requires at least 2 attempts to be useful"
-        );
+        const {
+            assert!(
+                MAX_ATTEMPTS >= 2,
+                "retry logic requires at least 2 attempts to be useful"
+            )
+        };
     }
 }
