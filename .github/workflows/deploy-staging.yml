@@ -106,6 +106,7 @@ jobs:
             CADDY_SITE_ADDRESS=staging.offrii.com
             CORS_ORIGIN=${{ vars.CORS_ORIGIN }}
             GF_SECURITY_ADMIN_PASSWORD=${{ secrets.GF_SECURITY_ADMIN_PASSWORD }}
+            SEED_DEV_DATA=${{ vars.SEED_DEV_DATA }}
             ENVEOF
             chmod 600 /opt/offrii/.env.staging
 
