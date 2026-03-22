@@ -47,10 +47,14 @@ tasks:
       - echo "Fresh database with Emma fixtures"
 
   dev:rebuild:
-    desc: Rebuild dev image (when Dockerfile.dev changes)
+    desc: Rebuild dev (purge cargo cache + rebuild image + restart)
     cmds:
+      - "{{.COMPOSE_DEV}} down"
+      - docker volume rm offrii_backend_target 2>/dev/null || true
       - "{{.COMPOSE_DEV}} build backend"
-      - echo "Dev image rebuilt"
+      - "{{.COMPOSE_DEV}} up -d"
+      - echo ""
+      - echo "Cargo cache purged, image rebuilt, backend restarting"
 
   # ─── Local prod simulation ──────────────────────────────────────
 

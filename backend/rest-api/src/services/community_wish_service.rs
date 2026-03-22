@@ -350,6 +350,7 @@ impl PgCommunityWishService {
         wish: &crate::models::community_wish::CommunityWish,
         caller_id: Option<Uuid>,
         owner_display_name: Option<String>,
+        has_reported: bool,
     ) -> WishResponse {
         let display_name = if wish.is_anonymous {
             None
@@ -366,6 +367,7 @@ impl PgCommunityWishService {
             status: wish.status,
             is_mine: caller_id == Some(wish.owner_id),
             is_matched_by_me: caller_id.is_some() && wish.matched_with == caller_id,
+            has_reported,
             image_url: wish.image_url.clone(),
             links: wish.links.clone(),
             fulfilled_at: wish.fulfilled_at,
@@ -515,11 +517,22 @@ impl traits::CommunityWishService for PgCommunityWishService {
         let user_map: std::collections::HashMap<Uuid, Option<String>> =
             users.into_iter().map(|u| (u.id, u.display_name)).collect();
 
+        // Batch-fetch reported wish ids for the caller
+        let reported_ids = if let Some(uid) = caller_id {
+            let wish_ids: Vec<Uuid> = wishes.iter().map(|w| w.id).collect();
+            self.report_repo
+                .reported_wish_ids(&wish_ids, uid)
+                .await
+                .unwrap_or_default()
+        } else {
+            std::collections::HashSet::new()
+        };
+
         let wish_responses: Vec<WishResponse> = wishes
             .iter()
             .map(|w| {
                 let dn = user_map.get(&w.owner_id).cloned().flatten();
-                self.to_wish_response(w, caller_id, dn)
+                self.to_wish_response(w, caller_id, dn, reported_ids.contains(&w.id))
             })
             .collect();
 
@@ -699,6 +712,7 @@ impl traits::CommunityWishService for PgCommunityWishService {
                     status: w.status,
                     is_mine: false,
                     is_matched_by_me: true,
+                    has_reported: false,
                     image_url: w.image_url,
                     links: w.links,
                     fulfilled_at: w.fulfilled_at,
@@ -728,6 +742,7 @@ impl traits::CommunityWishService for PgCommunityWishService {
                 status: w.status,
                 is_mine: false,
                 is_matched_by_me: false,
+                has_reported: false,
                 image_url: w.image_url,
                 links: w.links,
                 fulfilled_at: w.fulfilled_at,

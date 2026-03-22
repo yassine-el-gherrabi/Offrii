@@ -41,6 +41,14 @@ impl traits::WishReportRepo for PgWishReportRepo {
     async fn delete_by_wish(&self, wish_id: Uuid) -> Result<u64> {
         delete_by_wish(&self.pool, wish_id).await
     }
+
+    async fn reported_wish_ids(
+        &self,
+        wish_ids: &[Uuid],
+        reporter_id: Uuid,
+    ) -> Result<std::collections::HashSet<Uuid>> {
+        reported_wish_ids(&self.pool, wish_ids, reporter_id).await
+    }
 }
 
 // ── Free functions ───────────────────────────────────────────────────
@@ -93,6 +101,21 @@ pub(crate) async fn count_by_reporter_today(
     .fetch_one(exec)
     .await?;
     Ok(row.0)
+}
+
+pub(crate) async fn reported_wish_ids(
+    exec: impl PgExecutor<'_>,
+    wish_ids: &[Uuid],
+    reporter_id: Uuid,
+) -> Result<std::collections::HashSet<Uuid>> {
+    let rows: Vec<(Uuid,)> = sqlx::query_as(
+        "SELECT DISTINCT wish_id FROM wish_reports WHERE wish_id = ANY($1) AND reporter_id = $2",
+    )
+    .bind(wish_ids)
+    .bind(reporter_id)
+    .fetch_all(exec)
+    .await?;
+    Ok(rows.into_iter().map(|r| r.0).collect())
 }
 
 pub(crate) async fn delete_by_wish(exec: impl PgExecutor<'_>, wish_id: Uuid) -> Result<u64> {

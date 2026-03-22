@@ -119,6 +119,12 @@ pub trait WishReportRepo: Send + Sync {
     async fn count_by_reporter_today(&self, reporter_id: Uuid) -> Result<i64>;
 
     async fn delete_by_wish(&self, wish_id: Uuid) -> Result<u64>;
+
+    async fn reported_wish_ids(
+        &self,
+        wish_ids: &[Uuid],
+        reporter_id: Uuid,
+    ) -> Result<std::collections::HashSet<Uuid>>;
 }
 
 #[async_trait]

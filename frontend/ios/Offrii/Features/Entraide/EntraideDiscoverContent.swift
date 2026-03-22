@@ -155,7 +155,7 @@ struct EntraideDiscoverContent: View {
 
     @ViewBuilder
     private func discoverContextMenu(_ wish: CommunityWish) -> some View {
-        if !wish.isMine && wish.status == .open && !wish.isMatchedByMe {
+        if !wish.isMine && wish.status == .open && !wish.isMatchedByMe && !(wish.hasReported ?? false) {
             Button {
                 wishToOffer = wish.id
             } label: {
@@ -166,7 +166,7 @@ struct EntraideDiscoverContent: View {
             }
         }
 
-        if !wish.isMine {
+        if !wish.isMine && !(wish.hasReported ?? false) {
             Button(role: .destructive) {
                 reportWishId = wish.id
             } label: {

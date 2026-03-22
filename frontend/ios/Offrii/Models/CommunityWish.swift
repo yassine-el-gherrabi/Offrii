@@ -115,6 +115,7 @@ struct CommunityWish: Codable, Identifiable, Equatable, Sendable {
     let links: [String]?
     let fulfilledAt: Date?
     let createdAt: Date
+    let hasReported: Bool?
     let ogImageUrl: String?
     let ogTitle: String?
     let ogSiteName: String?
@@ -124,6 +125,7 @@ struct CommunityWish: Codable, Identifiable, Equatable, Sendable {
         case displayName = "display_name"
         case isMine = "is_mine"
         case isMatchedByMe = "is_matched_by_me"
+        case hasReported = "has_reported"
         case imageUrl = "image_url"
         case fulfilledAt = "fulfilled_at"
         case createdAt = "created_at"

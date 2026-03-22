@@ -71,6 +71,7 @@ pub struct WishResponse {
     pub status: WishStatus,
     pub is_mine: bool,
     pub is_matched_by_me: bool,
+    pub has_reported: bool,
     pub image_url: Option<String>,
     pub links: Option<Vec<String>>,
     pub fulfilled_at: Option<DateTime<Utc>>,

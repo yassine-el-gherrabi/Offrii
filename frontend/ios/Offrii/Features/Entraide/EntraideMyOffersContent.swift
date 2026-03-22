@@ -6,7 +6,13 @@ struct EntraideMyOffersContent: View {
     var viewModel: EntraideViewModel
     @Binding var selectedWishId: UUID?
     @Binding var messagesWishId: UUID?
+    var selectedCategory: WishCategory?
     @State private var wishToWithdraw: UUID?
+
+    private var displayedOffers: [CommunityWish] {
+        guard let category = selectedCategory else { return viewModel.myOfferWishes }
+        return viewModel.myOfferWishes.filter { $0.category == category }
+    }
 
     var body: some View {
         if viewModel.isLoadingOffers && viewModel.myOfferWishes.isEmpty {
@@ -17,7 +23,7 @@ struct EntraideMyOffersContent: View {
             }
             .padding(.horizontal, OffriiTheme.spacingBase)
             .padding(.vertical, OffriiTheme.spacingSM)
-        } else if viewModel.myOfferWishes.isEmpty {
+        } else if displayedOffers.isEmpty {
             VStack(spacing: OffriiTheme.spacingBase) {
                 Spacer().frame(height: 40)
                 OffriiEmptyState(
@@ -29,7 +35,7 @@ struct EntraideMyOffersContent: View {
             }
         } else {
             LazyVStack(spacing: OffriiTheme.spacingSM) {
-                ForEach(viewModel.myOfferWishes) { wish in
+                ForEach(displayedOffers) { wish in
                     EntraideWishCard(wish: wish) {
                         selectedWishId = wish.id
                     }

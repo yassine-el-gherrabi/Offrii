@@ -6,10 +6,16 @@ struct EntraideMyNeedsContent: View {
     var viewModel: EntraideMyNeedsViewModel
     @Binding var selectedWishId: UUID?
     @Binding var showCreateSheet: Bool
+    var selectedCategory: WishCategory?
     @Environment(AuthManager.self) private var authManager
     @State private var wishToClose: UUID?
     @State private var wishToDelete: UUID?
     @State private var wishToEdit: MyWish?
+
+    private var displayedWishes: [MyWish] {
+        guard let category = selectedCategory else { return viewModel.wishes }
+        return viewModel.wishes.filter { $0.category == category }
+    }
 
     var body: some View {
         if viewModel.isLoading && viewModel.wishes.isEmpty {
@@ -20,7 +26,7 @@ struct EntraideMyNeedsContent: View {
             }
             .padding(.horizontal, OffriiTheme.spacingBase)
             .padding(.top, OffriiTheme.spacingBase)
-        } else if viewModel.wishes.isEmpty {
+        } else if displayedWishes.isEmpty {
             VStack(spacing: OffriiTheme.spacingBase) {
                 Spacer().frame(height: 40)
                 OffriiEmptyState(
@@ -36,7 +42,7 @@ struct EntraideMyNeedsContent: View {
             }
         } else {
             LazyVStack(spacing: OffriiTheme.spacingSM) {
-                ForEach(viewModel.wishes) { wish in
+                ForEach(displayedWishes) { wish in
                     myNeedCard(wish)
                 }
             }

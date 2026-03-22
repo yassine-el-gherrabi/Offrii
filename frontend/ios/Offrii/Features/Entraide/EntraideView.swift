@@ -1,3 +1,4 @@
+// swiftlint:disable file_length
 import SwiftUI
 
 // MARK: - EntraideView
@@ -60,8 +61,16 @@ struct EntraideView: View {
     private var displayCount: Int {
         switch selectedSegment {
         case 0:  return viewModel.filteredWishes.count
-        case 1:  return myNeedsViewModel.wishes.count
-        default: return viewModel.myOfferWishes.count
+        case 1:
+            if let cat = viewModel.selectedCategory {
+                return myNeedsViewModel.wishes.filter { $0.category == cat }.count
+            }
+            return myNeedsViewModel.wishes.count
+        default:
+            if let cat = viewModel.selectedCategory {
+                return viewModel.myOfferWishes.filter { $0.category == cat }.count
+            }
+            return viewModel.myOfferWishes.count
         }
     }
 
@@ -83,13 +92,15 @@ struct EntraideView: View {
                             EntraideMyNeedsContent(
                                 viewModel: myNeedsViewModel,
                                 selectedWishId: $selectedWishId,
-                                showCreateSheet: $showCreateSheet
+                                showCreateSheet: $showCreateSheet,
+                                selectedCategory: viewModel.selectedCategory
                             )
                         case 2:
                             EntraideMyOffersContent(
                                 viewModel: viewModel,
                                 selectedWishId: $selectedWishId,
-                                messagesWishId: $messagesWishId
+                                messagesWishId: $messagesWishId,
+                                selectedCategory: viewModel.selectedCategory
                             )
                         default:
                             EmptyView()

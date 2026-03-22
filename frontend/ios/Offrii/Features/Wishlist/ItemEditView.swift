@@ -1,7 +1,6 @@
 // swiftlint:disable file_length
 import SwiftUI
 
-// swiftlint:disable:next type_body_length
 struct ItemEditView: View {
     let item: Item
     let onSave: (Item) -> Void
@@ -167,25 +166,6 @@ struct ItemEditView: View {
 
                 }
                 .padding(.horizontal, OffriiTheme.spacingLG)
-
-                // Mark received button
-                if item.isActive {
-                    OffriiButton(
-                        item.isClaimed
-                            ? NSLocalizedString("wishlist.receivedGift", comment: "")
-                            : NSLocalizedString("wishlist.markReceived", comment: ""),
-                        variant: .secondary
-                    ) {
-                        Task {
-                            _ = try? await ItemService.shared.updateItem(
-                                id: item.id, status: "purchased"
-                            )
-                            didSave = true
-                            dismiss()
-                        }
-                    }
-                    .padding(.horizontal, OffriiTheme.spacingLG)
-                }
 
                 // Shared with section
                 VStack(alignment: .leading, spacing: OffriiTheme.spacingSM) {
