@@ -29,8 +29,6 @@ const U3: Uuid = uuid("a0000000-0000-4000-a000-000000000003");
 const U4: Uuid = uuid("a0000000-0000-4000-a000-000000000004");
 const U5: Uuid = uuid("a0000000-0000-4000-a000-000000000005");
 const U6: Uuid = uuid("a0000000-0000-4000-a000-000000000006");
-const U7: Uuid = uuid("a0000000-0000-4000-a000-000000000007");
-const U8: Uuid = uuid("a0000000-0000-4000-a000-000000000008");
 
 // Items
 const B01: Uuid = uuid("b0000000-0000-4000-a000-000000000001");
@@ -43,38 +41,31 @@ const B07: Uuid = uuid("b0000000-0000-4000-a000-000000000007");
 const B08: Uuid = uuid("b0000000-0000-4000-a000-000000000008");
 const B09: Uuid = uuid("b0000000-0000-4000-a000-000000000009");
 const B10: Uuid = uuid("b0000000-0000-4000-a000-000000000010");
-const B11: Uuid = uuid("b0000000-0000-4000-a000-000000000011");
-const B12: Uuid = uuid("b0000000-0000-4000-a000-000000000012");
-const B13: Uuid = uuid("b0000000-0000-4000-a000-000000000013");
-const B14: Uuid = uuid("b0000000-0000-4000-a000-000000000014");
-const B15: Uuid = uuid("b0000000-0000-4000-a000-000000000015");
-const B16: Uuid = uuid("b0000000-0000-4000-a000-000000000016");
-const B17: Uuid = uuid("b0000000-0000-4000-a000-000000000017");
-const B18: Uuid = uuid("b0000000-0000-4000-a000-000000000018");
-const B19: Uuid = uuid("b0000000-0000-4000-a000-000000000019");
-const B20: Uuid = uuid("b0000000-0000-4000-a000-000000000020");
 
 // Circles
 const C1: Uuid = uuid("c0000000-0000-4000-a000-000000000001");
 const C2: Uuid = uuid("c0000000-0000-4000-a000-000000000002");
-const C3: Uuid = uuid("c0000000-0000-4000-a000-000000000003");
-const C4: Uuid = uuid("c0000000-0000-4000-a000-000000000004");
 
 // Community wishes
 const D1: Uuid = uuid("d0000000-0000-4000-a000-000000000001");
 const D2: Uuid = uuid("d0000000-0000-4000-a000-000000000002");
 const D3: Uuid = uuid("d0000000-0000-4000-a000-000000000003");
-const D4: Uuid = uuid("d0000000-0000-4000-a000-000000000004");
-const D5: Uuid = uuid("d0000000-0000-4000-a000-000000000005");
-const D6: Uuid = uuid("d0000000-0000-4000-a000-000000000006");
-const D7: Uuid = uuid("d0000000-0000-4000-a000-000000000007");
-const D8: Uuid = uuid("d0000000-0000-4000-a000-000000000008");
+
+// Wish messages
+const M1: Uuid = uuid("af000000-0000-4000-a000-000000000001");
+const M2: Uuid = uuid("af000000-0000-4000-a000-000000000002");
+const M3: Uuid = uuid("af000000-0000-4000-a000-000000000003");
+const M4: Uuid = uuid("af000000-0000-4000-a000-000000000004");
+
+// Notifications
+const N1: Uuid = uuid("ae000000-0000-4000-a000-000000000001");
+const N2: Uuid = uuid("ae000000-0000-4000-a000-000000000002");
+const N3: Uuid = uuid("ae000000-0000-4000-a000-000000000003");
+const N4: Uuid = uuid("ae000000-0000-4000-a000-000000000004");
+const N5: Uuid = uuid("ae000000-0000-4000-a000-000000000005");
 
 // Share links
 const E1: Uuid = uuid("e0000000-0000-4000-a000-000000000001");
-const E2: Uuid = uuid("e0000000-0000-4000-a000-000000000002");
-const E3: Uuid = uuid("e0000000-0000-4000-a000-000000000003");
-const E4: Uuid = uuid("e0000000-0000-4000-a000-000000000004");
 
 /// Compile-time UUID parsing (const fn).
 const fn uuid(s: &str) -> Uuid {
@@ -117,7 +108,6 @@ async fn main() -> Result<()> {
     let cat_maison = cat_id(&pool, "Maison").await?;
     let cat_loisirs = cat_id(&pool, "Loisirs").await?;
     let cat_sante = cat_id(&pool, "Santé").await?;
-    let cat_autre = cat_id(&pool, "Autre").await?;
 
     // Everything inside a transaction for atomicity.
     let mut tx = pool.begin().await?;
@@ -135,11 +125,10 @@ async fn main() -> Result<()> {
         cat_maison,
         cat_loisirs,
         cat_sante,
-        cat_autre,
     )
     .await?;
 
-    // ── 3. Friend requests & friendships ────────────────────────────────────
+    // ── 3. Friendships ──────────────────────────────────────────────────────
     println!("[seed] inserting friendships...");
     seed_friends(&mut *tx).await?;
 
@@ -153,65 +142,23 @@ async fn main() -> Result<()> {
 
     // ── 6. Circle share rules ───────────────────────────────────────────────
     println!("[seed] inserting circle share rules...");
-    seed_circle_share_rules(&mut *tx, cat_tech, cat_mode).await?;
+    seed_circle_share_rules(&mut *tx).await?;
 
-    // ── 7. Circle items ─────────────────────────────────────────────────────
-    println!("[seed] inserting circle items...");
-    seed_circle_items(&mut *tx).await?;
-
-    // ── 8. Circle events ────────────────────────────────────────────────────
-    println!("[seed] inserting circle events...");
-    seed_circle_events(&mut *tx).await?;
-
-    // ── 9. Circle invites ───────────────────────────────────────────────────
-    println!("[seed] inserting circle invites...");
-    seed_circle_invites(&mut *tx).await?;
-
-    // ── 10. Share links ─────────────────────────────────────────────────────
+    // ── 7. Share links ──────────────────────────────────────────────────────
     println!("[seed] inserting share links...");
-    seed_share_links(&mut *tx, cat_tech).await?;
+    seed_share_links(&mut *tx).await?;
 
-    // ── Back-fill claimed_via_link_id ───────────────────────────────────────
-    sqlx::query(
-        "UPDATE items SET claimed_via_link_id = $1
-         WHERE id = $2 AND claimed_via_link_id IS NULL",
-    )
-    .bind(E1)
-    .bind(B06)
-    .execute(&mut *tx)
-    .await?;
-
-    // ── 11. Community wishes ────────────────────────────────────────────────
+    // ── 8. Community wishes ─────────────────────────────────────────────────
     println!("[seed] inserting community wishes...");
     seed_community_wishes(&mut *tx).await?;
 
-    // ── 12. Wish messages ───────────────────────────────────────────────────
+    // ── 9. Wish messages ────────────────────────────────────────────────────
     println!("[seed] inserting wish messages...");
     seed_wish_messages(&mut *tx).await?;
 
-    // ── 13. Wish reports ────────────────────────────────────────────────────
-    println!("[seed] inserting wish reports...");
-    seed_wish_reports(&mut *tx).await?;
-
-    // ── 14. Wish blocks ─────────────────────────────────────────────────────
-    println!("[seed] inserting wish blocks...");
-    seed_wish_blocks(&mut *tx).await?;
-
-    // ── 15. Notifications ───────────────────────────────────────────────────
+    // ── 10. Notifications ───────────────────────────────────────────────────
     println!("[seed] inserting notifications...");
     seed_notifications(&mut *tx).await?;
-
-    // ── 16. Push tokens ─────────────────────────────────────────────────────
-    println!("[seed] inserting push tokens...");
-    seed_push_tokens(&mut *tx).await?;
-
-    // ── 17. Refresh tokens ──────────────────────────────────────────────────
-    println!("[seed] inserting refresh tokens...");
-    seed_refresh_tokens(&mut *tx).await?;
-
-    // ── 18. Email verification tokens ───────────────────────────────────────
-    println!("[seed] inserting email verification tokens...");
-    seed_email_verification_tokens(&mut *tx).await?;
 
     tx.commit().await.context("transaction commit failed")?;
 
@@ -244,149 +191,97 @@ fn ago_days(d: i64) -> chrono::DateTime<Utc> {
 fn ago_hours(h: i64) -> chrono::DateTime<Utc> {
     Utc::now() - Duration::hours(h)
 }
-fn ago_minutes(m: i64) -> chrono::DateTime<Utc> {
-    Utc::now() - Duration::minutes(m)
-}
-fn from_now_days(d: i64) -> chrono::DateTime<Utc> {
-    Utc::now() + Duration::days(d)
-}
-fn from_now_hours(h: i64) -> chrono::DateTime<Utc> {
-    Utc::now() + Duration::hours(h)
-}
 
 // ---------------------------------------------------------------------------
 // 1. Users
 // ---------------------------------------------------------------------------
 #[allow(clippy::type_complexity)]
 async fn seed_users(tx: &mut sqlx::PgConnection, pw_hash: &str) -> Result<()> {
-    // (id, email, username, password_hash, display_name,
-    //  oauth_provider, oauth_provider_id, email_verified,
-    //  is_admin, username_customized, avatar_url, created_at)
+    // (id, email, username, password_hash, display_name, email_verified,
+    //  avatar_url, created_at, terms_accepted_at, last_active_at)
     let users: Vec<(
         Uuid,
         &str,
         &str,
-        Option<&str>,
-        Option<&str>,
-        Option<&str>,
-        Option<&str>,
+        &str,
+        &str,
         bool,
-        bool,
-        bool,
-        Option<&str>,
+        &str,
+        chrono::DateTime<Utc>,
+        chrono::DateTime<Utc>,
         chrono::DateTime<Utc>,
     )> = vec![
         (
             U1,
-            "yassine@demo.com",
-            "yassine",
-            Some(pw_hash),
-            Some("Yassine"),
-            None,
-            None,
+            "emma@demo.com",
+            "emma_b",
+            pw_hash,
+            "Emma",
             true,
-            true,
-            true,
-            Some("https://cdn.offrii.com/avatars/demo-yassine.jpg"),
-            ago_days(30),
+            "https://cdn.offrii.com/demo/avatar-emma.jpg",
+            ago_days(60),
+            ago_days(60),
+            ago_hours(1),
         ),
         (
             U2,
             "marie@demo.com",
             "marie_dupont",
-            Some(pw_hash),
-            Some("Marie Dupont"),
-            None,
-            None,
+            pw_hash,
+            "Marie Dupont",
             true,
-            false,
-            true,
-            Some("https://cdn.offrii.com/avatars/demo-marie.jpg"),
-            ago_days(14),
+            "https://cdn.offrii.com/demo/avatar-marie.jpg",
+            ago_days(50),
+            ago_days(50),
+            ago_hours(3),
         ),
         (
             U3,
             "lucas@demo.com",
-            "lucas123",
-            Some(pw_hash),
-            None,
-            None,
-            None,
-            false,
-            false,
-            false,
-            None,
-            ago_days(7),
+            "lucas_d",
+            pw_hash,
+            "Lucas",
+            true,
+            "https://cdn.offrii.com/demo/avatar-lucas.jpg",
+            ago_days(45),
+            ago_days(45),
+            ago_hours(6),
         ),
         (
             U4,
-            "sophie@gmail.com",
+            "sophie@demo.com",
             "sophie_martin",
-            None,
-            Some("Sophie Martin"),
-            Some("google"),
-            Some("google_sophie_123"),
+            pw_hash,
+            "Sophie Martin",
             true,
-            false,
-            true,
-            Some("https://lh3.googleusercontent.com/demo-sophie"),
-            ago_days(10),
+            "https://cdn.offrii.com/demo/avatar-sophie.jpg",
+            ago_days(40),
+            ago_days(40),
+            ago_hours(12),
         ),
         (
             U5,
-            "thomas@icloud.com",
-            "thomas_b",
-            None,
-            None,
-            Some("apple"),
-            Some("apple_thomas_456"),
+            "camille@demo.com",
+            "camille_r",
+            pw_hash,
+            "Camille R.",
             true,
-            false,
-            true,
-            None,
-            ago_days(5),
+            "https://cdn.offrii.com/demo/avatar-camille.jpg",
+            ago_days(35),
+            ago_days(35),
+            ago_days(1),
         ),
         (
             U6,
-            "camille@demo.com",
-            "camille_r",
-            Some(pw_hash),
-            Some("Camille R."),
-            Some("google"),
-            Some("google_camille_789"),
+            "sarah@demo.com",
+            "sarah_l",
+            pw_hash,
+            "Sarah L.",
             true,
-            false,
-            true,
-            None,
-            ago_days(12),
-        ),
-        (
-            U7,
-            "newuser@demo.com",
-            "new_user",
-            Some(pw_hash),
-            Some("Nouveau"),
-            None,
-            None,
-            true,
-            false,
-            true,
-            None,
-            ago_hours(1),
-        ),
-        (
-            U8,
-            "reporter@demo.com",
-            "reporter_user",
-            Some(pw_hash),
-            Some("Reporter"),
-            None,
-            None,
-            true,
-            false,
-            true,
-            None,
-            ago_days(10),
+            "https://cdn.offrii.com/demo/avatar-sarah.jpg",
+            ago_days(30),
+            ago_days(30),
+            ago_days(1),
         ),
     ];
 
@@ -396,21 +291,20 @@ async fn seed_users(tx: &mut sqlx::PgConnection, pw_hash: &str) -> Result<()> {
         username,
         password_hash,
         display_name,
-        oauth_provider,
-        oauth_provider_id,
         email_verified,
-        is_admin,
-        username_customized,
         avatar_url,
         created_at,
+        terms_accepted_at,
+        last_active_at,
     ) in users
     {
         sqlx::query(
             "INSERT INTO users (id, email, username, password_hash, display_name,
                                 oauth_provider, oauth_provider_id, email_verified,
                                 token_version, is_admin, username_customized, avatar_url,
+                                terms_accepted_at, last_active_at,
                                 created_at, updated_at)
-             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,1,$9,$10,$11,$12,$12)
+             VALUES ($1,$2,$3,$4,$5,NULL,NULL,$6,1,FALSE,TRUE,$7,$8,$9,$10,$10)
              ON CONFLICT (id) DO NOTHING",
         )
         .bind(id)
@@ -418,12 +312,10 @@ async fn seed_users(tx: &mut sqlx::PgConnection, pw_hash: &str) -> Result<()> {
         .bind(username)
         .bind(password_hash)
         .bind(display_name)
-        .bind(oauth_provider)
-        .bind(oauth_provider_id)
         .bind(email_verified)
-        .bind(is_admin)
-        .bind(username_customized)
         .bind(avatar_url)
+        .bind(terms_accepted_at)
+        .bind(last_active_at)
         .bind(created_at)
         .execute(&mut *tx)
         .await?;
@@ -442,12 +334,8 @@ async fn seed_items(
     cat_maison: Uuid,
     cat_loisirs: Uuid,
     cat_sante: Uuid,
-    cat_autre: Uuid,
 ) -> Result<()> {
-    // Insert each item individually for clarity and type safety.
-    // Using a helper macro to reduce boilerplate.
-
-    // b01: MacBook Pro M4 — Yassine, Tech, active, high priority, with links+OG
+    // B01: Ecouteurs sans fil — Emma, Tech, priority 1
     sqlx::query(
         "INSERT INTO items (id, user_id, name, description, estimated_price,
          priority, category_id, status, is_private,
@@ -459,32 +347,30 @@ async fn seed_items(
     )
     .bind(B01)
     .bind(U1)
-    .bind("MacBook Pro M4")
-    .bind(Some("Le nouveau MacBook avec puce M4 Max"))
-    .bind(Some(d("2999.00")))
+    .bind("Écouteurs sans fil")
+    .bind(Some("Casque audio premium avec réduction de bruit"))
+    .bind(Some(d("349.00")))
     .bind(1_i16)
     .bind(Some(cat_tech))
     .bind("active")
     .bind(false)
-    .bind(None::<String>) // image_url
-    .bind(Some(vec![
-        "https://www.apple.com/fr/macbook-pro/".to_owned(),
-    ]))
-    .bind(Some("https://www.apple.com/v/macbook-pro/og.jpg"))
-    .bind(Some("MacBook Pro"))
-    .bind(Some("Apple"))
+    .bind(Some("https://cdn.offrii.com/demo/headphones.jpg"))
+    .bind(None::<Vec<String>>)
+    .bind(None::<String>)
+    .bind(None::<String>)
+    .bind(None::<String>)
     .bind(None::<Uuid>)
     .bind(None::<chrono::DateTime<Utc>>)
     .bind(None::<String>)
     .bind(None::<String>)
     .bind(None::<Uuid>)
     .bind(None::<Uuid>)
-    .bind(ago_days(28))
-    .bind(ago_days(28))
+    .bind(ago_days(50))
+    .bind(ago_days(50))
     .execute(&mut *tx)
     .await?;
 
-    // b02: Veste en cuir Sandro — Yassine, Mode, active, medium
+    // B02: Sac en cuir italien — Emma, Mode, priority 1, CLAIMED by Marie (U2)
     sqlx::query(
         "INSERT INTO items (id, user_id, name, description, estimated_price,
          priority, category_id, status, is_private,
@@ -496,30 +382,30 @@ async fn seed_items(
     )
     .bind(B02)
     .bind(U1)
-    .bind("Veste en cuir Sandro")
-    .bind(None::<String>)
-    .bind(Some(d("450.00")))
-    .bind(2_i16)
+    .bind("Sac en cuir italien")
+    .bind(Some("Cuir pleine fleur, couleur cognac"))
+    .bind(Some(d("290.00")))
+    .bind(1_i16)
     .bind(Some(cat_mode))
     .bind("active")
     .bind(false)
-    .bind(Some("https://cdn.offrii.com/items/demo-veste.jpg"))
+    .bind(Some("https://cdn.offrii.com/demo/bag.jpg"))
     .bind(None::<Vec<String>>)
     .bind(None::<String>)
     .bind(None::<String>)
     .bind(None::<String>)
-    .bind(None::<Uuid>)
-    .bind(None::<chrono::DateTime<Utc>>)
+    .bind(Some(U2))
+    .bind(Some(ago_days(5)))
+    .bind(Some("app"))
     .bind(None::<String>)
-    .bind(None::<String>)
     .bind(None::<Uuid>)
     .bind(None::<Uuid>)
-    .bind(ago_days(20))
-    .bind(ago_days(20))
+    .bind(ago_days(45))
+    .bind(ago_days(5))
     .execute(&mut *tx)
     .await?;
 
-    // b03: Journal intime Moleskine — Yassine, no cat, private, low
+    // B03: Demain est un autre jour — Emma, Loisirs, priority 2
     sqlx::query(
         "INSERT INTO items (id, user_id, name, description, estimated_price,
          priority, category_id, status, is_private,
@@ -531,14 +417,14 @@ async fn seed_items(
     )
     .bind(B03)
     .bind(U1)
-    .bind("Journal intime Moleskine")
-    .bind(Some("Un beau carnet pour ecrire"))
-    .bind(None::<rust_decimal::Decimal>)
-    .bind(3_i16)
-    .bind(None::<Uuid>)
+    .bind("Demain est un autre jour")
+    .bind(Some("Le dernier roman de Guillaume Musso"))
+    .bind(Some(d("22.90")))
+    .bind(2_i16)
+    .bind(Some(cat_loisirs))
     .bind("active")
-    .bind(true)
-    .bind(None::<String>)
+    .bind(false)
+    .bind(Some("https://cdn.offrii.com/demo/book.jpg"))
     .bind(None::<Vec<String>>)
     .bind(None::<String>)
     .bind(None::<String>)
@@ -549,12 +435,12 @@ async fn seed_items(
     .bind(None::<String>)
     .bind(None::<Uuid>)
     .bind(None::<Uuid>)
-    .bind(ago_days(15))
-    .bind(ago_days(15))
+    .bind(ago_days(40))
+    .bind(ago_days(40))
     .execute(&mut *tx)
     .await?;
 
-    // b04: Casque Sony WH-1000XM5 — Yassine, Tech, purchased, claimed by Marie (app)
+    // B04: Eau de parfum boisée — Emma, Santé, priority 2
     sqlx::query(
         "INSERT INTO items (id, user_id, name, description, estimated_price,
          priority, category_id, status, is_private,
@@ -566,32 +452,30 @@ async fn seed_items(
     )
     .bind(B04)
     .bind(U1)
-    .bind("Casque Sony WH-1000XM5")
-    .bind(Some("Casque a reduction de bruit"))
-    .bind(Some(d("350.00")))
-    .bind(1_i16)
-    .bind(Some(cat_tech))
-    .bind("purchased")
+    .bind("Eau de parfum boisée")
+    .bind(Some("Notes de santal, cèdre et vanille"))
+    .bind(Some(d("95.00")))
+    .bind(2_i16)
+    .bind(Some(cat_sante))
+    .bind("active")
     .bind(false)
+    .bind(Some("https://cdn.offrii.com/demo/perfume.jpg"))
+    .bind(None::<Vec<String>>)
     .bind(None::<String>)
-    .bind(Some(vec![
-        "https://www.sony.fr/headphones/wh-1000xm5".to_owned(),
-    ]))
-    .bind(Some("https://www.sony.fr/og-xm5.jpg"))
-    .bind(Some("WH-1000XM5"))
-    .bind(Some("Sony"))
-    .bind(Some(U2))
-    .bind(Some(ago_days(3)))
-    .bind(Some("app"))
+    .bind(None::<String>)
+    .bind(None::<String>)
+    .bind(None::<Uuid>)
+    .bind(None::<chrono::DateTime<Utc>>)
+    .bind(None::<String>)
     .bind(None::<String>)
     .bind(None::<Uuid>)
     .bind(None::<Uuid>)
-    .bind(ago_days(25))
-    .bind(ago_days(3))
+    .bind(ago_days(35))
+    .bind(ago_days(35))
     .execute(&mut *tx)
     .await?;
 
-    // b05: Ancien souhait supprime — Yassine, deleted
+    // B05: Sneakers blanches — Emma, Mode, priority 3
     sqlx::query(
         "INSERT INTO items (id, user_id, name, description, estimated_price,
          priority, category_id, status, is_private,
@@ -603,14 +487,14 @@ async fn seed_items(
     )
     .bind(B05)
     .bind(U1)
-    .bind("Ancien souhait supprime")
-    .bind(None::<String>)
-    .bind(None::<rust_decimal::Decimal>)
-    .bind(2_i16)
-    .bind(None::<Uuid>)
-    .bind("deleted")
+    .bind("Sneakers blanches")
+    .bind(Some("Taille 39, cuir blanc"))
+    .bind(Some(d("119.00")))
+    .bind(3_i16)
+    .bind(Some(cat_mode))
+    .bind("active")
     .bind(false)
-    .bind(None::<String>)
+    .bind(Some("https://cdn.offrii.com/demo/sneakers.jpg"))
     .bind(None::<Vec<String>>)
     .bind(None::<String>)
     .bind(None::<String>)
@@ -621,12 +505,12 @@ async fn seed_items(
     .bind(None::<String>)
     .bind(None::<Uuid>)
     .bind(None::<Uuid>)
-    .bind(ago_days(29))
-    .bind(ago_days(10))
+    .bind(ago_days(30))
+    .bind(ago_days(30))
     .execute(&mut *tx)
     .await?;
 
-    // b06: Lampe Dyson Solarcycle — Yassine, Maison, active
+    // B06: Bougie parfumée artisanale — Emma, Maison, priority 3, status 'purchased', claimed by Sophie (U4)
     sqlx::query(
         "INSERT INTO items (id, user_id, name, description, estimated_price,
          priority, category_id, status, is_private,
@@ -638,32 +522,30 @@ async fn seed_items(
     )
     .bind(B06)
     .bind(U1)
-    .bind("Lampe Dyson Solarcycle")
-    .bind(None::<String>)
-    .bind(Some(d("599.00")))
-    .bind(2_i16)
+    .bind("Bougie parfumée artisanale")
+    .bind(Some("Senteur figue et ambre, cire de soja"))
+    .bind(Some(d("45.00")))
+    .bind(3_i16)
     .bind(Some(cat_maison))
-    .bind("active")
+    .bind("purchased")
     .bind(false)
-    .bind(Some("https://cdn.offrii.com/items/demo-lampe.jpg"))
-    .bind(Some(vec![
-        "https://www.dyson.fr/eclairage/lampes-de-bureau/solarcycle".to_owned(),
-    ]))
+    .bind(Some("https://cdn.offrii.com/demo/candle.jpg"))
+    .bind(None::<Vec<String>>)
     .bind(None::<String>)
     .bind(None::<String>)
     .bind(None::<String>)
-    .bind(None::<Uuid>)
-    .bind(None::<chrono::DateTime<Utc>>)
-    .bind(None::<String>)
+    .bind(Some(U4))
+    .bind(Some(ago_days(3)))
+    .bind(Some("app"))
     .bind(None::<String>)
     .bind(None::<Uuid>)
     .bind(None::<Uuid>)
-    .bind(ago_days(5))
-    .bind(ago_days(5))
+    .bind(ago_days(25))
+    .bind(ago_days(3))
     .execute(&mut *tx)
     .await?;
 
-    // b07: Zelda TOTK — Yassine, Loisirs, web-claimed by "Maman"
+    // B07: Cours de poterie — Emma, Loisirs, priority 2
     sqlx::query(
         "INSERT INTO items (id, user_id, name, description, estimated_price,
          priority, category_id, status, is_private,
@@ -675,30 +557,30 @@ async fn seed_items(
     )
     .bind(B07)
     .bind(U1)
-    .bind("Zelda Tears of the Kingdom")
-    .bind(Some("Edition collector Switch"))
-    .bind(Some(d("69.99")))
+    .bind("Cours de poterie")
+    .bind(Some("Bon cadeau pour un atelier découverte"))
+    .bind(Some(d("85.00")))
     .bind(2_i16)
     .bind(Some(cat_loisirs))
     .bind("active")
     .bind(false)
-    .bind(None::<String>)
-    .bind(Some(vec!["https://www.nintendo.fr/zelda-totk".to_owned()]))
+    .bind(Some("https://cdn.offrii.com/demo/pottery.jpg"))
+    .bind(None::<Vec<String>>)
     .bind(None::<String>)
     .bind(None::<String>)
     .bind(None::<String>)
     .bind(None::<Uuid>)
-    .bind(Some(ago_days(1)))
-    .bind(Some("web"))
-    .bind(Some("Maman"))
+    .bind(None::<chrono::DateTime<Utc>>)
+    .bind(None::<String>)
+    .bind(None::<String>)
     .bind(None::<Uuid>)
-    .bind(Some(uuid("f0000000-0000-4000-a000-000000000001")))
-    .bind(ago_days(18))
-    .bind(ago_days(1))
+    .bind(None::<Uuid>)
+    .bind(ago_days(20))
+    .bind(ago_days(20))
     .execute(&mut *tx)
     .await?;
 
-    // b08: Tapis de yoga Lululemon — Yassine, Sante, high
+    // B08: Plaid en laine — Emma, Maison, priority 3
     sqlx::query(
         "INSERT INTO items (id, user_id, name, description, estimated_price,
          priority, category_id, status, is_private,
@@ -710,14 +592,14 @@ async fn seed_items(
     )
     .bind(B08)
     .bind(U1)
-    .bind("Tapis de yoga Lululemon")
-    .bind(Some("Le modele Reversible 5mm"))
-    .bind(Some(d("88.00")))
-    .bind(1_i16)
-    .bind(Some(cat_sante))
+    .bind("Plaid en laine")
+    .bind(Some("Laine mérinos, coloris beige naturel"))
+    .bind(Some(d("130.00")))
+    .bind(3_i16)
+    .bind(Some(cat_maison))
     .bind("active")
     .bind(false)
-    .bind(None::<String>)
+    .bind(Some("https://cdn.offrii.com/demo/blanket.jpg"))
     .bind(None::<Vec<String>>)
     .bind(None::<String>)
     .bind(None::<String>)
@@ -728,12 +610,12 @@ async fn seed_items(
     .bind(None::<String>)
     .bind(None::<Uuid>)
     .bind(None::<Uuid>)
-    .bind(ago_days(2))
-    .bind(ago_days(2))
+    .bind(ago_days(15))
+    .bind(ago_days(15))
     .execute(&mut *tx)
     .await?;
 
-    // b09: Carte cadeau FNAC — Yassine, Autre, low
+    // B09: AirPods Pro 3 — Marie (U2), Tech, priority 1
     sqlx::query(
         "INSERT INTO items (id, user_id, name, description, estimated_price,
          priority, category_id, status, is_private,
@@ -744,15 +626,15 @@ async fn seed_items(
          ON CONFLICT (id) DO NOTHING",
     )
     .bind(B09)
-    .bind(U1)
-    .bind("Carte cadeau FNAC 50EUR")
-    .bind(None::<String>)
-    .bind(Some(d("50.00")))
-    .bind(3_i16)
-    .bind(Some(cat_autre))
+    .bind(U2)
+    .bind("AirPods Pro 3")
+    .bind(Some("Dernier modèle avec réduction de bruit adaptative"))
+    .bind(Some(d("279.00")))
+    .bind(1_i16)
+    .bind(Some(cat_tech))
     .bind("active")
     .bind(false)
-    .bind(None::<String>)
+    .bind(Some("https://cdn.offrii.com/demo/airpods.jpg"))
     .bind(None::<Vec<String>>)
     .bind(None::<String>)
     .bind(None::<String>)
@@ -763,12 +645,12 @@ async fn seed_items(
     .bind(None::<String>)
     .bind(None::<Uuid>)
     .bind(None::<Uuid>)
-    .bind(ago_days(1))
-    .bind(ago_days(1))
+    .bind(ago_days(40))
+    .bind(ago_days(40))
     .execute(&mut *tx)
     .await?;
 
-    // b10: Sac Longchamp — Marie, Mode, high, with OG
+    // B10: Sac Longchamp Le Pliage — Marie (U2), Mode, priority 2, CLAIMED by Emma (U1)
     sqlx::query(
         "INSERT INTO items (id, user_id, name, description, estimated_price,
          priority, category_id, status, is_private,
@@ -781,50 +663,13 @@ async fn seed_items(
     .bind(B10)
     .bind(U2)
     .bind("Sac Longchamp Le Pliage")
-    .bind(Some("Modele grand format en noir"))
+    .bind(Some("Taille M, couleur noir"))
     .bind(Some(d("145.00")))
-    .bind(1_i16)
+    .bind(2_i16)
     .bind(Some(cat_mode))
     .bind("active")
     .bind(false)
-    .bind(Some("https://cdn.offrii.com/items/demo-sac.jpg"))
-    .bind(Some(vec![
-        "https://www.longchamp.com/fr/le-pliage".to_owned(),
-    ]))
-    .bind(Some("https://www.longchamp.com/og.jpg"))
-    .bind(Some("Le Pliage"))
-    .bind(Some("Longchamp"))
-    .bind(None::<Uuid>)
-    .bind(None::<chrono::DateTime<Utc>>)
-    .bind(None::<String>)
-    .bind(None::<String>)
-    .bind(None::<Uuid>)
-    .bind(None::<Uuid>)
-    .bind(ago_days(12))
-    .bind(ago_days(12))
-    .execute(&mut *tx)
-    .await?;
-
-    // b11: Bougie Diptyque — Marie, Maison, claimed by Yassine (app)
-    sqlx::query(
-        "INSERT INTO items (id, user_id, name, description, estimated_price,
-         priority, category_id, status, is_private,
-         image_url, links, og_image_url, og_title, og_site_name,
-         claimed_by, claimed_at, claimed_via, claimed_name, claimed_via_link_id, web_claim_token,
-         created_at, updated_at)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22)
-         ON CONFLICT (id) DO NOTHING",
-    )
-    .bind(B11)
-    .bind(U2)
-    .bind("Bougie Diptyque Baies")
-    .bind(Some("La grande 300g"))
-    .bind(Some(d("68.00")))
-    .bind(2_i16)
-    .bind(Some(cat_maison))
-    .bind("active")
-    .bind(false)
-    .bind(None::<String>)
+    .bind(Some("https://cdn.offrii.com/demo/longchamp.jpg"))
     .bind(None::<Vec<String>>)
     .bind(None::<String>)
     .bind(None::<String>)
@@ -835,330 +680,8 @@ async fn seed_items(
     .bind(None::<String>)
     .bind(None::<Uuid>)
     .bind(None::<Uuid>)
-    .bind(ago_days(10))
+    .bind(ago_days(35))
     .bind(ago_days(2))
-    .execute(&mut *tx)
-    .await?;
-
-    // b12: AirPods Pro 3 — Marie, Tech, low
-    sqlx::query(
-        "INSERT INTO items (id, user_id, name, description, estimated_price,
-         priority, category_id, status, is_private,
-         image_url, links, og_image_url, og_title, og_site_name,
-         claimed_by, claimed_at, claimed_via, claimed_name, claimed_via_link_id, web_claim_token,
-         created_at, updated_at)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22)
-         ON CONFLICT (id) DO NOTHING",
-    )
-    .bind(B12)
-    .bind(U2)
-    .bind("AirPods Pro 3")
-    .bind(None::<String>)
-    .bind(Some(d("279.00")))
-    .bind(3_i16)
-    .bind(Some(cat_tech))
-    .bind("active")
-    .bind(false)
-    .bind(None::<String>)
-    .bind(Some(vec![
-        "https://www.apple.com/fr/airpods-pro/".to_owned(),
-    ]))
-    .bind(None::<String>)
-    .bind(None::<String>)
-    .bind(None::<String>)
-    .bind(None::<Uuid>)
-    .bind(None::<chrono::DateTime<Utc>>)
-    .bind(None::<String>)
-    .bind(None::<String>)
-    .bind(None::<Uuid>)
-    .bind(None::<Uuid>)
-    .bind(ago_days(8))
-    .bind(ago_days(8))
-    .execute(&mut *tx)
-    .await?;
-
-    // b13: Livre Devenir — Marie, purchased (self), no category
-    sqlx::query(
-        "INSERT INTO items (id, user_id, name, description, estimated_price,
-         priority, category_id, status, is_private,
-         image_url, links, og_image_url, og_title, og_site_name,
-         claimed_by, claimed_at, claimed_via, claimed_name, claimed_via_link_id, web_claim_token,
-         created_at, updated_at)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22)
-         ON CONFLICT (id) DO NOTHING",
-    )
-    .bind(B13)
-    .bind(U2)
-    .bind("Livre \"Devenir\" de Michelle Obama")
-    .bind(None::<String>)
-    .bind(Some(d("24.90")))
-    .bind(2_i16)
-    .bind(None::<Uuid>)
-    .bind("purchased")
-    .bind(false)
-    .bind(None::<String>)
-    .bind(None::<Vec<String>>)
-    .bind(None::<String>)
-    .bind(None::<String>)
-    .bind(None::<String>)
-    .bind(None::<Uuid>)
-    .bind(Some(ago_days(5)))
-    .bind(None::<String>)
-    .bind(None::<String>)
-    .bind(None::<Uuid>)
-    .bind(None::<Uuid>)
-    .bind(ago_days(13))
-    .bind(ago_days(5))
-    .execute(&mut *tx)
-    .await?;
-
-    // b14: Surprise pour anniversaire — Marie, private
-    sqlx::query(
-        "INSERT INTO items (id, user_id, name, description, estimated_price,
-         priority, category_id, status, is_private,
-         image_url, links, og_image_url, og_title, og_site_name,
-         claimed_by, claimed_at, claimed_via, claimed_name, claimed_via_link_id, web_claim_token,
-         created_at, updated_at)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22)
-         ON CONFLICT (id) DO NOTHING",
-    )
-    .bind(B14)
-    .bind(U2)
-    .bind("Surprise pour anniversaire Yassine")
-    .bind(Some("Ne pas montrer!"))
-    .bind(Some(d("200.00")))
-    .bind(1_i16)
-    .bind(None::<Uuid>)
-    .bind("active")
-    .bind(true)
-    .bind(None::<String>)
-    .bind(None::<Vec<String>>)
-    .bind(None::<String>)
-    .bind(None::<String>)
-    .bind(None::<String>)
-    .bind(None::<Uuid>)
-    .bind(None::<chrono::DateTime<Utc>>)
-    .bind(None::<String>)
-    .bind(None::<String>)
-    .bind(None::<Uuid>)
-    .bind(None::<Uuid>)
-    .bind(ago_days(6))
-    .bind(ago_days(6))
-    .execute(&mut *tx)
-    .await?;
-
-    // b15: Un truc cool — Lucas, minimal
-    sqlx::query(
-        "INSERT INTO items (id, user_id, name, description, estimated_price,
-         priority, category_id, status, is_private,
-         image_url, links, og_image_url, og_title, og_site_name,
-         claimed_by, claimed_at, claimed_via, claimed_name, claimed_via_link_id, web_claim_token,
-         created_at, updated_at)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22)
-         ON CONFLICT (id) DO NOTHING",
-    )
-    .bind(B15)
-    .bind(U3)
-    .bind("Un truc cool")
-    .bind(None::<String>)
-    .bind(None::<rust_decimal::Decimal>)
-    .bind(2_i16)
-    .bind(None::<Uuid>)
-    .bind("active")
-    .bind(false)
-    .bind(None::<String>)
-    .bind(None::<Vec<String>>)
-    .bind(None::<String>)
-    .bind(None::<String>)
-    .bind(None::<String>)
-    .bind(None::<Uuid>)
-    .bind(None::<chrono::DateTime<Utc>>)
-    .bind(None::<String>)
-    .bind(None::<String>)
-    .bind(None::<Uuid>)
-    .bind(None::<Uuid>)
-    .bind(ago_days(6))
-    .bind(ago_days(6))
-    .execute(&mut *tx)
-    .await?;
-
-    // b16: Manette PS5 — Lucas, Loisirs
-    sqlx::query(
-        "INSERT INTO items (id, user_id, name, description, estimated_price,
-         priority, category_id, status, is_private,
-         image_url, links, og_image_url, og_title, og_site_name,
-         claimed_by, claimed_at, claimed_via, claimed_name, claimed_via_link_id, web_claim_token,
-         created_at, updated_at)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22)
-         ON CONFLICT (id) DO NOTHING",
-    )
-    .bind(B16)
-    .bind(U3)
-    .bind("Manette PS5 DualSense")
-    .bind(Some("Couleur Cosmic Red"))
-    .bind(Some(d("69.99")))
-    .bind(1_i16)
-    .bind(Some(cat_loisirs))
-    .bind("active")
-    .bind(false)
-    .bind(None::<String>)
-    .bind(None::<Vec<String>>)
-    .bind(None::<String>)
-    .bind(None::<String>)
-    .bind(None::<String>)
-    .bind(None::<Uuid>)
-    .bind(None::<chrono::DateTime<Utc>>)
-    .bind(None::<String>)
-    .bind(None::<String>)
-    .bind(None::<Uuid>)
-    .bind(None::<Uuid>)
-    .bind(ago_days(4))
-    .bind(ago_days(4))
-    .execute(&mut *tx)
-    .await?;
-
-    // b17: Parfum Chanel N5 — Sophie, Mode
-    sqlx::query(
-        "INSERT INTO items (id, user_id, name, description, estimated_price,
-         priority, category_id, status, is_private,
-         image_url, links, og_image_url, og_title, og_site_name,
-         claimed_by, claimed_at, claimed_via, claimed_name, claimed_via_link_id, web_claim_token,
-         created_at, updated_at)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22)
-         ON CONFLICT (id) DO NOTHING",
-    )
-    .bind(B17)
-    .bind(U4)
-    .bind("Parfum Chanel N5")
-    .bind(Some("Eau de parfum 100ml"))
-    .bind(Some(d("135.00")))
-    .bind(1_i16)
-    .bind(Some(cat_mode))
-    .bind("active")
-    .bind(false)
-    .bind(None::<String>)
-    .bind(Some(vec![
-        "https://www.chanel.com/fr/parfums/n5/".to_owned(),
-    ]))
-    .bind(None::<String>)
-    .bind(None::<String>)
-    .bind(None::<String>)
-    .bind(None::<Uuid>)
-    .bind(None::<chrono::DateTime<Utc>>)
-    .bind(None::<String>)
-    .bind(None::<String>)
-    .bind(None::<Uuid>)
-    .bind(None::<Uuid>)
-    .bind(ago_days(9))
-    .bind(ago_days(9))
-    .execute(&mut *tx)
-    .await?;
-
-    // b18: Plaid en laine — Camille, Maison
-    sqlx::query(
-        "INSERT INTO items (id, user_id, name, description, estimated_price,
-         priority, category_id, status, is_private,
-         image_url, links, og_image_url, og_title, og_site_name,
-         claimed_by, claimed_at, claimed_via, claimed_name, claimed_via_link_id, web_claim_token,
-         created_at, updated_at)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22)
-         ON CONFLICT (id) DO NOTHING",
-    )
-    .bind(B18)
-    .bind(U6)
-    .bind("Plaid en laine Zara Home")
-    .bind(None::<String>)
-    .bind(Some(d("59.99")))
-    .bind(2_i16)
-    .bind(Some(cat_maison))
-    .bind("active")
-    .bind(false)
-    .bind(None::<String>)
-    .bind(None::<Vec<String>>)
-    .bind(None::<String>)
-    .bind(None::<String>)
-    .bind(None::<String>)
-    .bind(None::<Uuid>)
-    .bind(None::<chrono::DateTime<Utc>>)
-    .bind(None::<String>)
-    .bind(None::<String>)
-    .bind(None::<Uuid>)
-    .bind(None::<Uuid>)
-    .bind(ago_days(11))
-    .bind(ago_days(11))
-    .execute(&mut *tx)
-    .await?;
-
-    // b19: Mon premier souhait — New User
-    sqlx::query(
-        "INSERT INTO items (id, user_id, name, description, estimated_price,
-         priority, category_id, status, is_private,
-         image_url, links, og_image_url, og_title, og_site_name,
-         claimed_by, claimed_at, claimed_via, claimed_name, claimed_via_link_id, web_claim_token,
-         created_at, updated_at)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22)
-         ON CONFLICT (id) DO NOTHING",
-    )
-    .bind(B19)
-    .bind(U7)
-    .bind("Mon premier souhait")
-    .bind(Some("Je decouvre Offrii!"))
-    .bind(None::<rust_decimal::Decimal>)
-    .bind(2_i16)
-    .bind(None::<Uuid>)
-    .bind("active")
-    .bind(false)
-    .bind(None::<String>)
-    .bind(None::<Vec<String>>)
-    .bind(None::<String>)
-    .bind(None::<String>)
-    .bind(None::<String>)
-    .bind(None::<Uuid>)
-    .bind(None::<chrono::DateTime<Utc>>)
-    .bind(None::<String>)
-    .bind(None::<String>)
-    .bind(None::<Uuid>)
-    .bind(None::<Uuid>)
-    .bind(ago_minutes(30))
-    .bind(ago_minutes(30))
-    .execute(&mut *tx)
-    .await?;
-
-    // b20: Sneakers Nike Air Max 90 — Yassine, Mode, multiple links
-    sqlx::query(
-        "INSERT INTO items (id, user_id, name, description, estimated_price,
-         priority, category_id, status, is_private,
-         image_url, links, og_image_url, og_title, og_site_name,
-         claimed_by, claimed_at, claimed_via, claimed_name, claimed_via_link_id, web_claim_token,
-         created_at, updated_at)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22)
-         ON CONFLICT (id) DO NOTHING",
-    )
-    .bind(B20)
-    .bind(U1)
-    .bind("Sneakers Nike Air Max 90")
-    .bind(Some("Coloris blanc/gris taille 43"))
-    .bind(Some(d("150.00")))
-    .bind(2_i16)
-    .bind(Some(cat_mode))
-    .bind("active")
-    .bind(false)
-    .bind(Some("https://cdn.offrii.com/items/demo-sneakers.jpg"))
-    .bind(Some(vec![
-        "https://www.nike.com/fr/air-max-90".to_owned(),
-        "https://www.zalando.fr/nike-air-max-90".to_owned(),
-    ]))
-    .bind(Some("https://www.nike.com/og-am90.jpg"))
-    .bind(Some("Air Max 90"))
-    .bind(Some("Nike"))
-    .bind(None::<Uuid>)
-    .bind(None::<chrono::DateTime<Utc>>)
-    .bind(None::<String>)
-    .bind(None::<String>)
-    .bind(None::<Uuid>)
-    .bind(None::<Uuid>)
-    .bind(ago_days(3))
-    .bind(ago_days(3))
     .execute(&mut *tx)
     .await?;
 
@@ -1169,48 +692,28 @@ async fn seed_items(
 // 3. Friendships
 // ---------------------------------------------------------------------------
 async fn seed_friends(tx: &mut sqlx::PgConnection) -> Result<()> {
-    // Friend requests
-    sqlx::query(
-        "INSERT INTO friend_requests (id, from_user_id, to_user_id, status, created_at)
-         VALUES
-           ($1, $2, $3, 'accepted', $8),
-           ($4, $2, $5, 'accepted', $9),
-           ($6, $3, $7, 'accepted', $10),
-           ($11, $12, $2, 'pending', $13),
-           ($14, $5, $3, 'declined', $15)
-         ON CONFLICT (from_user_id, to_user_id) DO NOTHING",
-    )
-    .bind(uuid("f1000000-0000-4000-a000-000000000001")) // $1
-    .bind(U1) // $2
-    .bind(U2) // $3
-    .bind(uuid("f1000000-0000-4000-a000-000000000002")) // $4
-    .bind(U3) // $5
-    .bind(uuid("f1000000-0000-4000-a000-000000000003")) // $6
-    .bind(U6) // $7
-    .bind(ago_days(13)) // $8
-    .bind(ago_days(6)) // $9
-    .bind(ago_days(11)) // $10
-    .bind(uuid("f1000000-0000-4000-a000-000000000004")) // $11
-    .bind(U4) // $12
-    .bind(ago_days(2)) // $13
-    .bind(uuid("f1000000-0000-4000-a000-000000000005")) // $14
-    .bind(ago_days(5)) // $15
-    .execute(&mut *tx)
-    .await?;
-
-    // Actual friendships (canonical ordering: user_a_id < user_b_id)
+    // Emma (U1) is friends with everyone (U2..U6).
+    // Canonical ordering: user_a_id < user_b_id — all U1 < U2..U6 since UUIDs are sequential.
     sqlx::query(
         "INSERT INTO friendships (user_a_id, user_b_id, created_at)
-         VALUES ($1, $2, $3), ($1, $4, $5), ($2, $6, $7)
+         VALUES ($1, $2, $7),
+                ($1, $3, $8),
+                ($1, $4, $9),
+                ($1, $5, $10),
+                ($1, $6, $11)
          ON CONFLICT (user_a_id, user_b_id) DO NOTHING",
     )
-    .bind(U1)
-    .bind(U2)
-    .bind(ago_days(13))
-    .bind(U3)
-    .bind(ago_days(6))
-    .bind(U6)
-    .bind(ago_days(11))
+    .bind(U1) // $1
+    .bind(U2) // $2
+    .bind(U3) // $3
+    .bind(U4) // $4
+    .bind(U5) // $5
+    .bind(U6) // $6
+    .bind(ago_days(45)) // $7  — U1-U2
+    .bind(ago_days(40)) // $8  — U1-U3
+    .bind(ago_days(35)) // $9  — U1-U4
+    .bind(ago_days(30)) // $10 — U1-U5
+    .bind(ago_days(25)) // $11 — U1-U6
     .execute(&mut *tx)
     .await?;
 
@@ -1224,24 +727,16 @@ async fn seed_circles(tx: &mut sqlx::PgConnection) -> Result<()> {
     sqlx::query(
         "INSERT INTO circles (id, name, owner_id, is_direct, image_url, created_at)
          VALUES
-           ($1, NULL, $5, TRUE, NULL, $9),
-           ($2, NULL, $5, TRUE, NULL, $10),
-           ($3, 'Famille', $6, FALSE, 'https://cdn.offrii.com/circles/demo-famille.jpg', $11),
-           ($4, 'Amis proches', $5, FALSE, NULL, $12)
+           ($1, 'Famille', $3, FALSE, 'https://cdn.offrii.com/demo/circle-famille.jpg', $5),
+           ($2, 'Copines', $4, FALSE, 'https://cdn.offrii.com/demo/circle-copines.jpg', $6)
          ON CONFLICT (id) DO NOTHING",
     )
-    .bind(C1)
-    .bind(C2)
-    .bind(C3)
-    .bind(C4) // $1-$4
-    .bind(U1)
-    .bind(U2) // $5-$6
-    .bind(U1)
-    .bind(U1) // $7-$8 (unused padding)
-    .bind(ago_days(13)) // $9
-    .bind(ago_days(6)) // $10
-    .bind(ago_days(10)) // $11
-    .bind(ago_days(8)) // $12
+    .bind(C1) // $1
+    .bind(C2) // $2
+    .bind(U1) // $3 — owner of C1
+    .bind(U1) // $4 — owner of C2
+    .bind(ago_days(40)) // $5 — C1 created_at
+    .bind(ago_days(30)) // $6 — C2 created_at
     .execute(&mut *tx)
     .await?;
 
@@ -1253,35 +748,30 @@ async fn seed_circles(tx: &mut sqlx::PgConnection) -> Result<()> {
 // ---------------------------------------------------------------------------
 async fn seed_circle_members(tx: &mut sqlx::PgConnection) -> Result<()> {
     // Owner is auto-inserted by trigger, so we only add non-owner members.
+    // C1 (Famille): U1 (owner), U2 (Marie), U3 (Lucas), U4 (Sophie)
+    // C2 (Copines): U1 (owner), U5 (Camille), U6 (Sarah)
     sqlx::query(
         "INSERT INTO circle_members (circle_id, user_id, role, joined_at)
          VALUES
-           ($1, $5, 'member', $12),
-           ($2, $6, 'member', $13),
-           ($3, $7, 'member', $14),
-           ($3, $6, 'member', $15),
-           ($3, $8, 'member', $15),
-           ($4, $5, 'member', $16),
-           ($4, $9, 'member', $17)
+           ($1, $3, 'member', $7),
+           ($1, $4, 'member', $8),
+           ($1, $5, 'member', $9),
+           ($2, $6, 'member', $10),
+           ($2, $11, 'member', $12)
          ON CONFLICT (circle_id, user_id) DO NOTHING",
     )
     .bind(C1) // $1
     .bind(C2) // $2
-    .bind(C3) // $3
-    .bind(C4) // $4
-    .bind(U2) // $5
-    .bind(U3) // $6
-    .bind(U1) // $7
-    .bind(U6) // $8
-    .bind(U4) // $9
-    .bind(U4) // $10 (unused)
-    .bind(U4) // $11 (unused)
-    .bind(ago_days(13)) // $12 c1: u2
-    .bind(ago_days(6)) // $13 c2: u3
-    .bind(ago_days(10)) // $14 c3: u1
-    .bind(ago_days(9)) // $15 c3: u3, u6
-    .bind(ago_days(8)) // $16 c4: u2
-    .bind(ago_days(7)) // $17 c4: u4
+    .bind(U2) // $3 — Marie in Famille
+    .bind(U3) // $4 — Lucas in Famille
+    .bind(U4) // $5 — Sophie in Famille
+    .bind(U5) // $6 — Camille in Copines
+    .bind(ago_days(39)) // $7
+    .bind(ago_days(38)) // $8
+    .bind(ago_days(37)) // $9
+    .bind(ago_days(29)) // $10
+    .bind(U6) // $11 — Sarah in Copines
+    .bind(ago_days(28)) // $12
     .execute(&mut *tx)
     .await?;
 
@@ -1291,77 +781,28 @@ async fn seed_circle_members(tx: &mut sqlx::PgConnection) -> Result<()> {
 // ---------------------------------------------------------------------------
 // 6. Circle share rules
 // ---------------------------------------------------------------------------
-async fn seed_circle_share_rules(
-    tx: &mut sqlx::PgConnection,
-    cat_tech: Uuid,
-    cat_mode: Uuid,
-) -> Result<()> {
-    // c1: Yassine shares 'all' with Marie
+async fn seed_circle_share_rules(tx: &mut sqlx::PgConnection) -> Result<()> {
+    // Emma shares ALL items to both circles
+    sqlx::query(
+        "INSERT INTO circle_share_rules (circle_id, user_id, share_mode, category_ids, created_at, updated_at)
+         VALUES ($1, $3, 'all', '{}', $4, $4)
+         ON CONFLICT (circle_id, user_id) DO NOTHING",
+    )
+    .bind(C1)
+    .bind(C2) // unused
+    .bind(U1)
+    .bind(ago_days(40))
+    .execute(&mut *tx)
+    .await?;
+
     sqlx::query(
         "INSERT INTO circle_share_rules (circle_id, user_id, share_mode, category_ids, created_at, updated_at)
          VALUES ($1, $2, 'all', '{}', $3, $3)
-         ON CONFLICT (circle_id, user_id) DO NOTHING"
+         ON CONFLICT (circle_id, user_id) DO NOTHING",
     )
-    .bind(C1).bind(U1).bind(ago_days(13))
-    .execute(&mut *tx).await?;
-
-    // c1: Marie shares 'categories' (Tech + Mode) with Yassine
-    sqlx::query(
-        "INSERT INTO circle_share_rules (circle_id, user_id, share_mode, category_ids, created_at, updated_at)
-         VALUES ($1, $2, 'categories', $3, $4, $4)
-         ON CONFLICT (circle_id, user_id) DO NOTHING"
-    )
-    .bind(C1).bind(U2)
-    .bind(vec![cat_tech, cat_mode])
-    .bind(ago_days(12))
-    .execute(&mut *tx).await?;
-
-    // c2: Yassine shares 'selection' with Lucas
-    sqlx::query(
-        "INSERT INTO circle_share_rules (circle_id, user_id, share_mode, category_ids, created_at, updated_at)
-         VALUES ($1, $2, 'selection', '{}', $3, $3)
-         ON CONFLICT (circle_id, user_id) DO NOTHING"
-    )
-    .bind(C2).bind(U1).bind(ago_days(6))
-    .execute(&mut *tx).await?;
-
-    // c2: Lucas shares 'none'
-    sqlx::query(
-        "INSERT INTO circle_share_rules (circle_id, user_id, share_mode, category_ids, created_at, updated_at)
-         VALUES ($1, $2, 'none', '{}', $3, $3)
-         ON CONFLICT (circle_id, user_id) DO NOTHING"
-    )
-    .bind(C2).bind(U3).bind(ago_days(6))
-    .execute(&mut *tx).await?;
-
-    Ok(())
-}
-
-// ---------------------------------------------------------------------------
-// 7. Circle items
-// ---------------------------------------------------------------------------
-async fn seed_circle_items(tx: &mut sqlx::PgConnection) -> Result<()> {
-    sqlx::query(
-        "INSERT INTO circle_items (circle_id, item_id, shared_by, shared_at)
-         VALUES
-           ($1, $3, $7, $8),
-           ($1, $4, $7, $9),
-           ($2, $3, $7, $10),
-           ($5, $6, $11, $12)
-         ON CONFLICT (circle_id, item_id) DO NOTHING",
-    )
-    .bind(C2) // $1
-    .bind(C4) // $2
-    .bind(B01) // $3
-    .bind(B06) // $4
-    .bind(C3) // $5
-    .bind(B10) // $6
-    .bind(U1) // $7
-    .bind(ago_days(5)) // $8
-    .bind(ago_days(4)) // $9
-    .bind(ago_days(7)) // $10
-    .bind(U2) // $11
-    .bind(ago_days(9)) // $12
+    .bind(C2)
+    .bind(U1)
+    .bind(ago_days(30))
     .execute(&mut *tx)
     .await?;
 
@@ -1369,468 +810,170 @@ async fn seed_circle_items(tx: &mut sqlx::PgConnection) -> Result<()> {
 }
 
 // ---------------------------------------------------------------------------
-// 8. Circle events
+// 7. Share links
 // ---------------------------------------------------------------------------
-async fn seed_circle_events(tx: &mut sqlx::PgConnection) -> Result<()> {
-    let events = [
-        // (id, circle_id, actor_id, event_type, target_item_id, target_user_id, created_at)
-        (
-            uuid("ca000000-0000-4000-a000-000000000001"),
-            C3,
-            U2,
-            "member_joined",
-            None,
-            Some(U2),
-            ago_days(10),
-        ),
-        (
-            uuid("ca000000-0000-4000-a000-000000000002"),
-            C3,
-            U1,
-            "member_joined",
-            None,
-            Some(U1),
-            ago_days(10),
-        ),
-        (
-            uuid("ca000000-0000-4000-a000-000000000003"),
-            C3,
-            U2,
-            "item_shared",
-            Some(B10),
-            None,
-            ago_days(9),
-        ),
-        (
-            uuid("ca000000-0000-4000-a000-000000000004"),
-            C2,
-            U1,
-            "item_shared",
-            Some(B01),
-            None,
-            ago_days(5),
-        ),
-        (
-            uuid("ca000000-0000-4000-a000-000000000005"),
-            C1,
-            U1,
-            "item_claimed",
-            Some(B11),
-            None,
-            ago_days(2),
-        ),
-        (
-            uuid("ca000000-0000-4000-a000-000000000006"),
-            C1,
-            U2,
-            "item_received",
-            Some(B04),
-            None,
-            ago_days(3),
-        ),
-    ];
-
-    for (id, circle_id, actor_id, event_type, target_item, target_user, created_at) in events {
-        sqlx::query(
-            "INSERT INTO circle_events (id, circle_id, actor_id, event_type, target_item_id, target_user_id, created_at)
-             VALUES ($1, $2, $3, $4, $5, $6, $7)
-             ON CONFLICT (id) DO NOTHING"
-        )
-        .bind(id).bind(circle_id).bind(actor_id).bind(event_type)
-        .bind(target_item).bind(target_user).bind(created_at)
-        .execute(&mut *tx).await?;
-    }
-
-    Ok(())
-}
-
-// ---------------------------------------------------------------------------
-// 9. Circle invites
-// ---------------------------------------------------------------------------
-async fn seed_circle_invites(tx: &mut sqlx::PgConnection) -> Result<()> {
-    // Active invite to Famille (c3)
+async fn seed_share_links(tx: &mut sqlx::PgConnection) -> Result<()> {
+    // E1: Emma's "all items" link
     sqlx::query(
-        "INSERT INTO circle_invites (id, circle_id, token, created_by, expires_at, max_uses, use_count, created_at)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-         ON CONFLICT (id) DO NOTHING"
+        "INSERT INTO share_links (id, user_id, token, label, permissions, scope, scope_data, is_active, expires_at, created_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+         ON CONFLICT (id) DO NOTHING",
     )
-    .bind(uuid("c1000000-0000-4000-a000-000000000001"))
-    .bind(C3)
-    .bind("inv_famille_abc123def456")
-    .bind(U2)
-    .bind(from_now_days(7))
-    .bind(5_i32).bind(2_i32)
-    .bind(ago_days(3))
-    .execute(&mut *tx).await?;
-
-    // Expired invite to Amis proches (c4)
-    sqlx::query(
-        "INSERT INTO circle_invites (id, circle_id, token, created_by, expires_at, max_uses, use_count, created_at)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-         ON CONFLICT (id) DO NOTHING"
-    )
-    .bind(uuid("c1000000-0000-4000-a000-000000000002"))
-    .bind(C4)
-    .bind("inv_amis_expired_xyz789")
+    .bind(E1)
     .bind(U1)
-    .bind(ago_days(1)) // expired
-    .bind(1_i32).bind(0_i32)
-    .bind(ago_days(8))
-    .execute(&mut *tx).await?;
+    .bind("emma-wishlist")
+    .bind(Some("Ma liste"))
+    .bind("view_and_claim")
+    .bind("all")
+    .bind(None::<serde_json::Value>)
+    .bind(true)
+    .bind(None::<chrono::DateTime<Utc>>)
+    .bind(ago_days(50))
+    .execute(&mut *tx)
+    .await?;
 
     Ok(())
 }
 
 // ---------------------------------------------------------------------------
-// 10. Share links
+// 8. Community wishes
 // ---------------------------------------------------------------------------
-async fn seed_share_links(tx: &mut sqlx::PgConnection, cat_tech: Uuid) -> Result<()> {
-    // e1: Yassine's "all items" link
-    sqlx::query(
-        "INSERT INTO share_links (id, user_id, token, label, permissions, scope, scope_data, is_active, expires_at, created_at)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-         ON CONFLICT (id) DO NOTHING"
-    )
-    .bind(E1).bind(U1)
-    .bind("sl_yassine_all_abc123456789")
-    .bind(Some("Ma liste complete"))
-    .bind("view_and_claim").bind("all")
-    .bind(None::<serde_json::Value>)
-    .bind(true).bind(None::<chrono::DateTime<Utc>>)
-    .bind(ago_days(20))
-    .execute(&mut *tx).await?;
-
-    // e2: Marie's category link (Tech only)
-    let tech_scope = serde_json::json!({ "category_ids": [cat_tech.to_string()] });
-    sqlx::query(
-        "INSERT INTO share_links (id, user_id, token, label, permissions, scope, scope_data, is_active, expires_at, created_at)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-         ON CONFLICT (id) DO NOTHING"
-    )
-    .bind(E2).bind(U2)
-    .bind("sl_marie_tech_def456789012")
-    .bind(Some("Idees tech"))
-    .bind("view_only").bind("category")
-    .bind(Some(tech_scope))
-    .bind(true).bind(Some(from_now_days(30)))
-    .bind(ago_days(10))
-    .execute(&mut *tx).await?;
-
-    // e3: Yassine's selection link
-    let sel_scope = serde_json::json!({ "item_ids": [B01.to_string(), B06.to_string()] });
-    sqlx::query(
-        "INSERT INTO share_links (id, user_id, token, label, permissions, scope, scope_data, is_active, expires_at, created_at)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-         ON CONFLICT (id) DO NOTHING"
-    )
-    .bind(E3).bind(U1)
-    .bind("sl_yassine_sel_ghi789012345")
-    .bind(Some("Pour Noel"))
-    .bind("view_and_claim").bind("selection")
-    .bind(Some(sel_scope))
-    .bind(true).bind(None::<chrono::DateTime<Utc>>)
-    .bind(ago_days(5))
-    .execute(&mut *tx).await?;
-
-    // e4: Yassine's expired/deactivated link
-    sqlx::query(
-        "INSERT INTO share_links (id, user_id, token, label, permissions, scope, scope_data, is_active, expires_at, created_at)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-         ON CONFLICT (id) DO NOTHING"
-    )
-    .bind(E4).bind(U1)
-    .bind("sl_yassine_old_jkl012345678")
-    .bind(Some("Ancien lien"))
-    .bind("view_only").bind("all")
-    .bind(None::<serde_json::Value>)
-    .bind(false).bind(Some(ago_days(10)))
-    .bind(ago_days(25))
-    .execute(&mut *tx).await?;
-
-    Ok(())
-}
-
-// ---------------------------------------------------------------------------
-// 11. Community wishes
-// ---------------------------------------------------------------------------
-#[allow(clippy::type_complexity)]
 async fn seed_community_wishes(tx: &mut sqlx::PgConnection) -> Result<()> {
-    let wishes: Vec<(
-        Uuid,
-        Uuid,
-        &str,
-        Option<&str>,
-        &str,
-        &str,
-        bool,
-        Option<Uuid>,
-        Option<chrono::DateTime<Utc>>,
-        Option<chrono::DateTime<Utc>>,
-        Option<chrono::DateTime<Utc>>,
-        i32,
-        i32,
-        Option<chrono::DateTime<Utc>>,
-        Option<&str>,
-        Option<&str>,
-        Option<Vec<String>>,
-        chrono::DateTime<Utc>,
-        chrono::DateTime<Utc>,
-    )> = vec![
-        // d1: PENDING
-        (
-            D1,
-            U3,
-            "Manuels scolaires pour le lycee",
-            Some("J ai besoin de manuels pour la rentree de septembre"),
-            "education",
-            "pending",
-            false,
-            None,
-            None,
-            None,
-            None,
-            0,
-            0,
-            None,
-            None,
-            None,
-            None,
-            ago_days(1),
-            ago_days(1),
-        ),
-        // d2: OPEN
-        (
-            D2,
-            U7,
-            "Vetements chauds pour l hiver",
-            Some("Taille M, manteau et echarpe"),
-            "clothing",
-            "open",
-            false,
-            None,
-            None,
-            None,
-            None,
-            0,
-            0,
-            None,
-            None,
-            Some("https://cdn.offrii.com/wishes/demo-vetements.jpg"),
-            None,
-            ago_days(3),
-            ago_days(3),
-        ),
-        // d3: MATCHED
-        (
-            D3,
-            U3,
-            "Medicaments pour allergie",
-            Some("Antihistaminiques en pharmacie"),
-            "health",
-            "matched",
-            true,
-            Some(U2),
-            Some(ago_days(1)),
-            None,
-            None,
-            0,
-            0,
-            None,
-            None,
-            None,
-            Some(vec!["https://www.doctissimo.fr/allergie".to_owned()]),
-            ago_days(5),
-            ago_days(1),
-        ),
-        // d4: FULFILLED
-        (
-            D4,
-            U6,
-            "Articles de cuisine pour premier appartement",
-            Some("Casseroles, poeles, ustensiles de base"),
-            "home",
-            "fulfilled",
-            false,
-            Some(U1),
-            Some(ago_days(7)),
-            Some(ago_days(2)),
-            None,
-            0,
-            0,
-            None,
-            None,
-            None,
-            None,
-            ago_days(10),
-            ago_days(2),
-        ),
-        // d5: CLOSED
-        (
-            D5,
-            U3,
-            "Jouets pour ma petite soeur",
-            Some("Elle a 5 ans, aime les puzzles"),
-            "children",
-            "closed",
-            false,
-            None,
-            None,
-            None,
-            Some(ago_days(4)),
-            0,
-            0,
-            None,
-            None,
-            None,
-            None,
-            ago_days(12),
-            ago_days(4),
-        ),
-        // d6: REJECTED
-        (
-            D6,
-            U8,
-            "Demande non conforme",
-            Some("Contenu problematique"),
-            "other",
-            "rejected",
-            false,
-            None,
-            None,
-            None,
-            None,
-            0,
-            0,
-            None,
-            Some("Wish does not meet community guidelines"),
-            None,
-            None,
-            ago_days(8),
-            ago_days(7),
-        ),
-        // d7: FLAGGED
-        (
-            D7,
-            U7,
-            "Demande signale",
-            Some("Ce souhait a ete signale par la communaute"),
-            "other",
-            "flagged",
-            false,
-            None,
-            None,
-            None,
-            None,
-            3,
-            0,
-            None,
-            None,
-            None,
-            None,
-            ago_days(6),
-            ago_days(2),
-        ),
-        // d8: OPEN (reopened)
-        (
-            D8,
-            U6,
-            "Fournitures scolaires pour la rentree",
-            Some("Cahiers, stylos, trousse"),
-            "education",
-            "open",
-            true,
-            None,
-            None,
-            None,
-            None,
-            0,
-            1,
-            Some(ago_days(1)),
-            None,
-            None,
-            Some(vec![
-                "https://www.amazon.fr/fournitures-scolaires".to_owned(),
-            ]),
-            ago_days(14),
-            ago_days(1),
-        ),
-    ];
+    // D1: Sarah — matched with Emma
+    sqlx::query(
+        "INSERT INTO community_wishes (id, owner_id, title, description, category, status,
+         is_anonymous, matched_with, matched_at, fulfilled_at, closed_at,
+         report_count, reopen_count, last_reopen_at, moderation_note,
+         image_url, links, og_image_url, og_title, og_site_name,
+         created_at, updated_at)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,NULL,NULL,NULL,$18,$19)
+         ON CONFLICT (id) DO NOTHING",
+    )
+    .bind(D1)
+    .bind(U6) // Sarah
+    .bind("Vêtements chauds pour l'hiver")
+    .bind(Some(
+        "Taille M, manteau et écharpe si possible. Merci beaucoup !",
+    ))
+    .bind("clothing")
+    .bind("matched")
+    .bind(false)
+    .bind(Some(U1)) // matched with Emma
+    .bind(Some(ago_days(2))) // matched_at
+    .bind(None::<chrono::DateTime<Utc>>) // fulfilled_at
+    .bind(None::<chrono::DateTime<Utc>>) // closed_at
+    .bind(0_i32) // report_count
+    .bind(0_i32) // reopen_count
+    .bind(None::<chrono::DateTime<Utc>>) // last_reopen_at
+    .bind(None::<String>) // moderation_note
+    .bind(Some("https://cdn.offrii.com/demo/winter-clothes.jpg"))
+    .bind(None::<Vec<String>>) // links
+    .bind(ago_days(3))
+    .bind(ago_days(2))
+    .execute(&mut *tx)
+    .await?;
 
-    for (
-        id,
-        owner_id,
-        title,
-        description,
-        category,
-        status,
-        is_anonymous,
-        matched_with,
-        matched_at,
-        fulfilled_at,
-        closed_at,
-        report_count,
-        reopen_count,
-        last_reopen_at,
-        moderation_note,
-        image_url,
-        links,
-        created_at,
-        updated_at,
-    ) in wishes
-    {
-        sqlx::query(
-            "INSERT INTO community_wishes (id, owner_id, title, description, category, status,
-             is_anonymous, matched_with, matched_at, fulfilled_at, closed_at,
-             report_count, reopen_count, last_reopen_at, moderation_note,
-             image_url, links, og_image_url, og_title, og_site_name,
-             created_at, updated_at)
-             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,NULL,NULL,NULL,$18,$19)
-             ON CONFLICT (id) DO NOTHING"
-        )
-        .bind(id).bind(owner_id).bind(title).bind(description)
-        .bind(category).bind(status).bind(is_anonymous)
-        .bind(matched_with).bind(matched_at).bind(fulfilled_at).bind(closed_at)
-        .bind(report_count).bind(reopen_count).bind(last_reopen_at).bind(moderation_note)
-        .bind(image_url).bind(links)
-        .bind(created_at).bind(updated_at)
-        .execute(&mut *tx).await?;
-    }
+    // D2: Camille — open
+    sqlx::query(
+        "INSERT INTO community_wishes (id, owner_id, title, description, category, status,
+         is_anonymous, matched_with, matched_at, fulfilled_at, closed_at,
+         report_count, reopen_count, last_reopen_at, moderation_note,
+         image_url, links, og_image_url, og_title, og_site_name,
+         created_at, updated_at)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,NULL,NULL,NULL,$18,$19)
+         ON CONFLICT (id) DO NOTHING",
+    )
+    .bind(D2)
+    .bind(U5) // Camille
+    .bind("Jouets pour enfants 3-5 ans")
+    .bind(Some(
+        "Pour une association du quartier, jeux éducatifs ou peluches en bon état",
+    ))
+    .bind("children")
+    .bind("open")
+    .bind(false)
+    .bind(None::<Uuid>) // matched_with
+    .bind(None::<chrono::DateTime<Utc>>) // matched_at
+    .bind(None::<chrono::DateTime<Utc>>) // fulfilled_at
+    .bind(None::<chrono::DateTime<Utc>>) // closed_at
+    .bind(0_i32)
+    .bind(0_i32)
+    .bind(None::<chrono::DateTime<Utc>>)
+    .bind(None::<String>)
+    .bind(Some("https://cdn.offrii.com/demo/toys.jpg"))
+    .bind(None::<Vec<String>>)
+    .bind(ago_days(2))
+    .bind(ago_days(2))
+    .execute(&mut *tx)
+    .await?;
+
+    // D3: Marie — open, no image
+    sqlx::query(
+        "INSERT INTO community_wishes (id, owner_id, title, description, category, status,
+         is_anonymous, matched_with, matched_at, fulfilled_at, closed_at,
+         report_count, reopen_count, last_reopen_at, moderation_note,
+         image_url, links, og_image_url, og_title, og_site_name,
+         created_at, updated_at)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,NULL,NULL,NULL,$18,$19)
+         ON CONFLICT (id) DO NOTHING",
+    )
+    .bind(D3)
+    .bind(U2) // Marie
+    .bind("Livres scolaires lycée")
+    .bind(Some("Manuels de terminale, toutes matières acceptées"))
+    .bind("education")
+    .bind("open")
+    .bind(false)
+    .bind(None::<Uuid>)
+    .bind(None::<chrono::DateTime<Utc>>)
+    .bind(None::<chrono::DateTime<Utc>>)
+    .bind(None::<chrono::DateTime<Utc>>)
+    .bind(0_i32)
+    .bind(0_i32)
+    .bind(None::<chrono::DateTime<Utc>>)
+    .bind(None::<String>)
+    .bind(None::<String>) // no image
+    .bind(None::<Vec<String>>)
+    .bind(ago_days(1))
+    .bind(ago_days(1))
+    .execute(&mut *tx)
+    .await?;
 
     Ok(())
 }
 
 // ---------------------------------------------------------------------------
-// 12. Wish messages
+// 9. Wish messages
 // ---------------------------------------------------------------------------
 async fn seed_wish_messages(tx: &mut sqlx::PgConnection) -> Result<()> {
     let messages = [
         (
-            uuid("aa000000-0000-4000-a000-000000000001"),
-            D3,
-            Some(U2),
-            "Bonjour, je peux vous aider avec les medicaments. Quelle marque preferez-vous?",
-            ago_days(1),
-        ),
-        (
-            uuid("aa000000-0000-4000-a000-000000000002"),
-            D3,
-            Some(U3),
-            "Merci beaucoup! Cetirizine si possible.",
+            M1,
+            D1,
+            Some(U1),
+            "Bonjour ! J'ai un manteau taille M en très bon état, ça vous intéresse ?",
             ago_hours(23),
         ),
         (
-            uuid("aa000000-0000-4000-a000-000000000003"),
-            D4,
-            Some(U1),
-            "J ai un set de cuisine complet a donner, ca vous interesse?",
-            ago_days(6),
+            M2,
+            D1,
+            Some(U6),
+            "Oh oui avec plaisir ! C'est vraiment gentil. Il est de quelle couleur ?",
+            ago_hours(22),
         ),
         (
-            uuid("aa000000-0000-4000-a000-000000000004"),
-            D4,
+            M3,
+            D1,
+            Some(U1),
+            "Bleu marine, avec une capuche. J'ai aussi une écharpe assortie !",
+            ago_hours(21),
+        ),
+        (
+            M4,
+            D1,
             Some(U6),
-            "Oui, c est parfait! Merci enormement!",
-            ago_days(6),
+            "Parfait, c'est exactement ce qu'il me faut. Merci infiniment !",
+            ago_hours(20),
         ),
     ];
 
@@ -1853,80 +996,7 @@ async fn seed_wish_messages(tx: &mut sqlx::PgConnection) -> Result<()> {
 }
 
 // ---------------------------------------------------------------------------
-// 13. Wish reports
-// ---------------------------------------------------------------------------
-async fn seed_wish_reports(tx: &mut sqlx::PgConnection) -> Result<()> {
-    let reports = [
-        (
-            uuid("ab000000-0000-4000-a000-000000000001"),
-            D7,
-            U8,
-            "inappropriate",
-            Some("Le contenu semble inapproprie pour la plateforme"),
-            ago_days(3),
-        ),
-        (
-            uuid("ab000000-0000-4000-a000-000000000002"),
-            D7,
-            U1,
-            "spam",
-            None,
-            ago_days(2),
-        ),
-        (
-            uuid("ab000000-0000-4000-a000-000000000003"),
-            D7,
-            U2,
-            "other",
-            Some("Pas clair ce qui est demande"),
-            ago_days(2),
-        ),
-    ];
-
-    for (id, wish_id, reporter_id, reason, details, created_at) in reports {
-        sqlx::query(
-            "INSERT INTO wish_reports (id, wish_id, reporter_id, reason, details, created_at)
-             VALUES ($1, $2, $3, $4, $5, $6)
-             ON CONFLICT (wish_id, reporter_id) DO NOTHING",
-        )
-        .bind(id)
-        .bind(wish_id)
-        .bind(reporter_id)
-        .bind(reason)
-        .bind(details)
-        .bind(created_at)
-        .execute(&mut *tx)
-        .await?;
-    }
-
-    Ok(())
-}
-
-// ---------------------------------------------------------------------------
-// 14. Wish blocks
-// ---------------------------------------------------------------------------
-async fn seed_wish_blocks(tx: &mut sqlx::PgConnection) -> Result<()> {
-    sqlx::query(
-        "INSERT INTO wish_blocks (id, wish_id, user_id, created_at)
-         VALUES ($1, $2, $3, $4), ($5, $6, $7, $8)
-         ON CONFLICT (wish_id, user_id) DO NOTHING",
-    )
-    .bind(uuid("ac000000-0000-4000-a000-000000000001"))
-    .bind(D7)
-    .bind(U8)
-    .bind(ago_days(3))
-    .bind(uuid("ac000000-0000-4000-a000-000000000002"))
-    .bind(D6)
-    .bind(U1)
-    .bind(ago_days(7))
-    .execute(&mut *tx)
-    .await?;
-
-    Ok(())
-}
-
-// ---------------------------------------------------------------------------
-// 15. Notifications
+// 10. Notifications
 // ---------------------------------------------------------------------------
 async fn seed_notifications(tx: &mut sqlx::PgConnection) -> Result<()> {
     #[allow(clippy::type_complexity)]
@@ -1943,159 +1013,75 @@ async fn seed_notifications(tx: &mut sqlx::PgConnection) -> Result<()> {
         Option<Uuid>,
         chrono::DateTime<Utc>,
     )> = vec![
-        // bb01: friend_request u1 from u4
+        // N1: friend_accepted — Sarah accepted Emma's request (unread)
         (
-            uuid("bb000000-0000-4000-a000-000000000001"),
+            N1,
             U1,
-            "friend_request",
-            "Nouvelle demande d ami",
-            "Sophie Martin vous a envoye une demande d ami",
+            "friend_accepted",
+            "Nouvelle amie",
+            "Sarah a accepté votre demande",
             false,
             None,
             None,
             None,
-            Some(U4),
-            ago_days(2),
+            Some(U6),
+            ago_hours(2),
         ),
-        // bb02: friend_accepted u2 from u1
+        // N2: item_claimed — someone claimed B02 (unread)
         (
-            uuid("bb000000-0000-4000-a000-000000000002"),
-            U2,
-            "friend_accepted",
-            "Demande acceptee",
-            "Yassine a accepte votre demande d ami",
-            true,
-            None,
-            None,
-            None,
-            Some(U1),
-            ago_days(13),
-        ),
-        // bb03: item_claimed u1
-        (
-            uuid("bb000000-0000-4000-a000-000000000003"),
+            N2,
             U1,
             "item_claimed",
-            "Souhait reserve",
-            "Marie Dupont a reserve \"Casque Sony WH-1000XM5\"",
+            "Souhait réservé",
+            "Quelqu'un a réservé un de vos souhaits",
             false,
-            Some(C1),
-            Some(B04),
             None,
-            Some(U2),
-            ago_days(3),
-        ),
-        // bb04: item_shared u2
-        (
-            uuid("bb000000-0000-4000-a000-000000000004"),
-            U2,
-            "item_shared",
-            "Nouvel article partage",
-            "Yassine a partage \"MacBook Pro M4\" dans Amis proches",
-            true,
-            Some(C4),
-            Some(B01),
+            Some(B02),
             None,
-            Some(U1),
-            ago_days(7),
+            None,
+            ago_hours(5),
         ),
-        // bb05: circle_member_joined u2
+        // N3: circle_member_joined — Sarah joined Copines (read)
         (
-            uuid("bb000000-0000-4000-a000-000000000005"),
-            U2,
+            N3,
+            U1,
             "circle_member_joined",
             "Nouveau membre",
-            "Sophie Martin a rejoint Amis proches",
+            "Sarah a rejoint Copines",
             true,
-            Some(C4),
+            Some(C2),
             None,
             None,
-            Some(U4),
-            ago_days(7),
-        ),
-        // bb06: wish_message u3
-        (
-            uuid("bb000000-0000-4000-a000-000000000006"),
-            U3,
-            "wish_message",
-            "Nouveau message",
-            "Vous avez recu un nouveau message concernant votre souhait",
-            false,
-            None,
-            None,
-            Some(D3),
-            Some(U2),
-            ago_days(1),
-        ),
-        // bb07: wish_offer u3
-        (
-            uuid("bb000000-0000-4000-a000-000000000007"),
-            U3,
-            "wish_offer",
-            "Nouvelle proposition d aide",
-            "Quelqu un souhaite vous aider avec \"Medicaments pour allergie\"",
-            true,
-            None,
-            None,
-            Some(D3),
-            Some(U2),
-            ago_days(1),
-        ),
-        // bb08: wish_confirmed u1
-        (
-            uuid("bb000000-0000-4000-a000-000000000008"),
-            U1,
-            "wish_confirmed",
-            "Souhait confirme",
-            "Camille R. a confirme la reception de votre aide",
-            true,
-            None,
-            None,
-            Some(D4),
             Some(U6),
-            ago_days(2),
+            ago_days(1),
         ),
-        // bb09: wish_moderation_flagged u7
+        // N4: wish_offer — someone offers help for D1 (read)
         (
-            uuid("bb000000-0000-4000-a000-000000000009"),
-            U7,
-            "wish_moderation_flagged",
-            "Souhait signale",
-            "Votre souhait a ete signale et est en cours de revision",
-            false,
-            None,
-            None,
-            Some(D7),
-            None,
-            ago_days(2),
-        ),
-        // bb10: wish_rejected u8
-        (
-            uuid("bb000000-0000-4000-a000-000000000010"),
-            U8,
-            "wish_rejected",
-            "Souhait refuse",
-            "Votre souhait ne respecte pas les regles de la communaute",
+            N4,
+            U1,
+            "wish_offer",
+            "Offre d'aide",
+            "Quelqu'un propose son aide pour votre besoin",
             true,
             None,
             None,
-            Some(D6),
+            Some(D1),
             None,
-            ago_days(7),
+            ago_days(2),
         ),
-        // bb11: web item_claimed u1
+        // N5: item_received — Emma marked B06 as received (read)
         (
-            uuid("bb000000-0000-4000-a000-000000000011"),
+            N5,
             U1,
-            "item_claimed",
-            "Souhait reserve depuis le web",
-            "Maman a reserve \"Zelda Tears of the Kingdom\" via votre lien de partage",
-            false,
+            "item_received",
+            "Cadeau reçu",
+            "Vous avez marqué un souhait comme reçu",
+            true,
             None,
-            Some(B07),
+            Some(B06),
             None,
             None,
-            ago_days(1),
+            ago_days(3),
         ),
     ];
 
@@ -2129,151 +1115,6 @@ async fn seed_notifications(tx: &mut sqlx::PgConnection) -> Result<()> {
         .bind(item_id)
         .bind(wish_id)
         .bind(actor_id)
-        .bind(created_at)
-        .execute(&mut *tx)
-        .await?;
-    }
-
-    Ok(())
-}
-
-// ---------------------------------------------------------------------------
-// 16. Push tokens
-// ---------------------------------------------------------------------------
-async fn seed_push_tokens(tx: &mut sqlx::PgConnection) -> Result<()> {
-    let tokens = [
-        (
-            uuid("ad000000-0000-4000-a000-000000000001"),
-            U1,
-            "apns_demo_token_yassine_iphone_abc123",
-            "ios",
-            ago_days(28),
-        ),
-        (
-            uuid("ad000000-0000-4000-a000-000000000002"),
-            U1,
-            "apns_demo_token_yassine_ipad_def456",
-            "ios",
-            ago_days(15),
-        ),
-        (
-            uuid("ad000000-0000-4000-a000-000000000003"),
-            U2,
-            "apns_demo_token_marie_iphone_ghi789",
-            "ios",
-            ago_days(12),
-        ),
-        (
-            uuid("ad000000-0000-4000-a000-000000000004"),
-            U3,
-            "fcm_demo_token_lucas_android_jkl012",
-            "android",
-            ago_days(6),
-        ),
-    ];
-
-    for (id, user_id, token, platform, created_at) in tokens {
-        sqlx::query(
-            "INSERT INTO push_tokens (id, user_id, token, platform, created_at)
-             VALUES ($1, $2, $3, $4, $5)
-             ON CONFLICT (user_id, token) DO NOTHING",
-        )
-        .bind(id)
-        .bind(user_id)
-        .bind(token)
-        .bind(platform)
-        .bind(created_at)
-        .execute(&mut *tx)
-        .await?;
-    }
-
-    Ok(())
-}
-
-// ---------------------------------------------------------------------------
-// 17. Refresh tokens
-// ---------------------------------------------------------------------------
-async fn seed_refresh_tokens(tx: &mut sqlx::PgConnection) -> Result<()> {
-    let tokens = [
-        (
-            uuid("ae000000-0000-4000-a000-000000000001"),
-            U1,
-            "sha256_demo_active_yassine_abc123def456ghi789",
-            from_now_days(30),
-            None,
-            ago_days(1),
-        ),
-        (
-            uuid("ae000000-0000-4000-a000-000000000002"),
-            U1,
-            "sha256_demo_revoked_yassine_jkl012mno345pqr678",
-            from_now_days(15),
-            Some(ago_days(5)),
-            ago_days(20),
-        ),
-        (
-            uuid("ae000000-0000-4000-a000-000000000003"),
-            U2,
-            "sha256_demo_active_marie_stu901vwx234yz567",
-            from_now_days(30),
-            None,
-            ago_days(2),
-        ),
-        (
-            uuid("ae000000-0000-4000-a000-000000000004"),
-            U3,
-            "sha256_demo_expired_lucas_abc789def012ghi345",
-            ago_days(2),
-            None,
-            ago_days(32),
-        ),
-    ];
-
-    for (id, user_id, token_hash, expires_at, revoked_at, created_at) in tokens {
-        sqlx::query(
-            "INSERT INTO refresh_tokens (id, user_id, token_hash, expires_at, revoked_at, created_at)
-             VALUES ($1, $2, $3, $4, $5, $6)
-             ON CONFLICT (id) DO NOTHING"
-        )
-        .bind(id).bind(user_id).bind(token_hash)
-        .bind(expires_at).bind(revoked_at).bind(created_at)
-        .execute(&mut *tx).await?;
-    }
-
-    Ok(())
-}
-
-// ---------------------------------------------------------------------------
-// 18. Email verification tokens
-// ---------------------------------------------------------------------------
-async fn seed_email_verification_tokens(tx: &mut sqlx::PgConnection) -> Result<()> {
-    let tokens = [
-        (
-            uuid("af000000-0000-4000-a000-000000000001"),
-            U3,
-            "verify_lucas_demo_token_abc123def456ghi789jkl012mno345pqr678st",
-            from_now_hours(24),
-            ago_hours(1),
-        ),
-        (
-            uuid("af000000-0000-4000-a000-000000000002"),
-            U1,
-            "verify_yassine_expired_uvw456xyz789abc012def345ghi678jkl901mn",
-            ago_days(29),
-            ago_days(30),
-        ),
-    ];
-
-    for (id, user_id, token, expires_at, created_at) in tokens {
-        sqlx::query(
-            "INSERT INTO email_verification_tokens (id, user_id, token, expires_at, created_at)
-             VALUES ($1, $2, $3, $4, $5)
-             ON CONFLICT (id) DO NOTHING",
-        )
-        .bind(id)
-        .bind(user_id)
-        .bind(token)
-        .bind(expires_at)
         .bind(created_at)
         .execute(&mut *tx)
         .await?;
