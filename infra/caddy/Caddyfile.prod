@@ -1,0 +1,167 @@
+{
+	order rate_limit before basicauth
+}
+
+# ── Production API ────────────────────────────────────
+api.offrii.com {
+	encode zstd gzip
+
+	# Security headers
+	header {
+		X-Content-Type-Options    "nosniff"
+		X-Frame-Options           "DENY"
+		X-XSS-Protection          "0"
+		Referrer-Policy            "strict-origin-when-cross-origin"
+		Permissions-Policy         "camera=(), microphone=(), geolocation=()"
+		Content-Security-Policy   "default-src 'none'; frame-ancestors 'none'"
+		Strict-Transport-Security "max-age=63072000; includeSubDomains; preload"
+		-Server
+	}
+
+	# CORS for mobile API
+	header {
+		Access-Control-Allow-Origin   "https://offrii.com"
+		Access-Control-Allow-Methods  "GET, POST, PUT, PATCH, DELETE, OPTIONS"
+		Access-Control-Allow-Headers  "Authorization, Content-Type, Accept"
+		Access-Control-Expose-Headers "X-Request-Id"
+		Access-Control-Max-Age        "86400"
+	}
+
+	@options method OPTIONS
+	respond @options 204
+
+	# Rate limit: auth 10 req/min/IP
+	rate_limit {
+		zone auth_zone {
+			match {
+				path /auth/*
+			}
+			key    {remote_host}
+			events 10
+			window 1m
+		}
+	}
+
+	# Rate limit: messages 20 req/min/IP
+	rate_limit {
+		zone messages_zone {
+			match {
+				path /community/wishes/*/messages
+			}
+			key    {remote_host}
+			events 20
+			window 1m
+		}
+	}
+
+	# Rate limit: global 100 req/min/IP
+	rate_limit {
+		zone global_zone {
+			key    {remote_host}
+			events 100
+			window 1m
+		}
+	}
+
+	# Block /metrics from external access (Prometheus uses Docker internal network)
+	@metrics path /metrics
+	respond @metrics 404
+
+	reverse_proxy backend:3000 {
+		health_uri      /health/ready
+		health_interval 30s
+		health_timeout  5s
+	}
+
+	log {
+		output stdout
+		format json
+	}
+}
+
+# ── Staging API ───────────────────────────────────────
+staging.offrii.com {
+	encode zstd gzip
+
+	header {
+		X-Content-Type-Options    "nosniff"
+		X-Frame-Options           "DENY"
+		X-XSS-Protection          "0"
+		Referrer-Policy            "strict-origin-when-cross-origin"
+		Permissions-Policy         "camera=(), microphone=(), geolocation=()"
+		Content-Security-Policy   "default-src 'none'; frame-ancestors 'none'"
+		Strict-Transport-Security "max-age=63072000; includeSubDomains"
+		-Server
+	}
+
+	header {
+		Access-Control-Allow-Origin   "https://staging.offrii.com"
+		Access-Control-Allow-Methods  "GET, POST, PUT, PATCH, DELETE, OPTIONS"
+		Access-Control-Allow-Headers  "Authorization, Content-Type, Accept"
+		Access-Control-Expose-Headers "X-Request-Id"
+		Access-Control-Max-Age        "86400"
+	}
+
+	@options method OPTIONS
+	respond @options 204
+
+	# Same rate limits as production
+	rate_limit {
+		zone staging_auth_zone {
+			match {
+				path /auth/*
+			}
+			key    {remote_host}
+			events 10
+			window 1m
+		}
+	}
+
+	rate_limit {
+		zone staging_global_zone {
+			key    {remote_host}
+			events 100
+			window 1m
+		}
+	}
+
+	# Block /metrics from external access (Prometheus uses Docker internal network)
+	@staging_metrics path /metrics
+	respond @staging_metrics 404
+
+	reverse_proxy staging-backend:3001 {
+		health_uri      /health/ready
+		health_interval 30s
+		health_timeout  5s
+	}
+
+	log {
+		output stdout
+		format json
+	}
+}
+
+# ── Grafana dashboard ─────────────────────────────────
+grafana.offrii.com {
+	encode zstd gzip
+
+	header {
+		X-Content-Type-Options    "nosniff"
+		X-Frame-Options           "SAMEORIGIN"
+		Referrer-Policy            "strict-origin-when-cross-origin"
+		Strict-Transport-Security "max-age=63072000; includeSubDomains"
+		-Server
+	}
+
+	# Basic auth — generate hash with: caddy hash-password
+	basicauth {
+		admin {$GRAFANA_BASIC_AUTH_HASH}
+	}
+
+	reverse_proxy grafana:3000
+
+	log {
+		output stdout
+		format json
+	}
+}

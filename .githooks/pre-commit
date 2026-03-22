@@ -1,0 +1,61 @@
+#!/usr/bin/env bash
+set -e
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+
+# Get staged files (Added, Modified, Copied, Renamed — not Deleted)
+STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACMR)
+
+HAS_BACKEND=false
+HAS_FRONTEND=false
+
+for f in $STAGED_FILES; do
+    case "$f" in
+        backend/*) HAS_BACKEND=true ;;
+        frontend/ios/*) HAS_FRONTEND=true ;;
+    esac
+done
+
+# ── Backend checks (only if backend files are staged) ────────────────
+if $HAS_BACKEND; then
+    echo "==> Backend pre-commit checks"
+
+    # Auto-format staged backend files and re-add them
+    echo "  cargo fmt --all --check"
+    if ! (cd "$REPO_ROOT/backend" && cargo fmt --all -- --check 2>/dev/null); then
+        echo "  cargo fmt --all (auto-fixing)"
+        (cd "$REPO_ROOT/backend" && cargo fmt --all)
+        for f in $STAGED_FILES; do
+            case "$f" in
+                backend/*.rs) git add "$REPO_ROOT/$f" ;;
+            esac
+        done
+    fi
+
+    echo "  cargo sort --workspace --check"
+    (cd "$REPO_ROOT/backend" && cargo sort --workspace --check) || { echo "❌ cargo sort failed — run 'cargo sort'"; exit 1; }
+
+    echo "  cargo clippy --workspace"
+    (cd "$REPO_ROOT/backend" && cargo clippy --workspace --all-targets -- -D warnings) || { echo "❌ cargo clippy failed"; exit 1; }
+
+    echo "==> Backend checks passed"
+else
+    echo "==> Skipping backend checks (no backend files staged)"
+fi
+
+# ── iOS frontend checks (only if frontend files are staged) ──────────
+if $HAS_FRONTEND; then
+    echo "==> iOS frontend pre-commit checks"
+
+    if command -v swiftlint &>/dev/null; then
+        echo "  swiftlint lint --strict"
+        (cd "$REPO_ROOT/frontend/ios" && swiftlint lint --strict Offrii/) || { echo "❌ swiftlint failed"; exit 1; }
+    else
+        echo "  ⚠️  swiftlint not found — install with 'brew install swiftlint'"
+        exit 1
+    fi
+
+    echo "==> iOS frontend checks passed"
+else
+    echo "==> Skipping iOS frontend checks (no frontend files staged)"
+fi

@@ -1,0 +1,188 @@
+import NukeUI
+import SwiftUI
+
+// MARK: - CircleCardRow
+
+struct CircleCardRow: View {
+    let circle: OffriiCircle
+    @Environment(AuthManager.self) private var authManager
+
+    /// For direct circles, index of the OTHER member (not the current user).
+    private var otherMemberIndex: Int? {
+        guard circle.isDirect, let myId = authManager.currentUser?.id else { return nil }
+        if let idx = circle.memberIds.firstIndex(where: { $0 != myId }) {
+            return idx
+        }
+        return nil
+    }
+
+    var body: some View {
+        HStack(spacing: OffriiTheme.spacingMD) {
+            avatarSection
+
+            VStack(alignment: .leading, spacing: OffriiTheme.spacingXXS) {
+                Text(circle.name ?? NSLocalizedString("circles.unnamed", comment: ""))
+                    .font(OffriiTypography.headline)
+                    .foregroundColor(OffriiTheme.text)
+                    .lineLimit(1)
+
+                if circle.isDirect {
+                    directSubtitle
+                } else {
+                    groupSubtitle
+                }
+
+                if let activity = circle.lastActivity {
+                    Text(activityText(activity))
+                        .font(OffriiTypography.caption)
+                        .foregroundColor(OffriiTheme.textSecondary)
+                        .lineLimit(1)
+                }
+            }
+
+            Spacer()
+
+            Image(systemName: "chevron.right")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundColor(OffriiTheme.textMuted)
+        }
+        .padding(OffriiTheme.spacingBase)
+        .background(OffriiTheme.card)
+        .cornerRadius(OffriiTheme.cornerRadiusLG)
+        .shadow(
+            color: OffriiTheme.cardShadowColor,
+            radius: 6,
+            x: 0,
+            y: 2
+        )
+    }
+
+    // MARK: - Avatar Section
+
+    @ViewBuilder
+    private var avatarSection: some View {
+        avatarImage
+            .overlay(alignment: .bottomTrailing) {
+                Image(systemName: circle.isDirect ? "person.fill" : "person.2.fill")
+                    .font(.system(size: 9, weight: .bold))
+                    .foregroundColor(.white)
+                    .padding(2.5)
+                    .background(OffriiTheme.primary)
+                    .clipShape(Circle())
+                    .overlay(Circle().strokeBorder(.white, lineWidth: 1))
+                    .offset(x: 3, y: 3)
+            }
+    }
+
+    @ViewBuilder
+    private var avatarImage: some View {
+        if let imageUrl = circle.imageUrl, let url = URL(string: imageUrl) {
+            LazyImage(url: url) { state in
+                if let image = state.image {
+                    image
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .frame(width: 44, height: 44)
+                        .clipShape(Circle())
+                } else {
+                    AvatarView(circle.name, size: .medium)
+                }
+            }
+        } else if circle.isDirect {
+            AvatarView(
+                otherMemberIndex.flatMap { circle.memberNames.indices.contains($0) ? circle.memberNames[$0] : nil }
+                    ?? circle.name,
+                size: .medium,
+                url: otherMemberIndex
+                    .flatMap { circle.memberAvatars.indices.contains($0) ? circle.memberAvatars[$0] : nil }?
+                    .flatMap { URL(string: $0) }
+            )
+        } else if circle.memberNames.isEmpty {
+            AvatarView(circle.name, size: .medium)
+        } else if circle.memberNames.count == 1 {
+            AvatarView(
+                circle.memberNames[0],
+                size: .medium,
+                url: circle.memberAvatars.first.flatMap { $0 }.flatMap { URL(string: $0) }
+            )
+        } else {
+            ZStack {
+                ForEach(
+                    Array(circle.memberNames.prefix(3).enumerated()),
+                    id: \.offset
+                ) { idx, name in
+                    let avatarUrl = idx < circle.memberAvatars.count
+                        ? circle.memberAvatars[idx].flatMap { URL(string: $0) }
+                        : nil
+                    AvatarView(name, size: .small, url: avatarUrl)
+                        .overlay(
+                            Circle().strokeBorder(.white, lineWidth: 1.5)
+                        )
+                        .offset(x: CGFloat(idx) * 12 - 12)
+                }
+            }
+            .frame(width: 52, height: 44)
+        }
+    }
+
+    // MARK: - Direct (1:1) Subtitle
+
+    @ViewBuilder
+    private var directSubtitle: some View {
+        if circle.unreservedItemCount > 0 {
+            Text(String(
+                format: NSLocalizedString("circles.detail.wishCount", comment: ""),
+                circle.unreservedItemCount
+            ))
+            .font(OffriiTypography.caption)
+            .fontWeight(.medium)
+            .foregroundColor(OffriiTheme.primary)
+        } else if circle.lastActivity != nil {
+            // Has activity = has items, but all reserved
+            Text(NSLocalizedString("circles.noUnreserved", comment: ""))
+                .font(OffriiTypography.caption)
+                .foregroundColor(OffriiTheme.textMuted)
+        } else {
+            // No activity = no items shared yet
+            Text(NSLocalizedString("circles.noSharedItems", comment: ""))
+                .font(OffriiTypography.caption)
+                .foregroundColor(OffriiTheme.textMuted)
+        }
+    }
+
+    // MARK: - Group Subtitle
+
+    @ViewBuilder
+    private var groupSubtitle: some View {
+        HStack(spacing: OffriiTheme.spacingSM) {
+            Text(String(
+                format: NSLocalizedString("circles.memberCount", comment: ""),
+                circle.memberCount
+            ))
+            .font(OffriiTypography.caption)
+            .foregroundColor(OffriiTheme.textMuted)
+
+            if circle.unreservedItemCount > 0 {
+                Text("·")
+                    .foregroundColor(OffriiTheme.textMuted)
+                Text(String(
+                    format: NSLocalizedString("circles.unreservedCount", comment: ""),
+                    circle.unreservedItemCount
+                ))
+                .font(OffriiTypography.caption)
+                .fontWeight(.medium)
+                .foregroundColor(OffriiTheme.primary)
+            }
+        }
+    }
+
+    // MARK: - Activity Text
+
+    private func activityText(_ activity: String) -> String {
+        if circle.isDirect {
+            return activity
+        }
+        // For groups, the activity string may already contain the sender prefix
+        return activity
+    }
+}

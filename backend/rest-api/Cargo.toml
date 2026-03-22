@@ -1,0 +1,76 @@
+[package]
+name = "rest-api"
+version.workspace = true
+edition.workspace = true
+
+[package.metadata.cargo-machete]
+ignored = ["kamadak-exif"]  # imported as `exif`, machete false positive
+
+[lib]
+name = "rest_api"
+path = "src/lib.rs"
+
+[[bin]]
+name = "rest-api"
+path = "src/main.rs"
+
+[[bin]]
+name = "migrate"
+path = "src/bin/migrate.rs"
+
+[[bin]]
+name = "seed"
+path = "src/bin/seed.rs"
+
+[dependencies]
+a2.workspace = true
+anyhow.workspace = true
+argon2.workspace = true
+async-trait.workspace = true
+aws-sdk-s3.workspace = true
+axum.workspace = true
+axum-extra.workspace = true
+axum-prometheus.workspace = true
+chrono.workspace = true
+dotenvy.workspace = true
+futures.workspace = true
+image.workspace = true
+jsonwebtoken.workspace = true
+kamadak-exif.workspace = true
+metrics.workspace = true
+rand.workspace = true
+rand_core.workspace = true
+redis.workspace = true
+reqwest.workspace = true
+resend-rs.workspace = true
+rsa.workspace = true
+rust_decimal.workspace = true
+scraper.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+sha1.workspace = true
+sha2.workspace = true
+sqlx.workspace = true
+thiserror.workspace = true
+tokio.workspace = true
+tokio-cron-scheduler.workspace = true
+tower-http.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+url.workspace = true
+utoipa.workspace = true
+utoipa-swagger-ui.workspace = true
+uuid.workspace = true
+validator.workspace = true
+webp.workspace = true
+
+[dev-dependencies]
+http-body-util.workspace = true
+testcontainers.workspace = true
+testcontainers-modules.workspace = true
+tokio.workspace = true
+tower.workspace = true
+wiremock.workspace = true
+
+[lints]
+workspace = true

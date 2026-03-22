@@ -1,0 +1,847 @@
+/* Tabs */
+"tab.home" = "Home";
+"tab.envies" = "Wishes";
+"tab.create" = "Create";
+"tab.cercles" = "Close ones";
+"tab.profil" = "Profile";
+"tab.entraide" = "Help";
+
+/* Auth */
+"auth.login" = "Sign in";
+"auth.register" = "Get started";
+"auth.logout" = "Sign out";
+"auth.email" = "Email";
+"auth.password" = "Password";
+"auth.displayName" = "First name or nickname";
+"auth.forgotPassword" = "Forgot password?";
+"auth.alreadyAccount" = "Already have an account?";
+"auth.noAccount" = "No account yet?";
+"auth.signIn" = "Sign in";
+"auth.signUp" = "Sign up";
+"auth.resetPassword" = "Reset";
+"auth.enterEmail" = "Enter your email";
+"auth.enterCode" = "Verification code";
+"auth.newPassword" = "New password";
+"auth.codeSent" = "A code has been sent to your email";
+"auth.step" = "Step %d of %d";
+"auth.loginSubtitle" = "Find your wishes";
+"auth.registerSubtitle" = "Create your wishlist";
+"auth.displayNamePlaceholder" = "E.g. Marie";
+"auth.passwordPlaceholder" = "At least 8 characters";
+"auth.confirmPassword" = "Confirm password";
+"auth.confirmPasswordPlaceholder" = "Re-enter your password";
+"auth.forgotSubtitle" = "We'll send you a 6-digit code";
+"auth.codeSentTo" = "Code sent to";
+"auth.codeExpiry" = "Code expires in %d min";
+"auth.resendCode" = "Resend code";
+"auth.codeSent" = "Code sent!";
+"auth.newPasswordSubtitle" = "Choose a new password";
+"auth.passwordResetSuccess" = "Password reset! You can now sign in.";
+"auth.continueWithGoogle" = "Continue with Google";
+"auth.continueWithApple" = "Continue with Apple";
+"auth.or" = "or";
+"auth.welcomeBack" = "Welcome back!";
+"auth.welcomeNew" = "Welcome!";
+"auth.emailOrUsername" = "Email or username";
+"auth.passwordHint" = "At least 8 characters";
+"auth.terms.prefix" = "By creating an account, you agree to our ";
+"auth.terms.cgu" = "Terms";
+"auth.terms.and" = " and ";
+"auth.terms.privacy" = "Privacy Policy";
+
+/* Errors */
+"error.emailTaken" = "This email is already taken";
+"error.invalidCredentials" = "Invalid credentials";
+"error.invalidCode" = "The code must be 6 digits";
+"error.invalidURL" = "Invalid URL";
+"error.invalidLink" = "This link is not valid";
+"error.serverError" = "Server error, please try again later";
+"error.networkError" = "Unable to connect";
+"error.decodingError" = "Data error";
+"error.emailRequired" = "Email is required";
+"error.passwordRequired" = "Password is required";
+"error.passwordTooShort" = "Password must be at least 8 characters";
+"error.passwordCommon" = "This password is too common, choose a more unique one";
+"error.passwordBreached" = "This password appeared in a data breach, choose another one";
+"error.invalidEmail" = "Invalid email format";
+"error.rateLimited" = "Too many attempts, please try again later";
+"error.invalidOrExpiredCode" = "Invalid or expired code";
+"error.tooManyAttempts" = "Too many failed attempts, please request a new code";
+"auth.resendLimitReached" = "Too many resends, please try again later";
+"error.passwordMismatch" = "Passwords do not match";
+"error.usernameTaken" = "This username is already taken";
+"error.emailTaken" = "This email address is already in use";
+"error.tooManyRequests" = "Please wait before trying again";
+"error.emailInvalid" = "Invalid email address";
+"error.usernameInvalid" = "3-30 characters, lowercase letters, digits and _";
+"error.loadProfileFailed" = "Failed to load profile";
+"error.emailUsesGoogle" = "This email is linked to a Google account. Please sign in with Google.";
+"error.emailUsesApple" = "This email is linked to an Apple account. Please sign in with Apple.";
+"error.oauthOnlyGoogle" = "This account uses Google. Please sign in with Google.";
+"error.oauthOnlyApple" = "This account uses Apple. Please sign in with Apple.";
+
+/* Onboarding */
+"onboarding.step1.title" = "Your wishes, all in one place";
+"onboarding.step1.subtitle" = "Create your wishlist and keep track of everything you want.";
+"onboarding.step2.title" = "Share with loved ones";
+"onboarding.step2.subtitle" = "Send your list to family and friends so they know what to get you.";
+"onboarding.step3.title" = "Give to those in need";
+"onboarding.step3.subtitle" = "Discover others' wishes and bring joy around you.";
+"onboarding.skip" = "Skip";
+"onboarding.continue" = "Continue";
+"onboarding.start" = "Get started";
+"onboarding.alreadyAccount.label" = "Already have an account?";
+"onboarding.alreadyAccount.action" = "Sign in";
+"onboarding.step1.highlight" = "wishes";
+"onboarding.step2.highlight" = "loved ones";
+"onboarding.step3.highlight" = "need";
+"onboarding.summary.title" = "All of Offrii, for you";
+"onboarding.summary.subtitle" = "Your wishes, your people, your community. All in one place.";
+"onboarding.feature.wishes" = "Wishes";
+"onboarding.feature.share" = "Share";
+"onboarding.feature.help" = "Community";
+
+/* Splash */
+"splash.tagline" = "Give, share, delight";
+
+/* Post-Auth Setup */
+"postauth.username.title" = "Choose a username";
+"postauth.username.subtitle" = "Your friends will find you with @username";
+"postauth.username.placeholder" = "@username";
+"postauth.username.continue" = "Continue";
+"postauth.username.skip" = "Later";
+"postauth.notifications.title" = "Never miss a friend's wish";
+"postauth.notifications.subtitle" = "Get notified when someone offers to help you";
+"postauth.notifications.enable" = "Enable notifications";
+"postauth.notifications.skip" = "Later";
+"postauth.displayName.title" = "What should we call you?";
+"postauth.displayName.subtitle" = "Your first name or a nickname for your friends";
+"auth.privacyHint" = "We'll never post without your permission";
+
+/* Wishlist */
+"wishlist.title" = "My Wishes";
+"wishlist.empty" = "No wishes yet";
+"wishlist.emptySubtitle" = "Tap + to add your first wish";
+"wishlist.active" = "Active";
+"wishlist.purchased" = "Received";
+"wishlist.allCategories" = "All";
+"wishlist.quickAdd.title" = "Add a wish";
+"wishlist.quickAdd.placeholder" = "Wish name";
+"wishlist.quickAdd.button" = "Add";
+"wishlist.delete.title" = "Delete";
+"wishlist.delete.message" = "Are you sure you want to delete this wish?";
+"wishlist.delete.confirm" = "Delete";
+"wishlist.cancel" = "Cancel";
+"wishlist.claimed" = "Someone is on it!";
+"wishlist.claimed.web" = "Reserved by %@ (via link)";
+"wishlist.unclaim.web" = "Remove reservation";
+"wishlist.markReceived" = "Mark received";
+"wishlist.markReceived.title" = "Mark as received?";
+"wishlist.markReceived.messageClaimed" = "The person who reserved it will be notified.";
+"wishlist.markReceived.message" = "This wish will be archived in your received wishes.";
+"wishlist.markReceived.confirm" = "Confirm";
+"wishlist.share" = "Share";
+"wishlist.edit" = "Edit";
+"wishlist.sort.date" = "Date";
+"wishlist.sort.priority" = "Priority";
+"wishlist.sort.name" = "Name";
+"wishlist.reserved" = "Reserved";
+
+/* Item */
+"item.name" = "Name";
+"item.description" = "Description";
+"item.url" = "Link";
+"item.estimatedPrice" = "Estimated price";
+"item.priority" = "Priority";
+"item.category" = "Category";
+"item.save" = "Save";
+
+/* Priority */
+"priority.low" = "Meh";
+"priority.medium" = "Want";
+"priority.high" = "Really want";
+
+/* Profile */
+"profile.title" = "Profile";
+"profile.shares" = "Shares";
+"profile.data" = "Data";
+"profile.exportData" = "Export my data";
+"profile.deleteAccount" = "Delete my account";
+"profile.deleteAccount.title" = "Delete account";
+"profile.deleteAccount.message" = "This action is irreversible. All your data will be deleted.";
+"profile.deleteAccount.confirm" = "Type DELETE to confirm";
+"profile.deleteAccount.placeholder" = "DELETE";
+"profile.legal" = "Legal notice";
+"profile.privacy" = "Privacy policy";
+"profile.terms" = "Terms of use";
+"profile.username" = "Username";
+"profile.editUsername" = "Edit username";
+"profile.editProfile" = "Edit profile";
+"profile.changePassword" = "Password";
+"profile.currentPassword" = "Current password";
+"profile.newPassword" = "New password";
+"profile.confirmPassword" = "Confirm new password";
+"profile.passwordChanged" = "Your password has been changed successfully.";
+"profile.displayNamePlaceholder" = "Your first name or nickname";
+"profile.emailChangeHint" = "A verification email will be sent to this new address.";
+"error.wrongPassword" = "Current password is incorrect";
+"profile.usernamePlaceholder" = "e.g. marie_dupont";
+"profile.editEmail" = "Edit email";
+"profile.emailPlaceholder" = "e.g. marie@example.com";
+"profile.emailChangeSuccess" = "A verification email has been sent to your new address. Click the link to confirm the change.";
+"profile.account" = "Account";
+"profile.replayTutorial" = "Replay tutorial";
+"profile.resetTips" = "Reset tips";
+
+/* Placeholder */
+"comingSoon.title" = "Coming soon";
+"comingSoon.subtitle" = "This feature is coming soon.";
+
+/* Circles */
+"circles.title" = "Close ones";
+"circles.create" = "Create a circle";
+"circles.shareTo" = "Share with...";
+"circles.empty" = "No circles yet.\nCreate one or add a friend to get started.";
+"circles.emptySubtitle" = "Create a circle or add a friend to get started";
+"circles.unnamed" = "Unnamed circle";
+"circles.memberCount" = "%d members";
+"circles.createName" = "Circle name";
+"circles.createNamePlaceholder" = "E.g. Family, Colleagues...";
+"circles.createButton" = "Create";
+"circles.detail.items" = "Items";
+"circles.detail.activity" = "Activity";
+"circles.detail.noItems" = "No items shared yet";
+"circles.detail.noActivity" = "No activity yet";
+"circles.detail.myWishes" = "My wishes";
+"circles.detail.handleIt" = "I'll handle it";
+"circles.detail.claimed" = "Claimed";
+"circles.detail.someone" = "Someone";
+"circles.event.itemShared" = "%@ shared %@";
+"circles.event.itemClaimed" = "%@ is handling %@";
+"circles.event.itemClaimedAnti" = "Someone is handling %@";
+"circles.event.itemUnclaimed" = "%@ unclaimed %@";
+"circles.event.memberJoined" = "%@ joined the circle";
+"circles.event.memberLeft" = "%@ left the circle";
+"circles.event.shareRuleSet" = "%@ is sharing wishes with the circle";
+"circles.event.shareRuleRemoved" = "%@ stopped sharing wishes";
+"circles.invite.title" = "Invite friends";
+"circles.invite.noFriends" = "No friends to invite.\nAdd friends first!";
+"circles.invite.alreadyMember" = "Already member";
+"circles.invite.addCount" = "Add %d friend(s)";
+"circles.members.title" = "Members";
+"circles.members.you" = "(you)";
+"circles.members.owner" = "Owner";
+"circles.members.leave" = "Leave circle";
+"circles.members.leaveConfirm.title" = "Leave circle?";
+"circles.members.leaveConfirm.message" = "You will no longer see items shared in this circle.";
+"circles.removeMember.title" = "Remove this member?";
+"circles.removeMember.message" = "Remove %@ from the circle?";
+"circles.transferOwnership.title" = "Transfer ownership?";
+"circles.transferOwnership.action" = "Transfer";
+"circles.transferOwnership.message" = "%@ will become the circle owner. You will remain a member.";
+"circles.deleteCircle" = "Delete circle";
+"circles.deleteCircle.title" = "Delete this circle?";
+"circles.deleteCircle.message" = "The circle and all its shares will be deleted. This action cannot be undone.";
+"circles.deleteCircle.confirm" = "Delete";
+"circles.deleteCircle.transferFirst" = "Transfer first";
+"circles.search.placeholder" = "Search...";
+"circles.filter.all" = "All";
+"circles.filter.groups" = "Circles";
+"circles.filter.friends" = "Friends";
+"circles.detail.theirWishes" = "Their wishes";
+"circles.detail.friendSince" = "Friends since %@";
+"circles.detail.wishCount" = "%d wishes";
+"circles.invitations" = "Invitations";
+"circles.invitations.viewAll" = "View all";
+"circles.tab.myCircles" = "My Circles";
+"circles.tab.myFriends" = "My Friends";
+"circles.unreservedCount" = "%d available";
+"circles.noUnreserved" = "All reserved!";
+"circles.noSharedItems" = "No wishes shared yet";
+"circles.lastActivity.none" = "No activity";
+"circles.swipe.leave" = "Leave";
+"circles.context.edit" = "Edit";
+"circles.context.shareLink" = "Share link";
+"circles.context.leave" = "Leave circle";
+"circles.context.delete" = "Delete";
+"circles.detail.members" = "Members";
+"circles.detail.inviteMembers" = "Invite members";
+"circles.detail.youHandleIt" = "You're on it";
+"circles.detail.reservedBy" = "Reserved by %@";
+"circles.detail.unclaim" = "Release";
+"circles.detail.received" = "Received";
+"circles.event.itemReceived" = "%@ received %@";
+"wishlist.receivedGift" = "I received this gift!";
+"wishlist.unarchive" = "Move back to wishes";
+"circles.edit.title" = "Edit circle";
+"circles.edit.save" = "Save";
+"circles.oneToOne" = "1-to-1";
+"friends.title" = "My Friends";
+"friends.emptyTitle" = "No friends yet";
+"friends.emptySubtitle" = "Add friends to share your wishes";
+"friends.inviteContacts" = "Invite from contacts";
+"friends.shareInviteLink" = "Share invite link";
+"friends.wishCount" = "%d wishes";
+"friends.search.placeholder" = "Search a friend...";
+"friends.pending" = "Pending invitations";
+"friends.sent" = "Sent requests";
+"friends.remove" = "Remove";
+"friends.accept" = "Accept";
+"friends.decline" = "Decline";
+"friends.cancel" = "Cancel";
+"contacts.permissionMessage" = "Offrii uses your contacts to help you invite friends.";
+
+/* Friends */
+"friends.title" = "My friends";
+"friends.empty" = "No friends yet";
+"friends.count" = "%d friend(s)";
+"friends.pendingSection" = "Pending requests (%d)";
+"friends.accept" = "Accept";
+"friends.decline" = "Decline";
+"friends.add.title" = "Add a friend";
+"friends.add.searchPlaceholder" = "Search by username...";
+"friends.add.noResults" = "No users found";
+"friends.add.send" = "Add";
+"friends.add.sent" = "Sent";
+"friends.add.alreadyFriend" = "Friend";
+"friends.add.pending" = "Pending";
+"friends.pending.title" = "Friend requests";
+"friends.pending.empty" = "No pending requests";
+"friends.sentSection" = "Sent requests (%d)";
+"friends.sent.cancel" = "Cancel";
+
+/* Profile - Friends */
+"profile.friends" = "Friends";
+
+/* Entraide */
+"entraide.title" = "Community";
+"entraide.empty" = "No needs yet";
+"entraide.emptySubtitle" = "Be the first to publish a need";
+"entraide.anonymous" = "Anonymous";
+"entraide.countSingular" = "need";
+"entraide.countPlural" = "needs";
+"entraide.search.placeholder" = "Search needs...";
+"entraide.sort.newest" = "Newest";
+"entraide.sort.oldest" = "Oldest";
+"entraide.sort.date" = "Date";
+"entraide.sort.name" = "Name";
+"entraide.offer" = "I want to help";
+"entraide.fab.publish" = "Publish";
+
+/* Entraide - Categories */
+"entraide.category.all" = "All";
+"entraide.category.education" = "Education";
+"entraide.category.clothing" = "Clothing";
+"entraide.category.health" = "Health";
+"entraide.category.religion" = "Religion";
+"entraide.category.home" = "Home";
+"entraide.category.children" = "Children";
+"entraide.category.other" = "Other";
+
+/* Entraide - Statuses */
+"entraide.status.open" = "Open";
+"entraide.status.matched" = "In progress...";
+"entraide.status.fulfilled" = "Fulfilled!";
+"entraide.status.closed" = "Closed";
+"entraide.status.pending" = "Pending";
+"entraide.status.review" = "Under review";
+"entraide.status.flagged" = "Flagged";
+"entraide.status.rejected" = "Rejected";
+
+/* Entraide - Creation */
+"entraide.create.title" = "Publish a need";
+"entraide.create.titleLabel" = "Title";
+"entraide.create.titlePlaceholder" = "What do you need?";
+"entraide.create.descriptionLabel" = "Description (optional)";
+"entraide.create.categoryLabel" = "Category";
+"entraide.create.anonymous" = "Publish anonymously";
+"entraide.create.anonymousHint" = "Your name will not be visible";
+"entraide.create.imageUrlLabel" = "Image link (optional)";
+"entraide.create.linksLabel" = "Links (optional)";
+"entraide.create.addLink" = "Add a link";
+"entraide.create.submit" = "Publish";
+
+/* Entraide - Detail */
+"entraide.detail.matchedBy" = "Taken care of by %@";
+"entraide.detail.alreadyMatched" = "Someone is already on it";
+"entraide.detail.fulfilled" = "This need has been fulfilled!";
+"entraide.detail.fulfilledThanks" = "Fulfilled! Thank you for your generosity";
+
+/* Entraide - Actions */
+"entraide.action.close" = "Close need";
+"entraide.action.delete" = "Delete need";
+"entraide.close.confirmTitle" = "Close this need?";
+"entraide.close.confirmMessage" = "Your need will no longer be visible. You can still see it in your history.";
+"entraide.delete.confirmTitle" = "Delete this need?";
+"entraide.delete.confirmMessage" = "This action is irreversible. The need and all associated messages will be permanently deleted.";
+"entraide.action.confirm" = "Confirm received";
+"entraide.action.reject" = "Reject offer";
+"entraide.action.withdraw" = "Withdraw";
+"entraide.action.messages" = "Messages";
+"entraide.action.viewMessages" = "View messages";
+"entraide.action.offerSuccess" = "Thank you for your generosity!";
+"entraide.action.closeSuccess" = "Wish closed.";
+"entraide.action.rejectSuccess" = "Offer declined.";
+"entraide.action.deleteSuccess" = "Wish deleted.";
+"entraide.action.edit" = "Edit";
+"entraide.edit.title" = "Edit need";
+"entraide.edit.submit" = "Save changes";
+"entraide.edit.warningTitle" = "Re-moderation required";
+"entraide.edit.warningMessage" = "Your modified need will be reviewed by our moderation before being visible again.";
+"entraide.edit.warningConfirm" = "Save anyway";
+"entraide.fulfill.confirmTitle" = "Confirm help received?";
+"entraide.fulfill.confirmMessage" = "Confirm that %@ helped you?";
+"entraide.fulfill.celebration" = "Thank you!\nThis gesture has been recorded.";
+"entraide.onboarding.title" = "Welcome to Mutual Aid";
+"entraide.onboarding.body" = "Here, community members share their needs. You can offer your help or publish a need. Everything is moderated for your safety.";
+"entraide.welcome.title" = "Community Help";
+"entraide.welcome.point1" = "Post a need and let the community lend you a hand";
+"entraide.welcome.point2" = "Offer your help when you see a need you can answer";
+"entraide.welcome.point3" = "Every request is moderated for everyone's safety";
+"entraide.welcome.cta" = "Got it!";
+"entraide.action.withdrawSuccess" = "You have withdrawn";
+"entraide.action.confirmSuccess" = "Wish confirmed! Thank you";
+"entraide.action.offer" = "Offer help";
+"entraide.action.report" = "Report";
+"entraide.action.viewDetail" = "View detail";
+"entraide.withdraw.confirmTitle" = "Withdraw your offer?";
+"entraide.withdraw.confirmMessage" = "You will no longer be in contact with the requester.";
+
+/* Entraide - Messages */
+"entraide.messages.placeholder" = "Your message...";
+"entraide.messages.empty" = "No messages yet";
+"entraide.messages.emptySubtitle" = "Send the first message to start the conversation.";
+
+/* Entraide - Report */
+"entraide.report.title" = "Report this need";
+"entraide.report.subtitle" = "Choose the reason for reporting";
+"entraide.report.submit" = "Submit report";
+"entraide.report.success" = "Thank you for your report. Our team will review this need.";
+"entraide.action.reopen" = "Reopen need";
+"entraide.action.reopenSuccess" = "Your need is being re-reviewed.";
+"entraide.wishLimit.title" = "Limit reached";
+"entraide.wishLimit.message" = "You already have 3 active needs. Close or wait for one to be fulfilled before creating a new one.";
+"entraide.eligibility.title" = "Feature unavailable";
+"entraide.eligibility.message" = "Your account is too recent and your email must be verified to use Entraide.";
+"entraide.eligibility.tooRecent" = "Your account is too recent to participate in Entraide.";
+"entraide.eligibility.emailNotVerified" = "Verify your email to participate in Entraide.";
+"entraide.eligibility.resend" = "Resend link";
+"entraide.eligibility.emailSent" = "Verification email sent!";
+"entraide.eligibility.checkSpam" = "Email sent! Check your inbox and spam folder.";
+"entraide.eligibility.alreadyVerified" = "Your email is already verified.";
+"entraide.report.inappropriate" = "Inappropriate";
+"entraide.report.spam" = "Spam";
+"entraide.report.scam" = "Scam";
+"entraide.report.other" = "Other";
+
+/* Entraide - My needs */
+"entraide.myWishes.title" = "My needs";
+"entraide.myWishes.empty" = "No needs";
+"entraide.myWishes.emptySubtitle" = "You haven't published any needs yet";
+"entraide.myWishes.reports" = "%d report(s)";
+
+/* Profile - Community */
+"profile.communityWishes" = "Community";
+
+/* Common */
+"common.save" = "Save";
+"common.cancel" = "Cancel";
+"common.delete" = "Delete";
+"common.edit" = "Edit";
+"common.loading" = "Loading...";
+"common.retry" = "Retry";
+"common.ok" = "OK";
+"common.continue" = "Continue";
+"common.error" = "Error";
+"common.copy" = "Copy";
+
+/* Tooltips - Onboarding */
+"tooltip.gotIt" = "Got it";
+"tip.wishlist.firstAdd" = "Tap here to add your first wish";
+"tip.wishlist.swipe" = "Swipe left to delete, right to mark received";
+"tip.circles.create" = "Create a circle to share your wishlist with loved ones";
+"tip.circles.share" = "Invite friends so they can see and reserve your wishes";
+"tip.entraide.browse" = "Filter needs by category to find who to help";
+"tip.entraide.offer" = "Offer your help. You can message the person";
+"tip.profile.username" = "Choose a username so friends can find you";
+/* Profile - Data & Legal */
+"profile.dataAndLegal" = "Data & Legal";
+
+/* Circles - Invite */
+"circles.invite.noFriendsSubtitle" = "Add friends first to invite them to circles";
+
+/* Circles - Detail */
+"circles.detail.noItemsSubtitle" = "Share items from your wishlist to this circle";
+"circles.detail.noActivitySubtitle" = "Activity will appear when members interact";
+
+/* Home */
+"home.navTitle" = "Home";
+"home.greeting" = "Hello %@!";
+"home.greetingDefault" = "Hello!";
+"home.subtitle.claimed" = "%d gifts on the way";
+"home.subtitle.shared" = "Your loved ones can see %d of your wishes";
+"home.subtitle.hasItems" = "%d wishes in your list";
+"home.subtitle.empty" = "Add your first wish to get started";
+
+/* Stats */
+"home.stats.wishes" = "Wishes";
+"home.stats.claimed" = "Claimed";
+"home.stats.shared" = "Shared";
+"home.stats.received" = "Received";
+
+/* Quick Actions */
+"home.quickActions.title" = "Quick actions";
+
+/* Quick Start (legacy) */
+"home.quickStart.title" = "Your first steps";
+"home.quickStart.addWish" = "Add your first wish";
+"home.quickStart.createCircle" = "Create a circle";
+"home.quickStart.inviteFriend" = "Invite a friend";
+"home.quickStart.shareList" = "Share your list";
+"home.quickStart.completed" = "Done!";
+
+/* Wishlist Preview */
+"home.wishlistPreview.title" = "Recent wishes";
+"home.wishlistPreview.seeAll" = "See all";
+"home.wishlistGrid.addWish" = "Add";
+
+/* Activity */
+"home.activity.title" = "What's new?";
+"home.activity.seeAll" = "See all";
+
+/* Community Spotlight */
+"home.community.title" = "Community help";
+"home.community.seeAll" = "See all";
+
+/* Quick Create */
+"create.title" = "Create";
+"create.addWish" = "Add a wish";
+"create.addWishSubtitle" = "To your personal list";
+"create.createCircle" = "Create a circle";
+"create.createCircleSubtitle" = "Share with loved ones";
+"create.addFriend" = "Add a friend";
+"create.addFriendSubtitle" = "Find someone by username";
+"create.publishNeed" = "Publish a need";
+"create.publishNeedSubtitle" = "Ask the community";
+
+/* Profile Progress */
+"progress.title" = "Profile %d%% complete";
+"progress.nextStep" = "Next: %@";
+"progress.detail.title" = "Your Offrii Profile";
+"progress.detail.outOf" = "of";
+"progress.group.identity" = "Identity";
+"progress.group.wishlist" = "Your list";
+"progress.group.social" = "Your people";
+"progress.group.settings" = "Settings";
+"progress.step.displayName" = "Choose a display name";
+"progress.step.displayName.sub" = "So your friends recognize you";
+"progress.step.username" = "Choose a @username";
+"progress.step.username.sub" = "So friends can find you";
+"progress.step.avatar" = "Add a profile photo";
+"progress.step.avatar.sub" = "Put a face on your profile";
+"progress.step.emailVerified" = "Verify your email";
+"progress.step.emailVerified.sub" = "Check your inbox to confirm";
+"progress.step.firstItem" = "Add your first wish";
+"progress.step.firstItem.sub" = "An item, an idea, a wish";
+"progress.step.shareList" = "Share your list";
+"progress.step.shareList.sub" = "So your loved ones know what to get you";
+"progress.step.firstFriend" = "Add a friend";
+"progress.step.firstFriend.sub" = "Search by username";
+"progress.step.firstCircle" = "Create a circle";
+"progress.step.firstCircle.sub" = "Family, friends, colleagues...";
+"progress.step.pushNotifications" = "Enable notifications";
+"progress.step.pushNotifications.sub" = "Get alerted when someone claims a wish";
+"progress.emailSent.title" = "Email sent";
+"progress.emailSent.message" = "A verification email has been sent to your address. Check your inbox.";
+"progress.step.firstNeed" = "Discover community help";
+"progress.step.firstNeed.sub" = "See what the community is sharing";
+
+/* Entraide - Segments */
+"entraide.segment.discover" = "Discover";
+"entraide.segment.myNeeds" = "My needs";
+"entraide.segment.myOffers" = "Commitments";
+"entraide.offer.cta" = "Offer to help";
+"entraide.offer.confirmTitle" = "Offer your help?";
+"entraide.offer.confirmAction" = "Confirm";
+"entraide.offer.confirmMessage" = "You will be connected with the author to help them. You can exchange via messages.";
+"entraide.offer.alreadyMatched" = "Someone has already offered to help for this need.";
+"entraide.offer.messagePlaceholder" = "Leave a message (optional)";
+"entraide.aging.waiting" = "Still waiting for help";
+"entraide.card.actionRequired" = "Waiting for response";
+"entraide.recentFulfilled.title" = "Recently fulfilled";
+"entraide.messages.loadMore" = "Load older messages";
+"entraide.report.otherPlaceholder" = "Please describe the issue...";
+"entraide.report.detailsPlaceholder" = "Add details (optional)...";
+"entraide.report.detailsRequired" = "Please describe the reason...";
+"entraide.report.alreadyReported" = "You have already reported this need.";
+"entraide.block.promptTitle" = "Hide this need?";
+"entraide.block.promptMessage" = "You won't see this need in your feed anymore.";
+"entraide.block.confirm" = "Hide";
+"entraide.block.decline" = "No thanks";
+
+"moderation.prefix" = "Flagged: ";
+"moderation.harassment" = "Harassment";
+"moderation.harassment_threatening" = "Threats";
+"moderation.hate" = "Hate speech";
+"moderation.hate_threatening" = "Hate threats";
+"moderation.sexual" = "Sexual content";
+"moderation.sexual_minors" = "Sexual content (minors)";
+"moderation.violence" = "Violence";
+"moderation.violence_graphic" = "Graphic violence";
+"moderation.self_harm" = "Self-harm";
+"moderation.self_harm_intent" = "Self-harm intent";
+"moderation.self_harm_instructions" = "Self-harm instructions";
+"moderation.illicit" = "Illegal activity";
+"moderation.illicit_violent" = "Violent illegal activity";
+"moderation.unavailable" = "Under review (moderation pending)";
+"moderation.reportThreshold" = "Reported by the community";
+"moderation.generic" = "Content under review";
+"entraide.myOffers.empty" = "No commitments yet";
+"entraide.myOffers.emptySubtitle" = "You haven't offered to help yet";
+
+/* Activity Feed */
+"activity.today" = "Today";
+"activity.yesterday" = "Yesterday";
+"activity.thisWeek" = "This week";
+"activity.older" = "Older";
+
+/* Share */
+"share.title" = "Share my wishes";
+"share.copyLink" = "Copy link";
+"share.copyLinkSubtitle" = "Anyone with the link can view and reserve";
+"share.sendVia" = "Send via...";
+"share.sendViaSubtitle" = "iMessage, WhatsApp, Email...";
+"share.linkCopied" = "Link copied!";
+"share.manageLinks" = "My share links";
+"share.toCircle" = "Share to a circle";
+"share.item" = "Share this item";
+"share.noCircles" = "No circles";
+"share.noCirclesSubtitle" = "Create a circle first to share your wishes";
+"share.shareToCount" = "Share to %d circle(s)";
+"share.unshareCount" = "Remove from %d circle(s)";
+"share.applyChanges" = "Apply";
+"share.sendViaCreateFirst" = "Create a link first";
+"share.creating" = "Creating link...";
+"share.linkReady" = "Link ready!";
+"share.yourCircles" = "Your circles";
+"share.sharedSuccess" = "Shared!";
+"share.createLink" = "Create a share link";
+"share.whatToShare" = "What to share?";
+"share.scopeAll" = "My entire list";
+"share.scopeCategory" = "A category";
+"share.scopeSelection" = "Selected items";
+"share.permissions" = "Permissions";
+"share.permViewAndClaim" = "View and reserve";
+"share.permViewOnly" = "View only";
+"share.createAndCopy" = "Create and copy link";
+"share.sendDirect" = "Send directly";
+"share.activeLinks" = "My links";
+"share.scopeAllLabel" = "Entire list";
+"share.scopeSelectionLabel" = "Selection (%d)";
+"share.privateExcluded" = "%d private item(s) excluded";
+"share.pickItems" = "Choose wishes";
+"share.itemsSelected" = "%d wish(es) selected";
+"share.linkDeleted" = "Link deleted";
+"share.modifySelection" = "Modify selection";
+"share.linkName" = "Link name (optional)";
+"share.linkNamePlaceholder" = "E.g. Christmas list, For Mom...";
+"share.ttl" = "Expiration";
+"share.ttl.never" = "Never";
+"share.ttl.oneWeek" = "1 week";
+"share.ttl.oneMonth" = "1 month";
+"share.ttl.threeMonths" = "3 months";
+"share.expiration" = "Expiration date";
+"share.expirationHint" = "The link will stop working after this date";
+"share.linkActive" = "Link active";
+"share.linkActiveHint" = "Disable to block access without deleting";
+"share.expiresAt" = "Expires in";
+"share.linkDisabled" = "Disabled";
+"share.addPeople" = "Share with...";
+"share.description" = "Share your wishes with loved ones so they know what to get you.";
+"share.tab.proches" = "Close ones";
+"share.tab.liens" = "Links";
+"share.noLinks" = "No share links";
+"share.noLinksSubtitle" = "Create a link to share your wishes with anyone";
+"share.sharedItemCount" = "%d wish(es) shared";
+"share.sharedItemSingular" = "1 wish shared";
+"share.sharedItemPlural" = "%d wishes shared";
+"share.noSharedItems" = "No wishes shared";
+"share.seesAllList" = "Sees entire list";
+"share.ruleAll" = "Sharing entire list";
+"share.ruleCategories" = "Sharing %d categories";
+"share.stopSharing" = "Stop sharing";
+"share.stopSharing.title" = "Stop sharing?";
+"share.stopSharing.message" = "This circle will no longer see your wishes automatically.";
+"share.scopeCategories" = "By categories";
+"share.deleteLink.title" = "Delete link";
+"share.deleteLink.message" = "Anyone with this link will no longer be able to access your wishes.";
+"circles.removeMember.title" = "Remove from circle";
+"circles.removeMember.message" = "%@ will no longer see wishes shared in this circle.";
+"circles.deleteCircle.title" = "Delete circle";
+"circles.deleteCircle.message" = "All shares and history will be lost.";
+"circles.leaveCircle.title" = "Leave circle";
+"circles.leaveCircle.message" = "You will no longer see shared wishes.";
+"circles.transferOwnership.title" = "Transfer ownership";
+"circles.transferOwnership.message" = "%@ will become the owner of this circle. You will no longer be able to manage it.";
+"circles.transferOwnership.action" = "Transfer";
+"circles.invite.linkTitle" = "Invite link";
+"circles.invite.linkSubtitle" = "Share this link to invite people, even if they're not on Offrii yet.";
+"circles.invite.createLink" = "Create invite link";
+"circles.invite.friendsTitle" = "Add friends";
+"notifications.empty" = "No notifications";
+"notifications.emptySubtitle" = "Friend requests and invitations will appear here";
+"circles.invite.joined" = "You joined the circle";
+"circles.invite.joinedMessage" = "You are now a member of \"%@\".";
+"item.unshare.title" = "Remove from circle";
+"item.unshare.message" = "This wish will no longer be visible in %@.";
+"circles.filter.reservations" = "Reserved";
+"reservation.for" = "For %@";
+"reservation.in" = "in %@";
+"reservation.reserved" = "Reserved";
+"reservation.gifted" = "Gifted";
+"circles.detail.claim" = "I'll take care of it";
+"circles.detail.claimConfirm.title" = "Reserve this wish?";
+"circles.detail.claimConfirm.message" = "You're committing to get this gift. Others will see it's taken.";
+"circles.detail.unclaimConfirm.title" = "Cancel reservation?";
+"circles.detail.unclaimConfirm.message" = "This wish will become available for others again.";
+"circles.detail.youClaimed" = "You're taking care of it";
+"circles.detail.unclaim" = "Cancel my reservation";
+"circles.detail.claimedBy" = "Reserved by %@";
+"reservation.search" = "Search reservations...";
+"reservation.empty" = "No reservations";
+"reservation.emptySubtitle" = "Reserve wishes from your close ones' circles";
+"share.toWhom" = "To whom?";
+"share.ttl.oneDay" = "1 day";
+
+/* Wishlist - Redesign */
+"wishlist.search.placeholder" = "Search a wish...";
+"wishlist.countSingular" = "wish";
+"wishlist.countPlural" = "wishes";
+"wishlist.copyName" = "Copy name";
+"wishlist.selected" = "selected";
+"wishlist.select" = "Select";
+"wishlist.selectAll" = "All";
+"wishlist.deleteCount" = "Delete %d";
+"wishlist.deleteConfirmBatch" = "Delete wishes?";
+"wishlist.deleteConfirmBatchMessage" = "Delete %d wish(es)? This cannot be undone.";
+"wishlist.private" = "Private";
+"wishlist.makePrivate" = "Make private";
+"wishlist.makePublic" = "Make public";
+"wishlist.privateHint" = "Won't appear in share links";
+"wishlist.privateWarning.title" = "Remove from shares?";
+"wishlist.privateWarning.message" = "This item is shared with circles. Making it private will remove it from all shares.";
+"wishlist.publicWarning.title" = "Make public?";
+"wishlist.publicWarning.message" = "The item will be visible again, but previous shares won't be restored. You'll need to share it again manually.";
+"item.sharedWith" = "Shared with";
+"item.links" = "Links";
+
+/* Notification Center */
+"notifications.title" = "Notifications";
+
+/* Friend removal */
+"friends.removeConfirm.title" = "Remove friend";
+"friends.removeConfirm.message" = "Remove %@ from your friends? This will delete your shared circle and all shared wishes between you.";
+
+/* Friends toast & context */
+"friends.accepted.toast" = "%@ added to friends";
+"friends.declined.toast" = "Request declined";
+"friends.viewWishes" = "View wishes";
+"circles.context.leaveCircle" = "Leave circle";
+"circles.context.deleteCircle" = "Delete circle";
+
+/* Share rules */
+"shareRule.title" = "Share with %@";
+"shareRule.all.title" = "My entire list";
+"shareRule.all.subtitle" = "%d wishes (updates automatically)";
+"shareRule.categories.title" = "By categories";
+"shareRule.categories.subtitle" = "Choose which categories to share";
+"shareRule.none.title" = "Don't share";
+"shareRule.none.subtitle" = "Nothing will be visible";
+"shareRule.privateWarning" = "%d private wish(es) excluded";
+"shareRule.selectCategories" = "Select categories";
+"shareRule.noCategories" = "No categories yet";
+"shareRule.selection.title" = "Manual selection";
+"shareRule.selection.subtitle" = "Pick specific wishes to share";
+"shareRule.selectItems" = "Select wishes";
+"shareRule.noItems" = "No wishes to share";
+"shareRule.stopSharing" = "Stop sharing";
+"shareRule.dynamicHint" = "Updates automatically when you add or remove wishes";
+
+/* Push notification localized strings (APNs loc-key) */
+"push.friend_request.title" = "Friend request";
+"push.friend_request.body" = "%@ wants to add you as a friend";
+"push.friend_accepted.title" = "Request accepted!";
+"push.friend_accepted.body" = "%@ accepted your friend request";
+"push.circle_added.title" = "New circle";
+"push.circle_added.body" = "You were added to circle %@";
+"push.circle_member_joined.title" = "New member!";
+"push.circle_member_joined.body" = "%@ joined the circle";
+"push.circle_activity.title" = "New member!";
+"push.circle_activity.body" = "%@ joined the circle";
+"push.item_shared.title" = "New wishes!";
+"push.item_shared.body" = "%@ shared wishes with you";
+"push.item_claimed.title" = "Wish reserved";
+"push.item_claimed.body" = "Your wish '%@' has been reserved";
+"push.item_unclaimed.title" = "Wish available";
+"push.item_unclaimed.body" = "Your wish '%@' is available again";
+"push.item_received.title" = "Gift received!";
+"push.item_received.body" = "%@ received %@!";
+"push.item_unarchived.title" = "Wish is back";
+"push.item_unarchived.body" = "%@ is back in the wishlist";
+
+/* In-app notification center (rendered client-side from type) */
+"notif.friend_request" = "%@ wants to add you as a friend";
+"notif.friend_accepted" = "%@ accepted your friend request";
+"notif.circle_added" = "You were added to a circle";
+"notif.circle_member_joined" = "%@ joined the circle";
+"notif.circle_activity" = "%@ joined the circle";
+"notif.item_shared" = "%@ shared wishes with you";
+"notif.item_claimed" = "Your wish has been reserved";
+"notif.item_unclaimed" = "Your wish is available again";
+"notif.item_received" = "Gift received!";
+"notif.item_unarchived" = "A wish is back in the wishlist";
+"push.wish_message.title" = "New message";
+"push.wish_message.body" = "%@ sent you a message";
+"notif.wish_message" = "%@ sent you a message";
+
+/* Push notifications setting */
+"profile.notifications" = "Notifications";
+"profile.notifications.enabled" = "Enabled";
+"profile.notifications.disabled" = "Disabled";
+"profile.notifications.openSettings" = "Enable in Settings";
+
+/* Image Picker */
+"imagePicker.add" = "Add a photo";
+"imagePicker.change" = "Change photo";
+"imagePicker.placeholder" = "Add a photo (optional)";
+"imagePicker.takePhoto" = "Take a photo";
+"imagePicker.chooseFromGallery" = "Choose from gallery";
+"imagePicker.removePhoto" = "Remove photo";
+
+/* Profile - Redesign */
+"profile.navTitle" = "Profile";
+"profile.memberSince" = "Member since %@";
+"profile.myAccount" = "My account";
+"profile.notifications" = "Notifications";
+"profile.appearance" = "Appearance";
+"profile.appearance.system" = "System";
+"profile.appearance.light" = "Light";
+"profile.appearance.dark" = "Dark";
+"profile.notifications.push" = "Push notifications";
+"profile.notifications.on" = "Enabled";
+"profile.notifications.off" = "Disabled";
+"profile.myCommitments" = "My commitments";
+"profile.commitments.reservations" = "Reservations for loved ones";
+"profile.commitments.entraide" = "My community help commitments";
+"profile.dataPrivacy" = "Data & privacy";
+"profile.displayName" = "Display name";
+"profile.displayName.edit" = "Edit display name";
+"profile.photo" = "Profile photo";
+"profile.email" = "Email";
+"profile.emailVerified" = "Verified";
+"profile.emailNotVerified" = "Not verified";
+"profile.version" = "Offrii v%@";
+"profile.stats.wishes" = "Wishes";
+"profile.stats.received" = "Received";
+"profile.stats.circles" = "Circles";
+"profile.stats.friends" = "Friends";

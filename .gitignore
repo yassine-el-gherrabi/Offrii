@@ -1,0 +1,87 @@
+# Rust
+target/
+**/*.rs.bk
+
+# Node / npm
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm
+
+# Xcode
+*.xcuserdata/
+xcuserdata/
+DerivedData/
+*.xcworkspace/xcuserdata/
+*.xcscmblueprint
+*.xccheckout
+build/
+.build/
+
+# iOS signing (keep generic, specific keys still ignored below)
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.ipa
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+docker-compose.override.yml
+jwt-keys/
+backend/jwt-keys
+
+# Build
+*.log
+
+# Test coverage
+coverage/
+
+# BMAD (workflow local)
+.bmad-task/
+
+# Claude Code (sessions locales)
+.claude/
+
+# Kanban (tickets dans Jira)
+KANBAN-TICKETS.md
+apns-keys/
+AuthKey_*.p8
+
+# Local tools
+.wrangler/
+.playwright-mcp/
+
+# Design / non-code assets (belong in Figma/Drive, not git)
+UI design proto/
+*.docx
+
+# Google OAuth plist (contains client ID, not secret)
+client_*.plist
+
+# Screenshots (taken during setup/debug)
+Capture d'*
+screencapture-*
+error-page.png
+shared-page-*.png
+claudedocs/
+
+# Dossier CDA (local only)
+dossier-cda/
+dossier-cda-react/

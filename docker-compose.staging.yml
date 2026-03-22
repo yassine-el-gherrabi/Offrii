@@ -1,0 +1,101 @@
+# Standalone staging stack — run with:
+#   docker compose -p offrii-staging -f docker-compose.staging.yml up -d
+#
+# Requires .env.staging with: POSTGRES_PASSWORD, RESEND_API_KEY, GOOGLE_CLIENT_ID
+
+services:
+  staging-postgres:
+    image: postgres:18-alpine
+    container_name: offrii-staging-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-offrii}
+      POSTGRES_USER: ${POSTGRES_USER:-offrii}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env.staging}
+    volumes:
+      - staging_postgres_data:/var/lib/postgresql/data
+    networks:
+      - offrii-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-offrii}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
+  staging-redis:
+    image: redis:8-alpine
+    container_name: offrii-staging-redis
+    restart: unless-stopped
+    command: redis-server --maxmemory 64mb --maxmemory-policy allkeys-lru
+    volumes:
+      - staging_redis_data:/data
+    networks:
+      - offrii-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+
+  staging-backend:
+    image: ghcr.io/yassine-el-gherrabi/offrii-api:staging
+    container_name: offrii-staging-backend
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-offrii}:${POSTGRES_PASSWORD}@staging-postgres:5432/${POSTGRES_DB:-offrii}
+      REDIS_URL: redis://staging-redis:6379
+      API_PORT: "3001"
+      RUST_LOG: rest_api=debug,tower_http=debug
+      JWT_PRIVATE_KEY_FILE: /run/secrets/jwt_private_key
+      JWT_PUBLIC_KEY_FILE: /run/secrets/jwt_public_key
+      RESEND_API_KEY: ${RESEND_API_KEY}
+      R2_ACCOUNT_ID: ${R2_ACCOUNT_ID:-}
+      R2_ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID:-}
+      R2_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY:-}
+      R2_BUCKET_NAME: ${R2_BUCKET_NAME:-offrii-media-staging}
+      R2_PUBLIC_URL: ${R2_PUBLIC_URL:-}
+      APNS_KEY_PATH: /run/secrets/apns_key
+      APNS_KEY_ID: ${APNS_KEY_ID:-LTCYFUC4WT}
+      APNS_TEAM_ID: ${APNS_TEAM_ID:-6SMPW6NUXP}
+      APNS_BUNDLE_ID: ${APNS_BUNDLE_ID:-com.offrii.app}
+      APNS_SANDBOX: "true"
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      MODERATION_ENABLED: "false"
+      CORS_ORIGIN: "https://staging.offrii.com"
+    depends_on:
+      staging-postgres:
+        condition: service_healthy
+      staging-redis:
+        condition: service_healthy
+    volumes:
+      - /opt/offrii/secrets/staging/jwt_private.pem:/run/secrets/jwt_private_key:ro
+      - /opt/offrii/secrets/staging/jwt_public.pem:/run/secrets/jwt_public_key:ro
+      - /opt/offrii/secrets/staging/apns_key.p8:/run/secrets/apns_key:ro
+    networks:
+      - offrii-net
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:3001/health/live || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
+volumes:
+  staging_postgres_data:
+  staging_redis_data:
+
+networks:
+  offrii-net:
+    driver: bridge

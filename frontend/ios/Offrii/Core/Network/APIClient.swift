@@ -1,0 +1,354 @@
+import Foundation
+import os
+
+extension Notification.Name {
+    static let authSessionExpired = Notification.Name("authSessionExpired")
+    static let notificationsRead = Notification.Name("notificationsRead")
+}
+
+// MARK: - API Client
+
+/// Central HTTP client for communicating with the Offrii REST API.
+///
+/// Responsibilities:
+/// - Builds `URLRequest` from `APIEndpoint` definitions
+/// - Injects `Authorization: Bearer` headers from `KeychainService`
+/// - Transparently retries once on 401 after refreshing tokens
+/// - Maps HTTP status codes to typed `APIError` values
+/// - Parses the backend error envelope `{ "error": { "code", "message" } }`
+final class APIClient: Sendable {
+    static let shared = APIClient()
+
+    private let session: URLSession
+    private let decoder: JSONDecoder
+    private let encoder: JSONEncoder
+    private let logger = Logger(subsystem: "com.offrii", category: "APIClient")
+
+    /// Serializes concurrent refresh attempts so only one runs at a time.
+    private let refreshCoordinator = RefreshCoordinator()
+
+    private init(session: URLSession = .shared) {
+        self.session = session
+
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .custom { decoder in
+            let container = try decoder.singleValueContainer()
+            let string = try container.decode(String.self)
+
+            let formatter = ISO8601DateFormatter()
+            formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+            if let date = formatter.date(from: string) { return date }
+
+            formatter.formatOptions = [.withInternetDateTime]
+            if let date = formatter.date(from: string) { return date }
+
+            throw DecodingError.dataCorruptedError(
+                in: container, debugDescription: "Cannot decode date: \(string)"
+            )
+        }
+        self.decoder = decoder
+
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        encoder.keyEncodingStrategy = .convertToSnakeCase
+        self.encoder = encoder
+    }
+
+    // MARK: - Public Request
+
+    /// Performs a request and decodes the response body into `T`.
+    ///
+    /// - Parameter endpoint: The API endpoint to call.
+    /// - Returns: The decoded response.
+    /// - Throws: `APIError` on failure.
+    func request<T: Decodable>(_ endpoint: APIEndpoint) async throws -> T {
+        let urlRequest = try buildRequest(for: endpoint)
+        return try await execute(urlRequest, endpoint: endpoint, isRetry: false)
+    }
+
+    /// Performs a request that returns no meaningful body (e.g. 204 No Content).
+    ///
+    /// - Parameter endpoint: The API endpoint to call.
+    /// - Throws: `APIError` on failure.
+    func requestVoid(_ endpoint: APIEndpoint) async throws {
+        let urlRequest = try buildRequest(for: endpoint)
+        let _: EmptyResponse = try await execute(urlRequest, endpoint: endpoint, isRetry: false)
+    }
+
+    func requestRaw(_ endpoint: APIEndpoint) async throws -> Data {
+        let urlRequest = try buildRequest(for: endpoint)
+        let (data, response) = try await session.data(for: urlRequest)
+        guard let httpResponse = response as? HTTPURLResponse,
+              (200...299).contains(httpResponse.statusCode) else {
+            throw APIError.serverError
+        }
+        return data
+    }
+
+    // MARK: - Multipart Upload
+
+    /// Uploads an image via multipart/form-data and returns the CDN URL.
+    /// - Parameters:
+    ///   - imageData: JPEG data
+    ///   - type: "item" (default), "avatar", or "circle" — controls server-side resize
+    func uploadImage(
+        _ imageData: Data,
+        type: String = "item",
+        filename: String = "photo.jpg"
+    ) async throws -> String {
+        guard var components = URLComponents(string: APIEndpoint.uploadImage.url?.absoluteString ?? "") else {
+            throw APIError.invalidURL
+        }
+        components.queryItems = [URLQueryItem(name: "type", value: type)]
+        guard let url = components.url else {
+            throw APIError.invalidURL
+        }
+
+        let boundary = "Boundary-\(UUID().uuidString)"
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+
+        if let token = KeychainService.shared.accessToken {
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
+
+        var body = Data()
+        body.append(Data("--\(boundary)\r\n".utf8))
+        body.append(Data("Content-Disposition: form-data; name=\"image\"; filename=\"\(filename)\"\r\n".utf8))
+        body.append(Data("Content-Type: image/jpeg\r\n\r\n".utf8))
+        body.append(imageData)
+        body.append(Data("\r\n--\(boundary)--\r\n".utf8))
+
+        request.httpBody = body
+
+        let data: Data
+        let response: URLResponse
+
+        do {
+            (data, response) = try await session.data(for: request)
+        } catch {
+            logger.error("Upload network error: \(error.localizedDescription)")
+            throw APIError.networkError(error)
+        }
+
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw APIError.unknown(0, "Invalid response type")
+        }
+
+        guard (200..<300).contains(httpResponse.statusCode) else {
+            let errMsg = String(data: data, encoding: .utf8) ?? "Upload failed"
+            throw APIError.unknown(httpResponse.statusCode, errMsg)
+        }
+
+        struct UploadResponse: Decodable { let url: String }
+        let uploadResponse = try decoder.decode(UploadResponse.self, from: data)
+        return uploadResponse.url
+    }
+
+    // MARK: - Build Request
+
+    private func buildRequest(for endpoint: APIEndpoint) throws -> URLRequest {
+        guard let url = endpoint.url else {
+            throw APIError.invalidURL
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = endpoint.method.rawValue
+        request.timeoutInterval = 15
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+
+        // Inject bearer token for authenticated endpoints.
+        if endpoint.requiresAuth, let token = KeychainService.shared.accessToken {
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
+
+        // Encode JSON body.
+        if let body = endpoint.body {
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            request.httpBody = try encodeBody(body)
+        }
+
+        return request
+    }
+
+    private func encodeBody(_ body: any Encodable) throws -> Data {
+        try encoder.encode(AnyEncodable(body))
+    }
+
+    // MARK: - Execute
+
+    // swiftlint:disable:next cyclomatic_complexity
+    private func execute<T: Decodable>(
+        _ request: URLRequest,
+        endpoint: APIEndpoint,
+        isRetry: Bool
+    ) async throws -> T {
+        let data: Data
+        let response: URLResponse
+
+        do {
+            (data, response) = try await session.data(for: request)
+        } catch {
+            logger.error("Network error: \(error.localizedDescription)")
+            throw APIError.networkError(error)
+        }
+
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw APIError.unknown(0, "Invalid response type")
+        }
+
+        let statusCode = httpResponse.statusCode
+
+        // Handle 401 with automatic token refresh (once).
+        if statusCode == 401 && !isRetry && endpoint.requiresAuth {
+            do {
+                try await refreshTokens()
+                var retryRequest = try buildRequest(for: endpoint)
+                // Re-inject the fresh token.
+                if let freshToken = KeychainService.shared.accessToken {
+                    retryRequest.setValue(
+                        "Bearer \(freshToken)",
+                        forHTTPHeaderField: "Authorization"
+                    )
+                }
+                return try await execute(retryRequest, endpoint: endpoint, isRetry: true)
+            } catch {
+                // Refresh failed -- clear auth state and notify app.
+                KeychainService.shared.clearAll()
+                NotificationCenter.default.post(name: .authSessionExpired, object: nil)
+                throw APIError.unauthorized("Session expired")
+            }
+        }
+
+        // Success range.
+        if (200..<300).contains(statusCode) {
+            // 204 No Content -- return EmptyResponse if that is what the caller expects.
+            if statusCode == 204 || data.isEmpty {
+                if let empty = EmptyResponse() as? T {
+                    return empty
+                }
+                throw APIError.decodingError(
+                    DecodingError.dataCorrupted(
+                        .init(codingPath: [], debugDescription: "Expected data but got empty response")
+                    )
+                )
+            }
+
+            do {
+                return try decoder.decode(T.self, from: data)
+            } catch {
+                logger.error("Decoding error: \(error.localizedDescription)")
+                throw APIError.decodingError(error)
+            }
+        }
+
+        // Error responses -- parse the backend error envelope.
+        let errMsg = parseErrorMessage(from: data)
+        switch statusCode {
+        case 400: throw APIError.badRequest(errMsg)
+        case 401: throw APIError.unauthorized(errMsg)
+        case 404: throw APIError.notFound(errMsg)
+        case 403: throw APIError.unauthorized(errMsg)
+        case 409: throw APIError.conflict(errMsg)
+        case 429: throw APIError.tooManyRequests(errMsg)
+        case 500..<600: throw APIError.serverError
+        default: throw APIError.unknown(statusCode, errMsg)
+        }
+    }
+
+    // MARK: - Token Refresh
+
+    private func refreshTokens() async throws {
+        try await refreshCoordinator.refresh {
+            try await self.performRefresh()
+        }
+    }
+
+    private func performRefresh() async throws {
+        guard let refreshToken = KeychainService.shared.refreshToken else {
+            throw APIError.unauthorized("No refresh token available")
+        }
+
+        let endpoint = APIEndpoint.refresh(RefreshBody(refreshToken: refreshToken))
+
+        guard let url = endpoint.url else {
+            throw APIError.invalidURL
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = endpoint.method.rawValue
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try encodeBody(RefreshBody(refreshToken: refreshToken))
+
+        let (data, response) = try await session.data(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse,
+              (200..<300).contains(httpResponse.statusCode) else {
+            throw APIError.unauthorized("Token refresh failed")
+        }
+
+        let refreshResponse = try decoder.decode(RefreshResponse.self, from: data)
+        KeychainService.shared.accessToken = refreshResponse.tokens.accessToken
+        KeychainService.shared.refreshToken = refreshResponse.tokens.refreshToken
+    }
+
+    // MARK: - Error Parsing
+
+    /// Attempts to extract the `message` field from the backend error envelope.
+    private func parseErrorMessage(from data: Data) -> String {
+        if let errorBody = try? decoder.decode(ErrorResponseBody.self, from: data) {
+            return errorBody.error.message
+        }
+        return String(data: data, encoding: .utf8) ?? "An unknown error occurred"
+    }
+}
+
+// MARK: - Supporting Types
+
+/// Used to erase the concrete `Encodable` type for `JSONEncoder.encode`.
+private struct AnyEncodable: Encodable {
+    private let encodeClosure: (Encoder) throws -> Void
+
+    init(_ value: any Encodable) {
+        self.encodeClosure = { encoder in
+            try value.encode(to: encoder)
+        }
+    }
+
+    func encode(to encoder: Encoder) throws {
+        try encodeClosure(encoder)
+    }
+}
+
+/// Placeholder type for endpoints that return no body (204 No Content).
+struct EmptyResponse: Decodable {}
+
+// MARK: - Refresh Coordinator
+
+/// Actor that deduplicates concurrent token refresh calls.
+/// If a refresh is in-flight, subsequent callers await the same result.
+private actor RefreshCoordinator {
+    private var activeTask: Task<Void, Error>?
+
+    func refresh(_ perform: @Sendable @escaping () async throws -> Void) async throws {
+        if let existing = activeTask {
+            try await existing.value
+            return
+        }
+
+        let task = Task<Void, Error> {
+            try await perform()
+        }
+        activeTask = task
+
+        do {
+            try await task.value
+            activeTask = nil
+        } catch {
+            activeTask = nil
+            throw error
+        }
+    }
+}

@@ -1,0 +1,59 @@
+use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
+use uuid::Uuid;
+use validator::Validate;
+
+use crate::models::friend::FriendRequestStatus;
+
+// ── Request DTOs ─────────────────────────────────────────────────────
+
+#[derive(Debug, Deserialize, Validate, utoipa::ToSchema, utoipa::IntoParams)]
+pub struct SendFriendRequestBody {
+    #[validate(length(min = 1, max = 50, message = "username must be 1-50 characters"))]
+    pub username: String,
+}
+
+#[derive(Debug, Deserialize, Validate, utoipa::ToSchema, utoipa::IntoParams)]
+pub struct UserSearchQuery {
+    #[validate(length(min = 1, max = 50, message = "query must be 1-50 characters"))]
+    pub q: String,
+}
+
+// ── Response DTOs ────────────────────────────────────────────────────
+
+#[derive(Debug, Clone, Serialize, utoipa::ToSchema)]
+pub struct FriendRequestResponse {
+    pub id: Uuid,
+    pub from_user_id: Uuid,
+    pub from_username: String,
+    pub from_display_name: Option<String>,
+    pub status: FriendRequestStatus,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, utoipa::ToSchema)]
+pub struct SentFriendRequestResponse {
+    pub id: Uuid,
+    pub to_user_id: Uuid,
+    pub to_username: String,
+    pub to_display_name: Option<String>,
+    pub status: FriendRequestStatus,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, utoipa::ToSchema)]
+pub struct FriendResponse {
+    pub user_id: Uuid,
+    pub username: String,
+    pub display_name: Option<String>,
+    pub since: DateTime<Utc>,
+    pub shared_item_count: i64,
+}
+
+#[derive(Debug, Clone, Serialize, utoipa::ToSchema)]
+pub struct UserSearchResult {
+    pub username: String,
+    pub display_name: Option<String>,
+    pub is_friend: bool,
+    pub is_pending: bool,
+}

@@ -1,0 +1,101 @@
+use axum::extract::{Query, State};
+use axum::http::StatusCode;
+use axum::routing::post;
+use axum::{Json, Router};
+use axum_extra::extract::Multipart;
+use serde::{Deserialize, Serialize};
+
+use crate::AppState;
+use crate::errors::AppError;
+use crate::middleware::AuthUser;
+
+/// Maximum upload size: 5 MB
+const MAX_UPLOAD_BYTES: usize = 5 * 1024 * 1024;
+
+#[derive(Serialize, utoipa::ToSchema)]
+pub struct UploadResponse {
+    pub url: String,
+}
+
+#[derive(Debug, Deserialize, utoipa::ToSchema)]
+pub struct UploadQuery {
+    #[serde(rename = "type")]
+    pub upload_type: Option<String>,
+}
+
+pub fn router() -> Router<AppState> {
+    Router::new().route("/image", post(upload_image))
+}
+
+#[utoipa::path(
+    post,
+    path = "/upload/image",
+    params(
+        ("type" = Option<String>, Query, description = "Upload type: item, avatar, or circle"),
+    ),
+    request_body(content_type = "multipart/form-data"),
+    responses(
+        (status = 201, body = UploadResponse),
+        (status = 400, description = "Invalid upload"),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "Upload"
+)]
+#[tracing::instrument(skip(state, multipart))]
+async fn upload_image(
+    State(state): State<AppState>,
+    _auth_user: AuthUser,
+    Query(query): Query<UploadQuery>,
+    mut multipart: Multipart,
+) -> Result<(StatusCode, Json<UploadResponse>), AppError> {
+    let upload_type = query.upload_type.as_deref().unwrap_or("item");
+
+    // Validate type
+    if !["item", "avatar", "circle"].contains(&upload_type) {
+        return Err(AppError::BadRequest(format!(
+            "invalid upload type: {upload_type}. Allowed: item, avatar, circle"
+        )));
+    }
+
+    // Extract the "image" field from multipart form
+    let mut image_data: Option<(Vec<u8>, String)> = None;
+
+    while let Some(field) = multipart
+        .next_field()
+        .await
+        .map_err(|e| AppError::BadRequest(format!("invalid multipart: {e}")))?
+    {
+        let name = field.name().unwrap_or("").to_string();
+        if name == "image" {
+            let content_type = field
+                .content_type()
+                .unwrap_or("application/octet-stream")
+                .to_string();
+
+            let bytes = field
+                .bytes()
+                .await
+                .map_err(|e| AppError::BadRequest(format!("failed to read image: {e}")))?;
+
+            if bytes.len() > MAX_UPLOAD_BYTES {
+                return Err(AppError::BadRequest(format!(
+                    "image too large: {} bytes (max {MAX_UPLOAD_BYTES})",
+                    bytes.len()
+                )));
+            }
+
+            image_data = Some((bytes.to_vec(), content_type));
+            break;
+        }
+    }
+
+    let (data, content_type) =
+        image_data.ok_or_else(|| AppError::BadRequest("missing 'image' field".into()))?;
+
+    let url = state
+        .uploads
+        .upload_image(&data, &content_type, upload_type)
+        .await?;
+
+    Ok((StatusCode::CREATED, Json(UploadResponse { url })))
+}

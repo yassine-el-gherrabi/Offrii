@@ -1,0 +1,6 @@
+// Production environment configuration
+API_BASE_URL = https:/$()/api.offrii.com
+PRODUCT_BUNDLE_IDENTIFIER = com.offrii.app
+PRODUCT_NAME = Offrii
+GID_CLIENT_ID = 202098498067-2u5uv8magektgh8ualmdo413naqnftem.apps.googleusercontent.com
+GID_REVERSED_CLIENT_ID = com.googleusercontent.apps.202098498067-2u5uv8magektgh8ualmdo413naqnftem
