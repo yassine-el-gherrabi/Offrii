@@ -4,38 +4,38 @@
 
 Offrii est une application iOS de **wishlist et d'entraide communautaire**.
 
-Les utilisateurs creent des listes d'envies, les partagent avec leurs proches via des **cercles** (groupes prives), et peuvent demander ou offrir de l'aide via le module **Entraide** (besoins communautaires).
+Les utilisateurs créent des listes d'envies, les partagent avec leurs proches via des **cercles** (groupes privés), et peuvent demander ou offrir de l'aide via le module **Entraide** (besoins communautaires).
 
-Projet realise par un developpeur solo dans le cadre du titre professionnel **CDA** (Concepteur Developpeur d'Applications).
+Projet réalisé par un développeur solo dans le cadre du titre professionnel **CDA** (Concepteur Développeur d'Applications).
 
 ---
 
 ## Stack technique
 
-| Couche | Technologie | Role |
+| Couche | Technologie | Rôle |
 |---|---|---|
-| Backend | **Rust / Axum** | API REST, logique metier |
+| Backend | **Rust / Axum** | API REST, logique métier |
 | Frontend | **SwiftUI** | Application iOS native |
-| Base de donnees | **PostgreSQL** | Stockage relationnel principal |
+| Base de données | **PostgreSQL** | Stockage relationnel principal |
 | Cache | **Redis** | Sessions, rate limiting, cache |
 | Reverse proxy | **Caddy** | TLS automatique, routage |
-| Stockage objet | **Cloudflare R2** | Images, fichiers uploades |
-| Conteneurisation | **Docker / Docker Compose** | Dev local et deploiement |
-| Monitoring | **Prometheus / Grafana / Loki** | Metriques, dashboards, logs |
-| CI/CD | **GitHub Actions** | Tests, build, deploiement auto |
+| Stockage objet | **Cloudflare R2** | Images, fichiers uploadés |
+| Conteneurisation | **Docker / Docker Compose** | Dev local et déploiement |
+| Monitoring | **Prometheus / Grafana / Loki** | Métriques, dashboards, logs |
+| CI/CD | **GitHub Actions** | Tests, build, déploiement auto |
 
 ---
 
-## Chiffres cles
+## Chiffres clés
 
-| Metrique | Valeur |
+| Métrique | Valeur |
 |---|---|
 | Endpoints REST | ~100 |
 | Migrations SQL | 8 |
-| Tests d'integration | 1 042 (23 500 lignes) |
+| Tests d'intégration | 1 042 (23 500 lignes) |
 | Couverture de code | > 75 % |
 | Modules iOS | 15 |
-| Cles de localisation (FR/EN) | 821 |
+| Clés de localisation (FR/EN) | 821 |
 
 ---
 
@@ -43,20 +43,20 @@ Projet realise par un developpeur solo dans le cadre du titre professionnel **CD
 
 | Page | Contenu |
 |---|---|
-| [Architecture Technique](01-architecture.md) | Diagrammes, couches, flux de donnees |
-| [Modele de Donnees](02-data-model.md) | Schema PostgreSQL, relations, migrations |
-| [API Reference](03-api.md) | Endpoints, requetes/reponses, codes erreur |
-| [Regles Metier](04-business-rules.md) | Logique applicative, cycles de vie, validations |
+| [Architecture Technique](01-architecture.md) | Diagrammes, couches, flux de données |
+| [Modèle de Données](02-data-model.md) | Schéma PostgreSQL, relations, migrations |
+| [API Reference](03-api.md) | Endpoints, requêtes/réponses, codes erreur |
+| [Règles Métier](04-business-rules.md) | Logique applicative, cycles de vie, validations |
 | [Frontend iOS](05-frontend.md) | Architecture SwiftUI, modules, navigation |
-| [Infrastructure & Deploiement](06-infrastructure.md) | Docker, CI/CD, monitoring, reseau |
-| [Securite & RGPD](07-security.md) | Authentification, chiffrement, conformite |
+| [Infrastructure & Déploiement](06-infrastructure.md) | Docker, CI/CD, monitoring, réseau |
+| [Sécurité & RGPD](07-security.md) | Authentification, chiffrement, conformité |
 
 ---
 
 ## Environnements
 
-| Environnement | URL / Acces | Hebergement |
+| Environnement | URL / Accès | Hébergement |
 |---|---|---|
 | **Production** | `api.offrii.com` | Hetzner CX32 |
-| **Staging** | `staging.offrii.com` | Hetzner CX32 (meme serveur) |
+| **Staging** | `staging.offrii.com` | Hetzner CX32 (même serveur) |
 | **Dev local** | `localhost` | Docker Compose |

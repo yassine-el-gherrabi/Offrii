@@ -1,13 +1,13 @@
 # Architecture Technique - Offrii Backend
 
 > Document technique pour le dossier CDA.
-> Derniere mise a jour : mars 2026.
+> Dernière mise à jour : mars 2026.
 
 ---
 
 ## 1. Vue d'ensemble
 
-L'infrastructure Offrii suit un modele client-serveur classique avec un backend API REST monolithique modulaire.
+L'infrastructure Offrii suit un modèle client-serveur classique avec un backend API REST monolithique modulaire.
 
 ```
 ┌──────────────┐
@@ -37,41 +37,41 @@ L'infrastructure Offrii suit un modele client-serveur classique avec un backend 
           ▼                ▼           ▼            ▼
    ┌────────────┐  ┌─────────┐  ┌─────────┐  ┌─────────┐
    │ PostgreSQL │  │  Redis   │  │   R2    │  │  APNs   │
-   │ (donnees)  │  │ (cache)  │  │ (media) │  │ (push)  │
+   │ (données)  │  │ (cache)  │  │ (media) │  │ (push)  │
    └────────────┘  └─────────┘  └─────────┘  └─────────┘
                                       │
                                ┌──────┴──────┐
                                │   Resend    │  ← Emails transactionnels
                                └─────────────┘
                                ┌─────────────┐
-                               │   OpenAI    │  ← Moderation de contenu
+                               │   OpenAI    │  ← Modération de contenu
                                └─────────────┘
 ```
 
-**Flux d'une requete typique** : le client iOS envoie une requete HTTPS. Caddy termine le TLS, applique le rate limiting, puis proxifie vers l'API Axum en HTTP interne. L'API traverse la pile de middlewares, authentifie le JWT, puis route vers le handler concerne. Le handler delegue au service, qui orchestre la logique metier et appelle un ou plusieurs repositories pour l'acces aux donnees.
+**Flux d'une requête typique** : le client iOS envoie une requête HTTPS. Caddy termine le TLS, applique le rate limiting, puis proxifie vers l'API Axum en HTTP interne. L'API traverse la pile de middlewares, authentifie le JWT, puis route vers le handler concerné. Le handler délègue au service, qui orchestre la logique métier et appelle un ou plusieurs repositories pour l'accès aux données.
 
 ---
 
 ## 2. Architecture backend : Handler → Service → Repository
 
-Le backend est structure en trois couches avec une separation stricte des responsabilites.
+Le backend est structuré en trois couches avec une séparation stricte des responsabilités.
 
-### Responsabilites par couche
+### Responsabilités par couche
 
-| Couche | Role | Depend de |
+| Couche | Rôle | Dépend de |
 |---|---|---|
-| **Handler** | Deserialisation HTTP, validation des entrees, appel au service, serialisation de la reponse | Service (via trait) |
-| **Service** | Logique metier, orchestration multi-repo, regles de gestion, cache | Repository (via trait) |
-| **Repository** | Acces aux donnees (SQL), mapping modele, aucune logique metier | Base de donnees (PgPool) |
+| **Handler** | Désérialisation HTTP, validation des entrées, appel au service, sérialisation de la réponse | Service (via trait) |
+| **Service** | Logique métier, orchestration multi-repo, règles de gestion, cache | Repository (via trait) |
+| **Repository** | Accès aux données (SQL), mapping modèle, aucune logique métier | Base de données (PgPool) |
 
 ### Pourquoi ce pattern
 
-**Testabilite** : chaque couche peut etre testee isolement. Un service peut etre teste avec un mock de repository sans base de donnees. Un handler peut etre teste avec un mock de service.
+**Testabilité** : chaque couche peut être testée isolément. Un service peut être testé avec un mock de repository sans base de données. Un handler peut être testé avec un mock de service.
 
-**Principe SOLID respecte** :
+**Principe SOLID respecté** :
 - **S** (Single Responsibility) : le handler ne fait que du HTTP, le service ne fait que de la logique, le repo ne fait que du SQL.
-- **D** (Dependency Inversion) : les couches hautes dependent d'abstractions (traits), pas d'implementations concretes.
-- **O** (Open/Closed) : on peut ajouter une implementation `RedisItemRepo` sans modifier `PgItemService`.
+- **D** (Dependency Inversion) : les couches hautes dépendent d'abstractions (traits), pas d'implémentations concrètes.
+- **O** (Open/Closed) : on peut ajouter une implémentation `RedisItemRepo` sans modifier `PgItemService`.
 
 ### Exemple concret : le flux d'un item
 
@@ -83,7 +83,7 @@ items::handler::create_item(AuthUser, State<AppState>, Json<CreateItemRequest>)
     │  ← extrait le user_id du JWT, valide le body
     ▼
 state.items.create_item(user_id, name, ...)        // appel via Arc<dyn ItemService>
-    │  ← verifie les regles metier (limites, permissions)
+    │  ← vérifie les règles métier (limites, permissions)
     ▼
 item_repo.create(user_id, name, ...)               // appel via Arc<dyn ItemRepo>
     │  ← INSERT INTO items ... RETURNING *
@@ -95,52 +95,52 @@ ItemResponse (DTO) ← sérialise en JSON → 201 Created
 
 ## 3. Pile de middlewares
 
-Les middlewares Axum sont appliques en ordre LIFO (le dernier `.layer()` s'execute en premier). Voici l'ordre d'execution reel sur chaque requete entrante :
+Les middlewares Axum sont appliqués en ordre LIFO (le dernier `.layer()` s'exécute en premier). Voici l'ordre d'exécution réel sur chaque requête entrante :
 
 ```
-Requete entrante
+Requête entrante
     │
     ▼
-1. Prometheus Metrics     ← compteurs request_count, request_duration par methode/path/status
+1. Prometheus Metrics     ← compteurs request_count, request_duration par méthode/path/status
     │
     ▼
 2. Security Headers       ← X-Content-Type-Options: nosniff
     │                       X-Frame-Options: DENY
     │                       Strict-Transport-Security: max-age=31536000
     ▼
-3. CORS                   ← origines autorisees : offrii.com, api.offrii.com, cdn.offrii.com
-    │                       methodes : GET, POST, PUT, PATCH, DELETE, OPTIONS
+3. CORS                   ← origines autorisées : offrii.com, api.offrii.com, cdn.offrii.com
+    │                       méthodes : GET, POST, PUT, PATCH, DELETE, OPTIONS
     │                       headers : Authorization, Content-Type, Accept
     ▼
-4. Trace                  ← logs structures (JSON) via tracing, correlation par requete
+4. Trace                  ← logs structurés (JSON) via tracing, corrélation par requête
     │
     ▼
-5. Timeout                ← 30 secondes max par requete, retourne 408 Request Timeout
+5. Timeout                ← 30 secondes max par requête, retourne 408 Request Timeout
     │
     ▼
 6. Body Limit             ← 10 Mo max (upload d'images)
     │
     ▼
 7. Auth (extracteur)      ← pas un layer Tower, mais un extracteur Axum (FromRequestParts)
-    │                       valide le JWT RS256, verifie la blacklist Redis,
-    │                       verifie la version du token
+    │                       valide le JWT RS256, vérifie la blacklist Redis,
+    │                       vérifie la version du token
     ▼
 Handler
 ```
 
-L'endpoint `/metrics` est monte **apres** le CORS pour ne pas etre soumis aux restrictions d'origine. Les endpoints de health check (`/health`, `/health/live`, `/health/ready`) sont exclus du tracking Prometheus.
+L'endpoint `/metrics` est monté **après** le CORS pour ne pas être soumis aux restrictions d'origine. Les endpoints de health check (`/health`, `/health/live`, `/health/ready`) sont exclus du tracking Prometheus.
 
 ---
 
-## 4. Injection de dependances
+## 4. Injection de dépendances
 
 ### Le contrat : les traits
 
-Le module `traits/` definit les contrats de chaque couche. Chaque trait est un fichier separe par domaine :
+Le module `traits/` définit les contrats de chaque couche. Chaque trait est un fichier séparé par domaine :
 
 ```
 traits/
-├── mod.rs            ← re-exporte tout
+├── mod.rs            ← ré-exporte tout
 ├── auth.rs           ← AuthService, RefreshTokenRepo, EmailService
 ├── items.rs          ← ItemRepo, ItemService, CircleItemRepo, CategoryRepo
 ├── circles.rs        ← CircleRepo, CircleMemberRepo, CircleInviteRepo, ...
@@ -151,7 +151,7 @@ traits/
 └── infra.rs          ← ShareLinkRepo, UploadService, HealthCheck
 ```
 
-Chaque trait impose `Send + Sync` pour la compatibilite avec le runtime async Tokio multi-thread :
+Chaque trait impose `Send + Sync` pour la compatibilité avec le runtime async Tokio multi-thread :
 
 ```rust
 #[async_trait]
@@ -162,9 +162,9 @@ pub trait ItemService: Send + Sync {
 }
 ```
 
-### Le cablage : `Arc<dyn Trait>`
+### Le câblage : `Arc<dyn Trait>`
 
-Dans `main.rs`, chaque implementation concrete est wrappee dans un `Arc<dyn Trait>` pour le polymorphisme a l'execution :
+Dans `main.rs`, chaque implémentation concrète est wrappée dans un `Arc<dyn Trait>` pour le polymorphisme à l'exécution :
 
 ```rust
 let item_repo: Arc<dyn ItemRepo> = Arc::new(PgItemRepo::new(db.clone()));
@@ -190,21 +190,21 @@ pub struct AppState {
 }
 ```
 
-Avantage : n'importe quel handler recoit un `State<AppState>` et travaille uniquement avec des abstractions. On peut substituer n'importe quelle implementation sans toucher aux handlers.
+Avantage : n'importe quel handler reçoit un `State<AppState>` et travaille uniquement avec des abstractions. On peut substituer n'importe quelle implémentation sans toucher aux handlers.
 
-### Implementations Noop pour les services optionnels
+### Implémentations Noop pour les services optionnels
 
-Certains services externes ne sont pas toujours disponibles (dev local, CI). Le pattern Noop permet un degradage propre :
+Certains services externes ne sont pas toujours disponibles (dev local, CI). Le pattern Noop permet un dégradage propre :
 
 ```rust
-// Moderation : active si MODERATION_ENABLED=true et OPENAI_API_KEY present
+// Modération : active si MODERATION_ENABLED=true et OPENAI_API_KEY présent
 let moderation_svc: Arc<dyn ModerationService> = if config.moderation_enabled {
     Arc::new(OpenAIModerationService::new(api_key))
 } else {
     Arc::new(NoopModerationService)  // ← accepte tout, ne fait rien
 };
 
-// Upload : R2 si les credentials sont configurees, sinon URLs de test
+// Upload : R2 si les credentials sont configurées, sinon URLs de test
 let upload_svc: Arc<dyn UploadService> = if r2_configured {
     Arc::new(R2UploadService::new(...).await)
 } else {
@@ -212,7 +212,7 @@ let upload_svc: Arc<dyn UploadService> = if r2_configured {
 };
 ```
 
-Ce pattern evite les `Option<Arc<dyn Trait>>` et les verifications `if let Some(...)` dans toute la codebase. Le service Noop implemente le meme trait, les appelants n'ont pas besoin de savoir si le service est reel ou fictif.
+Ce pattern évite les `Option<Arc<dyn Trait>>` et les vérifications `if let Some(...)` dans toute la codebase. Le service Noop implémente le même trait, les appelants n'ont pas besoin de savoir si le service est réel ou fictif.
 
 ---
 
@@ -220,13 +220,13 @@ Ce pattern evite les `Option<Arc<dyn Trait>>` et les verifications `if let Some(
 
 ### L'enum `AppError`
 
-Toutes les erreurs metier sont representees par un enum unique derive de `thiserror` :
+Toutes les erreurs métier sont représentées par un enum unique dérivé de `thiserror` :
 
 ```rust
 #[derive(Debug, thiserror::Error)]
 pub enum AppError {
     #[error("internal server error")]
-    Internal(#[from] anyhow::Error),    // 500 — message generique (pas de fuite d'info)
+    Internal(#[from] anyhow::Error),    // 500 — message générique (pas de fuite d'info)
 
     #[error("unauthorized: {0}")]
     Unauthorized(String),                // 401
@@ -256,7 +256,7 @@ pub enum AppError {
 
 ### Mapping vers HTTP
 
-L'implementation de `IntoResponse` convertit chaque variante en un code HTTP + un body JSON normalise :
+L'implémentation de `IntoResponse` convertit chaque variante en un code HTTP + un body JSON normalisé :
 
 ```json
 {
@@ -267,50 +267,50 @@ L'implementation de `IntoResponse` convertit chaque variante en un code HTTP + u
 }
 ```
 
-Point de securite : la variante `Internal` ne renvoie **jamais** le message d'erreur reel au client. Elle logge l'erreur complete cote serveur (`tracing::error!`) et retourne un message generique `"an internal error occurred"`. Cela evite toute fuite d'information sensible (noms de tables, requetes SQL, etc.).
+Point de sécurité : la variante `Internal` ne renvoie **jamais** le message d'erreur réel au client. Elle logge l'erreur complète côté serveur (`tracing::error!`) et retourne un message générique `"an internal error occurred"`. Cela évite toute fuite d'information sensible (noms de tables, requêtes SQL, etc.).
 
 ### Propagation avec `?`
 
-Grace a `#[from] anyhow::Error`, toute erreur non geree (sqlx, redis, I/O) se convertit automatiquement en `AppError::Internal` via l'operateur `?`. Les erreurs metier explicites utilisent les variantes nommees :
+Grâce à `#[from] anyhow::Error`, toute erreur non gérée (sqlx, redis, I/O) se convertit automatiquement en `AppError::Internal` via l'opérateur `?`. Les erreurs métier explicites utilisent les variantes nommées :
 
 ```rust
-// Erreur metier explicite
+// Erreur métier explicite
 if user.is_none() {
     return Err(AppError::NotFound("user not found".into()));
 }
 
-// Erreur infra propagee automatiquement → 500
+// Erreur infra propagée automatiquement → 500
 let row = sqlx::query("SELECT ...").fetch_one(&self.db).await?;
 ```
 
 ---
 
-## 6. Decisions techniques (ADR)
+## 6. Décisions techniques (ADR)
 
-| Decision | Alternative ecartee | Justification |
+| Décision | Alternative écartée | Justification |
 |---|---|---|
-| **Rust** | Node.js, Go | Performances previsibles sans GC. Type system strict qui elimine des categories entieres de bugs a la compilation (null safety, thread safety). Memory safety sans garbage collector. |
-| **PostgreSQL** | MongoDB | Le modele de donnees est hautement relationnel (users ↔ circles ↔ items ↔ share rules). Les regles de partage et les permissions exigent des transactions ACID. Les requetes complexes avec jointures multiples sont naturelles en SQL. |
-| **Redis** | Memcached, in-memory | Triple usage : cache de listes paginee, blacklist de tokens JWT revoques, throttle `last_active_at` (SET NX EX). Support natif du TTL pour l'expiration automatique des cles. |
-| **Axum** | Actix-web | Integre nativement dans l'ecosysteme Tower (middlewares composables). Extracteurs type-safe. Async-native sans macros magiques. Communaute Tokio active. |
-| **SQLx** | Diesel, SeaORM | Verification des requetes SQL **a la compilation** contre le schema reel. Pas de DSL a apprendre : on ecrit du SQL natif. Support async natif sans pool bloquant. |
-| **JWT RS256** | HS256, sessions | Signature asymetrique : la cle privee signe (API), la cle publique verifie (n'importe quel service). Permet une architecture future multi-service sans partage de secret. Blacklist via Redis pour la revocation. |
-| **Caddy** | Nginx, Traefik | TLS automatique via ACME (zero config certificat). Configuration declarative. Rate limiting integre. Reverse proxy avec health checks. |
-| **Cloudflare R2** | AWS S3, stockage local | Compatible S3 (SDK standard). Pas de frais d'egress. CDN Cloudflare integre. |
-| **APNs (direct)** | Firebase FCM | Controle total du payload de notification. Pas de dependance intermediaire. Support natif du bundling et de la localisation iOS. |
-| **Resend** | SendGrid, SES | API simple, bonne delivrabilite. SDK Rust via HTTP. Templates HTML geres cote backend. |
-| **OpenAI Moderation** | Moderation manuelle | Filtrage automatique du contenu communautaire (wishes). Implementation Noop pour desactiver en dev/CI. Pas de moderation humaine necessaire pour le MVP. |
+| **Rust** | Node.js, Go | Performances prévisibles sans GC. Type system strict qui élimine des catégories entières de bugs à la compilation (null safety, thread safety). Memory safety sans garbage collector. |
+| **PostgreSQL** | MongoDB | Le modèle de données est hautement relationnel (users ↔ circles ↔ items ↔ share rules). Les règles de partage et les permissions exigent des transactions ACID. Les requêtes complexes avec jointures multiples sont naturelles en SQL. |
+| **Redis** | Memcached, in-memory | Triple usage : cache de listes paginée, blacklist de tokens JWT révoqués, throttle `last_active_at` (SET NX EX). Support natif du TTL pour l'expiration automatique des clés. |
+| **Axum** | Actix-web | Intégré nativement dans l'écosystème Tower (middlewares composables). Extracteurs type-safe. Async-native sans macros magiques. Communauté Tokio active. |
+| **SQLx** | Diesel, SeaORM | Vérification des requêtes SQL **à la compilation** contre le schéma réel. Pas de DSL à apprendre : on écrit du SQL natif. Support async natif sans pool bloquant. |
+| **JWT RS256** | HS256, sessions | Signature asymétrique : la clé privée signe (API), la clé publique vérifie (n'importe quel service). Permet une architecture future multi-service sans partage de secret. Blacklist via Redis pour la révocation. |
+| **Caddy** | Nginx, Traefik | TLS automatique via ACME (zéro config certificat). Configuration déclarative. Rate limiting intégré. Reverse proxy avec health checks. |
+| **Cloudflare R2** | AWS S3, stockage local | Compatible S3 (SDK standard). Pas de frais d'egress. CDN Cloudflare intégré. |
+| **APNs (direct)** | Firebase FCM | Contrôle total du payload de notification. Pas de dépendance intermédiaire. Support natif du bundling et de la localisation iOS. |
+| **Resend** | SendGrid, SES | API simple, bonne délivrabilité. SDK Rust via HTTP. Templates HTML gérés côté backend. |
+| **OpenAI Moderation** | Modération manuelle | Filtrage automatique du contenu communautaire (wishes). Implémentation Noop pour désactiver en dev/CI. Pas de modération humaine nécessaire pour le MVP. |
 
 ---
 
 ## Glossaire
 
-| Terme | Definition |
+| Terme | Définition |
 |---|---|
-| **Handler** | Fonction Axum qui recoit une requete HTTP et retourne une reponse |
-| **Service** | Composant de logique metier, injecte via `Arc<dyn Trait>` |
-| **Repository** | Composant d'acces aux donnees, une implementation par source (Pg, Redis, ...) |
-| **Extracteur** | Type implementant `FromRequestParts` qui extrait des donnees de la requete (auth, pagination) |
-| **Noop** | Implementation vide d'un trait, utilisee quand le service reel n'est pas disponible |
-| **AppState** | Structure partagee entre tous les handlers, contient les services injectes |
-| **Trait object** | `dyn Trait` — polymorphisme dynamique en Rust, equivalent d'une interface en Java/Go |
+| **Handler** | Fonction Axum qui reçoit une requête HTTP et retourne une réponse |
+| **Service** | Composant de logique métier, injecté via `Arc<dyn Trait>` |
+| **Repository** | Composant d'accès aux données, une implémentation par source (Pg, Redis, ...) |
+| **Extracteur** | Type implémentant `FromRequestParts` qui extrait des données de la requête (auth, pagination) |
+| **Noop** | Implémentation vide d'un trait, utilisée quand le service réel n'est pas disponible |
+| **AppState** | Structure partagée entre tous les handlers, contient les services injectés |
+| **Trait object** | `dyn Trait` — polymorphisme dynamique en Rust, équivalent d'une interface en Java/Go |
