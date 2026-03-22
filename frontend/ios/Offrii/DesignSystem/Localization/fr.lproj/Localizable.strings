@@ -401,6 +401,7 @@
 "entraide.report.subtitle" = "Choisissez la raison du signalement";
 "entraide.report.submit" = "Envoyer le signalement";
 "entraide.report.success" = "Merci pour votre signalement. Notre équipe va examiner ce besoin.";
+"entraide.action.reopen" = "Rouvrir le besoin";
 "entraide.action.reopenSuccess" = "Votre besoin est en cours de re-vérification.";
 "entraide.wishLimit.title" = "Limite atteinte";
 "entraide.wishLimit.message" = "Vous avez déjà 3 besoins actifs. Fermez-en un ou attendez qu'un soit comblé avant d'en publier un nouveau.";

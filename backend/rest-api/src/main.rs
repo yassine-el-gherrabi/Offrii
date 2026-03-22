@@ -334,6 +334,7 @@ async fn main() -> anyhow::Result<()> {
         .route("/health/live", get(health_live))
         .route("/health/ready", get(health_check))
         .route("/join/{token}", get(circles::join_page))
+        .nest("/shared", shared::router())
         .route("/favicon.png", get(serve_favicon))
         .route("/favicon.ico", get(serve_favicon))
         .route("/legal/privacy", get(legal_privacy))
