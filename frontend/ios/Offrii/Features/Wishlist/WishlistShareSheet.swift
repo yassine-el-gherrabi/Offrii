@@ -938,7 +938,7 @@ struct WishlistShareSheet: View {
             try await CircleService.shared.setShareRule(
                 circleId: circleId, mode: "selection"
             )
-            withAnimation {
+            _ = withAnimation {
                 shareRules.removeValue(forKey: circleId)
             }
             OffriiHaptics.success()
