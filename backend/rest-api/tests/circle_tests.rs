@@ -4101,3 +4101,174 @@ async fn make_private_item_not_in_shared_view() {
         "private item should NOT appear in shared view"
     );
 }
+
+// ── Transfer Ownership ──────────────────────────────────────────────
+
+#[tokio::test]
+async fn transfer_ownership_success() {
+    let app = TestApp::new().await;
+    let (alice, _) = setup_user_with_id(&app, "alice-xfer@example.com").await;
+    let (bob, bob_id) = setup_user_with_id(&app, "bob-xfer@example.com").await;
+
+    let circle_id = create_circle(&app, &alice, "Team").await;
+    invite_and_join(&app, &circle_id, &alice, &bob).await;
+
+    // Transfer ownership to Bob
+    let body = serde_json::json!({ "user_id": bob_id });
+    let (status, _) = app
+        .post_json_with_auth(&format!("/circles/{circle_id}/transfer"), &body, &alice)
+        .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+
+    // Verify Bob is now the owner
+    let (_, detail) = app
+        .get_with_auth(&format!("/circles/{circle_id}"), &bob)
+        .await;
+    assert_eq!(detail["owner_id"].as_str().unwrap(), bob_id);
+}
+
+#[tokio::test]
+async fn transfer_ownership_non_owner_forbidden() {
+    let app = TestApp::new().await;
+    let (alice, _) = setup_user_with_id(&app, "alice-xfer2@example.com").await;
+    let (bob, bob_id) = setup_user_with_id(&app, "bob-xfer2@example.com").await;
+
+    let circle_id = create_circle(&app, &alice, "Team2").await;
+    invite_and_join(&app, &circle_id, &alice, &bob).await;
+
+    // Bob (non-owner) tries to transfer
+    let body = serde_json::json!({ "user_id": bob_id });
+    let (status, _) = app
+        .post_json_with_auth(&format!("/circles/{circle_id}/transfer"), &body, &bob)
+        .await;
+    assert!(
+        status == StatusCode::FORBIDDEN || status == StatusCode::BAD_REQUEST,
+        "non-owner transfer should be rejected, got {status}"
+    );
+}
+
+#[tokio::test]
+async fn transfer_ownership_to_non_member_rejected() {
+    let app = TestApp::new().await;
+    let (alice, _) = setup_user_with_id(&app, "alice-xfer3@example.com").await;
+    let (_, charlie_id) = setup_user_with_id(&app, "charlie-xfer3@example.com").await;
+
+    let circle_id = create_circle(&app, &alice, "Solo").await;
+
+    let body = serde_json::json!({ "user_id": charlie_id });
+    let (status, _) = app
+        .post_json_with_auth(&format!("/circles/{circle_id}/transfer"), &body, &alice)
+        .await;
+    assert!(
+        status == StatusCode::BAD_REQUEST || status == StatusCode::NOT_FOUND,
+        "transfer to non-member should fail, got {status}"
+    );
+}
+
+// ── Share Rule Events in Feed ───────────────────────────────────────
+
+#[tokio::test]
+async fn set_share_rule_creates_feed_event() {
+    let app = TestApp::new().await;
+    let (alice, _) = setup_user_with_id(&app, "alice-srfeed@example.com").await;
+    let (bob, _) = setup_user_with_id(&app, "bob-srfeed@example.com").await;
+
+    let circle_id = create_circle(&app, &alice, "FeedTest").await;
+    invite_and_join(&app, &circle_id, &alice, &bob).await;
+
+    // Set share rule
+    let rule = serde_json::json!({ "share_mode": "all", "category_ids": [] });
+    app.put_json_with_auth(&format!("/circles/{circle_id}/share-rule"), &rule, &alice)
+        .await;
+
+    // Check feed for the event
+    let (_, feed) = app
+        .get_with_auth(&format!("/circles/{circle_id}/feed"), &alice)
+        .await;
+
+    let events = feed["data"].as_array().unwrap();
+    let has_rule_event = events
+        .iter()
+        .any(|e| e["event_type"].as_str() == Some("share_rule_set"));
+    assert!(
+        has_rule_event,
+        "feed should contain a share_rule_set event after setting a share rule"
+    );
+}
+
+#[tokio::test]
+async fn remove_share_rule_creates_feed_event() {
+    let app = TestApp::new().await;
+    let (alice, _) = setup_user_with_id(&app, "alice-srrm@example.com").await;
+    let (bob, _) = setup_user_with_id(&app, "bob-srrm@example.com").await;
+
+    let circle_id = create_circle(&app, &alice, "RuleRm").await;
+    invite_and_join(&app, &circle_id, &alice, &bob).await;
+
+    // Set then remove share rule
+    let set_rule = serde_json::json!({ "share_mode": "all", "category_ids": [] });
+    app.put_json_with_auth(
+        &format!("/circles/{circle_id}/share-rule"),
+        &set_rule,
+        &alice,
+    )
+    .await;
+    let rm_rule = serde_json::json!({ "share_mode": "selection", "category_ids": [] });
+    app.put_json_with_auth(
+        &format!("/circles/{circle_id}/share-rule"),
+        &rm_rule,
+        &alice,
+    )
+    .await;
+
+    // Check feed
+    let (_, feed) = app
+        .get_with_auth(&format!("/circles/{circle_id}/feed"), &alice)
+        .await;
+
+    let events = feed["data"].as_array().unwrap();
+    let has_removed_event = events
+        .iter()
+        .any(|e| e["event_type"].as_str() == Some("share_rule_removed"));
+    assert!(
+        has_removed_event,
+        "feed should contain a share_rule_removed event"
+    );
+}
+
+// ── Delete Circle ───────────────────────────────────────────────────
+
+#[tokio::test]
+async fn delete_circle_as_owner() {
+    let app = TestApp::new().await;
+    let (alice, _) = setup_user_with_id(&app, "alice-delc@example.com").await;
+
+    let circle_id = create_circle(&app, &alice, "ToDelete").await;
+
+    let (status, _) = app
+        .delete_with_auth(&format!("/circles/{circle_id}"), &alice)
+        .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+
+    // Verify it's gone
+    let (status, _) = app
+        .get_with_auth(&format!("/circles/{circle_id}"), &alice)
+        .await;
+    assert_eq!(status, StatusCode::NOT_FOUND);
+}
+
+#[tokio::test]
+async fn delete_circle_non_owner_forbidden() {
+    let app = TestApp::new().await;
+    let (alice, _) = setup_user_with_id(&app, "alice-delc2@example.com").await;
+    let (bob, _) = setup_user_with_id(&app, "bob-delc2@example.com").await;
+
+    let circle_id = create_circle(&app, &alice, "NoDelete").await;
+    invite_and_join(&app, &circle_id, &alice, &bob).await;
+
+    // Bob (non-owner) tries to delete
+    let (status, _) = app
+        .delete_with_auth(&format!("/circles/{circle_id}"), &bob)
+        .await;
+    assert_eq!(status, StatusCode::FORBIDDEN);
+}
