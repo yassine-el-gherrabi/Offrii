@@ -230,6 +230,17 @@ private struct SummaryPage: View {
                 .padding(.horizontal, OffriiTheme.spacingXL)
                 .opacity(appeared ? 1 : 0)
 
+            // Appearance picker
+            VStack(spacing: OffriiTheme.spacingSM) {
+                Text(NSLocalizedString("profile.appearance", comment: ""))
+                    .font(OffriiTypography.subheadline)
+                    .foregroundColor(OffriiTheme.textMuted)
+
+                AppearancePicker()
+            }
+            .padding(.top, OffriiTheme.spacingBase)
+            .opacity(appeared ? 1 : 0)
+
             Spacer()
             Spacer()
         }
