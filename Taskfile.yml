@@ -1,0 +1,384 @@
+version: "3"
+
+# ─────────────────────────────────────────────────────────────────────
+# Offrii — Taskfile
+# Usage: task <command>     (ex: task dev, task prod, task test)
+# List:  task --list
+# ─────────────────────────────────────────────────────────────────────
+
+dotenv: [".env"]
+
+vars:
+  COMPOSE_DEV: docker compose -f docker-compose.yml -f docker-compose.dev.yml
+  COMPOSE_PROD: docker compose -f docker-compose.yml -f docker-compose.override.yml
+  COMPOSE_FULL: docker compose -f docker-compose.yml -f docker-compose.prod.yml
+  BACKEND_DIR: backend/rest-api
+  PROD_HOST: '{{.PROD_HOST | default ""}}'
+  PROD_USER: '{{.PROD_USER | default "deploy"}}'
+
+# ─── Development ────────────────────────────────────────────────────
+
+tasks:
+  dev:
+    desc: Start backend in dev mode (hot reload + seed)
+    cmds:
+      - "{{.COMPOSE_DEV}} up -d"
+      - echo ""
+      - echo "Backend dev running on http://localhost:3000"
+      - echo "Hot reload enabled (cargo watch)"
+      - 'echo "Seed data: emma@demo.com — DemoPass123x"'
+
+  dev:stop:
+    desc: Stop dev containers
+    cmds:
+      - "{{.COMPOSE_DEV}} down"
+
+  dev:logs:
+    desc: Follow dev backend logs
+    cmds:
+      - "{{.COMPOSE_DEV}} logs -f backend"
+
+  dev:reset:
+    desc: Reset dev (destroy volumes + restart with fresh seed)
+    cmds:
+      - "{{.COMPOSE_DEV}} down -v"
+      - "{{.COMPOSE_DEV}} up -d"
+      - echo ""
+      - echo "Fresh database with Emma fixtures"
+
+  dev:rebuild:
+    desc: Rebuild dev image (when Dockerfile.dev changes)
+    cmds:
+      - "{{.COMPOSE_DEV}} build backend"
+      - echo "Dev image rebuilt"
+
+  # ─── Local prod simulation ──────────────────────────────────────
+
+  prod:local:
+    desc: Start backend with prod image locally (build + seed)
+    cmds:
+      - "{{.COMPOSE_PROD}} build backend"
+      - SEED_DEV_DATA=true {{.COMPOSE_PROD}} up -d
+      - echo ""
+      - echo "Prod image running on http://localhost:3000"
+
+  prod:local:stop:
+    desc: Stop local prod containers
+    cmds:
+      - "{{.COMPOSE_PROD}} down"
+
+  prod:rebuild:
+    desc: Force rebuild prod image (no cache)
+    cmds:
+      - "{{.COMPOSE_PROD}} build --no-cache backend"
+      - echo "Image rebuilt"
+
+  # ─── Testing ────────────────────────────────────────────────────
+
+  test:
+    desc: Run all backend tests
+    dir: "{{.BACKEND_DIR}}"
+    cmds:
+      - cargo nextest run --workspace
+
+  test:watch:
+    desc: Run tests on file change
+    dir: "{{.BACKEND_DIR}}"
+    cmds:
+      - cargo watch -x 'nextest run --workspace'
+
+  test:file:
+    desc: "Run a specific test file (usage: task test:file -- auth_tests)"
+    dir: "{{.BACKEND_DIR}}"
+    cmds:
+      - cargo nextest run --test {{.CLI_ARGS}}
+
+  test:coverage:
+    desc: Run tests with coverage report
+    dir: "{{.BACKEND_DIR}}"
+    cmds:
+      - cargo llvm-cov --workspace --html
+      - echo "Coverage report at target/llvm-cov/html/index.html"
+
+  # ─── Code quality ───────────────────────────────────────────────
+
+  check:
+    desc: Run all checks (fmt + sort + clippy + machete + audit + swiftlint)
+    cmds:
+      - task: check:backend
+      - task: check:frontend
+
+  check:backend:
+    desc: Check backend (fmt + sort + clippy + machete + audit)
+    dir: backend
+    cmds:
+      - cargo fmt --all -- --check
+      - cargo sort --workspace --check
+      - cargo clippy --workspace --all-targets -- -D warnings
+      - cargo machete
+      - cmd: cargo audit
+        ignore_error: true
+
+  check:frontend:
+    desc: Check frontend (swiftlint --strict)
+    dir: frontend/ios
+    cmds:
+      - swiftlint lint --strict Offrii/
+
+  fmt:
+    desc: Auto-format backend code
+    dir: backend
+    cmds:
+      - cargo fmt --all
+      - cargo sort --workspace
+      - echo "Formatted"
+
+  # ─── Database ───────────────────────────────────────────────────
+
+  db:shell:
+    desc: Open PostgreSQL shell
+    cmds:
+      - docker exec -it offrii-postgres psql -U offrii -d offrii
+
+  db:migrate:
+    desc: Run migrations on local DB
+    dir: "{{.BACKEND_DIR}}"
+    cmds:
+      - cargo run --bin migrate
+
+  db:seed:
+    desc: Run seed on local DB
+    dir: "{{.BACKEND_DIR}}"
+    cmds:
+      - cargo run --bin seed
+    env:
+      SEED_DEV_DATA: "true"
+
+  db:reset:
+    desc: Reset database (drop volume + recreate + migrate + seed)
+    cmds:
+      - docker compose down -v
+      - task: dev
+
+  redis:shell:
+    desc: Open Redis CLI
+    cmds:
+      - docker exec -it offrii-redis redis-cli
+
+  redis:flush:
+    desc: Flush all Redis caches
+    cmds:
+      - docker exec offrii-redis redis-cli FLUSHALL
+      - echo "Redis flushed"
+
+  # ─── Deployment ─────────────────────────────────────────────────
+
+  deploy:prod:
+    desc: Deploy to production (push to master)
+    cmds:
+      - echo "Pushing to master triggers deploy-prod.yml..."
+      - git push origin HEAD:master
+
+  deploy:staging:
+    desc: Deploy to staging (push to develop)
+    cmds:
+      - git push origin HEAD:develop
+      - echo "Pushed to develop — deploy-staging.yml triggered"
+
+  deploy:hotfix:
+    desc: Deploy hotfix (push to hotfix branch)
+    cmds:
+      - git push origin HEAD:hotfix/$(git branch --show-current)
+      - echo "Hotfix pushed — deploy-hotfix.yml triggered"
+
+  deploy:status:
+    desc: Check latest deploy status
+    cmds:
+      - gh run list --limit 5 --json databaseId,status,conclusion,name --jq '.[] | "\(.conclusion // .status)\t\(.name)\t\(.databaseId)"'
+
+  deploy:logs:
+    desc: View last deploy logs
+    cmds:
+      - gh run view $(gh run list --limit 1 --json databaseId --jq '.[0].databaseId') --log
+
+  # ─── Production server ──────────────────────────────────────────
+
+  ssh:
+    desc: SSH into production server
+    preconditions:
+      - sh: test -n "{{.PROD_HOST}}"
+        msg: "PROD_HOST not set. Add PROD_HOST=your.server.ip to .env"
+    cmds:
+      - ssh {{.PROD_USER}}@{{.PROD_HOST}}
+
+  prod:health:
+    desc: Check production health
+    cmds:
+      - curl -s https://api.offrii.com/health | python3 -m json.tool
+
+  prod:logs:
+    desc: View production backend logs
+    preconditions:
+      - sh: test -n "{{.PROD_HOST}}"
+        msg: "PROD_HOST not set. Add PROD_HOST=your.server.ip to .env"
+    cmds:
+      - ssh {{.PROD_USER}}@{{.PROD_HOST}} "docker logs offrii-backend --tail 50"
+
+  prod:seed:
+    desc: Run seed on production (Emma demo data)
+    preconditions:
+      - sh: test -n "{{.PROD_HOST}}"
+        msg: "PROD_HOST not set. Add PROD_HOST=your.server.ip to .env"
+    cmds:
+      - ssh {{.PROD_USER}}@{{.PROD_HOST}} "cd /opt/offrii && docker compose -f docker-compose.yml -f docker-compose.prod.yml run --rm --entrypoint seed backend"
+
+  prod:ps:
+    desc: List production containers
+    preconditions:
+      - sh: test -n "{{.PROD_HOST}}"
+        msg: "PROD_HOST not set. Add PROD_HOST=your.server.ip to .env"
+    cmds:
+      - ssh {{.PROD_USER}}@{{.PROD_HOST}} "docker ps --format 'table {{`{{.Names}}`}}\t{{`{{.Status}}`}}'"
+
+  prod:restart:
+    desc: Restart production backend
+    preconditions:
+      - sh: test -n "{{.PROD_HOST}}"
+        msg: "PROD_HOST not set. Add PROD_HOST=your.server.ip to .env"
+    cmds:
+      - ssh {{.PROD_USER}}@{{.PROD_HOST}} "cd /opt/offrii && docker compose -f docker-compose.yml -f docker-compose.prod.yml restart backend"
+      - echo "Backend restarted"
+
+  prod-db:
+    desc: Open production PostgreSQL shell
+    preconditions:
+      - sh: test -n "{{.PROD_HOST}}"
+        msg: "PROD_HOST not set. Add PROD_HOST=your.server.ip to .env"
+    cmds:
+      - ssh -t {{.PROD_USER}}@{{.PROD_HOST}} "docker exec -it offrii-postgres psql -U offrii -d offrii"
+
+  prod-db-reset:
+    desc: "DANGEROUS -- Wipe production DB, run migrations and re-seed"
+    preconditions:
+      - sh: test -n "{{.PROD_HOST}}"
+        msg: "PROD_HOST not set. Add PROD_HOST=your.server.ip to .env"
+    cmds:
+      - echo "Stopping backend..."
+      - ssh {{.PROD_USER}}@{{.PROD_HOST}} "cd /opt/offrii && docker compose -f docker-compose.yml -f docker-compose.prod.yml stop backend"
+      - echo "Dropping and recreating database..."
+      - ssh {{.PROD_USER}}@{{.PROD_HOST}} "docker exec offrii-postgres psql -U offrii -c 'DROP DATABASE offrii;' -c 'CREATE DATABASE offrii OWNER offrii;'"
+      - echo "Running migrations..."
+      - ssh {{.PROD_USER}}@{{.PROD_HOST}} "cd /opt/offrii && docker compose -f docker-compose.yml -f docker-compose.prod.yml run --rm --no-deps --entrypoint migrate backend"
+      - echo "Starting backend..."
+      - ssh {{.PROD_USER}}@{{.PROD_HOST}} "cd /opt/offrii && docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d backend"
+      - echo "Done. Production DB reset (clean, no seed)."
+
+  # ─── Log level ──────────────────────────────────────────────────
+
+  log:debug:
+    desc: "Set local log level to debug and restart"
+    cmds:
+      - sed -i '' 's/RUST_LOG=.*/RUST_LOG=rest_api=debug,tower_http=debug/' .env
+      - "{{.COMPOSE_DEV}} restart backend"
+      - echo "Log level set to debug"
+
+  log:info:
+    desc: "Set local log level to info and restart"
+    cmds:
+      - sed -i '' 's/RUST_LOG=.*/RUST_LOG=rest_api=info,tower_http=info/' .env
+      - "{{.COMPOSE_DEV}} restart backend"
+      - echo "Log level set to info"
+
+  prod-log:debug:
+    desc: "Set production log level to debug and restart"
+    preconditions:
+      - sh: test -n "{{.PROD_HOST}}"
+        msg: "PROD_HOST not set. Add PROD_HOST=your.server.ip to .env"
+    cmds:
+      - ssh {{.PROD_USER}}@{{.PROD_HOST}} "cd /opt/offrii && sed -i 's/RUST_LOG=.*/RUST_LOG=rest_api=debug,tower_http=debug/' .env && docker compose -f docker-compose.yml -f docker-compose.prod.yml restart backend"
+      - echo "Production log level set to debug. Remember to set back to info after debugging."
+
+  prod-log:info:
+    desc: "Set production log level back to info and restart"
+    preconditions:
+      - sh: test -n "{{.PROD_HOST}}"
+        msg: "PROD_HOST not set. Add PROD_HOST=your.server.ip to .env"
+    cmds:
+      - ssh {{.PROD_USER}}@{{.PROD_HOST}} "cd /opt/offrii && sed -i 's/RUST_LOG=.*/RUST_LOG=rest_api=info,tower_http=info/' .env && docker compose -f docker-compose.yml -f docker-compose.prod.yml restart backend"
+      - echo "Production log level set to info"
+
+  # ─── Monitoring ─────────────────────────────────────────────────
+
+  grafana:
+    desc: Open Grafana dashboard
+    cmds:
+      - open https://grafana.offrii.com
+
+  uptime:
+    desc: Open UptimeRobot dashboard
+    cmds:
+      - open https://dashboard.uptimerobot.com/monitors
+
+  # ─── iOS ────────────────────────────────────────────────────────
+
+  ios:build:
+    desc: Build iOS app (debug)
+    dir: frontend/ios
+    cmds:
+      - xcodebuild build -project Offrii.xcodeproj -scheme Offrii -destination 'platform=iOS Simulator,name=iPhone 16 Pro Max' -configuration Debug | xcpretty
+
+  ios:screenshot:
+    desc: Take simulator screenshot
+    cmds:
+      - xcrun simctl io booted screenshot /tmp/offrii-screenshot.png
+      - echo "Screenshot saved to /tmp/offrii-screenshot.png"
+
+  # ─── R2 / CDN ───────────────────────────────────────────────────
+
+  r2:list:
+    desc: List R2 bucket contents
+    cmds:
+      - cmd: npx wrangler r2 bucket info offrii-media --remote
+
+  r2:upload:
+    desc: "Upload file to R2 (usage: task r2:upload -- path/to/file.jpg demo/file.jpg)"
+    cmds:
+      - cmd: npx wrangler r2 object put "offrii-media/{{index .CLI_ARGS 1}}" --file "{{index .CLI_ARGS 0}}" --content-type "image/jpeg" --remote
+
+  # ─── Dossier CDA ────────────────────────────────────────────────
+
+  dossier:dev:
+    desc: Start CDA dossier in dev mode
+    dir: dossier-cda-react
+    cmds:
+      - npm run dev
+
+  dossier:build:
+    desc: Build CDA dossier for production
+    dir: dossier-cda-react
+    cmds:
+      - npm run build
+
+  # ─── Utilities ──────────────────────────────────────────────────
+
+  clean:
+    desc: Clean Docker orphans + dangling images
+    cmds:
+      - docker container prune -f
+      - docker image prune -f
+      - echo "Cleaned"
+
+  status:
+    desc: Show project status (containers + git)
+    cmds:
+      - echo "── Docker ──"
+      - cmd: docker ps --format "table {{`{{.Names}}`}}\t{{`{{.Status}}`}}\t{{`{{.Ports}}`}}"
+        ignore_error: true
+      - echo ""
+      - echo "── Git ──"
+      - git branch --show-current
+      - git log --oneline -5
+      - echo ""
+      - echo "── CI ──"
+      - cmd: gh run list --limit 3 --json name,status,conclusion --jq '.[].name'
+        ignore_error: true

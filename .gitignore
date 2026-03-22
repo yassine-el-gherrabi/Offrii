@@ -81,3 +81,7 @@ screencapture-*
 error-page.png
 shared-page-*.png
 claudedocs/
+
+# Dossier CDA (local only)
+dossier-cda/
+dossier-cda-react/
