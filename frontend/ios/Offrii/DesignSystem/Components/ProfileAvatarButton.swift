@@ -26,7 +26,10 @@ struct ProfileAvatarButton: View {
                     } else if state.error != nil {
                         initialsView
                     } else {
-                        initialsView
+                        Circle()
+                            .fill(OffriiTheme.border.opacity(0.3))
+                            .frame(width: 32, height: 32)
+                            .shimmer()
                     }
                 }
                 .processors([.resize(size: CGSize(width: 64, height: 64))])
