@@ -113,10 +113,10 @@ struct ChangePasswordView: View {
             newPassword = ""
             confirmPassword = ""
         } catch let error as APIError {
-            if case .unauthorized = error {
-                errorMessage = NSLocalizedString("error.wrongPassword", comment: "")
-            } else if case .badRequest(let msg) = error {
-                if msg.contains("common") {
+            if case .badRequest(let msg) = error {
+                if msg.contains("wrong_current_password") {
+                    errorMessage = NSLocalizedString("error.wrongPassword", comment: "")
+                } else if msg.contains("common") {
                     errorMessage = NSLocalizedString("error.passwordCommon", comment: "")
                 } else if msg.contains("breach") {
                     errorMessage = NSLocalizedString("error.passwordBreached", comment: "")

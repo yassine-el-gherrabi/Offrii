@@ -486,7 +486,7 @@ impl traits::AuthService for PgAuthService {
                 .map_err(AppError::Internal)?;
 
         if !valid {
-            return Err(AppError::Unauthorized("invalid current password".into()));
+            return Err(AppError::BadRequest("wrong_current_password".into()));
         }
 
         // 3. Enforce password policy on new password

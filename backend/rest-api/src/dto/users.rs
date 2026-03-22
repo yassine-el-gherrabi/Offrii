@@ -14,6 +14,7 @@ use crate::models::User;
 // ── Request DTOs ─────────────────────────────────────────────────────
 
 #[derive(Debug, Deserialize, Validate, utoipa::ToSchema)]
+#[validate(schema(function = "validate_avatar_url_length"))]
 pub struct UpdateProfileRequest {
     #[validate(length(max = 100, message = "display name must be at most 100 characters"))]
     pub display_name: Option<String>,
@@ -25,6 +26,19 @@ pub struct UpdateProfileRequest {
     pub username: Option<String>,
     #[serde(default, deserialize_with = "crate::dto::nullable::deserialize")]
     pub avatar_url: Option<Option<String>>,
+}
+
+fn validate_avatar_url_length(
+    req: &UpdateProfileRequest,
+) -> Result<(), validator::ValidationError> {
+    if let Some(Some(ref url)) = req.avatar_url
+        && url.len() > 2048
+    {
+        let mut err = validator::ValidationError::new("avatar_url_too_long");
+        err.message = Some("avatar URL must be at most 2048 characters".into());
+        return Err(err);
+    }
+    Ok(())
 }
 
 // ── Response DTOs ────────────────────────────────────────────────────
