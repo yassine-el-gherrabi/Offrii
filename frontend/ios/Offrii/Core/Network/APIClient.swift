@@ -75,6 +75,16 @@ final class APIClient: Sendable {
         let _: EmptyResponse = try await execute(urlRequest, endpoint: endpoint, isRetry: false)
     }
 
+    func requestRaw(_ endpoint: APIEndpoint) async throws -> Data {
+        let urlRequest = try buildRequest(for: endpoint)
+        let (data, response) = try await session.data(for: urlRequest)
+        guard let httpResponse = response as? HTTPURLResponse,
+              (200...299).contains(httpResponse.statusCode) else {
+            throw APIError.serverError
+        }
+        return data
+    }
+
     // MARK: - Multipart Upload
 
     /// Uploads an image via multipart/form-data and returns the CDN URL.

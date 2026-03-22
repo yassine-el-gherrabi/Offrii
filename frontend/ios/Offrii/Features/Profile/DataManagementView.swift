@@ -7,7 +7,7 @@ struct DataManagementView: View {
     @State private var deleteConfirmation = ""
     @State private var showDeleteConfirm = false
     @State private var isDeleting = false
-    @State private var exportData: Data?
+    @State private var exportFileURL: URL?
     @State private var showShareSheet = false
 
     var body: some View {
@@ -91,8 +91,8 @@ struct DataManagementView: View {
             Text(NSLocalizedString("profile.deleteAccount.confirm", comment: ""))
         }
         .sheet(isPresented: $showShareSheet) {
-            if let data = exportData {
-                ShareSheet(items: [data])
+            if let url = exportFileURL {
+                ShareSheet(items: [url])
             }
         }
     }
@@ -105,14 +105,13 @@ struct DataManagementView: View {
     private func exportUserData() async {
         isExporting = true
         do {
-            let export = try await UserService.shared.exportData()
-            let encoder = JSONEncoder()
-            encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-            exportData = try encoder.encode(export)
+            let data = try await UserService.shared.exportDataRaw()
+            let tempDir = FileManager.default.temporaryDirectory
+            let fileURL = tempDir.appendingPathComponent("offrii-export.json")
+            try data.write(to: fileURL)
+            exportFileURL = fileURL
             showShareSheet = true
-        } catch {
-            // Could show error alert
-        }
+        } catch { /* Best-effort */ }
         isExporting = false
     }
 

@@ -130,9 +130,94 @@ struct SharedViewResponse: Codable {
 }
 
 struct UserDataExport: Codable {
-    let user: UserProfileResponse
-    let items: [Item]
+    let profile: UserProfileResponse
+    let items: [ExportItem]
     let categories: [CategoryResponse]
+    let circles: [ExportCircle]
+    let friends: [ExportFriend]
+    let communityWishes: [ExportWish]
+    let wishMessages: [ExportMessage]
+    let exportedAt: Date
+
+    enum CodingKeys: String, CodingKey {
+        case profile, items, categories, circles, friends
+        case communityWishes = "community_wishes"
+        case wishMessages = "wish_messages"
+        case exportedAt = "exported_at"
+    }
+}
+
+struct ExportItem: Codable {
+    let id: UUID
+    let name: String
+    let description: String?
+    let estimatedPrice: String?
+    let priority: Int
+    let categoryId: UUID?
+    let status: String
+    let isPrivate: Bool
+    let imageUrl: String?
+    let links: [String]?
+    let createdAt: Date
+
+    enum CodingKeys: String, CodingKey {
+        case id, name, description, priority, status, links
+        case estimatedPrice = "estimated_price"
+        case categoryId = "category_id"
+        case isPrivate = "is_private"
+        case imageUrl = "image_url"
+        case createdAt = "created_at"
+    }
+}
+
+struct ExportCircle: Codable {
+    let id: UUID
+    let name: String?
+    let isDirect: Bool
+    let memberCount: Int
+
+    enum CodingKeys: String, CodingKey {
+        case id, name
+        case isDirect = "is_direct"
+        case memberCount = "member_count"
+    }
+}
+
+struct ExportFriend: Codable {
+    let userId: UUID
+    let username: String
+    let displayName: String?
+
+    enum CodingKeys: String, CodingKey {
+        case username
+        case userId = "user_id"
+        case displayName = "display_name"
+    }
+}
+
+struct ExportWish: Codable {
+    let id: UUID
+    let title: String
+    let description: String?
+    let category: String
+    let status: String
+
+    enum CodingKeys: String, CodingKey {
+        case id, title, description, category, status
+    }
+}
+
+struct ExportMessage: Codable {
+    let id: UUID
+    let wishId: UUID
+    let body: String
+    let createdAt: Date
+
+    enum CodingKeys: String, CodingKey {
+        case id, body
+        case wishId = "wish_id"
+        case createdAt = "created_at"
+    }
 }
 
 struct APIErrorResponse: Codable {
