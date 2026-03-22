@@ -186,7 +186,7 @@ async fn main() -> anyhow::Result<()> {
         circle_member_repo,
         circle_invite_repo,
         circle_item_repo,
-        circle_event_repo,
+        circle_event_repo.clone(),
         item_repo.clone(),
         user_repo.clone(),
         push_token_repo.clone(),
@@ -299,6 +299,7 @@ async fn main() -> anyhow::Result<()> {
         uploads: upload_svc,
         notifications: notification_repo,
         share_rules: share_rule_repo,
+        circle_events: circle_event_repo.clone(),
         app_base_url: config.app_base_url,
     };
 

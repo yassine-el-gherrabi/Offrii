@@ -524,6 +524,16 @@ async fn set_share_rule(
             .map_err(AppError::Internal)?;
     }
 
+    // Record activity event
+    let event_type = match req.share_mode.as_str() {
+        "none" | "selection" => "share_rule_removed",
+        _ => "share_rule_set",
+    };
+    let _ = state
+        .circle_events
+        .insert(id, auth_user.user_id, event_type, None, None)
+        .await;
+
     // Invalidate the item list cache so the grid reflects the change
     state.items.invalidate_list_cache(auth_user.user_id).await;
 

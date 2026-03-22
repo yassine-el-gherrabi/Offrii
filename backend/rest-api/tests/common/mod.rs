@@ -388,6 +388,9 @@ impl TestApp {
                     db.clone(),
                 ),
             ),
+            circle_events: Arc::new(
+                rest_api::repositories::circle_event_repo::PgCircleEventRepo::new(db.clone()),
+            ),
             app_base_url: "http://localhost:3000".to_string(),
         };
 
