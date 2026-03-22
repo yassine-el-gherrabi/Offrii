@@ -44,7 +44,7 @@ async fn create_item_full_201() {
     let body = serde_json::json!({
         "name": "MacBook Pro",
         "description": "Laptop for dev",
-        "url": "https://apple.com/macbook",
+        "links": ["https://apple.com/macbook"],
         "estimated_price": "2499.99",
         "priority": 1,
         "category_id": cat_id.to_string(),
@@ -54,7 +54,7 @@ async fn create_item_full_201() {
     assert_eq!(status, StatusCode::CREATED);
     assert_eq!(item["name"], "MacBook Pro");
     assert_eq!(item["description"], "Laptop for dev");
-    assert_eq!(item["url"], "https://apple.com/macbook");
+    assert_eq!(item["links"][0], "https://apple.com/macbook");
     assert_eq!(item["estimated_price"], "2499.99");
     assert_eq!(item["priority"], 1);
     assert_eq!(item["status"], "active");
@@ -366,7 +366,7 @@ async fn list_items_filter_status() {
     app.create_item(&token, &serde_json::json!({ "name": "active_one" }))
         .await;
 
-    app.put_json_with_auth(
+    app.patch_json_with_auth(
         &format!("/items/{id}"),
         &serde_json::json!({ "status": "purchased" }),
         &token,
@@ -552,7 +552,7 @@ async fn update_item_200() {
     tokio::time::sleep(std::time::Duration::from_millis(200)).await;
 
     let (status, updated) = app
-        .put_json_with_auth(
+        .patch_json_with_auth(
             &format!("/items/{id}"),
             &serde_json::json!({
                 "name": "renamed",
@@ -587,7 +587,7 @@ async fn update_item_status_purchased() {
     assert!(item["purchased_at"].is_null());
 
     let (status, updated) = app
-        .put_json_with_auth(
+        .patch_json_with_auth(
             &format!("/items/{id}"),
             &serde_json::json!({ "status": "purchased" }),
             &token,
@@ -614,7 +614,7 @@ async fn update_item_purchased_to_active_clears_purchased_at() {
 
     // Mark purchased
     let (_, purchased) = app
-        .put_json_with_auth(
+        .patch_json_with_auth(
             &format!("/items/{id}"),
             &serde_json::json!({ "status": "purchased" }),
             &token,
@@ -624,7 +624,7 @@ async fn update_item_purchased_to_active_clears_purchased_at() {
 
     // Revert to active
     let (status, active) = app
-        .put_json_with_auth(
+        .patch_json_with_auth(
             &format!("/items/{id}"),
             &serde_json::json!({ "status": "active" }),
             &token,
@@ -650,7 +650,7 @@ async fn update_item_invalid_status_400() {
     let id = item["id"].as_str().unwrap();
 
     let (status, resp) = app
-        .put_json_with_auth(
+        .patch_json_with_auth(
             &format!("/items/{id}"),
             &serde_json::json!({ "status": "deleted" }),
             &token,
@@ -672,7 +672,7 @@ async fn update_item_negative_price_400() {
     let id = item["id"].as_str().unwrap();
 
     let (status, resp) = app
-        .put_json_with_auth(
+        .patch_json_with_auth(
             &format!("/items/{id}"),
             &serde_json::json!({ "estimated_price": "-5.00" }),
             &token,
@@ -694,7 +694,7 @@ async fn update_item_invalid_priority_400() {
     let id = item["id"].as_str().unwrap();
 
     let (status, resp) = app
-        .put_json_with_auth(
+        .patch_json_with_auth(
             &format!("/items/{id}"),
             &serde_json::json!({ "priority": 4 }),
             &token,
@@ -712,7 +712,7 @@ async fn update_item_not_found_404() {
 
     let fake_id = uuid::Uuid::new_v4();
     let (status, resp) = app
-        .put_json_with_auth(
+        .patch_json_with_auth(
             &format!("/items/{fake_id}"),
             &serde_json::json!({ "name": "ghost" }),
             &token,
@@ -739,7 +739,7 @@ async fn update_item_other_user_404() {
     let id = item["id"].as_str().unwrap();
 
     let (status, resp) = app
-        .put_json_with_auth(
+        .patch_json_with_auth(
             &format!("/items/{id}"),
             &serde_json::json!({ "name": "stolen" }),
             &token2,
@@ -763,7 +763,7 @@ async fn update_deleted_item_404() {
     app.delete_with_auth(&format!("/items/{id}"), &token).await;
 
     let (status, resp) = app
-        .put_json_with_auth(
+        .patch_json_with_auth(
             &format!("/items/{id}"),
             &serde_json::json!({ "name": "revived?" }),
             &token,
@@ -784,9 +784,9 @@ async fn update_item_without_auth_401() {
         .await;
     let id = item["id"].as_str().unwrap();
 
-    // PUT without auth
+    // PATCH without auth
     let req = axum::http::Request::builder()
-        .method("PUT")
+        .method("PATCH")
         .uri(format!("/items/{id}"))
         .header(axum::http::header::CONTENT_TYPE, "application/json")
         .body(axum::body::Body::from(
@@ -812,7 +812,7 @@ async fn purchase_already_purchased_409() {
 
     // First purchase — should succeed
     let (status, _) = app
-        .put_json_with_auth(
+        .patch_json_with_auth(
             &format!("/items/{id}"),
             &serde_json::json!({ "status": "purchased" }),
             &token,
@@ -822,7 +822,7 @@ async fn purchase_already_purchased_409() {
 
     // Second purchase — should be 409
     let (status, resp) = app
-        .put_json_with_auth(
+        .patch_json_with_auth(
             &format!("/items/{id}"),
             &serde_json::json!({ "status": "purchased" }),
             &token,
@@ -844,7 +844,7 @@ async fn restore_already_active_409() {
 
     // Item is already active — setting active again should be 409
     let (status, resp) = app
-        .put_json_with_auth(
+        .patch_json_with_auth(
             &format!("/items/{id}"),
             &serde_json::json!({ "status": "active" }),
             &token,
@@ -866,7 +866,7 @@ async fn purchase_then_restore_then_purchase_200() {
 
     // active → purchased
     let (status, _) = app
-        .put_json_with_auth(
+        .patch_json_with_auth(
             &format!("/items/{id}"),
             &serde_json::json!({ "status": "purchased" }),
             &token,
@@ -876,7 +876,7 @@ async fn purchase_then_restore_then_purchase_200() {
 
     // purchased → active (restore)
     let (status, restored) = app
-        .put_json_with_auth(
+        .patch_json_with_auth(
             &format!("/items/{id}"),
             &serde_json::json!({ "status": "active" }),
             &token,
@@ -888,7 +888,7 @@ async fn purchase_then_restore_then_purchase_200() {
 
     // active → purchased (again)
     let (status, repurchased) = app
-        .put_json_with_auth(
+        .patch_json_with_auth(
             &format!("/items/{id}"),
             &serde_json::json!({ "status": "purchased" }),
             &token,
@@ -912,7 +912,7 @@ async fn purchase_deleted_item_404() {
     app.delete_with_auth(&format!("/items/{id}"), &token).await;
 
     let (status, resp) = app
-        .put_json_with_auth(
+        .patch_json_with_auth(
             &format!("/items/{id}"),
             &serde_json::json!({ "status": "purchased" }),
             &token,
@@ -934,7 +934,7 @@ async fn update_non_status_fields_on_purchased_item_200() {
 
     // Mark purchased
     let (status, _) = app
-        .put_json_with_auth(
+        .patch_json_with_auth(
             &format!("/items/{id}"),
             &serde_json::json!({ "status": "purchased" }),
             &token,
@@ -944,7 +944,7 @@ async fn update_non_status_fields_on_purchased_item_200() {
 
     // Update only non-status fields — should not trigger guard
     let (status, updated) = app
-        .put_json_with_auth(
+        .patch_json_with_auth(
             &format!("/items/{id}"),
             &serde_json::json!({ "name": "renamed" }),
             &token,
@@ -967,7 +967,7 @@ async fn update_name_and_same_status_409() {
 
     // Mark purchased
     let (status, _) = app
-        .put_json_with_auth(
+        .patch_json_with_auth(
             &format!("/items/{id}"),
             &serde_json::json!({ "status": "purchased" }),
             &token,
@@ -977,7 +977,7 @@ async fn update_name_and_same_status_409() {
 
     // Send name + same status — entire request should be rejected with 409
     let (status, resp) = app
-        .put_json_with_auth(
+        .patch_json_with_auth(
             &format!("/items/{id}"),
             &serde_json::json!({ "name": "renamed", "status": "purchased" }),
             &token,
@@ -1194,7 +1194,7 @@ async fn claim_purchased_item_400() {
     let id = item["id"].as_str().unwrap();
 
     // Mark purchased
-    app.put_json_with_auth(
+    app.patch_json_with_auth(
         &format!("/items/{id}"),
         &serde_json::json!({ "status": "purchased" }),
         &owner_token,
@@ -1765,7 +1765,7 @@ async fn list_items_consistent_after_mutations() {
     assert_eq!(body["pagination"]["total"], 1);
 
     // Update
-    app.put_json_with_auth(
+    app.patch_json_with_auth(
         &format!("/items/{id}"),
         &serde_json::json!({ "name": "updated" }),
         &token,
@@ -2226,7 +2226,7 @@ async fn update_item_with_invalid_link_rejected() {
     let id = item["id"].as_str().unwrap();
 
     let (status, resp) = app
-        .put_json_with_auth(
+        .patch_json_with_auth(
             &format!("/items/{id}"),
             &serde_json::json!({ "links": ["ftp://bad-scheme.com"] }),
             &token,

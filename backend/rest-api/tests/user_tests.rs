@@ -533,10 +533,10 @@ async fn profile_survives_password_change() {
         "current_password": TEST_PASSWORD,
         "new_password": NEW_PASSWORD,
     });
-    let (status, _) = app
+    let (status, _change_body) = app
         .post_json_with_auth("/auth/change-password", &change, &token)
         .await;
-    assert_eq!(status, StatusCode::NO_CONTENT);
+    assert_eq!(status, StatusCode::OK);
 
     // Re-login
     let login = serde_json::json!({

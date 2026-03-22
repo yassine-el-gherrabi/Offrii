@@ -241,7 +241,13 @@ impl traits::WishMessageService for PgWishMessageService {
             .into_iter()
             .filter(|m| m.sender_id.is_some_and(|sid| participants.contains(&sid)))
             .collect();
-        let total = messages.len() as i64;
+
+        // Use the actual total count from DB rather than the filtered page size
+        let total = self
+            .message_repo
+            .count_by_wish(wish_id)
+            .await
+            .map_err(AppError::Internal)?;
 
         // Batch-fetch sender names (dedup to reduce query size)
         let sender_ids: Vec<Uuid> = messages

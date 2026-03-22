@@ -952,7 +952,7 @@ async fn change_password_returns_new_tokens() {
 }
 
 #[tokio::test]
-async fn change_password_wrong_current_401() {
+async fn change_password_wrong_current_400() {
     let app = TestApp::new().await;
     let reg = app.setup_user(TEST_EMAIL, TEST_PASSWORD).await;
     let access = reg["tokens"]["access_token"].as_str().unwrap();
@@ -965,8 +965,9 @@ async fn change_password_wrong_current_401() {
         .post_json_with_auth("/auth/change-password", &body, access)
         .await;
 
-    assert_eq!(status, StatusCode::UNAUTHORIZED);
-    assert_error(&resp, "UNAUTHORIZED");
+    // 400 not 401: user IS authenticated (valid JWT), the current_password field is just wrong
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    assert_error(&resp, "BAD_REQUEST");
 }
 
 #[tokio::test]
@@ -1887,9 +1888,10 @@ async fn change_password_wrong_current_rejects() {
     let (status, _) = app
         .post_json_with_auth("/auth/change-password", &body, &token)
         .await;
+    // 400 not 401: user IS authenticated, the current_password field value is incorrect
     assert_eq!(
         status,
-        StatusCode::UNAUTHORIZED,
+        StatusCode::BAD_REQUEST,
         "wrong current password must fail"
     );
 }

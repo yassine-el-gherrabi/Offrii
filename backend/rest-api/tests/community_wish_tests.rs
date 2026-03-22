@@ -31,6 +31,20 @@ async fn setup_aged_user(app: &TestApp, email: &str) -> String {
     token
 }
 
+async fn setup_admin_user(app: &TestApp, email: &str) -> String {
+    app.register_user(email, TEST_PASSWORD).await;
+    make_admin(app, email).await;
+    age_account(app, email).await;
+    // Re-login to get a token with is_admin=true in JWT
+    let (_, resp) = app
+        .post_json(
+            "/auth/login",
+            &serde_json::json!({"identifier": email, "password": TEST_PASSWORD}),
+        )
+        .await;
+    resp["tokens"]["access_token"].as_str().unwrap().to_string()
+}
+
 async fn setup_aged_user_with_name(app: &TestApp, email: &str, name: &str) -> String {
     let (status, body) = app
         .register_user_with_name(email, TEST_PASSWORD, name)
@@ -1927,8 +1941,7 @@ async fn admin_list_pending_non_admin_403() {
 #[tokio::test]
 async fn admin_list_pending_returns_flagged_and_review_200() {
     let app = TestApp::new().await;
-    let admin_token = setup_aged_user(&app, "admin@test.com").await;
-    make_admin(&app, "admin@test.com").await;
+    let admin_token = setup_admin_user(&app, "admin@test.com").await;
 
     // Create wishes and set various statuses
     let owner_token = setup_aged_user(&app, "owner@test.com").await;
@@ -1961,8 +1974,7 @@ async fn admin_list_pending_returns_flagged_and_review_200() {
 #[tokio::test]
 async fn admin_list_pending_empty_200() {
     let app = TestApp::new().await;
-    let admin_token = setup_aged_user(&app, "admin@test.com").await;
-    make_admin(&app, "admin@test.com").await;
+    let admin_token = setup_admin_user(&app, "admin@test.com").await;
 
     let (status, body) = app
         .get_with_auth("/admin/wishes/pending", &admin_token)
@@ -1975,8 +1987,7 @@ async fn admin_list_pending_empty_200() {
 #[tokio::test]
 async fn admin_approve_wish_204() {
     let app = TestApp::new().await;
-    let admin_token = setup_aged_user(&app, "admin@test.com").await;
-    make_admin(&app, "admin@test.com").await;
+    let admin_token = setup_admin_user(&app, "admin@test.com").await;
 
     let owner_token = setup_aged_user(&app, "owner@test.com").await;
     let wish_id = create_open_wish(&app, &owner_token).await;
@@ -1998,8 +2009,7 @@ async fn admin_approve_wish_204() {
 #[tokio::test]
 async fn admin_approve_review_wish_204() {
     let app = TestApp::new().await;
-    let admin_token = setup_aged_user(&app, "admin@test.com").await;
-    make_admin(&app, "admin@test.com").await;
+    let admin_token = setup_admin_user(&app, "admin@test.com").await;
 
     let owner_token = setup_aged_user(&app, "owner@test.com").await;
     let wish_id = create_open_wish(&app, &owner_token).await;
@@ -2021,8 +2031,7 @@ async fn admin_approve_review_wish_204() {
 #[tokio::test]
 async fn admin_approve_open_wish_400() {
     let app = TestApp::new().await;
-    let admin_token = setup_aged_user(&app, "admin@test.com").await;
-    make_admin(&app, "admin@test.com").await;
+    let admin_token = setup_admin_user(&app, "admin@test.com").await;
 
     let owner_token = setup_aged_user(&app, "owner@test.com").await;
     let wish_id = create_open_wish(&app, &owner_token).await;
@@ -2037,8 +2046,7 @@ async fn admin_approve_open_wish_400() {
 #[tokio::test]
 async fn admin_reject_wish_204() {
     let app = TestApp::new().await;
-    let admin_token = setup_aged_user(&app, "admin@test.com").await;
-    make_admin(&app, "admin@test.com").await;
+    let admin_token = setup_admin_user(&app, "admin@test.com").await;
 
     let owner_token = setup_aged_user(&app, "owner@test.com").await;
     let wish_id = create_open_wish(&app, &owner_token).await;
@@ -2548,8 +2556,7 @@ async fn list_my_wishes_includes_image_url_and_links() {
 #[tokio::test]
 async fn admin_list_pending_includes_image_url_and_links() {
     let app = TestApp::new().await;
-    let token = setup_aged_user(&app, "owner@test.com").await;
-    make_admin(&app, "owner@test.com").await;
+    let token = setup_admin_user(&app, "owner@test.com").await;
 
     let body = json!({
         "title": "Need winter coat",
@@ -2619,8 +2626,7 @@ async fn close_wish_from_flagged_204() {
 #[tokio::test]
 async fn admin_approve_not_found_404() {
     let app = TestApp::new().await;
-    let token = setup_aged_user(&app, "admin@test.com").await;
-    make_admin(&app, "admin@test.com").await;
+    let token = setup_admin_user(&app, "admin@test.com").await;
 
     let fake_id = Uuid::new_v4();
     let (status, resp) = app
@@ -2633,8 +2639,7 @@ async fn admin_approve_not_found_404() {
 #[tokio::test]
 async fn admin_reject_not_found_404() {
     let app = TestApp::new().await;
-    let token = setup_aged_user(&app, "admin@test.com").await;
-    make_admin(&app, "admin@test.com").await;
+    let token = setup_admin_user(&app, "admin@test.com").await;
 
     let fake_id = Uuid::new_v4();
     let (status, resp) = app
@@ -2647,8 +2652,7 @@ async fn admin_reject_not_found_404() {
 #[tokio::test]
 async fn admin_reject_review_wish_204() {
     let app = TestApp::new().await;
-    let admin_token = setup_aged_user(&app, "admin@test.com").await;
-    make_admin(&app, "admin@test.com").await;
+    let admin_token = setup_admin_user(&app, "admin@test.com").await;
 
     let owner_token = setup_aged_user(&app, "owner@test.com").await;
     let wish_id = create_open_wish(&app, &owner_token).await;
@@ -2780,20 +2784,39 @@ async fn wish_reject_creates_notification_for_donor() {
     let donor = setup_aged_user(&app, "nr_don@test.com").await;
 
     let wish_id = create_open_wish(&app, &owner).await;
-    app.post_with_auth(&format!("/community/wishes/{wish_id}/offer"), &donor)
+    let (offer_status, _) = app
+        .post_with_auth(&format!("/community/wishes/{wish_id}/offer"), &donor)
         .await;
-
-    app.post_with_auth(&format!("/community/wishes/{wish_id}/reject"), &owner)
-        .await;
-
-    tokio::time::sleep(std::time::Duration::from_millis(300)).await;
-
-    let (_, body) = app.get_with_auth("/me/notifications", &donor).await;
-    let notifs = body["data"].as_array().unwrap();
     assert!(
-        notifs
+        offer_status.is_success(),
+        "offer should succeed: {offer_status}"
+    );
+
+    let (reject_status, _) = app
+        .post_with_auth(&format!("/community/wishes/{wish_id}/reject"), &owner)
+        .await;
+    assert!(
+        reject_status.is_success(),
+        "reject should succeed: {reject_status}"
+    );
+
+    // Notification is created via tokio::spawn (fire-and-forget) — poll until it arrives
+    let mut found = false;
+    for _ in 0..10 {
+        tokio::time::sleep(std::time::Duration::from_millis(200)).await;
+        let (_, body) = app.get_with_auth("/me/notifications", &donor).await;
+        let empty = vec![];
+        let notifs = body["data"].as_array().unwrap_or(&empty);
+        if notifs
             .iter()
-            .any(|n| n["type"].as_str().unwrap() == "wish_offer_rejected"),
+            .any(|n| n["type"].as_str() == Some("wish_offer_rejected"))
+        {
+            found = true;
+            break;
+        }
+    }
+    assert!(
+        found,
         "donor should have a wish_offer_rejected notification"
     );
 }

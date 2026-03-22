@@ -414,13 +414,24 @@ async fn notification_has_expected_fields() {
     let circle_id = create_circle(&app, &alice_token, "Fields Circle").await;
     add_member(&app, &alice_token, circle_id, bob_id).await;
 
-    tokio::time::sleep(std::time::Duration::from_millis(500)).await;
-
-    let (_, body) = app.get_with_auth("/me/notifications", &bob_token).await;
-    let notifs = body["data"].as_array().unwrap();
-    assert!(!notifs.is_empty());
-
-    let notif = &notifs[0];
+    // Poll for the circle notification (async fire-and-forget)
+    let mut notif_opt = None;
+    for _ in 0..15 {
+        tokio::time::sleep(std::time::Duration::from_millis(200)).await;
+        let (_, body) = app.get_with_auth("/me/notifications", &bob_token).await;
+        let empty = vec![];
+        let notifs = body["data"].as_array().unwrap_or(&empty);
+        if let Some(n) = notifs.iter().find(|n| {
+            let t = n["type"].as_str().unwrap_or("");
+            t == "circle_added" || t == "circle_member_joined"
+        }) {
+            notif_opt = Some(n.clone());
+            break;
+        }
+    }
+    let notif = notif_opt
+        .as_ref()
+        .expect("should have a circle_added or circle_member_joined notification");
     assert!(notif["id"].is_string(), "notification should have id");
     assert!(notif["type"].is_string(), "notification should have type");
     assert!(notif["title"].is_string(), "notification should have title");

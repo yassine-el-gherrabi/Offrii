@@ -2047,7 +2047,7 @@ async fn item_received_creates_feed_event() {
 
     // Alice marks as received
     let (status, _) = app
-        .put_json_with_auth(
+        .patch_json_with_auth(
             &format!("/items/{item_id}"),
             &serde_json::json!({ "status": "purchased" }),
             &alice,
@@ -2094,7 +2094,7 @@ async fn purchased_item_still_visible_in_circle_with_status() {
     .await;
 
     // Mark as purchased
-    app.put_json_with_auth(
+    app.patch_json_with_auth(
         &format!("/items/{item_id}"),
         &serde_json::json!({ "status": "purchased" }),
         &alice,
@@ -2188,7 +2188,7 @@ async fn mark_received_unclaimed_item_no_received_event_for_claimer() {
 
     // Alice marks as received (self-purchase, no claimer)
     let (status, _) = app
-        .put_json_with_auth(
+        .patch_json_with_auth(
             &format!("/items/{item_id}"),
             &serde_json::json!({ "status": "purchased" }),
             &alice,
@@ -2314,7 +2314,7 @@ async fn unarchive_item_returns_to_active() {
 
     // Mark purchased
     let (status, _) = app
-        .put_json_with_auth(
+        .patch_json_with_auth(
             &format!("/items/{item_id}"),
             &serde_json::json!({ "status": "purchased" }),
             &alice,
@@ -2324,7 +2324,7 @@ async fn unarchive_item_returns_to_active() {
 
     // Unarchive back to active
     let (status, resp) = app
-        .put_json_with_auth(
+        .patch_json_with_auth(
             &format!("/items/{item_id}"),
             &serde_json::json!({ "status": "active" }),
             &alice,
@@ -3910,7 +3910,7 @@ async fn make_private_removes_circle_items() {
 
     // Alice sets the item to private
     let (status, _) = app
-        .put_json_with_auth(
+        .patch_json_with_auth(
             &format!("/items/{item_id}"),
             &serde_json::json!({ "is_private": true }),
             &alice,
@@ -3975,7 +3975,7 @@ async fn make_private_selection_mode_excludes() {
 
     // Alice makes item2 private
     let (status, _) = app
-        .put_json_with_auth(
+        .patch_json_with_auth(
             &format!("/items/{item2_id}"),
             &serde_json::json!({ "is_private": true }),
             &alice,
@@ -4026,7 +4026,7 @@ async fn make_public_again_does_not_restore_shares() {
     assert_eq!(items["data"].as_array().unwrap().len(), 1);
 
     // Alice makes the item private (deletes circle_items)
-    app.put_json_with_auth(
+    app.patch_json_with_auth(
         &format!("/items/{item_id}"),
         &serde_json::json!({ "is_private": true }),
         &alice,
@@ -4034,7 +4034,7 @@ async fn make_public_again_does_not_restore_shares() {
     .await;
 
     // Alice makes the item public again
-    app.put_json_with_auth(
+    app.patch_json_with_auth(
         &format!("/items/{item_id}"),
         &serde_json::json!({ "is_private": false }),
         &alice,
@@ -4082,7 +4082,7 @@ async fn make_private_item_not_in_shared_view() {
     );
 
     // Alice makes the item private
-    app.put_json_with_auth(
+    app.patch_json_with_auth(
         &format!("/items/{item_id}"),
         &serde_json::json!({ "is_private": true }),
         &alice,

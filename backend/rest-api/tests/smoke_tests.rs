@@ -85,7 +85,7 @@ async fn smoke_health_returns_200_with_json_shape() {
 async fn smoke_full_auth_flow() {
     let app = SmokeTestApp::new().await;
     let email = "test@example.com";
-    let password = "xK9mQ2vL7nB4pR8sW3";
+    let password = common::TEST_PASSWORD;
 
     // ── Step 1: Register ──────────────────────────────────────────
     let resp = app
@@ -94,6 +94,7 @@ async fn smoke_full_auth_flow() {
         .json(&serde_json::json!({
             "email": email,
             "password": password,
+            "terms_accepted": true,
         }))
         .send()
         .await
@@ -119,7 +120,7 @@ async fn smoke_full_auth_flow() {
         .client
         .post(app.url("/auth/login"))
         .json(&serde_json::json!({
-            "email": email,
+            "identifier": email,
             "password": password,
         }))
         .send()
@@ -204,6 +205,7 @@ async fn smoke_full_items_crud_flow() {
         .json(&serde_json::json!({
             "email": "items-smoke@example.com",
             "password": password,
+            "terms_accepted": true,
         }))
         .send()
         .await
@@ -257,7 +259,7 @@ async fn smoke_full_items_crud_flow() {
     // ── Step 4: Update item ─────────────────────────────────────
     let resp = app
         .client
-        .put(app.url(&format!("/items/{item_id}")))
+        .patch(app.url(&format!("/items/{item_id}")))
         .bearer_auth(token)
         .json(&serde_json::json!({
             "name": "Updated smoke item",
@@ -274,7 +276,7 @@ async fn smoke_full_items_crud_flow() {
     // ── Step 5: Mark purchased ──────────────────────────────────
     let resp = app
         .client
-        .put(app.url(&format!("/items/{item_id}")))
+        .patch(app.url(&format!("/items/{item_id}")))
         .bearer_auth(token)
         .json(&serde_json::json!({ "status": "purchased" }))
         .send()
@@ -291,7 +293,7 @@ async fn smoke_full_items_crud_flow() {
     // ── Step 5b: Re-purchase should be 409 ──────────────────────
     let resp = app
         .client
-        .put(app.url(&format!("/items/{item_id}")))
+        .patch(app.url(&format!("/items/{item_id}")))
         .bearer_auth(token)
         .json(&serde_json::json!({ "status": "purchased" }))
         .send()
@@ -302,7 +304,7 @@ async fn smoke_full_items_crud_flow() {
     // ── Step 5c: Restore to active ────────────────────────────
     let resp = app
         .client
-        .put(app.url(&format!("/items/{item_id}")))
+        .patch(app.url(&format!("/items/{item_id}")))
         .bearer_auth(token)
         .json(&serde_json::json!({ "status": "active" }))
         .send()
@@ -319,7 +321,7 @@ async fn smoke_full_items_crud_flow() {
     // Re-purchase so subsequent steps still work with purchased state
     let resp = app
         .client
-        .put(app.url(&format!("/items/{item_id}")))
+        .patch(app.url(&format!("/items/{item_id}")))
         .bearer_auth(token)
         .json(&serde_json::json!({ "status": "purchased" }))
         .send()
@@ -384,6 +386,7 @@ async fn smoke_claim_unclaim_flow() {
         .json(&serde_json::json!({
             "email": "claim-smoke-owner@example.com",
             "password": password,
+            "terms_accepted": true,
         }))
         .send()
         .await
@@ -398,6 +401,7 @@ async fn smoke_claim_unclaim_flow() {
         .json(&serde_json::json!({
             "email": "claim-smoke-claimer@example.com",
             "password": password,
+            "terms_accepted": true,
         }))
         .send()
         .await
@@ -497,6 +501,7 @@ async fn smoke_full_categories_crud_flow() {
         .json(&serde_json::json!({
             "email": "categories-smoke@example.com",
             "password": password,
+            "terms_accepted": true,
         }))
         .send()
         .await
@@ -505,7 +510,7 @@ async fn smoke_full_categories_crud_flow() {
     let reg: serde_json::Value = resp.json().await.unwrap();
     let token = reg["tokens"]["access_token"].as_str().unwrap();
 
-    // ── Step 1: List defaults (6) ─────────────────────────────
+    // ── Step 1: List defaults (6) — categories are read-only global defaults
     let resp = app
         .client
         .get(app.url("/categories"))
@@ -517,93 +522,15 @@ async fn smoke_full_categories_crud_flow() {
     let list: serde_json::Value = resp.json().await.unwrap();
     assert_eq!(list.as_array().unwrap().len(), 6);
 
-    // ── Step 2: Create "Voyages" with icon ────────────────────
-    let resp = app
-        .client
-        .post(app.url("/categories"))
-        .bearer_auth(token)
-        .json(&serde_json::json!({ "name": "Voyages", "icon": "plane" }))
-        .send()
-        .await
-        .unwrap();
-    assert_eq!(resp.status(), 201);
-    let cat: serde_json::Value = resp.json().await.unwrap();
-    let cat_id = cat["id"].as_str().unwrap();
-    assert_eq!(cat["name"], "Voyages");
-    assert_eq!(cat["icon"], "plane");
-    assert_eq!(cat["is_default"], false);
+    // ── Step 2: Verify each category has expected fields ────────
+    for cat in list.as_array().unwrap() {
+        assert!(cat["id"].is_string(), "category should have id");
+        assert!(cat["name"].is_string(), "category should have name");
+    }
 
-    // ── Step 3: List → 7 ─────────────────────────────────────
-    let resp = app
-        .client
-        .get(app.url("/categories"))
-        .bearer_auth(token)
-        .send()
-        .await
-        .unwrap();
-    assert_eq!(resp.status(), 200);
-    let list: serde_json::Value = resp.json().await.unwrap();
-    assert_eq!(list.as_array().unwrap().len(), 7);
-
-    // ── Step 4: Update "Voyages" → "Travel" ───────────────────
-    let resp = app
-        .client
-        .put(app.url(&format!("/categories/{cat_id}")))
-        .bearer_auth(token)
-        .json(&serde_json::json!({ "name": "Travel" }))
-        .send()
-        .await
-        .unwrap();
-    assert_eq!(resp.status(), 200);
-    let updated: serde_json::Value = resp.json().await.unwrap();
-    assert_eq!(updated["name"], "Travel");
-
-    // ── Step 5: Delete "Travel" ───────────────────────────────
-    let resp = app
-        .client
-        .delete(app.url(&format!("/categories/{cat_id}")))
-        .bearer_auth(token)
-        .send()
-        .await
-        .unwrap();
-    assert_eq!(resp.status(), 204);
-
-    // ── Step 6: List → back to 6 ─────────────────────────────
-    let resp = app
-        .client
-        .get(app.url("/categories"))
-        .bearer_auth(token)
-        .send()
-        .await
-        .unwrap();
-    assert_eq!(resp.status(), 200);
-    let list: serde_json::Value = resp.json().await.unwrap();
-    assert_eq!(list.as_array().unwrap().len(), 6);
-
-    // ── Step 7: Delete default → 400 ─────────────────────────
-    let default_id = list.as_array().unwrap()[0]["id"].as_str().unwrap();
-    let resp = app
-        .client
-        .delete(app.url(&format!("/categories/{default_id}")))
-        .bearer_auth(token)
-        .send()
-        .await
-        .unwrap();
-    assert_eq!(resp.status(), 400);
-
-    // ── Step 8: Update default name → 200 ────────────────────
-    let resp = app
-        .client
-        .put(app.url(&format!("/categories/{default_id}")))
-        .bearer_auth(token)
-        .json(&serde_json::json!({ "name": "Renamed Default" }))
-        .send()
-        .await
-        .unwrap();
-    assert_eq!(resp.status(), 200);
-    let renamed: serde_json::Value = resp.json().await.unwrap();
-    assert_eq!(renamed["name"], "Renamed Default");
-    assert_eq!(renamed["is_default"], true);
+    // ── Step 3: Without auth → 401 ─────────────────────────────
+    let resp = app.client.get(app.url("/categories")).send().await.unwrap();
+    assert_eq!(resp.status(), 401);
 }
 
 #[tokio::test]
@@ -619,6 +546,7 @@ async fn smoke_full_push_token_flow() {
         .json(&serde_json::json!({
             "email": "push-smoke@example.com",
             "password": password,
+            "terms_accepted": true,
         }))
         .send()
         .await

@@ -990,8 +990,8 @@ async fn wait_for_notification(app: &TestApp, user_id: Uuid, notif_type: &str) -
         #[allow(clippy::type_complexity)]
         let row: Option<(Uuid, String, String, String, Option<Uuid>, Option<Uuid>)> =
             sqlx::query_as(
-                "SELECT id, notification_type, title, body, wish_id, actor_id \
-             FROM notifications WHERE user_id = $1 AND notification_type = $2 \
+                "SELECT id, type, title, body, wish_id, actor_id \
+             FROM notifications WHERE user_id = $1 AND type = $2 \
              ORDER BY created_at DESC LIMIT 1",
             )
             .bind(user_id)
