@@ -121,11 +121,12 @@ jobs:
             ENVEOF
             chmod 600 /opt/offrii/.env.staging
 
-            # Decode key files (staging uses separate JWT keys from prod)
-            echo '${{ secrets.JWT_PRIVATE_KEY_BASE64_STAGING }}' | base64 -d > /opt/offrii/secrets/jwt_private.pem
-            echo '${{ secrets.JWT_PUBLIC_KEY_BASE64_STAGING }}' | base64 -d > /opt/offrii/secrets/jwt_public.pem
-            echo '${{ secrets.APNS_KEY_BASE64 }}' | base64 -d > /opt/offrii/secrets/apns_key.p8
-            chmod 600 /opt/offrii/secrets/*
+            # Decode key files (staging uses separate paths to avoid overwriting prod keys)
+            mkdir -p /opt/offrii/secrets/staging
+            echo '${{ secrets.JWT_PRIVATE_KEY_BASE64_STAGING }}' | base64 -d > /opt/offrii/secrets/staging/jwt_private.pem
+            echo '${{ secrets.JWT_PUBLIC_KEY_BASE64_STAGING }}' | base64 -d > /opt/offrii/secrets/staging/jwt_public.pem
+            echo '${{ secrets.APNS_KEY_BASE64 }}' | base64 -d > /opt/offrii/secrets/staging/apns_key.p8
+            chmod 600 /opt/offrii/secrets/staging/*
 
             # Pull staging image
             echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
@@ -133,7 +134,7 @@ jobs:
 
             # Run migrations before deploy
             echo "Running database migrations..."
-            docker compose -p offrii-staging -f docker-compose.staging.yml --env-file .env.staging run --rm --no-deps staging-backend migrate || {
+            docker compose -p offrii-staging -f docker-compose.staging.yml --env-file .env.staging run --rm --no-deps --entrypoint migrate staging-backend || {
               echo "Migration failed — aborting deploy"
               exit 1
             }

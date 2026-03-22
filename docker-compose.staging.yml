@@ -76,9 +76,9 @@ services:
       staging-redis:
         condition: service_healthy
     volumes:
-      - /opt/offrii/secrets/jwt_private.pem:/run/secrets/jwt_private_key:ro
-      - /opt/offrii/secrets/jwt_public.pem:/run/secrets/jwt_public_key:ro
-      - /opt/offrii/secrets/AuthKey.p8:/run/secrets/apns_key:ro
+      - /opt/offrii/secrets/staging/jwt_private.pem:/run/secrets/jwt_private_key:ro
+      - /opt/offrii/secrets/staging/jwt_public.pem:/run/secrets/jwt_public_key:ro
+      - /opt/offrii/secrets/staging/apns_key.p8:/run/secrets/apns_key:ro
     networks:
       - offrii-net
     healthcheck:
