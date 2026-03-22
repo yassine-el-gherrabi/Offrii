@@ -1,6 +1,7 @@
 // swiftlint:disable file_length
 import SwiftUI
 
+// swiftlint:disable:next type_body_length
 struct ItemEditView: View {
     let item: Item
     let onSave: (Item) -> Void
@@ -24,6 +25,7 @@ struct ItemEditView: View {
     @State private var existingImageUrl: URL?
     @State private var circleToUnshare: SharedCircleInfo?
     @State private var showPrivateWarning = false
+    @State private var showPublicWarning = false
     @State private var sharedCircles: [SharedCircleInfo]
     @State private var didCancel = false
     @State private var didSave = false
@@ -130,10 +132,10 @@ struct ItemEditView: View {
                         Toggle(isOn: Binding(
                             get: { isPrivate },
                             set: { newValue in
-                                if newValue && !item.sharedCircles.isEmpty {
+                                if newValue {
                                     showPrivateWarning = true
                                 } else {
-                                    isPrivate = newValue
+                                    showPublicWarning = true
                                 }
                             }
                         )) {
@@ -157,17 +159,30 @@ struct ItemEditView: View {
                         ) {
                             Button(NSLocalizedString("wishlist.private", comment: "")) {
                                 isPrivate = true
+                                sharedCircles = []
                             }
                             Button(NSLocalizedString("common.cancel", comment: ""), role: .cancel) {}
                         } message: {
                             Text(NSLocalizedString("wishlist.privateWarning.message", comment: ""))
+                        }
+                        .alert(
+                            NSLocalizedString("wishlist.publicWarning.title", comment: ""),
+                            isPresented: $showPublicWarning
+                        ) {
+                            Button(NSLocalizedString("wishlist.makePublic", comment: "")) {
+                                isPrivate = false
+                            }
+                            Button(NSLocalizedString("common.cancel", comment: ""), role: .cancel) {}
+                        } message: {
+                            Text(NSLocalizedString("wishlist.publicWarning.message", comment: ""))
                         }
                     }
 
                 }
                 .padding(.horizontal, OffriiTheme.spacingLG)
 
-                // Shared with section
+                // Shared with section (hidden when private)
+                if !isPrivate {
                 VStack(alignment: .leading, spacing: OffriiTheme.spacingSM) {
                     Text(NSLocalizedString("item.sharedWith", comment: ""))
                         .font(OffriiTypography.subheadline)
@@ -221,6 +236,7 @@ struct ItemEditView: View {
                 }
                 .padding(.horizontal, OffriiTheme.spacingLG)
                 .padding(.top, OffriiTheme.spacingSM)
+                }
 
                 // Spacer for bottom padding
                 Spacer().frame(height: OffriiTheme.spacingLG)

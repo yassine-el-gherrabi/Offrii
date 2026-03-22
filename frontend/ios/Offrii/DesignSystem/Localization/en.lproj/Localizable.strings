@@ -711,6 +711,8 @@
 "wishlist.privateHint" = "Won't appear in share links";
 "wishlist.privateWarning.title" = "Remove from shares?";
 "wishlist.privateWarning.message" = "This item is shared with circles. Making it private will remove it from all shares.";
+"wishlist.publicWarning.title" = "Make public?";
+"wishlist.publicWarning.message" = "The item will be visible again, but previous shares won't be restored. You'll need to share it again manually.";
 "item.sharedWith" = "Shared with";
 "item.links" = "Links";
 

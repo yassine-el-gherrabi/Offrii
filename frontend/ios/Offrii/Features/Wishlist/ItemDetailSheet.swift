@@ -157,8 +157,10 @@ struct ItemDetailSheet: View {
 
                             // Owner-only sections
                             if isOwnItem {
-                                // Shared with section
-                                sharedWithSection(item)
+                                // Shared with section (hidden when private)
+                                if !item.isPrivate {
+                                    sharedWithSection(item)
+                                }
 
                                 // Date
                                 HStack(spacing: OffriiTheme.spacingXS) {
