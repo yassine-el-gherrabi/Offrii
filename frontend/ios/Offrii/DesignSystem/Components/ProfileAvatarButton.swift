@@ -6,10 +6,16 @@ struct ProfileAvatarButton: View {
     let initials: String
     var avatarUrl: URL?
     var showBadge: Bool = false
+    var isLoading: Bool = false
 
     var body: some View {
         ZStack(alignment: .topTrailing) {
-            if let url = avatarUrl {
+            if isLoading {
+                Circle()
+                    .fill(OffriiTheme.border.opacity(0.3))
+                    .frame(width: 32, height: 32)
+                    .shimmer()
+            } else if let url = avatarUrl {
                 LazyImage(url: url) { state in
                     if let image = state.image {
                         image

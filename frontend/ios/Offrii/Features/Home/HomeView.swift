@@ -134,9 +134,9 @@ struct HomeView: View {
                 NavigationLink(destination: ProfileView()) {
                     ProfileAvatarButton(
                         initials: ProfileAvatarButton.initials(from: authManager.currentUser?.displayName),
-                        avatarUrl: authManager.currentUser?.avatarUrl.flatMap { URL(string: $0) }
+                        avatarUrl: authManager.currentUser?.avatarUrl.flatMap { URL(string: $0) },
+                        isLoading: authManager.currentUser == nil
                     )
-                    .id(authManager.currentUser?.avatarUrl)
                 }
             }
         }
