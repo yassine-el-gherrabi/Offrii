@@ -2982,7 +2982,7 @@ async fn delete_donor_account_resets_matched_wish_to_open() {
     assert_eq!(row.0, "matched");
 
     // Delete donor account
-    let (status, _) = app.delete_with_auth("/users/me", &donor).await;
+    let (status, _) = app.delete_with_auth("/users/profile", &donor).await;
     assert_eq!(status, StatusCode::NO_CONTENT);
 
     // Wish should be back to open
@@ -3028,7 +3028,7 @@ async fn delete_donor_does_not_affect_fulfilled_wishes() {
     assert_eq!(row.0, "fulfilled");
 
     // Delete donor
-    app.delete_with_auth("/users/me", &donor).await;
+    app.delete_with_auth("/users/profile", &donor).await;
 
     // Wish should stay fulfilled (trigger only affects matched status)
     let row: (String,) = sqlx::query_as("SELECT status FROM community_wishes WHERE id = $1")
@@ -4215,7 +4215,7 @@ async fn user_profile_includes_email_verified() {
     let app = TestApp::new().await;
     let token = setup_aged_user(&app, "profile@test.com").await;
 
-    let (status, body) = app.get_with_auth("/users/me", &token).await;
+    let (status, body) = app.get_with_auth("/users/profile", &token).await;
     assert_eq!(status, StatusCode::OK);
     assert_eq!(
         body["email_verified"].as_bool(),
@@ -4339,7 +4339,7 @@ async fn user_profile_unverified_shows_false() {
     assert_eq!(status, StatusCode::CREATED);
     let token = resp["tokens"]["access_token"].as_str().unwrap();
 
-    let (status, body) = app.get_with_auth("/users/me", token).await;
+    let (status, body) = app.get_with_auth("/users/profile", token).await;
     assert_eq!(status, StatusCode::OK);
     assert_eq!(
         body["email_verified"].as_bool(),

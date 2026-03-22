@@ -13,8 +13,7 @@ async fn request_email_change(
     new_email: &str,
 ) -> (StatusCode, serde_json::Value) {
     let body = serde_json::json!({ "new_email": new_email });
-    app.post_json_with_auth("/users/me/email", &body, token)
-        .await
+    app.post_json_with_auth("/users/email", &body, token).await
 }
 
 /// Extract the email change token from the database for a given user.
@@ -235,7 +234,7 @@ async fn confirm_email_change_invalidates_sessions() {
     assert_eq!(verify_status, StatusCode::OK);
 
     // Old access token should now be rejected (token_version bumped)
-    let (profile_status, _) = app.get_with_auth("/users/me", &old_token).await;
+    let (profile_status, _) = app.get_with_auth("/users/profile", &old_token).await;
     assert_eq!(
         profile_status,
         StatusCode::UNAUTHORIZED,

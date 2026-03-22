@@ -37,6 +37,7 @@ futures.workspace = true
 image.workspace = true
 jsonwebtoken.workspace = true
 kamadak-exif.workspace = true
+metrics.workspace = true
 rand.workspace = true
 rand_core.workspace = true
 redis.workspace = true

@@ -10,7 +10,7 @@ async fn get_profile_returns_defaults() {
         .setup_user_token("user@example.com", TEST_PASSWORD)
         .await;
 
-    let (status, body) = app.get_with_auth("/users/me", &token).await;
+    let (status, body) = app.get_with_auth("/users/profile", &token).await;
 
     assert_eq!(status, StatusCode::OK);
     assert_eq!(body["email"], "user@example.com");
@@ -27,7 +27,7 @@ async fn update_display_name() {
 
     let patch_body = serde_json::json!({ "display_name": "Alice" });
     let (status, body) = app
-        .patch_json_with_auth("/users/me", &patch_body, &token)
+        .patch_json_with_auth("/users/profile", &patch_body, &token)
         .await;
 
     assert_eq!(status, StatusCode::OK);
@@ -42,7 +42,7 @@ async fn delete_account_cascades() {
         .await;
 
     // Delete
-    let (status, _) = app.delete_with_auth("/users/me", &token).await;
+    let (status, _) = app.delete_with_auth("/users/profile", &token).await;
     assert_eq!(status, StatusCode::NO_CONTENT);
 
     // Login should fail
@@ -63,7 +63,7 @@ async fn get_profile_includes_username() {
         .setup_user_token("user@example.com", TEST_PASSWORD)
         .await;
 
-    let (status, body) = app.get_with_auth("/users/me", &token).await;
+    let (status, body) = app.get_with_auth("/users/profile", &token).await;
 
     assert_eq!(status, StatusCode::OK);
     assert!(body["username"].is_string());
@@ -80,7 +80,7 @@ async fn update_username_valid() {
 
     let patch_body = serde_json::json!({ "username": "newname_123" });
     let (status, body) = app
-        .patch_json_with_auth("/users/me", &patch_body, &token)
+        .patch_json_with_auth("/users/profile", &patch_body, &token)
         .await;
 
     assert_eq!(status, StatusCode::OK);
@@ -98,13 +98,13 @@ async fn update_username_already_taken_409() {
     // Set Alice's username
     let patch = serde_json::json!({ "username": "uniquename" });
     let (status, _) = app
-        .patch_json_with_auth("/users/me", &patch, &token_a)
+        .patch_json_with_auth("/users/profile", &patch, &token_a)
         .await;
     assert_eq!(status, StatusCode::OK);
 
     // Bob tries the same username
     let (status, body) = app
-        .patch_json_with_auth("/users/me", &patch, &token_b)
+        .patch_json_with_auth("/users/profile", &patch, &token_b)
         .await;
     assert_eq!(status, StatusCode::CONFLICT);
     assert_error(&body, "CONFLICT");
@@ -119,19 +119,25 @@ async fn update_username_invalid_format_400() {
 
     // Starts with digit
     let patch = serde_json::json!({ "username": "1invalid" });
-    let (status, body) = app.patch_json_with_auth("/users/me", &patch, &token).await;
+    let (status, body) = app
+        .patch_json_with_auth("/users/profile", &patch, &token)
+        .await;
     assert_eq!(status, StatusCode::BAD_REQUEST);
     assert_error(&body, "BAD_REQUEST");
 
     // Too short
     let patch = serde_json::json!({ "username": "ab" });
-    let (status, body) = app.patch_json_with_auth("/users/me", &patch, &token).await;
+    let (status, body) = app
+        .patch_json_with_auth("/users/profile", &patch, &token)
+        .await;
     assert_eq!(status, StatusCode::BAD_REQUEST);
     assert_error(&body, "BAD_REQUEST");
 
     // Contains uppercase
     let patch = serde_json::json!({ "username": "HasUpper" });
-    let (status, body) = app.patch_json_with_auth("/users/me", &patch, &token).await;
+    let (status, body) = app
+        .patch_json_with_auth("/users/profile", &patch, &token)
+        .await;
     assert_eq!(status, StatusCode::BAD_REQUEST);
     assert_error(&body, "BAD_REQUEST");
 }
@@ -145,11 +151,15 @@ async fn update_username_same_user_keeps_own_username() {
 
     // Set username
     let patch = serde_json::json!({ "username": "myname" });
-    let (status, _) = app.patch_json_with_auth("/users/me", &patch, &token).await;
+    let (status, _) = app
+        .patch_json_with_auth("/users/profile", &patch, &token)
+        .await;
     assert_eq!(status, StatusCode::OK);
 
     // Re-submit same username — should succeed (own username is excluded from uniqueness check)
-    let (status, body) = app.patch_json_with_auth("/users/me", &patch, &token).await;
+    let (status, body) = app
+        .patch_json_with_auth("/users/profile", &patch, &token)
+        .await;
     assert_eq!(status, StatusCode::OK);
     assert_eq!(body["username"], "myname");
 }
@@ -160,7 +170,7 @@ async fn update_username_same_user_keeps_own_username() {
 async fn get_profile_without_auth_401() {
     let app = TestApp::new().await;
 
-    let (status, body) = app.get_no_auth("/users/me").await;
+    let (status, body) = app.get_no_auth("/users/profile").await;
 
     assert_eq!(status, StatusCode::UNAUTHORIZED);
     assert_error(&body, "UNAUTHORIZED");
@@ -172,7 +182,7 @@ async fn patch_profile_without_auth_401() {
 
     let patch_body = serde_json::json!({ "display_name": "Hacker" });
     let (status, body) = app
-        .patch_json_with_auth("/users/me", &patch_body, "invalid-token")
+        .patch_json_with_auth("/users/profile", &patch_body, "invalid-token")
         .await;
 
     assert_eq!(status, StatusCode::UNAUTHORIZED);
@@ -183,7 +193,9 @@ async fn patch_profile_without_auth_401() {
 async fn delete_account_without_auth_401() {
     let app = TestApp::new().await;
 
-    let (status, body) = app.delete_with_auth("/users/me", "invalid-token").await;
+    let (status, body) = app
+        .delete_with_auth("/users/profile", "invalid-token")
+        .await;
 
     assert_eq!(status, StatusCode::UNAUTHORIZED);
     assert_error(&body, "UNAUTHORIZED");
@@ -201,7 +213,7 @@ async fn update_display_name_too_long_400() {
     let long_name = "A".repeat(101);
     let patch_body = serde_json::json!({ "display_name": long_name });
     let (status, body) = app
-        .patch_json_with_auth("/users/me", &patch_body, &token)
+        .patch_json_with_auth("/users/profile", &patch_body, &token)
         .await;
 
     assert_eq!(status, StatusCode::BAD_REQUEST);
@@ -217,7 +229,7 @@ async fn update_empty_body_returns_current_profile() {
 
     let patch_body = serde_json::json!({});
     let (status, body) = app
-        .patch_json_with_auth("/users/me", &patch_body, &token)
+        .patch_json_with_auth("/users/profile", &patch_body, &token)
         .await;
 
     assert_eq!(status, StatusCode::OK);
@@ -236,7 +248,7 @@ async fn update_multiple_fields_at_once() {
         "username": "jeantest",
     });
     let (status, body) = app
-        .patch_json_with_auth("/users/me", &patch_body, &token)
+        .patch_json_with_auth("/users/profile", &patch_body, &token)
         .await;
 
     assert_eq!(status, StatusCode::OK);
@@ -253,7 +265,7 @@ async fn export_data_empty_user_200() {
         .setup_user_token("user@example.com", TEST_PASSWORD)
         .await;
 
-    let (status, body) = app.get_with_auth("/users/me/export", &token).await;
+    let (status, body) = app.get_with_auth("/users/export", &token).await;
 
     assert_eq!(status, StatusCode::OK);
     // Profile present with correct email
@@ -300,7 +312,7 @@ async fn export_data_includes_items_and_categories() {
     app.create_item(&token, &serde_json::json!({ "name": "Livre" }))
         .await;
 
-    let (status, body) = app.get_with_auth("/users/me/export", &token).await;
+    let (status, body) = app.get_with_auth("/users/export", &token).await;
 
     assert_eq!(status, StatusCode::OK);
     assert_eq!(body["profile"]["email"], "user@example.com");
@@ -327,7 +339,7 @@ async fn export_data_includes_items_and_categories() {
 async fn export_data_without_auth_401() {
     let app = TestApp::new().await;
 
-    let (status, body) = app.get_no_auth("/users/me/export").await;
+    let (status, body) = app.get_no_auth("/users/export").await;
 
     assert_eq!(status, StatusCode::UNAUTHORIZED);
     assert_error(&body, "UNAUTHORIZED");
@@ -349,7 +361,7 @@ async fn export_data_does_not_leak_other_users() {
     .await;
 
     // Bob exports — should NOT see Alice's item
-    let (status, body) = app.get_with_auth("/users/me/export", &token_b).await;
+    let (status, body) = app.get_with_auth("/users/export", &token_b).await;
 
     assert_eq!(status, StatusCode::OK);
     assert_eq!(body["profile"]["email"], "bob@example.com");
@@ -377,7 +389,7 @@ async fn export_after_delete_item_reflects_current_state() {
     assert_eq!(status, StatusCode::NO_CONTENT);
 
     // Export should not include the deleted item
-    let (status, body) = app.get_with_auth("/users/me/export", &token).await;
+    let (status, body) = app.get_with_auth("/users/export", &token).await;
     assert_eq!(status, StatusCode::OK);
 
     let items = body["items"].as_array().unwrap();
@@ -405,7 +417,7 @@ async fn delete_account_cascades_items_and_categories() {
     .await;
 
     // Delete account
-    let (status, _) = app.delete_with_auth("/users/me", &token).await;
+    let (status, _) = app.delete_with_auth("/users/profile", &token).await;
     assert_eq!(status, StatusCode::NO_CONTENT);
 
     // Re-register same email — should work (user is gone)
@@ -414,7 +426,7 @@ async fn delete_account_cascades_items_and_categories() {
         .await;
 
     // New user's export should have no items from previous account
-    let (status, body) = app.get_with_auth("/users/me/export", &new_token).await;
+    let (status, body) = app.get_with_auth("/users/export", &new_token).await;
     assert_eq!(status, StatusCode::OK);
 
     let items = body["items"].as_array().unwrap();
@@ -428,11 +440,11 @@ async fn delete_account_invalidates_token() {
         .setup_user_token("user@example.com", TEST_PASSWORD)
         .await;
 
-    let (status, _) = app.delete_with_auth("/users/me", &token).await;
+    let (status, _) = app.delete_with_auth("/users/profile", &token).await;
     assert_eq!(status, StatusCode::NO_CONTENT);
 
     // Token still has valid JWT signature but user is gone → 404
-    let (status, body) = app.get_with_auth("/users/me", &token).await;
+    let (status, body) = app.get_with_auth("/users/profile", &token).await;
     assert_eq!(status, StatusCode::NOT_FOUND);
     assert_error(&body, "NOT_FOUND");
 }
@@ -446,7 +458,7 @@ async fn get_profile_excludes_password_hash() {
         .setup_user_token("user@example.com", TEST_PASSWORD)
         .await;
 
-    let (status, body) = app.get_with_auth("/users/me", &token).await;
+    let (status, body) = app.get_with_auth("/users/profile", &token).await;
     assert_eq!(status, StatusCode::OK);
 
     // Ensure password_hash is never in the response
@@ -463,13 +475,17 @@ async fn update_display_name_null_is_ignored() {
 
     // Set a display name
     let patch = serde_json::json!({ "display_name": "Alice" });
-    let (status, body) = app.patch_json_with_auth("/users/me", &patch, &token).await;
+    let (status, body) = app
+        .patch_json_with_auth("/users/profile", &patch, &token)
+        .await;
     assert_eq!(status, StatusCode::OK);
     assert_eq!(body["display_name"], "Alice");
 
     // Sending null = "don't update" (Option<String> semantics)
     let patch = serde_json::json!({ "display_name": null });
-    let (status, body) = app.patch_json_with_auth("/users/me", &patch, &token).await;
+    let (status, body) = app
+        .patch_json_with_auth("/users/profile", &patch, &token)
+        .await;
     assert_eq!(status, StatusCode::OK);
     assert_eq!(
         body["display_name"], "Alice",
@@ -487,11 +503,13 @@ async fn update_profile_persists_across_requests() {
     let patch = serde_json::json!({
         "display_name": "Persisted",
     });
-    let (status, _) = app.patch_json_with_auth("/users/me", &patch, &token).await;
+    let (status, _) = app
+        .patch_json_with_auth("/users/profile", &patch, &token)
+        .await;
     assert_eq!(status, StatusCode::OK);
 
     // Verify via GET
-    let (status, body) = app.get_with_auth("/users/me", &token).await;
+    let (status, body) = app.get_with_auth("/users/profile", &token).await;
     assert_eq!(status, StatusCode::OK);
     assert_eq!(body["display_name"], "Persisted");
 }
@@ -505,7 +523,9 @@ async fn profile_survives_password_change() {
 
     // Set profile data
     let patch = serde_json::json!({ "display_name": "Survivor" });
-    let (status, _) = app.patch_json_with_auth("/users/me", &patch, &token).await;
+    let (status, _) = app
+        .patch_json_with_auth("/users/profile", &patch, &token)
+        .await;
     assert_eq!(status, StatusCode::OK);
 
     // Change password
@@ -528,7 +548,7 @@ async fn profile_survives_password_change() {
     let new_token = login_body["tokens"]["access_token"].as_str().unwrap();
 
     // Profile data should still be there
-    let (status, body) = app.get_with_auth("/users/me", new_token).await;
+    let (status, body) = app.get_with_auth("/users/profile", new_token).await;
     assert_eq!(status, StatusCode::OK);
     assert_eq!(body["display_name"], "Survivor");
 }
@@ -544,7 +564,7 @@ async fn update_profile_avatar_url_200() {
 
     let patch_body = serde_json::json!({ "avatar_url": "https://example.com/avatar.jpg" });
     let (status, body) = app
-        .patch_json_with_auth("/users/me", &patch_body, &token)
+        .patch_json_with_auth("/users/profile", &patch_body, &token)
         .await;
 
     assert_eq!(status, StatusCode::OK);
@@ -561,12 +581,12 @@ async fn get_profile_includes_avatar_url() {
     // Set avatar
     let patch_body = serde_json::json!({ "avatar_url": "https://example.com/avatar.jpg" });
     let (status, _) = app
-        .patch_json_with_auth("/users/me", &patch_body, &token)
+        .patch_json_with_auth("/users/profile", &patch_body, &token)
         .await;
     assert_eq!(status, StatusCode::OK);
 
     // GET should include avatar_url
-    let (status, body) = app.get_with_auth("/users/me", &token).await;
+    let (status, body) = app.get_with_auth("/users/profile", &token).await;
     assert_eq!(status, StatusCode::OK);
     assert_eq!(body["avatar_url"], "https://example.com/avatar.jpg");
 }
@@ -581,7 +601,7 @@ async fn update_profile_avatar_url_too_long_400() {
     let long_url = format!("https://example.com/{}", "a".repeat(2049));
     let patch_body = serde_json::json!({ "avatar_url": long_url });
     let (status, body) = app
-        .patch_json_with_auth("/users/me", &patch_body, &token)
+        .patch_json_with_auth("/users/profile", &patch_body, &token)
         .await;
 
     assert_eq!(status, StatusCode::BAD_REQUEST);
@@ -597,7 +617,7 @@ async fn new_user_has_username_customized_false() {
         .setup_user_token("newuser@example.com", TEST_PASSWORD)
         .await;
 
-    let (status, body) = app.get_with_auth("/users/me", &token).await;
+    let (status, body) = app.get_with_auth("/users/profile", &token).await;
 
     assert_eq!(status, StatusCode::OK);
     assert_eq!(
@@ -614,12 +634,14 @@ async fn update_username_sets_username_customized_true() {
         .await;
 
     // Verify starts as false
-    let (_, body) = app.get_with_auth("/users/me", &token).await;
+    let (_, body) = app.get_with_auth("/users/profile", &token).await;
     assert_eq!(body["username_customized"], false);
 
     // Update username
     let patch = serde_json::json!({ "username": "mycustomname" });
-    let (status, body) = app.patch_json_with_auth("/users/me", &patch, &token).await;
+    let (status, body) = app
+        .patch_json_with_auth("/users/profile", &patch, &token)
+        .await;
 
     assert_eq!(status, StatusCode::OK);
     assert_eq!(body["username"], "mycustomname");
@@ -629,7 +651,7 @@ async fn update_username_sets_username_customized_true() {
     );
 
     // Verify persists via GET
-    let (status, body) = app.get_with_auth("/users/me", &token).await;
+    let (status, body) = app.get_with_auth("/users/profile", &token).await;
     assert_eq!(status, StatusCode::OK);
     assert_eq!(body["username_customized"], true);
 }
@@ -662,7 +684,9 @@ async fn non_username_update_does_not_set_customized() {
 
     // Update display_name only (not username)
     let patch = serde_json::json!({ "display_name": "Just a name" });
-    let (status, body) = app.patch_json_with_auth("/users/me", &patch, &token).await;
+    let (status, body) = app
+        .patch_json_with_auth("/users/profile", &patch, &token)
+        .await;
 
     assert_eq!(status, StatusCode::OK);
     assert_eq!(
