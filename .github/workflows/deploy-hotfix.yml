@@ -82,7 +82,6 @@ jobs:
           host: ${{ vars.HETZNER_HOST }}
           username: deploy
           key: ${{ secrets.DEPLOY_SSH_KEY }}
-          script_stop: true
           script: |
             set -euo pipefail
             cd /opt/offrii
@@ -109,8 +108,8 @@ jobs:
             CORS_ORIGIN=${{ vars.CORS_ORIGIN }}
             GF_SECURITY_ADMIN_PASSWORD=${{ secrets.GF_SECURITY_ADMIN_PASSWORD }}
             ENVEOF
-            # Write bcrypt hash separately (contains $ signs that break heredoc)
-            printf 'GRAFANA_BASIC_AUTH_HASH=%s\n' '${{ secrets.GRAFANA_BASIC_AUTH_HASH }}' >> /opt/offrii/.env
+            # Decode bcrypt hash from base64 (raw hash contains $ signs that break shell)
+            printf 'GRAFANA_BASIC_AUTH_HASH=%s\n' "$(echo '${{ secrets.GRAFANA_BASIC_AUTH_HASH_B64 }}' | base64 -d)" >> /opt/offrii/.env
             chmod 600 /opt/offrii/.env
 
             # Decode key files from base64
@@ -128,7 +127,7 @@ jobs:
 
             # Run migrations before deploy (fails fast if schema change breaks)
             echo "Running database migrations..."
-            docker compose -f docker-compose.yml -f docker-compose.prod.yml run --rm --no-deps backend migrate || {
+            docker compose -f docker-compose.yml -f docker-compose.prod.yml run --rm --no-deps --entrypoint migrate backend || {
               echo "Migration failed — aborting deploy"
               exit 1
             }
