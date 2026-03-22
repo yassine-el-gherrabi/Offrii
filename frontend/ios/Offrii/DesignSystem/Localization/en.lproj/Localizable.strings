@@ -232,6 +232,16 @@
 "circles.members.leave" = "Leave circle";
 "circles.members.leaveConfirm.title" = "Leave circle?";
 "circles.members.leaveConfirm.message" = "You will no longer see items shared in this circle.";
+"circles.removeMember.title" = "Remove this member?";
+"circles.removeMember.message" = "Remove %@ from the circle?";
+"circles.transferOwnership.title" = "Transfer ownership?";
+"circles.transferOwnership.action" = "Transfer";
+"circles.transferOwnership.message" = "%@ will become the circle owner. You will remain a member.";
+"circles.deleteCircle" = "Delete circle";
+"circles.deleteCircle.title" = "Delete this circle?";
+"circles.deleteCircle.message" = "The circle and all its shares will be deleted. This action cannot be undone.";
+"circles.deleteCircle.confirm" = "Delete";
+"circles.deleteCircle.transferFirst" = "Transfer first";
 "circles.search.placeholder" = "Search...";
 "circles.filter.all" = "All";
 "circles.filter.groups" = "Circles";

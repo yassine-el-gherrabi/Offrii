@@ -53,6 +53,13 @@ const CD3: Uuid = uuid("c1000000-0000-4000-a000-000000000003"); // Emma ↔ Soph
 const CD4: Uuid = uuid("c1000000-0000-4000-a000-000000000004"); // Emma ↔ Camille
 const CD5: Uuid = uuid("c1000000-0000-4000-a000-000000000005"); // Emma ↔ Sarah
 
+// Friend items (items owned by friends, shared to circles)
+const F01: Uuid = uuid("f0000000-0000-4000-a000-000000000001"); // Marie — Manette PS5
+const F02: Uuid = uuid("f0000000-0000-4000-a000-000000000002"); // Marie — Parfum Chanel
+const F03: Uuid = uuid("f0000000-0000-4000-a000-000000000003"); // Sophie — Tapis de yoga
+const F04: Uuid = uuid("f0000000-0000-4000-a000-000000000004"); // Sophie — MacBook Air
+const F05: Uuid = uuid("f0000000-0000-4000-a000-000000000005"); // Sarah — Bougie Diptyque
+
 // Community wishes
 const D1: Uuid = uuid("d0000000-0000-4000-a000-000000000001");
 const D2: Uuid = uuid("d0000000-0000-4000-a000-000000000002");
@@ -692,6 +699,107 @@ async fn seed_items(
     .execute(&mut *tx)
     .await?;
 
+    // ── Friend items (visible in shared circles) ──────────────────────
+
+    #[allow(clippy::type_complexity)]
+    let friend_items: Vec<(
+        Uuid,
+        Uuid,
+        &str,
+        Option<&str>,
+        Option<Decimal>,
+        i16,
+        Option<Uuid>,
+        &str,
+    )> = vec![
+        (
+            F01,
+            U2,
+            "Manette PS5 DualSense",
+            Some("Manette sans fil pour PlayStation 5"),
+            Some(d("69.99")),
+            1,
+            Some(cat_tech),
+            "https://cdn.offrii.com/demo/ps5-controller.jpg",
+        ),
+        (
+            F02,
+            U2,
+            "Parfum Chanel N°5",
+            Some("L'intemporel, 100ml"),
+            Some(d("135.00")),
+            2,
+            Some(cat_sante),
+            "https://cdn.offrii.com/demo/chanel.jpg",
+        ),
+        (
+            F03,
+            U4,
+            "Tapis de yoga premium",
+            Some("Antidérapant, épaisseur 6mm"),
+            Some(d("45.00")),
+            2,
+            Some(cat_loisirs),
+            "https://cdn.offrii.com/demo/yoga-mat.jpg",
+        ),
+        (
+            F04,
+            U4,
+            "MacBook Air M3",
+            Some("13 pouces, 256 Go"),
+            Some(d("1199.00")),
+            1,
+            Some(cat_tech),
+            "https://cdn.offrii.com/demo/macbook.jpg",
+        ),
+        (
+            F05,
+            U6,
+            "Bougie Diptyque Baies",
+            Some("Bougie parfumée 190g"),
+            Some(d("65.00")),
+            2,
+            Some(cat_maison),
+            "https://cdn.offrii.com/demo/diptyque.jpg",
+        ),
+    ];
+
+    for (id, user_id, name, desc, price, priority, cat, img) in friend_items {
+        sqlx::query(
+            "INSERT INTO items (id, user_id, name, description, estimated_price,
+             priority, category_id, status, is_private,
+             image_url, links, og_image_url, og_title, og_site_name,
+             claimed_by, claimed_at, claimed_via, claimed_name, claimed_via_link_id, web_claim_token,
+             created_at, updated_at)
+             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22)
+             ON CONFLICT (id) DO NOTHING",
+        )
+        .bind(id)
+        .bind(user_id)
+        .bind(name)
+        .bind(desc)
+        .bind(price)
+        .bind(priority)
+        .bind(cat)
+        .bind("active")
+        .bind(false)
+        .bind(Some(img))
+        .bind(None::<Vec<String>>)
+        .bind(None::<String>)
+        .bind(None::<String>)
+        .bind(None::<String>)
+        .bind(None::<Uuid>)
+        .bind(None::<chrono::DateTime<chrono::Utc>>)
+        .bind(None::<String>)
+        .bind(None::<String>)
+        .bind(None::<Uuid>)
+        .bind(None::<Uuid>)
+        .bind(ago_days(20))
+        .bind(ago_days(20))
+        .execute(&mut *tx)
+        .await?;
+    }
+
     Ok(())
 }
 
@@ -866,6 +974,43 @@ async fn seed_circle_share_rules(tx: &mut sqlx::PgConnection) -> Result<()> {
     .bind(C2)
     .bind(U1)
     .bind(ago_days(30))
+    .execute(&mut *tx)
+    .await?;
+
+    // Friends share their items to circles too
+    // Marie (U2) shares all to Famille (C1)
+    sqlx::query(
+        "INSERT INTO circle_share_rules (circle_id, user_id, share_mode, category_ids, created_at, updated_at)
+         VALUES ($1, $2, 'all', '{}', $3, $3)
+         ON CONFLICT (circle_id, user_id) DO NOTHING",
+    )
+    .bind(C1)
+    .bind(U2)
+    .bind(ago_days(38))
+    .execute(&mut *tx)
+    .await?;
+
+    // Sophie (U4) shares all to Famille (C1)
+    sqlx::query(
+        "INSERT INTO circle_share_rules (circle_id, user_id, share_mode, category_ids, created_at, updated_at)
+         VALUES ($1, $2, 'all', '{}', $3, $3)
+         ON CONFLICT (circle_id, user_id) DO NOTHING",
+    )
+    .bind(C1)
+    .bind(U4)
+    .bind(ago_days(36))
+    .execute(&mut *tx)
+    .await?;
+
+    // Sarah (U6) shares all to Copines (C2)
+    sqlx::query(
+        "INSERT INTO circle_share_rules (circle_id, user_id, share_mode, category_ids, created_at, updated_at)
+         VALUES ($1, $2, 'all', '{}', $3, $3)
+         ON CONFLICT (circle_id, user_id) DO NOTHING",
+    )
+    .bind(C2)
+    .bind(U6)
+    .bind(ago_days(27))
     .execute(&mut *tx)
     .await?;
 

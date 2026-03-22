@@ -18,6 +18,8 @@ struct CircleDetailView: View {
     @State private var itemToClaim: UUID?
     @State private var itemToUnclaim: UUID?
     @State private var showShareRule = false
+    @State private var showDeleteAlert = false
+    @State private var showTransferPicker = false
 
     private var currentUserId: UUID? { authManager.currentUser?.id }
     private var isOwner: Bool { viewModel.detail?.ownerId == currentUserId }
@@ -151,6 +153,39 @@ struct CircleDetailView: View {
         } message: {
             if let member = memberToTransfer {
                 Text(String(format: NSLocalizedString("circles.transferOwnership.message", comment: ""), member.displayName ?? ""))
+            }
+        }
+        .confirmationDialog(
+            NSLocalizedString("circles.deleteCircle.title", comment: ""),
+            isPresented: $showDeleteAlert,
+            titleVisibility: .visible
+        ) {
+            if let detail = viewModel.detail, detail.members.count > 1 {
+                Button(NSLocalizedString("circles.deleteCircle.transferFirst", comment: "")) {
+                    showTransferPicker = true
+                }
+            }
+            Button(NSLocalizedString("circles.deleteCircle.confirm", comment: ""), role: .destructive) {
+                Task {
+                    if await viewModel.deleteCircle(circleId: circleId) {
+                        dismiss()
+                    }
+                }
+            }
+            Button(NSLocalizedString("common.cancel", comment: ""), role: .cancel) {}
+        } message: {
+            Text(NSLocalizedString("circles.deleteCircle.message", comment: ""))
+        }
+        .sheet(isPresented: $showTransferPicker) {
+            if let detail = viewModel.detail {
+                TransferOwnershipPicker(
+                    members: detail.members.filter { $0.userId != currentUserId },
+                    onSelect: { member in
+                        memberToTransfer = member
+                        showTransferPicker = false
+                    }
+                )
+                .presentationDetents([.medium])
             }
         }
         .alert(
@@ -635,27 +670,39 @@ struct CircleDetailView: View {
                 }
                 .buttonStyle(.plain)
 
-                // Leave button (non-owners only)
-                if !isOwner {
-                    Divider()
-                        .padding(.horizontal, OffriiTheme.spacingLG)
+                Divider()
+                    .padding(.horizontal, OffriiTheme.spacingLG)
 
+                if isOwner {
+                    // Delete circle button (owner only)
+                    Button {
+                        showDeleteAlert = true
+                    } label: {
+                        HStack(spacing: OffriiTheme.spacingSM) {
+                            Image(systemName: "trash")
+                                .font(.system(size: 14))
+                                .foregroundColor(OffriiTheme.danger)
+                            Text(NSLocalizedString("circles.deleteCircle", comment: ""))
+                                .font(OffriiTypography.body)
+                                .foregroundColor(OffriiTheme.danger)
+                        }
+                        .padding(.horizontal, OffriiTheme.spacingLG)
+                        .padding(.vertical, OffriiTheme.spacingMD)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .buttonStyle(.plain)
+                } else {
+                    // Leave button (non-owners only)
                     Button {
                         showLeaveAlert = true
                     } label: {
                         HStack(spacing: OffriiTheme.spacingSM) {
-                            Image(
-                                systemName: "rectangle.portrait.and.arrow.right"
-                            )
-                            .font(.system(size: 14))
-                            .foregroundColor(OffriiTheme.danger)
-
-                            Text(NSLocalizedString(
-                                "circles.members.leave",
-                                comment: ""
-                            ))
-                            .font(OffriiTypography.body)
-                            .foregroundColor(OffriiTheme.danger)
+                            Image(systemName: "rectangle.portrait.and.arrow.right")
+                                .font(.system(size: 14))
+                                .foregroundColor(OffriiTheme.danger)
+                            Text(NSLocalizedString("circles.members.leave", comment: ""))
+                                .font(OffriiTypography.body)
+                                .foregroundColor(OffriiTheme.danger)
                         }
                         .padding(.horizontal, OffriiTheme.spacingLG)
                         .padding(.vertical, OffriiTheme.spacingMD)
@@ -881,6 +928,46 @@ struct CircleDetailView: View {
         let formatter = DateFormatter()
         formatter.dateFormat = "MMM yyyy"
         return formatter.string(from: date)
+    }
+}
+
+// MARK: - Transfer Ownership Picker
+
+struct TransferOwnershipPicker: View {
+    let members: [CircleMember]
+    let onSelect: (CircleMember) -> Void
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            List(members, id: \.userId) { member in
+                Button {
+                    onSelect(member)
+                } label: {
+                    HStack(spacing: OffriiTheme.spacingMD) {
+                        AvatarView(member.displayName, size: .medium)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(member.displayName ?? member.username)
+                                .font(OffriiTypography.body)
+                                .foregroundColor(OffriiTheme.text)
+                            Text("@\(member.username)")
+                                .font(OffriiTypography.caption)
+                                .foregroundColor(OffriiTheme.textMuted)
+                        }
+                        Spacer()
+                    }
+                }
+            }
+            .listStyle(.plain)
+            .navigationTitle(NSLocalizedString("circles.transferOwnership.title", comment: ""))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(NSLocalizedString("common.cancel", comment: "")) { dismiss() }
+                        .foregroundColor(OffriiTheme.primary)
+                }
+            }
+        }
     }
 }
 

@@ -134,4 +134,14 @@ final class CircleDetailViewModel {
             self.error = error.localizedDescription
         }
     }
+
+    func deleteCircle(circleId: UUID) async -> Bool {
+        do {
+            try await CircleService.shared.deleteCircle(id: circleId)
+            return true
+        } catch {
+            self.error = error.localizedDescription
+            return false
+        }
+    }
 }
