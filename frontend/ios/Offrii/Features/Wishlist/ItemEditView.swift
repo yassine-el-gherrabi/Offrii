@@ -362,6 +362,8 @@ struct ItemEditView: View {
                     Button {
                         if links.count > 1 {
                             links.remove(at: index)
+                        } else if links[index].isEmpty {
+                            links.removeAll()
                         } else {
                             links[index] = ""
                         }

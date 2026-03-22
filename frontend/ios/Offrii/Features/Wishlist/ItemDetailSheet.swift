@@ -18,6 +18,7 @@ struct ItemDetailSheet: View {
     @State private var showShareToCircle = false
     @State private var showClaimConfirm = false
     @State private var showUnclaimConfirm = false
+    @State private var showReceivedConfirm = false
 
     var body: some View {
         NavigationStack {
@@ -185,11 +186,7 @@ struct ItemDetailSheet: View {
                                             variant: .primary,
                                             isLoading: viewModel.isUpdating
                                         ) {
-                                            Task {
-                                                if await viewModel.markPurchased() {
-                                                    dismiss()
-                                                }
-                                            }
+                                            showReceivedConfirm = true
                                         }
                                     }
 
@@ -289,6 +286,26 @@ struct ItemDetailSheet: View {
                 Button(NSLocalizedString("common.cancel", comment: ""), role: .cancel) {}
             } message: {
                 Text(NSLocalizedString("circles.detail.unclaimConfirm.message", comment: ""))
+            }
+            .alert(
+                NSLocalizedString("wishlist.markReceived.title", comment: ""),
+                isPresented: $showReceivedConfirm
+            ) {
+                Button(NSLocalizedString("wishlist.markReceived.confirm", comment: "")) {
+                    Task {
+                        if await viewModel.markPurchased() {
+                            dismiss()
+                        }
+                    }
+                }
+                Button(NSLocalizedString("common.cancel", comment: ""), role: .cancel) {}
+            } message: {
+                Text(NSLocalizedString(
+                    viewModel.item?.isClaimed == true
+                        ? "wishlist.markReceived.messageClaimed"
+                        : "wishlist.markReceived.message",
+                    comment: ""
+                ))
             }
             .sheet(isPresented: $showEdit) {
                 if let item = viewModel.item {

@@ -15,6 +15,7 @@ struct WishlistView: View {
     @State private var itemToDelete: Item?
     @State private var shareItemId: UUID?
     @State private var itemToMakePrivate: Item?
+    @State private var itemToMarkReceived: Item?
 
     private let gridColumns = [
         GridItem(.flexible(), spacing: OffriiTheme.spacingSM),
@@ -213,6 +214,30 @@ struct WishlistView: View {
         } message: {
             Text(NSLocalizedString("wishlist.privateWarning.message", comment: ""))
         }
+        .alert(
+            NSLocalizedString("wishlist.markReceived.title", comment: ""),
+            isPresented: Binding(
+                get: { itemToMarkReceived != nil },
+                set: { if !$0 { itemToMarkReceived = nil } }
+            )
+        ) {
+            Button(NSLocalizedString("wishlist.markReceived.confirm", comment: "")) {
+                if let item = itemToMarkReceived {
+                    Task { await viewModel.markPurchased(item) }
+                }
+                itemToMarkReceived = nil
+            }
+            Button(NSLocalizedString("common.cancel", comment: ""), role: .cancel) {
+                itemToMarkReceived = nil
+            }
+        } message: {
+            Text(NSLocalizedString(
+                itemToMarkReceived?.isClaimed == true
+                    ? "wishlist.markReceived.messageClaimed"
+                    : "wishlist.markReceived.message",
+                comment: ""
+            ))
+        }
         .task {
             await viewModel.loadCategories()
             await viewModel.loadItems()
@@ -358,7 +383,7 @@ struct WishlistView: View {
 
                             if item.isActive {
                                 Button {
-                                    Task { await viewModel.markPurchased(item) }
+                                    itemToMarkReceived = item
                                 } label: {
                                     Label(
                                         item.isClaimed

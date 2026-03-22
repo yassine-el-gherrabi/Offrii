@@ -136,6 +136,10 @@
 "wishlist.claimed.web" = "Réservé par %@ (via lien)";
 "wishlist.unclaim.web" = "Retirer la réservation";
 "wishlist.markReceived" = "Marquer reçu";
+"wishlist.markReceived.title" = "Marquer comme reçu ?";
+"wishlist.markReceived.messageClaimed" = "La personne qui a réservé sera notifiée.";
+"wishlist.markReceived.message" = "Cette envie sera archivée dans vos envies reçues.";
+"wishlist.markReceived.confirm" = "Confirmer";
 "wishlist.share" = "Partager";
 "wishlist.edit" = "Modifier";
 "wishlist.sort.date" = "Date";
@@ -653,6 +657,9 @@
 "share.seesAllList" = "Voit toute la liste";
 "share.ruleAll" = "Toute la liste partagée";
 "share.ruleCategories" = "%d catégories partagées";
+"share.stopSharing" = "Arrêter le partage";
+"share.stopSharing.title" = "Arrêter le partage ?";
+"share.stopSharing.message" = "Ce cercle ne verra plus vos envies automatiquement.";
 "share.scopeCategories" = "Par catégories";
 "share.deleteLink.title" = "Supprimer le lien";
 "share.deleteLink.message" = "Les personnes ayant ce lien ne pourront plus accéder à vos envies.";

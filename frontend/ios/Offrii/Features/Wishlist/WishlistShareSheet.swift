@@ -78,6 +78,7 @@ struct WishlistShareSheet: View {
     @State private var selectedCircleIds: Set<UUID> = []
     @State private var isSharing = false
     @State private var shareRules: [UUID: CircleShareRuleSummary] = [:]
+    @State private var circleToStopSharing: UUID?
 
     // Links
     @State private var shareLinks: [ShareLinkResponse] = []
@@ -159,6 +160,25 @@ struct WishlistShareSheet: View {
                 }
             } message: {
                 Text(NSLocalizedString("share.deleteLink.message", comment: ""))
+            }
+            .alert(
+                NSLocalizedString("share.stopSharing.title", comment: ""),
+                isPresented: Binding(
+                    get: { circleToStopSharing != nil },
+                    set: { if !$0 { circleToStopSharing = nil } }
+                )
+            ) {
+                Button(NSLocalizedString("share.stopSharing", comment: ""), role: .destructive) {
+                    if let id = circleToStopSharing {
+                        Task { await stopSharing(circleId: id) }
+                    }
+                    circleToStopSharing = nil
+                }
+                Button(NSLocalizedString("common.cancel", comment: ""), role: .cancel) {
+                    circleToStopSharing = nil
+                }
+            } message: {
+                Text(NSLocalizedString("share.stopSharing.message", comment: ""))
             }
         }
     }
@@ -396,7 +416,8 @@ struct WishlistShareSheet: View {
 
     private func circleCheckRow(_ circle: OffriiCircle) -> some View {
         let isSelected = selectedCircleIds.contains(circle.id)
-        let isRuleAll = shareRules[circle.id]?.shareMode == "all"
+        let hasRule = shareRules[circle.id]?.shareMode != nil
+            && shareRules[circle.id]?.shareMode != "selection"
 
         return Button {
             withAnimation(OffriiAnimation.snappy) {
@@ -420,10 +441,19 @@ struct WishlistShareSheet: View {
 
                 Spacer()
 
-                if isRuleAll {
-                    Image(systemName: "checkmark.circle.fill")
-                        .font(.system(size: 22))
-                        .foregroundColor(OffriiTheme.primary)
+                if hasRule {
+                    Button {
+                        circleToStopSharing = circle.id
+                    } label: {
+                        Text(NSLocalizedString("share.stopSharing", comment: ""))
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(OffriiTheme.danger)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 5)
+                            .background(OffriiTheme.danger.opacity(0.08))
+                            .cornerRadius(OffriiTheme.cornerRadiusSM)
+                    }
+                    .buttonStyle(.plain)
                 } else {
                     Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
                         .font(.system(size: 22))
@@ -433,10 +463,9 @@ struct WishlistShareSheet: View {
             .padding(OffriiTheme.spacingBase)
             .background(isSelected ? OffriiTheme.primary.opacity(0.05) : OffriiTheme.card)
             .cornerRadius(OffriiTheme.cornerRadiusLG)
-            .opacity(isRuleAll ? 0.7 : 1.0)
         }
         .buttonStyle(.plain)
-        .disabled(isRuleAll)
+        .disabled(hasRule)
         .animation(OffriiAnimation.snappy, value: isSelected)
     }
 
@@ -899,6 +928,20 @@ struct WishlistShareSheet: View {
             withAnimation { shareLinks.removeAll { $0.id == id } }
             OffriiHaptics.success()
             showToast(NSLocalizedString("share.linkDeleted", comment: ""))
+        } catch {
+            OffriiHaptics.error()
+        }
+    }
+
+    private func stopSharing(circleId: UUID) async {
+        do {
+            try await CircleService.shared.setShareRule(
+                circleId: circleId, mode: "selection"
+            )
+            withAnimation {
+                shareRules.removeValue(forKey: circleId)
+            }
+            OffriiHaptics.success()
         } catch {
             OffriiHaptics.error()
         }
