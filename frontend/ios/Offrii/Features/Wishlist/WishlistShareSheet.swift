@@ -79,6 +79,7 @@ struct WishlistShareSheet: View {
     @State private var isSharing = false
     @State private var shareRules: [UUID: CircleShareRuleSummary] = [:]
     @State private var circleToStopSharing: UUID?
+    @State private var stoppedCircleIds: Set<UUID> = []
 
     // Links
     @State private var shareLinks: [ShareLinkResponse] = []
@@ -382,7 +383,8 @@ struct WishlistShareSheet: View {
 
     @ViewBuilder
     private func circleShareStatus(_ circle: OffriiCircle) -> some View {
-        let sharedCount = items.filter { $0.sharedCircles.contains(where: { $0.id == circle.id }) }.count
+        let wasStopped = stoppedCircleIds.contains(circle.id)
+        let sharedCount = wasStopped ? 0 : items.filter { $0.sharedCircles.contains(where: { $0.id == circle.id }) }.count
         let totalActive = items.filter { $0.isActive && !$0.isPrivate }.count
         let ruleMode = shareRules[circle.id]?.shareMode
 
@@ -946,6 +948,7 @@ struct WishlistShareSheet: View {
             )
             _ = withAnimation {
                 shareRules.removeValue(forKey: circleId)
+                stoppedCircleIds.insert(circleId)
             }
             OffriiHaptics.success()
         } catch {
