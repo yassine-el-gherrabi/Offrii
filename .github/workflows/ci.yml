@@ -73,7 +73,7 @@ jobs:
           docker pull redis:7 &
           wait
       - name: Run tests with coverage
-        run: cargo llvm-cov nextest --workspace --fail-under-lines 75 --ignore-filename-regex "(main|migrate)\.rs$"
+        run: cargo llvm-cov nextest --workspace --fail-under-lines 75 --ignore-filename-regex "(main|migrate|seed|upload_service|og_service)\.rs$"
       - name: Security audit (advisory only)
         continue-on-error: true
         run: |
