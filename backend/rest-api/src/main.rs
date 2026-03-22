@@ -13,7 +13,9 @@ use tower_http::trace::TraceLayer;
 use tracing_subscriber::EnvFilter;
 use tracing_subscriber::layer::SubscriberExt as _;
 use tracing_subscriber::util::SubscriberInitExt as _;
+#[cfg(debug_assertions)]
 use utoipa::OpenApi;
+#[cfg(debug_assertions)]
 use utoipa_swagger_ui::SwaggerUi;
 
 use rest_api::AppState;
