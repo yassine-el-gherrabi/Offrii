@@ -222,6 +222,8 @@
 "circles.event.itemUnclaimed" = "%@ unclaimed %@";
 "circles.event.memberJoined" = "%@ joined the circle";
 "circles.event.memberLeft" = "%@ left the circle";
+"circles.event.shareRuleSet" = "%@ is sharing wishes with the circle";
+"circles.event.shareRuleRemoved" = "%@ stopped sharing wishes";
 "circles.invite.title" = "Invite friends";
 "circles.invite.noFriends" = "No friends to invite.\nAdd friends first!";
 "circles.invite.alreadyMember" = "Already member";

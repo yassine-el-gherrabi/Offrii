@@ -222,6 +222,8 @@
 "circles.event.itemUnclaimed" = "%@ a annulé la réservation de %@";
 "circles.event.memberJoined" = "%@ a rejoint le cercle";
 "circles.event.memberLeft" = "%@ a quitté le cercle";
+"circles.event.shareRuleSet" = "%@ partage ses envies avec le cercle";
+"circles.event.shareRuleRemoved" = "%@ a arrêté de partager ses envies";
 "circles.invite.title" = "Inviter des amis";
 "circles.invite.noFriends" = "Aucun ami à inviter.\nAjoutez d'abord des amis !";
 "circles.invite.alreadyMember" = "Déjà membre";

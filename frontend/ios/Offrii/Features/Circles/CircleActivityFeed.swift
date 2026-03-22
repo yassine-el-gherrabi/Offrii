@@ -121,8 +121,10 @@ struct CircleActivityFeed: View {
         case "item_unclaimed": return "gift"
         case "item_received": return "checkmark.circle.fill"
         case "member_joined": return "person.badge.plus"
-        case "member_left":   return "person.badge.minus"
-        default:              return "bell.fill"
+        case "member_left":          return "person.badge.minus"
+        case "share_rule_set":       return "square.and.arrow.up.on.square"
+        case "share_rule_removed":   return "square.and.arrow.up.on.square.fill"
+        default:                     return "bell.fill"
         }
     }
 
@@ -133,8 +135,10 @@ struct CircleActivityFeed: View {
         case "item_unclaimed": return OffriiTheme.accent
         case "item_received": return OffriiTheme.success
         case "member_joined": return OffriiTheme.primary
-        case "member_left":   return OffriiTheme.textMuted
-        default:              return OffriiTheme.textSecondary
+        case "member_left":          return OffriiTheme.textMuted
+        case "share_rule_set":       return OffriiTheme.primary
+        case "share_rule_removed":   return OffriiTheme.accent
+        default:                     return OffriiTheme.textSecondary
         }
     }
 
@@ -159,6 +163,10 @@ struct CircleActivityFeed: View {
         case "member_left":
             let target = event.targetUsername ?? actor
             return String(format: NSLocalizedString("circles.event.memberLeft", comment: ""), target)
+        case "share_rule_set":
+            return String(format: NSLocalizedString("circles.event.shareRuleSet", comment: ""), actor)
+        case "share_rule_removed":
+            return String(format: NSLocalizedString("circles.event.shareRuleRemoved", comment: ""), actor)
         default:
             return event.eventType
         }
