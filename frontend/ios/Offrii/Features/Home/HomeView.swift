@@ -136,6 +136,7 @@ struct HomeView: View {
                         initials: ProfileAvatarButton.initials(from: authManager.currentUser?.displayName),
                         avatarUrl: authManager.currentUser?.avatarUrl.flatMap { URL(string: $0) }
                     )
+                    .id(authManager.currentUser?.avatarUrl)
                 }
             }
         }

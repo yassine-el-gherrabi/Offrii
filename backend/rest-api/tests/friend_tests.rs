@@ -337,7 +337,7 @@ async fn list_pending_returns_received_requests() {
     let (status, body) = app.get_with_auth("/me/friend-requests", &bob_token).await;
 
     assert_eq!(status, StatusCode::OK);
-    let requests = body.as_array().expect("array");
+    let requests = body["data"].as_array().expect("array");
     assert_eq!(requests.len(), 1);
     assert_eq!(requests[0]["from_username"].as_str().unwrap(), "alice_test");
     assert_eq!(
@@ -359,7 +359,7 @@ async fn list_pending_does_not_show_sent_requests() {
     let (status, body) = app.get_with_auth("/me/friend-requests", &alice_token).await;
 
     assert_eq!(status, StatusCode::OK);
-    let requests = body.as_array().expect("array");
+    let requests = body["data"].as_array().expect("array");
     assert!(
         requests.is_empty(),
         "sender should not see sent requests in pending list"
@@ -374,7 +374,7 @@ async fn list_pending_empty_when_none() {
     let (status, body) = app.get_with_auth("/me/friend-requests", &token).await;
 
     assert_eq!(status, StatusCode::OK);
-    let requests = body.as_array().expect("array");
+    let requests = body["data"].as_array().expect("array");
     assert!(requests.is_empty());
 }
 
@@ -391,7 +391,7 @@ async fn list_pending_multiple_requests() {
     let (status, body) = app.get_with_auth("/me/friend-requests", &bob_token).await;
 
     assert_eq!(status, StatusCode::OK);
-    let requests = body.as_array().expect("array");
+    let requests = body["data"].as_array().expect("array");
     assert_eq!(requests.len(), 2, "Bob should have 2 pending requests");
 
     let senders: Vec<&str> = requests
@@ -423,13 +423,13 @@ async fn accept_request_creates_friendship() {
     // Verify both users see each other in friends list
     let (status, body) = app.get_with_auth("/me/friends", &alice_token).await;
     assert_eq!(status, StatusCode::OK);
-    let friends = body.as_array().expect("array");
+    let friends = body["data"].as_array().expect("array");
     assert_eq!(friends.len(), 1);
     assert_eq!(friends[0]["username"].as_str().unwrap(), "bob_test");
 
     let (status, body) = app.get_with_auth("/me/friends", &bob_token).await;
     assert_eq!(status, StatusCode::OK);
-    let friends = body.as_array().expect("array");
+    let friends = body["data"].as_array().expect("array");
     assert_eq!(friends.len(), 1);
     assert_eq!(friends[0]["username"].as_str().unwrap(), "alice_test");
 }
@@ -497,14 +497,14 @@ async fn accept_request_clears_from_pending_list() {
 
     // Verify pending shows 1
     let (_, body) = app.get_with_auth("/me/friend-requests", &bob_token).await;
-    assert_eq!(body.as_array().unwrap().len(), 1);
+    assert_eq!(body["data"].as_array().unwrap().len(), 1);
 
     accept_request(&app, &bob_token, req_id).await;
 
     // Pending should now be empty (accepted requests are not "pending" anymore)
     let (_, body) = app.get_with_auth("/me/friend-requests", &bob_token).await;
     assert!(
-        body.as_array().unwrap().is_empty(),
+        body["data"].as_array().unwrap().is_empty(),
         "accepted request should disappear from pending list"
     );
 }
@@ -528,11 +528,11 @@ async fn decline_request_returns_204() {
 
     // Should not appear in pending anymore
     let (_, body) = app.get_with_auth("/me/friend-requests", &bob_token).await;
-    assert!(body.as_array().unwrap().is_empty());
+    assert!(body["data"].as_array().unwrap().is_empty());
 
     // Should NOT create a friendship
     let (_, body) = app.get_with_auth("/me/friends", &alice_token).await;
-    assert!(body.as_array().unwrap().is_empty());
+    assert!(body["data"].as_array().unwrap().is_empty());
 }
 
 #[tokio::test]
@@ -601,7 +601,7 @@ async fn list_friends_returns_accepted_friends() {
     let (status, body) = app.get_with_auth("/me/friends", &alice_token).await;
 
     assert_eq!(status, StatusCode::OK);
-    let friends = body.as_array().expect("array");
+    let friends = body["data"].as_array().expect("array");
     assert_eq!(friends.len(), 1);
     assert_eq!(friends[0]["user_id"].as_str().unwrap(), bob_id.to_string());
     assert_eq!(friends[0]["username"].as_str().unwrap(), "bob_test");
@@ -613,7 +613,7 @@ async fn list_friends_returns_accepted_friends() {
     // Bob should also see Alice
     let (status, body) = app.get_with_auth("/me/friends", &bob_token).await;
     assert_eq!(status, StatusCode::OK);
-    let friends = body.as_array().expect("array");
+    let friends = body["data"].as_array().expect("array");
     assert_eq!(friends.len(), 1);
     assert_eq!(friends[0]["username"].as_str().unwrap(), "alice_test");
 }
@@ -626,7 +626,7 @@ async fn list_friends_empty_when_none() {
     let (status, body) = app.get_with_auth("/me/friends", &token).await;
 
     assert_eq!(status, StatusCode::OK);
-    let friends = body.as_array().expect("array");
+    let friends = body["data"].as_array().expect("array");
     assert!(friends.is_empty());
 }
 
@@ -642,7 +642,7 @@ async fn list_friends_does_not_include_pending_requests() {
     // Alice's friends list should be empty
     let (_, body) = app.get_with_auth("/me/friends", &alice_token).await;
     assert!(
-        body.as_array().unwrap().is_empty(),
+        body["data"].as_array().unwrap().is_empty(),
         "pending requests should not appear in friends list"
     );
 }
@@ -666,13 +666,13 @@ async fn list_friends_user_isolation() {
 
     let (_, body) = app.get_with_auth("/me/friends", &carol_token).await;
     assert!(
-        body.as_array().unwrap().is_empty(),
+        body["data"].as_array().unwrap().is_empty(),
         "Carol should not see Alice/Bob's friendship"
     );
 
     // But Alice still has Bob
     let (_, body) = app.get_with_auth("/me/friends", &alice_token).await;
-    assert_eq!(body.as_array().unwrap().len(), 1);
+    assert_eq!(body["data"].as_array().unwrap().len(), 1);
 }
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -692,10 +692,10 @@ async fn remove_friend_deletes_for_both_users() {
 
     // Neither should see the other
     let (_, body) = app.get_with_auth("/me/friends", &alice_token).await;
-    assert!(body.as_array().unwrap().is_empty());
+    assert!(body["data"].as_array().unwrap().is_empty());
 
     let (_, body) = app.get_with_auth("/me/friends", &bob_token).await;
-    assert!(body.as_array().unwrap().is_empty());
+    assert!(body["data"].as_array().unwrap().is_empty());
 }
 
 #[tokio::test]
@@ -710,7 +710,7 @@ async fn remove_friend_bob_can_remove_alice() {
     assert_eq!(status, StatusCode::NO_CONTENT);
 
     let (_, body) = app.get_with_auth("/me/friends", &alice_token).await;
-    assert!(body.as_array().unwrap().is_empty());
+    assert!(body["data"].as_array().unwrap().is_empty());
 }
 
 #[tokio::test]
@@ -1005,7 +1005,7 @@ async fn list_sent_returns_sent_requests() {
         .await;
 
     assert_eq!(status, StatusCode::OK);
-    let requests = body.as_array().expect("array");
+    let requests = body["data"].as_array().expect("array");
     assert_eq!(requests.len(), 1);
     assert_eq!(requests[0]["to_username"].as_str().unwrap(), "bob_test");
     assert_eq!(
@@ -1032,7 +1032,7 @@ async fn list_sent_does_not_show_received_requests() {
         .await;
 
     assert_eq!(status, StatusCode::OK);
-    let requests = body.as_array().expect("array");
+    let requests = body["data"].as_array().expect("array");
     assert!(
         requests.is_empty(),
         "received requests should not appear in sent list"
@@ -1047,7 +1047,7 @@ async fn list_sent_empty_when_none() {
     let (status, body) = app.get_with_auth("/me/friend-requests/sent", &token).await;
 
     assert_eq!(status, StatusCode::OK);
-    let requests = body.as_array().expect("array");
+    let requests = body["data"].as_array().expect("array");
     assert!(requests.is_empty());
 }
 
@@ -1072,7 +1072,7 @@ async fn list_sent_clears_after_cancel() {
     let (_, body) = app
         .get_with_auth("/me/friend-requests/sent", &alice_token)
         .await;
-    assert_eq!(body.as_array().unwrap().len(), 1);
+    assert_eq!(body["data"].as_array().unwrap().len(), 1);
 
     // Cancel
     cancel_sent_request(&app, &alice_token, req_id).await;
@@ -1082,7 +1082,7 @@ async fn list_sent_clears_after_cancel() {
         .get_with_auth("/me/friend-requests/sent", &alice_token)
         .await;
     assert!(
-        body.as_array().unwrap().is_empty(),
+        body["data"].as_array().unwrap().is_empty(),
         "cancelled request should disappear from sent list"
     );
 }
@@ -1101,7 +1101,7 @@ async fn list_sent_clears_after_recipient_accepts() {
         .get_with_auth("/me/friend-requests/sent", &alice_token)
         .await;
     assert!(
-        body.as_array().unwrap().is_empty(),
+        body["data"].as_array().unwrap().is_empty(),
         "accepted request should disappear from sent list"
     );
 }
@@ -1120,7 +1120,7 @@ async fn list_sent_clears_after_recipient_declines() {
         .get_with_auth("/me/friend-requests/sent", &alice_token)
         .await;
     assert!(
-        body.as_array().unwrap().is_empty(),
+        body["data"].as_array().unwrap().is_empty(),
         "declined request should disappear from sent list"
     );
 }
@@ -1140,7 +1140,7 @@ async fn list_sent_multiple_requests() {
         .await;
 
     assert_eq!(status, StatusCode::OK);
-    let requests = body.as_array().expect("array");
+    let requests = body["data"].as_array().expect("array");
     assert_eq!(requests.len(), 2);
 
     let targets: Vec<&str> = requests
@@ -1172,7 +1172,7 @@ async fn list_sent_includes_display_name() {
     let (_, body) = app
         .get_with_auth("/me/friend-requests/sent", &alice_token)
         .await;
-    let requests = body.as_array().expect("array");
+    let requests = body["data"].as_array().expect("array");
     assert_eq!(requests.len(), 1);
     assert_eq!(
         requests[0]["to_display_name"].as_str().unwrap(),
@@ -1204,13 +1204,13 @@ async fn cancel_request_happy_path() {
     // Bob should NOT see it in pending anymore
     let (_, body) = app.get_with_auth("/me/friend-requests", &bob_token).await;
     assert!(
-        body.as_array().unwrap().is_empty(),
+        body["data"].as_array().unwrap().is_empty(),
         "cancelled request should not appear in recipient's pending list"
     );
 
     // Should NOT create a friendship
     let (_, body) = app.get_with_auth("/me/friends", &alice_token).await;
-    assert!(body.as_array().unwrap().is_empty());
+    assert!(body["data"].as_array().unwrap().is_empty());
 }
 
 #[tokio::test]
@@ -1380,16 +1380,16 @@ async fn full_friendship_lifecycle() {
 
     // 3. Bob sees pending request
     let (_, body) = app.get_with_auth("/me/friend-requests", &bob_token).await;
-    assert_eq!(body.as_array().unwrap().len(), 1);
+    assert_eq!(body["data"].as_array().unwrap().len(), 1);
 
     // 4. Bob accepts
     accept_request(&app, &bob_token, req_id).await;
 
     // 5. Both see each other as friends
     let (_, body) = app.get_with_auth("/me/friends", &alice_token).await;
-    assert_eq!(body.as_array().unwrap().len(), 1);
+    assert_eq!(body["data"].as_array().unwrap().len(), 1);
     let (_, body) = app.get_with_auth("/me/friends", &bob_token).await;
-    assert_eq!(body.as_array().unwrap().len(), 1);
+    assert_eq!(body["data"].as_array().unwrap().len(), 1);
 
     // 6. Create circle and add friend
     let circle_body = json!({ "name": "Lifecycle Circle" });
@@ -1414,7 +1414,7 @@ async fn full_friendship_lifecycle() {
 
     // 8. Friends list empty
     let (_, body) = app.get_with_auth("/me/friends", &alice_token).await;
-    assert!(body.as_array().unwrap().is_empty());
+    assert!(body["data"].as_array().unwrap().is_empty());
 
     // 9. Can re-request
     let body = json!({ "username": "bob_test" });
@@ -1778,7 +1778,7 @@ async fn remove_friend_is_transactional() {
     // Verify not friends anymore via API
     let (status, body) = app.get_with_auth("/me/friends", &alice_token).await;
     assert_eq!(status, StatusCode::OK);
-    let friends = body.as_array().unwrap();
+    let friends = body["data"].as_array().unwrap();
     assert!(friends.is_empty(), "no friends after removal");
 }
 
@@ -1885,7 +1885,7 @@ async fn shared_item_count_zero_when_no_items_shared() {
     let (status, body) = app.get_with_auth("/me/friends", &alice_token).await;
     assert_eq!(status, StatusCode::OK);
 
-    let friends = body.as_array().unwrap();
+    let friends = body["data"].as_array().unwrap();
     assert_eq!(friends.len(), 1);
     assert_eq!(
         friends[0]["shared_item_count"].as_i64().unwrap(),
@@ -1960,16 +1960,16 @@ async fn full_friend_lifecycle_with_circle_and_cleanup() {
 
     // 2. Bob has pending request
     let (_, body) = app.get_with_auth("/me/friend-requests", &bob_token).await;
-    assert_eq!(body.as_array().unwrap().len(), 1);
+    assert_eq!(body["data"].as_array().unwrap().len(), 1);
 
     // 3. Accept — creates friendship + direct circle
     accept_request(&app, &bob_token, req_id).await;
 
     // 4. Both are friends
     let (_, body) = app.get_with_auth("/me/friends", &alice_token).await;
-    assert_eq!(body.as_array().unwrap().len(), 1);
+    assert_eq!(body["data"].as_array().unwrap().len(), 1);
     let (_, body) = app.get_with_auth("/me/friends", &bob_token).await;
-    assert_eq!(body.as_array().unwrap().len(), 1);
+    assert_eq!(body["data"].as_array().unwrap().len(), 1);
 
     // 5. Direct circle exists
     let circle_id: Option<(Uuid,)> = sqlx::query_as(
@@ -1987,7 +1987,7 @@ async fn full_friend_lifecycle_with_circle_and_cleanup() {
 
     // 6. Shared item count is 0 (nothing shared yet)
     let (_, body) = app.get_with_auth("/me/friends", &alice_token).await;
-    assert_eq!(body[0]["shared_item_count"].as_i64().unwrap(), 0);
+    assert_eq!(body["data"][0]["shared_item_count"].as_i64().unwrap(), 0);
 
     // 7. Remove friend — everything cleaned up
     let (status, _) = app
@@ -1997,7 +1997,7 @@ async fn full_friend_lifecycle_with_circle_and_cleanup() {
 
     // 8. No longer friends
     let (_, body) = app.get_with_auth("/me/friends", &alice_token).await;
-    assert!(body.as_array().unwrap().is_empty());
+    assert!(body["data"].as_array().unwrap().is_empty());
 
     // 9. Direct circle deleted
     let count: (i64,) = sqlx::query_as(
@@ -2187,7 +2187,7 @@ async fn shared_item_count_updates_after_sharing_in_direct_circle() {
 
     // Before sharing: Bob sees 0
     let (_, body) = app.get_with_auth("/me/friends", &bob_token).await;
-    let friends = body.as_array().unwrap();
+    let friends = body["data"].as_array().unwrap();
     assert_eq!(friends.len(), 1);
     assert_eq!(
         friends[0]["shared_item_count"].as_i64().unwrap(),
@@ -2212,7 +2212,7 @@ async fn shared_item_count_updates_after_sharing_in_direct_circle() {
 
     // After sharing: Bob sees 1
     let (_, body) = app.get_with_auth("/me/friends", &bob_token).await;
-    let friends = body.as_array().unwrap();
+    let friends = body["data"].as_array().unwrap();
     assert_eq!(
         friends[0]["shared_item_count"].as_i64().unwrap(),
         1,
@@ -2263,7 +2263,7 @@ async fn shared_item_count_excludes_group_circle_items() {
 
     // Bob's friend list should show 0 for Alice (item is in group, not direct circle)
     let (_, body) = app.get_with_auth("/me/friends", &bob_token).await;
-    let friends = body.as_array().unwrap();
+    let friends = body["data"].as_array().unwrap();
     assert_eq!(
         friends[0]["shared_item_count"].as_i64().unwrap(),
         0,

@@ -34,7 +34,7 @@ async fn list_share_links_returns_created_links() {
     let (status, body) = app.get_with_auth("/share-links", &token).await;
 
     assert_eq!(status, StatusCode::OK);
-    let links = body.as_array().unwrap();
+    let links = body["data"].as_array().unwrap();
     assert_eq!(links.len(), 2);
     assert!(links[0]["token"].is_string());
     assert!(links[0]["id"].is_string());
@@ -56,7 +56,7 @@ async fn delete_share_link_returns_204() {
 
     // Verify it's gone
     let (_, body) = app.get_with_auth("/share-links", &token).await;
-    assert_eq!(body.as_array().unwrap().len(), 0);
+    assert_eq!(body["data"].as_array().unwrap().len(), 0);
 }
 
 #[tokio::test]
@@ -873,7 +873,7 @@ async fn list_share_links_returns_new_fields() {
 
     let (status, body) = app.get_with_auth("/share-links", &token).await;
     assert_eq!(status, StatusCode::OK);
-    let links = body.as_array().unwrap();
+    let links = body["data"].as_array().unwrap();
     assert_eq!(links[0]["permissions"], "view_and_claim");
     assert_eq!(links[0]["scope"], "all");
     assert_eq!(links[0]["is_active"], true);

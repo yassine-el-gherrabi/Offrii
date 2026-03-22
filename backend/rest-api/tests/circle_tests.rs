@@ -234,7 +234,7 @@ async fn list_circles_returns_user_circles() {
     let (status, resp) = app.get_with_auth("/circles", &token).await;
     assert_eq!(status, StatusCode::OK);
 
-    let arr = resp.as_array().unwrap();
+    let arr = resp["data"].as_array().unwrap();
     assert_eq!(arr.len(), 2);
 
     let names: Vec<&str> = arr.iter().map(|c| c["name"].as_str().unwrap()).collect();
@@ -259,7 +259,7 @@ async fn list_circles_isolation_between_users() {
     create_circle(&app, &alice, "Alice Circle").await;
 
     let (_, resp) = app.get_with_auth("/circles", &bob).await;
-    assert_eq!(resp.as_array().unwrap().len(), 0);
+    assert_eq!(resp["data"].as_array().unwrap().len(), 0);
 }
 
 // ── Get detail ─────────────────────────────────────────────────────
@@ -368,7 +368,7 @@ async fn delete_circle_by_owner_returns_204() {
 
     // Verify it's gone from the list
     let (_, circles) = app.get_with_auth("/circles", &token).await;
-    let arr = circles.as_array().unwrap();
+    let arr = circles["data"].as_array().unwrap();
     assert!(
         !arr.iter().any(|c| c["id"].as_str() == Some(&circle_id)),
         "deleted circle should not appear in list"
@@ -539,13 +539,13 @@ async fn direct_circle_shows_other_username_as_name() {
     let (status, circles) = app.get_with_auth("/circles", &alice_token).await;
     assert_eq!(status, StatusCode::OK);
 
-    let arr = circles.as_array().unwrap();
+    let arr = circles["data"].as_array().unwrap();
     let direct = arr.iter().find(|c| c["is_direct"] == true).unwrap();
     assert_eq!(direct["name"].as_str().unwrap(), "dcs_bob");
 
     // Bob's list: direct circle shows Alice's username as name
     let (_, bob_circles) = app.get_with_auth("/circles", &bob_token).await;
-    let bob_arr = bob_circles.as_array().unwrap();
+    let bob_arr = bob_circles["data"].as_array().unwrap();
     let bob_direct = bob_arr.iter().find(|c| c["is_direct"] == true).unwrap();
     assert_eq!(bob_direct["name"].as_str().unwrap(), "dcs_alice");
 }
@@ -868,7 +868,7 @@ async fn list_invites_returns_active_only() {
         .get_with_auth(&format!("/circles/{circle_id}/invites"), &alice)
         .await;
     assert_eq!(status, StatusCode::OK);
-    let arr = resp.as_array().unwrap();
+    let arr = resp["data"].as_array().unwrap();
     assert_eq!(arr.len(), 1); // only the non-expired one
     // Verify it's not the expired one
     assert_ne!(arr[0]["token"].as_str().unwrap(), inv2_tok);
@@ -909,7 +909,7 @@ async fn revoke_invite_by_owner_returns_204() {
     let (_, listing) = app
         .get_with_auth(&format!("/circles/{circle_id}/invites"), &alice)
         .await;
-    let arr = listing.as_array().unwrap();
+    let arr = listing["data"].as_array().unwrap();
     assert!(
         !arr.iter().any(|inv| inv["id"].as_str() == Some(invite_id)),
         "revoked invite should not appear in listing"
@@ -980,7 +980,7 @@ async fn share_item_to_circle_returns_204() {
     let (_, items) = app
         .get_with_auth(&format!("/circles/{circle_id}/items"), &alice)
         .await;
-    let arr = items.as_array().unwrap();
+    let arr = items["data"].as_array().unwrap();
     assert_eq!(arr.len(), 1);
     assert_eq!(arr[0]["id"], item_id);
     assert_eq!(arr[0]["name"], "Cadeau");
@@ -1016,7 +1016,7 @@ async fn share_same_item_twice_is_idempotent() {
     let (_, items) = app
         .get_with_auth(&format!("/circles/{circle_id}/items"), &alice)
         .await;
-    assert_eq!(items.as_array().unwrap().len(), 1);
+    assert_eq!(items["data"].as_array().unwrap().len(), 1);
 }
 
 #[tokio::test]
@@ -1088,7 +1088,7 @@ async fn unshare_item_by_sharer_returns_204() {
     let (_, items) = app
         .get_with_auth(&format!("/circles/{circle_id}/items"), &alice)
         .await;
-    assert_eq!(items.as_array().unwrap().len(), 0);
+    assert_eq!(items["data"].as_array().unwrap().len(), 0);
 }
 
 #[tokio::test]
@@ -1145,7 +1145,7 @@ async fn list_empty_circle_items_returns_200() {
         .get_with_auth(&format!("/circles/{circle_id}/items"), &alice)
         .await;
     assert_eq!(status, StatusCode::OK);
-    assert_eq!(items.as_array().unwrap().len(), 0);
+    assert_eq!(items["data"].as_array().unwrap().len(), 0);
 }
 
 // ── Anti-spoiler (items) ───────────────────────────────────────────
@@ -1182,7 +1182,7 @@ async fn list_circle_items_with_anti_spoiler() {
         .get_with_auth(&format!("/circles/{circle_id}/items"), &alice)
         .await;
     assert_eq!(status, StatusCode::OK);
-    let arr = items.as_array().unwrap();
+    let arr = items["data"].as_array().unwrap();
     assert_eq!(arr.len(), 1);
     assert_eq!(arr[0]["id"], item_id);
     assert_eq!(arr[0]["name"], "Surprise");
@@ -1225,7 +1225,7 @@ async fn list_circle_items_non_owner_sees_claimed_by() {
         .get_with_auth(&format!("/circles/{circle_id}/items"), &bob_token)
         .await;
     assert_eq!(status, StatusCode::OK);
-    let arr = items.as_array().unwrap();
+    let arr = items["data"].as_array().unwrap();
     assert_eq!(arr.len(), 1);
     assert_eq!(arr[0]["is_claimed"], true);
     assert!(
@@ -1281,7 +1281,7 @@ async fn list_circle_items_third_party_sees_claimed_by() {
     let (_, items) = app
         .get_with_auth(&format!("/circles/{circle_id}/items"), &charlie)
         .await;
-    let arr = items.as_array().unwrap();
+    let arr = items["data"].as_array().unwrap();
     assert_eq!(arr[0]["is_claimed"], true);
     assert!(
         arr[0]["claimed_by"].is_object(),
@@ -1511,8 +1511,8 @@ async fn item_in_multiple_circles() {
     let (_, items2) = app
         .get_with_auth(&format!("/circles/{c2_id}/items"), &alice)
         .await;
-    let arr1 = items1.as_array().unwrap();
-    let arr2 = items2.as_array().unwrap();
+    let arr1 = items1["data"].as_array().unwrap();
+    let arr2 = items2["data"].as_array().unwrap();
     assert_eq!(arr1.len(), 1);
     assert_eq!(arr2.len(), 1);
     assert_eq!(
@@ -1536,12 +1536,12 @@ async fn item_in_multiple_circles() {
         .get_with_auth(&format!("/circles/{c2_id}/items"), &alice)
         .await;
     assert_eq!(
-        items1_after.as_array().unwrap().len(),
+        items1_after["data"].as_array().unwrap().len(),
         0,
         "unshared from circle1"
     );
     assert_eq!(
-        items2_after.as_array().unwrap().len(),
+        items2_after["data"].as_array().unwrap().len(),
         1,
         "still shared in circle2"
     );
@@ -2106,7 +2106,7 @@ async fn purchased_item_still_visible_in_circle_with_status() {
         .get_with_auth(&format!("/circles/{cid}/items"), &bob)
         .await;
     assert_eq!(status, StatusCode::OK);
-    let circle_items = items.as_array().unwrap();
+    let circle_items = items["data"].as_array().unwrap();
     let watch = circle_items.iter().find(|i| i["name"] == "Watch");
     assert!(
         watch.is_some(),
@@ -2242,7 +2242,7 @@ async fn deleted_claimed_item_disappears_from_circle() {
         .get_with_auth(&format!("/circles/{cid}/items"), &bob)
         .await;
     assert!(
-        items_before
+        items_before["data"]
             .as_array()
             .unwrap()
             .iter()
@@ -2261,7 +2261,7 @@ async fn deleted_claimed_item_disappears_from_circle() {
         .get_with_auth(&format!("/circles/{cid}/items"), &bob)
         .await;
     assert!(
-        !items_after
+        !items_after["data"]
             .as_array()
             .unwrap()
             .iter()
@@ -2282,7 +2282,7 @@ async fn double_mark_received_returns_409() {
 
     // First mark
     let (status, _) = app
-        .put_json_with_auth(
+        .patch_json_with_auth(
             &format!("/items/{item_id}"),
             &serde_json::json!({ "status": "purchased" }),
             &alice,
@@ -2292,7 +2292,7 @@ async fn double_mark_received_returns_409() {
 
     // Second mark — should 409
     let (status, resp) = app
-        .put_json_with_auth(
+        .patch_json_with_auth(
             &format!("/items/{item_id}"),
             &serde_json::json!({ "status": "purchased" }),
             &alice,
@@ -2407,7 +2407,7 @@ async fn batch_share_adds_all_items_to_circle() {
         .await;
     assert_eq!(status, StatusCode::OK);
     assert_eq!(
-        items.as_array().unwrap().len(),
+        items["data"].as_array().unwrap().len(),
         3,
         "all 3 items should be in circle"
     );
@@ -2524,7 +2524,7 @@ async fn batch_share_skips_items_not_owned() {
         .get_with_auth(&format!("/circles/{circle_id}/items"), &alice)
         .await;
     assert_eq!(
-        items.as_array().unwrap().len(),
+        items["data"].as_array().unwrap().len(),
         1,
         "only owned items should be shared"
     );
@@ -2555,7 +2555,7 @@ async fn batch_share_idempotent() {
     let (_, items) = app
         .get_with_auth(&format!("/circles/{circle_id}/items"), &alice)
         .await;
-    assert_eq!(items.as_array().unwrap().len(), 1, "no duplicates");
+    assert_eq!(items["data"].as_array().unwrap().len(), 1, "no duplicates");
 }
 
 #[tokio::test]
@@ -2631,7 +2631,7 @@ async fn leaving_circle_removes_members_shared_items() {
         .get_with_auth(&format!("/circles/{circle_id}/items"), &alice)
         .await;
     assert_eq!(
-        items.as_array().unwrap().len(),
+        items["data"].as_array().unwrap().len(),
         1,
         "precondition: item in circle"
     );
@@ -2643,7 +2643,7 @@ async fn leaving_circle_removes_members_shared_items() {
         .get_with_auth(&format!("/circles/{circle_id}/items"), &alice)
         .await;
     assert_eq!(
-        items.as_array().unwrap().len(),
+        items["data"].as_array().unwrap().len(),
         0,
         "departing member's items removed"
     );
@@ -2689,14 +2689,14 @@ async fn leaving_circle_keeps_other_members_items() {
     let (_, items) = app
         .get_with_auth(&format!("/circles/{circle_id}/items"), &alice)
         .await;
-    assert_eq!(items.as_array().unwrap().len(), 2);
+    assert_eq!(items["data"].as_array().unwrap().len(), 2);
     app.delete_with_auth(&format!("/circles/{circle_id}/members/{bob_id}"), &bob)
         .await;
     let (_, items) = app
         .get_with_auth(&format!("/circles/{circle_id}/items"), &alice)
         .await;
     assert_eq!(
-        items.as_array().unwrap().len(),
+        items["data"].as_array().unwrap().len(),
         1,
         "only remaining member's items stay"
     );
@@ -2735,7 +2735,7 @@ async fn owner_removing_member_cleans_their_items() {
         .get_with_auth(&format!("/circles/{circle_id}/items"), &alice)
         .await;
     assert_eq!(
-        items.as_array().unwrap().len(),
+        items["data"].as_array().unwrap().len(),
         0,
         "removed member's items cleaned"
     );
@@ -2815,7 +2815,11 @@ async fn share_rule_all_makes_items_visible() {
         .get_with_auth(&format!("/circles/{circle_id}/items"), &bob)
         .await;
     assert_eq!(status, StatusCode::OK);
-    assert_eq!(items.as_array().unwrap().len(), 0, "no items before rule");
+    assert_eq!(
+        items["data"].as_array().unwrap().len(),
+        0,
+        "no items before rule"
+    );
 
     // Alice sets share rule to "all"
     let (status, _) = app
@@ -2832,7 +2836,7 @@ async fn share_rule_all_makes_items_visible() {
         .get_with_auth(&format!("/circles/{circle_id}/items"), &bob)
         .await;
     assert_eq!(
-        items.as_array().unwrap().len(),
+        items["data"].as_array().unwrap().len(),
         2,
         "all items visible after rule"
     );
@@ -2881,8 +2885,12 @@ async fn share_rule_all_excludes_private_items() {
     let (_, items) = app
         .get_with_auth(&format!("/circles/{circle_id}/items"), &bob)
         .await;
-    assert_eq!(items.as_array().unwrap().len(), 1, "private item excluded");
-    assert_eq!(items[0]["name"], "Public");
+    assert_eq!(
+        items["data"].as_array().unwrap().len(),
+        1,
+        "private item excluded"
+    );
+    assert_eq!(items["data"][0]["name"], "Public");
 }
 
 #[tokio::test]
@@ -2924,11 +2932,11 @@ async fn share_rule_all_dynamic_new_items_appear() {
         .get_with_auth(&format!("/circles/{circle_id}/items"), &bob)
         .await;
     assert_eq!(
-        items.as_array().unwrap().len(),
+        items["data"].as_array().unwrap().len(),
         1,
         "new item appears dynamically"
     );
-    assert_eq!(items[0]["name"], "New Gift");
+    assert_eq!(items["data"][0]["name"], "New Gift");
 }
 
 #[tokio::test]
@@ -2966,7 +2974,7 @@ async fn share_rule_none_hides_everything() {
     let (_, items) = app
         .get_with_auth(&format!("/circles/{circle_id}/items"), &bob)
         .await;
-    assert_eq!(items.as_array().unwrap().len(), 1);
+    assert_eq!(items["data"].as_array().unwrap().len(), 1);
 
     app.put_json_with_auth(
         &format!("/circles/{circle_id}/share-rule"),
@@ -2978,7 +2986,7 @@ async fn share_rule_none_hides_everything() {
         .get_with_auth(&format!("/circles/{circle_id}/items"), &bob)
         .await;
     assert_eq!(
-        items.as_array().unwrap().len(),
+        items["data"].as_array().unwrap().len(),
         0,
         "none mode hides everything"
     );
@@ -3063,8 +3071,12 @@ async fn share_rule_categories_filters_correctly() {
     let (_, items) = app
         .get_with_auth(&format!("/circles/{circle_id}/items"), &bob)
         .await;
-    assert_eq!(items.as_array().unwrap().len(), 1, "only Tech item visible");
-    assert_eq!(items[0]["name"], "Laptop");
+    assert_eq!(
+        items["data"].as_array().unwrap().len(),
+        1,
+        "only Tech item visible"
+    );
+    assert_eq!(items["data"][0]["name"], "Laptop");
 }
 
 #[tokio::test]
@@ -3103,7 +3115,7 @@ async fn share_rule_categories_empty_ids_returns_nothing() {
         .get_with_auth(&format!("/circles/{circle_id}/items"), &bob)
         .await;
     assert_eq!(
-        items.as_array().unwrap().len(),
+        items["data"].as_array().unwrap().len(),
         0,
         "empty categories = no items"
     );
@@ -3214,15 +3226,15 @@ async fn share_rule_bidirectional_independent() {
     let (_, items) = app
         .get_with_auth(&format!("/circles/{circle_id}/items"), &bob)
         .await;
-    assert_eq!(items.as_array().unwrap().len(), 1);
-    assert_eq!(items[0]["name"], "Alice Gift");
+    assert_eq!(items["data"].as_array().unwrap().len(), 1);
+    assert_eq!(items["data"][0]["name"], "Alice Gift");
 
     // Alice sees nothing from Bob (Bob has no rule)
     let (_, items) = app
         .get_with_auth(&format!("/circles/{circle_id}/items"), &alice)
         .await;
     assert_eq!(
-        items.as_array().unwrap().len(),
+        items["data"].as_array().unwrap().len(),
         1,
         "Alice sees her own shared items + nothing from Bob"
     );
@@ -3281,13 +3293,13 @@ async fn share_rule_group_circle_all_works() {
         .get_with_auth(&format!("/circles/{circle_id}/items"), &bob)
         .await;
     assert_eq!(status, StatusCode::OK);
-    assert_eq!(items.as_array().unwrap().len(), 2);
+    assert_eq!(items["data"].as_array().unwrap().len(), 2);
 
     // Carol should also see them
     let (_, items) = app
         .get_with_auth(&format!("/circles/{circle_id}/items"), &carol)
         .await;
-    assert_eq!(items.as_array().unwrap().len(), 2);
+    assert_eq!(items["data"].as_array().unwrap().len(), 2);
 }
 
 #[tokio::test]
@@ -3320,11 +3332,11 @@ async fn share_rule_group_backward_compat() {
         .await;
     assert_eq!(status, StatusCode::OK);
     assert_eq!(
-        items.as_array().unwrap().len(),
+        items["data"].as_array().unwrap().len(),
         1,
         "legacy circle_items should still be visible without share rule"
     );
-    assert_eq!(items[0]["name"], "Legacy Item");
+    assert_eq!(items["data"][0]["name"], "Legacy Item");
 }
 
 #[tokio::test]
@@ -3383,7 +3395,7 @@ async fn share_rule_group_mixed_rules() {
     let (_, items) = app
         .get_with_auth(&format!("/circles/{circle_id}/items"), &carol)
         .await;
-    let names: Vec<&str> = items
+    let names: Vec<&str> = items["data"]
         .as_array()
         .unwrap()
         .iter()
@@ -3446,7 +3458,7 @@ async fn share_rule_group_set_rule_clears_circle_items() {
         .get_with_auth(&format!("/circles/{circle_id}/items"), &bob)
         .await;
     assert!(
-        !items.as_array().unwrap().is_empty(),
+        !items["data"].as_array().unwrap().is_empty(),
         "items should be visible via 'all' rule"
     );
 }
@@ -3484,7 +3496,7 @@ async fn list_my_share_rules_returns_active_rules() {
     // Fetch my-share-rules
     let (status, body) = app.get_with_auth("/circles/my-share-rules", &alice).await;
     assert_eq!(status, StatusCode::OK);
-    let rules = body.as_array().unwrap();
+    let rules = body["data"].as_array().unwrap();
     assert_eq!(rules.len(), 1);
     assert_eq!(rules[0]["share_mode"], "all");
     assert_eq!(rules[0]["circle_id"], circle_id);
@@ -3497,7 +3509,7 @@ async fn list_my_share_rules_empty_when_no_rules() {
 
     let (status, body) = app.get_with_auth("/circles/my-share-rules", &token).await;
     assert_eq!(status, StatusCode::OK);
-    assert_eq!(body.as_array().unwrap().len(), 0);
+    assert_eq!(body["data"].as_array().unwrap().len(), 0);
 }
 
 #[tokio::test]
@@ -3538,7 +3550,7 @@ async fn list_my_share_rules_does_not_leak_other_users() {
     // Bob should NOT see Alice's rule in his my-share-rules
     let (_, body) = app.get_with_auth("/circles/my-share-rules", &bob).await;
     assert_eq!(
-        body.as_array().unwrap().len(),
+        body["data"].as_array().unwrap().len(),
         0,
         "Bob should not see Alice's share rules"
     );
@@ -3594,8 +3606,8 @@ async fn share_rule_group_categories_works() {
     let (_, items) = app
         .get_with_auth(&format!("/circles/{circle_id}/items"), &bob)
         .await;
-    assert_eq!(items.as_array().unwrap().len(), 1);
-    assert_eq!(items[0]["name"], "MacBook");
+    assert_eq!(items["data"].as_array().unwrap().len(), 1);
+    assert_eq!(items["data"][0]["name"], "MacBook");
 }
 
 // ── Group circle: selection mode ─────────────────────────────────────
@@ -3641,8 +3653,8 @@ async fn share_rule_group_selection_works() {
     let (_, items) = app
         .get_with_auth(&format!("/circles/{circle_id}/items"), &bob)
         .await;
-    assert_eq!(items.as_array().unwrap().len(), 1);
-    assert_eq!(items[0]["name"], "Sel Item 1");
+    assert_eq!(items["data"].as_array().unwrap().len(), 1);
+    assert_eq!(items["data"][0]["name"], "Sel Item 1");
 }
 
 // ── Group circle: none mode hides everything ─────────────────────────
@@ -3676,7 +3688,7 @@ async fn share_rule_group_none_hides_items() {
         .get_with_auth(&format!("/circles/{circle_id}/items"), &bob)
         .await;
     assert!(
-        !items.as_array().unwrap().is_empty(),
+        !items["data"].as_array().unwrap().is_empty(),
         "precondition: visible"
     );
 
@@ -3691,7 +3703,7 @@ async fn share_rule_group_none_hides_items() {
         .get_with_auth(&format!("/circles/{circle_id}/items"), &bob)
         .await;
     assert_eq!(
-        items.as_array().unwrap().len(),
+        items["data"].as_array().unwrap().len(),
         0,
         "none mode should hide all items"
     );
@@ -3733,7 +3745,7 @@ async fn share_rule_group_all_excludes_private() {
     let (_, items) = app
         .get_with_auth(&format!("/circles/{circle_id}/items"), &bob)
         .await;
-    let names: Vec<&str> = items
+    let names: Vec<&str> = items["data"]
         .as_array()
         .unwrap()
         .iter()
@@ -3800,8 +3812,8 @@ async fn share_rule_group_all_dynamic() {
     let (_, items) = app
         .get_with_auth(&format!("/circles/{circle_id}/items"), &bob)
         .await;
-    assert_eq!(items.as_array().unwrap().len(), 1);
-    assert_eq!(items[0]["name"], "Late Addition");
+    assert_eq!(items["data"].as_array().unwrap().len(), 1);
+    assert_eq!(items["data"][0]["name"], "Late Addition");
 }
 
 // ── Backward compat: batch share then set rule transitions cleanly ───
@@ -3840,7 +3852,7 @@ async fn share_rule_group_transition_from_legacy_to_all() {
     let (_, items) = app
         .get_with_auth(&format!("/circles/{circle_id}/items"), &bob)
         .await;
-    assert_eq!(items.as_array().unwrap().len(), 1);
+    assert_eq!(items["data"].as_array().unwrap().len(), 1);
 
     // Alice switches to "all" mode — should now see both
     app.put_json_with_auth(
@@ -3854,7 +3866,7 @@ async fn share_rule_group_transition_from_legacy_to_all() {
         .get_with_auth(&format!("/circles/{circle_id}/items"), &bob)
         .await;
     assert_eq!(
-        items.as_array().unwrap().len(),
+        items["data"].as_array().unwrap().len(),
         2,
         "switching to 'all' should reveal all items"
     );
@@ -3891,7 +3903,7 @@ async fn make_private_removes_circle_items() {
         .get_with_auth(&format!("/circles/{circle_id}/items"), &bob)
         .await;
     assert_eq!(
-        items.as_array().unwrap().len(),
+        items["data"].as_array().unwrap().len(),
         1,
         "item visible before private"
     );
@@ -3911,7 +3923,7 @@ async fn make_private_removes_circle_items() {
         .get_with_auth(&format!("/circles/{circle_id}/items"), &bob)
         .await;
     assert_eq!(
-        items.as_array().unwrap().len(),
+        items["data"].as_array().unwrap().len(),
         0,
         "circle_items row should be deleted when item is set to private"
     );
@@ -3955,7 +3967,11 @@ async fn make_private_selection_mode_excludes() {
     let (_, items) = app
         .get_with_auth(&format!("/circles/{circle_id}/items"), &bob)
         .await;
-    assert_eq!(items.as_array().unwrap().len(), 2, "both items visible");
+    assert_eq!(
+        items["data"].as_array().unwrap().len(),
+        2,
+        "both items visible"
+    );
 
     // Alice makes item2 private
     let (status, _) = app
@@ -3971,7 +3987,7 @@ async fn make_private_selection_mode_excludes() {
     let (_, items) = app
         .get_with_auth(&format!("/circles/{circle_id}/items"), &bob)
         .await;
-    let items_arr = items.as_array().unwrap();
+    let items_arr = items["data"].as_array().unwrap();
     assert_eq!(
         items_arr.len(),
         1,
@@ -4007,7 +4023,7 @@ async fn make_public_again_does_not_restore_shares() {
     let (_, items) = app
         .get_with_auth(&format!("/circles/{circle_id}/items"), &bob)
         .await;
-    assert_eq!(items.as_array().unwrap().len(), 1);
+    assert_eq!(items["data"].as_array().unwrap().len(), 1);
 
     // Alice makes the item private (deletes circle_items)
     app.put_json_with_auth(
@@ -4030,7 +4046,7 @@ async fn make_public_again_does_not_restore_shares() {
         .get_with_auth(&format!("/circles/{circle_id}/items"), &bob)
         .await;
     assert_eq!(
-        items.as_array().unwrap().len(),
+        items["data"].as_array().unwrap().len(),
         0,
         "making public again should NOT auto-restore circle_items shares"
     );

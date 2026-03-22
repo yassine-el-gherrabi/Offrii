@@ -800,7 +800,7 @@ async fn list_my_wishes_returns_all_statuses_200() {
 
     let (status, body) = app.get_with_auth("/community/wishes/mine", &token).await;
     assert_eq!(status, StatusCode::OK);
-    let wishes = body.as_array().unwrap();
+    let wishes = body["data"].as_array().unwrap();
     assert_eq!(wishes.len(), 1);
     assert_eq!(wishes[0]["status"].as_str(), Some("closed"));
 }
@@ -812,7 +812,7 @@ async fn list_my_wishes_empty_200() {
 
     let (status, body) = app.get_with_auth("/community/wishes/mine", &token).await;
     assert_eq!(status, StatusCode::OK);
-    assert_eq!(body.as_array().unwrap().len(), 0);
+    assert_eq!(body["data"].as_array().unwrap().len(), 0);
 }
 
 #[tokio::test]
@@ -823,7 +823,7 @@ async fn list_my_wishes_shows_private_fields() {
 
     let (status, body) = app.get_with_auth("/community/wishes/mine", &token).await;
     assert_eq!(status, StatusCode::OK);
-    let wish = &body.as_array().unwrap()[0];
+    let wish = &body["data"].as_array().unwrap()[0];
     // Private fields should exist (even if 0/null)
     assert!(wish.get("report_count").is_some());
     assert!(wish.get("reopen_count").is_some());
@@ -2124,7 +2124,7 @@ async fn e2e_full_lifecycle_create_offer_confirm() {
         .get_with_auth("/community/wishes/mine", &owner_token)
         .await;
     assert_eq!(status, StatusCode::OK);
-    let wishes = body.as_array().unwrap();
+    let wishes = body["data"].as_array().unwrap();
     assert_eq!(wishes[0]["status"].as_str(), Some("fulfilled"));
     assert!(wishes[0]["fulfilled_at"].as_str().is_some());
 }
@@ -2247,7 +2247,7 @@ async fn e2e_create_close_create_new() {
 
     // list_my_wishes should show both
     let (_, body) = app.get_with_auth("/community/wishes/mine", &token).await;
-    assert_eq!(body.as_array().unwrap().len(), 2);
+    assert_eq!(body["data"].as_array().unwrap().len(), 2);
 }
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -2535,7 +2535,7 @@ async fn list_my_wishes_includes_image_url_and_links() {
 
     let (status, resp) = app.get_with_auth("/community/wishes/mine", &token).await;
     assert_eq!(status, StatusCode::OK);
-    let wishes = resp.as_array().unwrap();
+    let wishes = resp["data"].as_array().unwrap();
     assert_eq!(wishes.len(), 1);
     assert_eq!(
         wishes[0]["image_url"].as_str(),
