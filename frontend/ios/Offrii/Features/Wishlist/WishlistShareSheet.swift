@@ -946,7 +946,7 @@ struct WishlistShareSheet: View {
             try await CircleService.shared.setShareRule(
                 circleId: circleId, mode: "selection"
             )
-            _ = withAnimation {
+            withAnimation {
                 shareRules.removeValue(forKey: circleId)
                 stoppedCircleIds.insert(circleId)
             }
