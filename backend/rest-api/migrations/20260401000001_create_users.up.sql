@@ -95,3 +95,17 @@ CREATE TABLE IF NOT EXISTS email_change_tokens (
 );
 
 CREATE INDEX IF NOT EXISTS idx_email_change_user ON email_change_tokens(user_id);
+
+-- ── Schema documentation ──
+COMMENT ON TABLE users IS 'Core identity — supports email/password and OAuth (Google, Apple) authentication';
+COMMENT ON COLUMN users.password_hash IS 'Argon2id hash. NULL for OAuth-only accounts (no password set)';
+COMMENT ON COLUMN users.token_version IS 'Incremented on password change — instantly invalidates all existing JWTs across devices';
+COMMENT ON COLUMN users.username_customized IS 'false = auto-generated from display_name/email, true = explicitly chosen by user';
+COMMENT ON COLUMN users.inactivity_notice_sent_at IS 'Prevents sending repeated inactivity warnings to the same user';
+COMMENT ON COLUMN users.terms_accepted_at IS 'Legal requirement — tracks when the user accepted the terms of service';
+
+COMMENT ON TABLE connection_logs IS 'Login audit trail — IP and user-agent per authentication event. Retained 12 months (legal requirement)';
+COMMENT ON COLUMN connection_logs.ip IS 'IPv4 or IPv6 address (VARCHAR(45) covers both formats)';
+
+COMMENT ON TABLE email_verification_tokens IS 'One-time tokens sent via email to confirm ownership. 24-hour expiry';
+COMMENT ON TABLE email_change_tokens IS 'Tokens for email modification requests. 1-hour expiry (shorter than verification for security)';

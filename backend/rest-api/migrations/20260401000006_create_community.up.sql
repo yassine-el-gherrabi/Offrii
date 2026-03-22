@@ -92,3 +92,21 @@ CREATE TABLE IF NOT EXISTS wish_blocks (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     UNIQUE (wish_id, user_id)
 );
+
+-- ── Schema documentation ──
+COMMENT ON TABLE community_wishes IS 'Charitable requests for help — includes AI moderation and donor matching (first come, first served)';
+COMMENT ON COLUMN community_wishes.category IS 'Domain-specific: education, clothing, health, religion, home, children, other';
+COMMENT ON COLUMN community_wishes.status IS 'State machine: pending → (AI) → open/flagged → matched → fulfilled/closed. review = community-reported';
+COMMENT ON COLUMN community_wishes.is_anonymous IS 'Hides owner identity from the community — useful for sensitive categories (health, religion)';
+COMMENT ON COLUMN community_wishes.matched_with IS 'The donor. Auto-set on first offer (first come, first served). Only one donor at a time';
+COMMENT ON COLUMN community_wishes.report_count IS 'Incremented per unique reporter. At threshold (5), status auto-moves to review';
+COMMENT ON COLUMN community_wishes.reopen_count IS 'Max 2 reopens allowed per wish, with 24h cooldown between each';
+COMMENT ON COLUMN community_wishes.moderation_note IS 'Admin/AI explanation for why a wish was flagged or rejected';
+
+COMMENT ON TABLE wish_reports IS 'Community moderation — users flag inappropriate wishes. One report per user per wish';
+COMMENT ON COLUMN wish_reports.reason IS 'One of: inappropriate, spam, scam, other';
+
+COMMENT ON TABLE wish_messages IS 'Private chat between wish owner and matched donor. Messages deleted when match ends (privacy)';
+COMMENT ON COLUMN wish_messages.sender_id IS 'SET NULL on user deletion — message body preserved but sender anonymized';
+
+COMMENT ON TABLE wish_blocks IS 'Per-user wish hiding — blocked wishes excluded from list queries';

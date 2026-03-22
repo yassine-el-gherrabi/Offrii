@@ -13,3 +13,8 @@ CREATE TABLE IF NOT EXISTS categories (
 
 CREATE UNIQUE INDEX IF NOT EXISTS uq_categories_default_name
     ON categories (name);
+
+-- ── Schema documentation ──
+COMMENT ON TABLE categories IS 'Global wishlist categories — system-wide, not per-user. Managed by admins';
+COMMENT ON COLUMN categories.position IS 'Display order in the UI (0 = first)';
+COMMENT ON COLUMN categories.is_default IS 'Pre-selected category for new items if user does not choose one';

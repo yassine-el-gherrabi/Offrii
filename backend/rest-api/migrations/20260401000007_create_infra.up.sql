@@ -89,3 +89,21 @@ CREATE INDEX IF NOT EXISTS idx_share_links_user_id ON share_links(user_id);
 ALTER TABLE items
     ADD CONSTRAINT fk_items_claimed_via_link
     FOREIGN KEY (claimed_via_link_id) REFERENCES share_links(id) ON DELETE SET NULL;
+
+-- ── Schema documentation ──
+COMMENT ON TABLE push_tokens IS 'Device tokens for APNs (iOS) push notifications. One user can have multiple devices';
+
+COMMENT ON TABLE refresh_tokens IS 'Long-lived JWT refresh tokens for session management';
+COMMENT ON COLUMN refresh_tokens.token_hash IS 'SHA256 hash of the actual token — raw token is never stored for security';
+COMMENT ON COLUMN refresh_tokens.revoked_at IS 'Set on logout or password change. NULL = active token';
+
+COMMENT ON TABLE notifications IS 'In-app notification feed with polymorphic context (circle, item, wish, actor). 20 types. Cleaned up after 6 months';
+COMMENT ON COLUMN notifications.type IS '20 types covering: friend events, circle activity, item claims, wish moderation, wish messaging';
+COMMENT ON COLUMN notifications.read IS 'Read/unread state for badge count. Partial index on unread for fast count queries';
+COMMENT ON COLUMN notifications.actor_id IS 'The user who triggered the notification — used to display "X did Y" in the feed';
+
+COMMENT ON TABLE share_links IS 'Public shareable URLs for wishlists — allows viewing and optionally claiming items without authentication';
+COMMENT ON COLUMN share_links.permissions IS 'view_only = browse items, view_and_claim = browse + claim items';
+COMMENT ON COLUMN share_links.scope IS 'all = entire wishlist, category = specific categories, selection = hand-picked items';
+COMMENT ON COLUMN share_links.scope_data IS 'JSONB payload — contains category IDs or item IDs depending on scope';
+COMMENT ON COLUMN share_links.expires_at IS 'NULL = link never expires';

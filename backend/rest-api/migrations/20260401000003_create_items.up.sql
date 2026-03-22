@@ -86,3 +86,15 @@ $$ LANGUAGE plpgsql;
 CREATE TRIGGER trg_items_set_purchased_at
     BEFORE INSERT OR UPDATE ON items
     FOR EACH ROW EXECUTE FUNCTION set_purchased_at();
+
+-- ── Schema documentation ──
+COMMENT ON TABLE items IS 'Personal wishlist items — can be shared in circles and claimed by others';
+COMMENT ON COLUMN items.priority IS '1 = high, 2 = medium (default), 3 = low';
+COMMENT ON COLUMN items.status IS 'active = visible, purchased = someone bought it, deleted = soft-removed from lists';
+COMMENT ON COLUMN items.claimed_by IS 'User who reserved this item (will buy it). NULL = unclaimed';
+COMMENT ON COLUMN items.claimed_via IS 'How the claim happened: app = authenticated user, web = anonymous via share link';
+COMMENT ON COLUMN items.claimed_name IS 'Display name of the claimer — persists even if the claiming user is later deleted';
+COMMENT ON COLUMN items.web_claim_token IS 'UUID secret allowing anonymous web claimers to manage their claim without an account';
+COMMENT ON COLUMN items.claimed_via_link_id IS 'Which share link was used to claim — enables analytics on link effectiveness';
+COMMENT ON COLUMN items.og_image_url IS 'OpenGraph image auto-fetched from item URL for rich preview';
+COMMENT ON COLUMN items.is_private IS 'true = hidden from all circles, only visible to owner';

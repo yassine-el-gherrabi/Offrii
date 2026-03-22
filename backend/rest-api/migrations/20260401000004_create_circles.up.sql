@@ -121,3 +121,24 @@ CREATE TABLE IF NOT EXISTS circle_invites (
 );
 
 CREATE INDEX IF NOT EXISTS idx_circle_invites_circle_id ON circle_invites(circle_id);
+
+-- ── Schema documentation ──
+COMMENT ON TABLE circles IS 'Groups for sharing wishlists. A direct circle (is_direct=true) is a 1-on-1 pair with max 2 members';
+COMMENT ON COLUMN circles.name IS 'NULL for direct circles — the UI shows the other member''s name instead';
+COMMENT ON COLUMN circles.is_direct IS 'true = 1-on-1 pair enforced by trigger (max 2 members), false = group circle';
+
+COMMENT ON TABLE circle_members IS 'Users belonging to a circle. Owner auto-added via trigger on circle creation';
+COMMENT ON COLUMN circle_members.role IS 'owner = can manage members/settings, member = can view/share items';
+
+COMMENT ON TABLE circle_items IS 'Items shared into a circle — makes them visible to all circle members';
+COMMENT ON COLUMN circle_items.shared_by IS 'The user who shared this item into the circle (may differ from item owner via share rules)';
+
+COMMENT ON TABLE circle_events IS 'Activity feed for circles — immutable audit log of all actions';
+
+COMMENT ON TABLE circle_share_rules IS 'Controls what items a user''s circles can see. Defaults to none (explicit opt-in sharing)';
+COMMENT ON COLUMN circle_share_rules.share_mode IS 'none = share nothing, all = share everything, categories = share specific categories, selection = hand-picked items';
+COMMENT ON COLUMN circle_share_rules.category_ids IS 'UUID array of categories to share — used when share_mode = categories';
+
+COMMENT ON TABLE circle_invites IS 'Tokenized circle invitations with usage limits and expiration';
+COMMENT ON COLUMN circle_invites.max_uses IS 'How many times this invite can be used. 1 = single-use';
+COMMENT ON COLUMN circle_invites.use_count IS 'Incremented each time someone joins via this invite';

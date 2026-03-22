@@ -27,3 +27,9 @@ CREATE TABLE IF NOT EXISTS friendships (
 
 CREATE INDEX IF NOT EXISTS idx_friendships_a ON friendships(user_a_id);
 CREATE INDEX IF NOT EXISTS idx_friendships_b ON friendships(user_b_id);
+
+-- ── Schema documentation ──
+COMMENT ON TABLE friend_requests IS 'Directional friend requests — from_user asks to_user';
+COMMENT ON COLUMN friend_requests.status IS 'pending = awaiting response, accepted = friendship created, declined = rejected, cancelled = sender withdrew';
+
+COMMENT ON TABLE friendships IS 'Confirmed bidirectional friendships. user_a_id < user_b_id enforced by CHECK to prevent duplicate pairs';
