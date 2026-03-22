@@ -78,7 +78,7 @@ CREATE TABLE IF NOT EXISTS circle_events (
     event_type     VARCHAR(30) NOT NULL CHECK (event_type IN (
         'item_shared', 'item_unshared', 'item_claimed',
         'item_unclaimed', 'member_joined', 'member_left',
-        'item_received'
+        'item_received', 'share_rule_set', 'share_rule_removed'
     )),
     target_item_id UUID        REFERENCES items(id) ON DELETE SET NULL,
     target_user_id UUID        REFERENCES users(id) ON DELETE SET NULL,

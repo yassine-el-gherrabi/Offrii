@@ -50,12 +50,12 @@ CREATE TABLE IF NOT EXISTS notifications (
     CONSTRAINT chk_notifications_type CHECK (
         type IN (
             'friend_request', 'friend_accepted',
-            'circle_activity', 'circle_member_joined',
+            'circle_activity', 'circle_added', 'circle_member_joined',
             'item_shared', 'item_claimed', 'item_unclaimed', 'item_received',
             'wish_moderation_approved', 'wish_moderation_flagged',
-            'wish_offer', 'wish_offer_withdrawn', 'wish_closed',
+            'wish_offer', 'wish_offer_withdrawn', 'wish_offer_rejected', 'wish_closed',
             'wish_approved', 'wish_rejected', 'wish_confirmed',
-            'wish_message'
+            'wish_message', 'wish_reported'
         )
     )
 );
