@@ -3,12 +3,6 @@ name: Deploy Hotfix
 on:
   push:
     branches: ["hotfix/*", "hotfix/**"]
-    paths:
-      - "backend/**"
-      - "docker-compose.yml"
-      - "docker-compose.prod.yml"
-      - "infra/**"
-      - ".github/workflows/deploy-hotfix.yml"
 
 concurrency:
   group: deploy-prod
