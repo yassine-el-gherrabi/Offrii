@@ -1,5 +1,5 @@
 import AuthenticationServices
-import GoogleSignIn
+@preconcurrency import GoogleSignIn
 
 /// Handles native Google and Apple Sign-In flows, returning ID tokens
 /// that the backend can verify via JWKS.

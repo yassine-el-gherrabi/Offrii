@@ -1,5 +1,5 @@
 import SwiftUI
-import UserNotifications
+@preconcurrency import UserNotifications
 
 struct PostAuthSetupView: View {
     @Environment(AuthManager.self) private var authManager

@@ -1,5 +1,5 @@
 import UIKit
-import UserNotifications
+@preconcurrency import UserNotifications
 
 final class AppDelegate: NSObject, UIApplicationDelegate {
     /// Shared router reference, set from OffriiApp on launch
