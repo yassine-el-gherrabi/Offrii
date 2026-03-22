@@ -1,6 +1,6 @@
 // swiftlint:disable file_length
 import SwiftUI
-import UserNotifications
+@preconcurrency import UserNotifications
 
 // MARK: - ProfileProgressSheet
 
