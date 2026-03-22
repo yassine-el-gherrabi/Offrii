@@ -524,6 +524,9 @@ async fn set_share_rule(
             .map_err(AppError::Internal)?;
     }
 
+    // Invalidate the item list cache so the grid reflects the change
+    state.items.invalidate_list_cache(auth_user.user_id).await;
+
     Ok(StatusCode::NO_CONTENT)
 }
 

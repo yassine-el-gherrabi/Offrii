@@ -725,6 +725,10 @@ impl traits::ItemService for PgItemService {
 
         Ok(count)
     }
+
+    async fn invalidate_list_cache(&self, user_id: Uuid) {
+        self.bump_version(user_id).await;
+    }
 }
 
 #[cfg(test)]

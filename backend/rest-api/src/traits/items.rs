@@ -150,6 +150,9 @@ pub trait ItemService: Send + Sync {
 
     /// Owner unclaim for web claims: item owner can remove a web claim.
     async fn owner_unclaim_web_item(&self, item_id: Uuid, owner_id: Uuid) -> Result<(), AppError>;
+
+    /// Invalidate the Redis list cache for a user (e.g. after share rule changes).
+    async fn invalidate_list_cache(&self, user_id: Uuid);
 }
 
 #[async_trait]
