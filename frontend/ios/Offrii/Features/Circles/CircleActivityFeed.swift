@@ -128,18 +128,8 @@ struct CircleActivityFeed: View {
         }
     }
 
-    private func colorForEvent(_ type: String) -> Color {
-        switch type {
-        case "item_shared":   return OffriiTheme.primary
-        case "item_claimed":  return OffriiTheme.success
-        case "item_unclaimed": return OffriiTheme.accent
-        case "item_received": return OffriiTheme.success
-        case "member_joined": return OffriiTheme.primary
-        case "member_left":          return OffriiTheme.textMuted
-        case "share_rule_set":       return OffriiTheme.primary
-        case "share_rule_removed":   return OffriiTheme.accent
-        default:                     return OffriiTheme.textSecondary
-        }
+    private func colorForEvent(_: String) -> Color {
+        OffriiTheme.primary
     }
 
     private func descriptionForEvent(_ event: CircleEventResponse) -> String {
