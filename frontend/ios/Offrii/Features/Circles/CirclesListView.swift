@@ -1,3 +1,4 @@
+// swiftlint:disable file_length
 import SwiftUI
 
 // MARK: - Circle Filter
@@ -41,6 +42,8 @@ struct CirclesListView: View {
     @State private var directCircleToRemove: OffriiCircle?
     @State private var showAcceptToast = false
     @State private var acceptedName = ""
+    @State private var circleToTransfer: OffriiCircle?
+    @State private var transferMembers: [CircleMember] = []
 
     private var displayedCircles: [OffriiCircle] {
         let searched = viewModel.filteredCircles
@@ -172,6 +175,27 @@ struct CirclesListView: View {
             CircleDetailView(circleId: circleId)
                 .environment(authManager)
         }
+        .sheet(isPresented: Binding(
+            get: { circleToTransfer != nil },
+            set: { if !$0 { circleToTransfer = nil } }
+        )) {
+            if let circle = circleToTransfer {
+                TransferOwnershipPicker(
+                    members: transferMembers,
+                    onSelect: { member in
+                        Task {
+                            try? await CircleService.shared.transferOwnership(
+                                circleId: circle.id, userId: member.userId
+                            )
+                            OffriiHaptics.success()
+                            await viewModel.loadCircles()
+                        }
+                        circleToTransfer = nil
+                    }
+                )
+                .presentationDetents([.medium])
+            }
+        }
         .sheet(isPresented: $showCreateCircle) {
             CreateCircleSheet { _ in
                 Task { await viewModel.loadCircles() }
@@ -228,14 +252,27 @@ struct CirclesListView: View {
             selectedFilter = .friends
             router.showFriends = false
         }
-        .alert(
+        .confirmationDialog(
             NSLocalizedString("circles.deleteCircle.title", comment: ""),
             isPresented: Binding(
                 get: { circleToDelete != nil },
                 set: { if !$0 { circleToDelete = nil } }
-            )
+            ),
+            titleVisibility: .visible
         ) {
-            Button(NSLocalizedString("common.delete", comment: ""), role: .destructive) {
+            if let circle = circleToDelete, circle.memberCount > 1 {
+                Button(NSLocalizedString("circles.deleteCircle.transferFirst", comment: "")) {
+                    let id = circle.id
+                    circleToDelete = nil
+                    Task {
+                        if let detail = try? await CircleService.shared.getCircle(id: id) {
+                            transferMembers = detail.members.filter { $0.userId != authManager.currentUser?.id }
+                            circleToTransfer = circle
+                        }
+                    }
+                }
+            }
+            Button(NSLocalizedString("circles.deleteCircle.confirm", comment: ""), role: .destructive) {
                 if let circle = circleToDelete {
                     Task { await viewModel.deleteCircle(circle) }
                 }
