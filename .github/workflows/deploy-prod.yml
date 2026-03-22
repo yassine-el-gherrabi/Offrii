@@ -94,13 +94,24 @@ jobs:
     runs-on: ubuntu-latest
     environment: prod
     steps:
+      - uses: actions/checkout@v6
+
+      - name: Sync infra configs to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ vars.HETZNER_HOST }}
+          username: deploy
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          source: "infra/,docker-compose.yml,docker-compose.prod.yml"
+          target: /opt/offrii
+          overwrite: true
+
       - name: Deploy to Hetzner
         uses: appleboy/ssh-action@v1
         with:
           host: ${{ vars.HETZNER_HOST }}
           username: deploy
           key: ${{ secrets.DEPLOY_SSH_KEY }}
-          script_stop: true
           script: |
             set -euo pipefail
             cd /opt/offrii
