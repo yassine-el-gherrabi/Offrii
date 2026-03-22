@@ -128,7 +128,9 @@ struct WishlistView: View {
                 .environment(authManager)
                 .presentationDetents([.medium, .large])
         }
-        .sheet(isPresented: $showShareSheet) {
+        .sheet(isPresented: $showShareSheet, onDismiss: {
+            Task { await viewModel.loadItems() }
+        }) {
             WishlistShareSheet(
                 items: viewModel.items,
                 selectedItemIds: viewModel.selectedItemIds,
