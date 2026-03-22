@@ -414,59 +414,65 @@ struct WishlistShareSheet: View {
         }
     }
 
+    @ViewBuilder
     private func circleCheckRow(_ circle: OffriiCircle) -> some View {
         let isSelected = selectedCircleIds.contains(circle.id)
         let hasRule = shareRules[circle.id]?.shareMode != nil
             && shareRules[circle.id]?.shareMode != "selection"
 
-        return Button {
-            withAnimation(OffriiAnimation.snappy) {
-                if isSelected {
-                    selectedCircleIds.remove(circle.id)
-                } else {
-                    selectedCircleIds.insert(circle.id)
-                }
+        let rowContent = HStack(spacing: OffriiTheme.spacingMD) {
+            circleAvatar(circle)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(circle.name ?? NSLocalizedString("circles.unnamed", comment: ""))
+                    .font(OffriiTypography.body)
+                    .foregroundColor(OffriiTheme.text)
+
+                circleShareStatus(circle)
             }
-        } label: {
-            HStack(spacing: OffriiTheme.spacingMD) {
-                circleAvatar(circle)
 
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(circle.name ?? NSLocalizedString("circles.unnamed", comment: ""))
-                        .font(OffriiTypography.body)
-                        .foregroundColor(OffriiTheme.text)
+            Spacer()
 
-                    circleShareStatus(circle)
+            if hasRule {
+                Button {
+                    circleToStopSharing = circle.id
+                } label: {
+                    Text(NSLocalizedString("share.stopSharing", comment: ""))
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(OffriiTheme.danger)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 5)
+                        .background(OffriiTheme.danger.opacity(0.08))
+                        .cornerRadius(OffriiTheme.cornerRadiusSM)
                 }
-
-                Spacer()
-
-                if hasRule {
-                    Button {
-                        circleToStopSharing = circle.id
-                    } label: {
-                        Text(NSLocalizedString("share.stopSharing", comment: ""))
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundColor(OffriiTheme.danger)
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 5)
-                            .background(OffriiTheme.danger.opacity(0.08))
-                            .cornerRadius(OffriiTheme.cornerRadiusSM)
-                    }
-                    .buttonStyle(.plain)
-                } else {
-                    Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                        .font(.system(size: 22))
-                        .foregroundColor(isSelected ? OffriiTheme.primary : OffriiTheme.textMuted)
-                }
+                .buttonStyle(.plain)
+            } else {
+                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                    .font(.system(size: 22))
+                    .foregroundColor(isSelected ? OffriiTheme.primary : OffriiTheme.textMuted)
             }
-            .padding(OffriiTheme.spacingBase)
-            .background(isSelected ? OffriiTheme.primary.opacity(0.05) : OffriiTheme.card)
-            .cornerRadius(OffriiTheme.cornerRadiusLG)
         }
-        .buttonStyle(.plain)
-        .disabled(hasRule)
-        .animation(OffriiAnimation.snappy, value: isSelected)
+        .padding(OffriiTheme.spacingBase)
+        .background(isSelected ? OffriiTheme.primary.opacity(0.05) : OffriiTheme.card)
+        .cornerRadius(OffriiTheme.cornerRadiusLG)
+
+        if hasRule {
+            rowContent
+        } else {
+            Button {
+                withAnimation(OffriiAnimation.snappy) {
+                    if isSelected {
+                        selectedCircleIds.remove(circle.id)
+                    } else {
+                        selectedCircleIds.insert(circle.id)
+                    }
+                }
+            } label: {
+                rowContent
+            }
+            .buttonStyle(.plain)
+            .animation(OffriiAnimation.snappy, value: isSelected)
+        }
     }
 
     private var shareToCirclesButton: some View {
