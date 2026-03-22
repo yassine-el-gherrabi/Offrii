@@ -126,8 +126,9 @@ jobs:
             CADDY_SITE_ADDRESS=api.offrii.com
             CORS_ORIGIN=${{ vars.CORS_ORIGIN }}
             GF_SECURITY_ADMIN_PASSWORD=${{ secrets.GF_SECURITY_ADMIN_PASSWORD }}
-            GRAFANA_BASIC_AUTH_HASH=${{ secrets.GRAFANA_BASIC_AUTH_HASH }}
             ENVEOF
+            # Write bcrypt hash separately (contains $ signs that break heredoc)
+            printf 'GRAFANA_BASIC_AUTH_HASH=%s\n' '${{ secrets.GRAFANA_BASIC_AUTH_HASH }}' >> /opt/offrii/.env
             chmod 600 /opt/offrii/.env
 
             # Decode key files from base64
