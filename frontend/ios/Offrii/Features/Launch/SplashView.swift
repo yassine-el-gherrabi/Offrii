@@ -35,8 +35,6 @@ struct SplashView: View {
             }
         }
         .task {
-            authManager.restoreCachedUser()
-
             withAnimation(OffriiAnimation.bouncy) {
                 logoVisible = true
             }
