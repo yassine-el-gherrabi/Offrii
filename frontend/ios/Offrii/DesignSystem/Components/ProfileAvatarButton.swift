@@ -10,32 +10,7 @@ struct ProfileAvatarButton: View {
 
     var body: some View {
         ZStack(alignment: .topTrailing) {
-            if isLoading {
-                Circle()
-                    .fill(OffriiTheme.border.opacity(0.3))
-                    .frame(width: 32, height: 32)
-                    .shimmer()
-            } else if let url = avatarUrl {
-                LazyImage(url: url) { state in
-                    if let image = state.image {
-                        image
-                            .resizable()
-                            .aspectRatio(contentMode: .fill)
-                            .frame(width: 32, height: 32)
-                            .clipShape(Circle())
-                    } else if state.error != nil {
-                        initialsView
-                    } else {
-                        Circle()
-                            .fill(OffriiTheme.border.opacity(0.3))
-                            .frame(width: 32, height: 32)
-                            .shimmer()
-                    }
-                }
-                .processors([.resize(size: CGSize(width: 64, height: 64))])
-            } else {
-                initialsView
-            }
+            avatarContent
 
             // Badge dot
             if showBadge {
@@ -51,6 +26,36 @@ struct ProfileAvatarButton: View {
         }
         // Force re-render when avatar URL changes
         .id(avatarUrl?.absoluteString ?? "no-avatar")
+    }
+
+    @ViewBuilder
+    private var avatarContent: some View {
+        if isLoading {
+            Circle()
+                .fill(OffriiTheme.border.opacity(0.3))
+                .frame(width: 32, height: 32)
+                .shimmer()
+        } else if let url = avatarUrl {
+            LazyImage(url: url) { state in
+                if let image = state.image {
+                    image
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .frame(width: 32, height: 32)
+                        .clipShape(Circle())
+                } else if state.error != nil {
+                    initialsView
+                } else {
+                    Circle()
+                        .fill(OffriiTheme.border.opacity(0.3))
+                        .frame(width: 32, height: 32)
+                        .shimmer()
+                }
+            }
+            .processors([.resize(size: CGSize(width: 64, height: 64))])
+        } else {
+            initialsView
+        }
     }
 
     private var initialsView: some View {
