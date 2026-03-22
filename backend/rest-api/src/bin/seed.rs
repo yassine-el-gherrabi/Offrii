@@ -42,9 +42,16 @@ const B08: Uuid = uuid("b0000000-0000-4000-a000-000000000008");
 const B09: Uuid = uuid("b0000000-0000-4000-a000-000000000009");
 const B10: Uuid = uuid("b0000000-0000-4000-a000-000000000010");
 
-// Circles
+// Circles (groups)
 const C1: Uuid = uuid("c0000000-0000-4000-a000-000000000001");
 const C2: Uuid = uuid("c0000000-0000-4000-a000-000000000002");
+
+// Circles (direct / 1-1 friend circles)
+const CD1: Uuid = uuid("c1000000-0000-4000-a000-000000000001"); // Emma ↔ Marie
+const CD2: Uuid = uuid("c1000000-0000-4000-a000-000000000002"); // Emma ↔ Lucas
+const CD3: Uuid = uuid("c1000000-0000-4000-a000-000000000003"); // Emma ↔ Sophie
+const CD4: Uuid = uuid("c1000000-0000-4000-a000-000000000004"); // Emma ↔ Camille
+const CD5: Uuid = uuid("c1000000-0000-4000-a000-000000000005"); // Emma ↔ Sarah
 
 // Community wishes
 const D1: Uuid = uuid("d0000000-0000-4000-a000-000000000001");
@@ -724,6 +731,7 @@ async fn seed_friends(tx: &mut sqlx::PgConnection) -> Result<()> {
 // 4. Circles
 // ---------------------------------------------------------------------------
 async fn seed_circles(tx: &mut sqlx::PgConnection) -> Result<()> {
+    // Group circles
     sqlx::query(
         "INSERT INTO circles (id, name, owner_id, is_direct, image_url, created_at)
          VALUES
@@ -737,6 +745,31 @@ async fn seed_circles(tx: &mut sqlx::PgConnection) -> Result<()> {
     .bind(U1) // $4 — owner of C2
     .bind(ago_days(40)) // $5 — C1 created_at
     .bind(ago_days(30)) // $6 — C2 created_at
+    .execute(&mut *tx)
+    .await?;
+
+    // Direct (1-1) friend circles — one per friendship
+    sqlx::query(
+        "INSERT INTO circles (id, owner_id, is_direct, created_at)
+         VALUES
+           ($1, $6, TRUE, $7),
+           ($2, $6, TRUE, $8),
+           ($3, $6, TRUE, $9),
+           ($4, $6, TRUE, $10),
+           ($5, $6, TRUE, $11)
+         ON CONFLICT (id) DO NOTHING",
+    )
+    .bind(CD1) // $1
+    .bind(CD2) // $2
+    .bind(CD3) // $3
+    .bind(CD4) // $4
+    .bind(CD5) // $5
+    .bind(U1) // $6 — owner (Emma)
+    .bind(ago_days(45)) // $7  — CD1
+    .bind(ago_days(40)) // $8  — CD2
+    .bind(ago_days(35)) // $9  — CD3
+    .bind(ago_days(30)) // $10 — CD4
+    .bind(ago_days(25)) // $11 — CD5
     .execute(&mut *tx)
     .await?;
 
@@ -772,6 +805,36 @@ async fn seed_circle_members(tx: &mut sqlx::PgConnection) -> Result<()> {
     .bind(ago_days(29)) // $10
     .bind(U6) // $11 — Sarah in Copines
     .bind(ago_days(28)) // $12
+    .execute(&mut *tx)
+    .await?;
+
+    // Direct circle members — both users in each 1-1 circle
+    // Owner (Emma/U1) is auto-inserted by trigger; we add the friend.
+    sqlx::query(
+        "INSERT INTO circle_members (circle_id, user_id, role, joined_at)
+         VALUES
+           ($1, $6, 'member', $11),
+           ($2, $7, 'member', $12),
+           ($3, $8, 'member', $13),
+           ($4, $9, 'member', $14),
+           ($5, $10, 'member', $15)
+         ON CONFLICT (circle_id, user_id) DO NOTHING",
+    )
+    .bind(CD1) // $1
+    .bind(CD2) // $2
+    .bind(CD3) // $3
+    .bind(CD4) // $4
+    .bind(CD5) // $5
+    .bind(U2) // $6  — Marie in CD1
+    .bind(U3) // $7  — Lucas in CD2
+    .bind(U4) // $8  — Sophie in CD3
+    .bind(U5) // $9  — Camille in CD4
+    .bind(U6) // $10 — Sarah in CD5
+    .bind(ago_days(45)) // $11
+    .bind(ago_days(40)) // $12
+    .bind(ago_days(35)) // $13
+    .bind(ago_days(30)) // $14
+    .bind(ago_days(25)) // $15
     .execute(&mut *tx)
     .await?;
 
