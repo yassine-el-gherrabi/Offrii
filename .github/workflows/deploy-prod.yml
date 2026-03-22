@@ -158,6 +158,14 @@ jobs:
             for i in $(seq 1 12); do
               if curl -sf http://localhost:3000/health/ready > /dev/null 2>&1; then
                 echo "Health check passed."
+
+                # Annotate deploy on Grafana dashboard
+                curl -sf -X POST http://localhost:3001/api/annotations \
+                  -H "Authorization: Basic $(echo -n 'admin:${{ secrets.GF_SECURITY_ADMIN_PASSWORD }}' | base64)" \
+                  -H "Content-Type: application/json" \
+                  -d '{"text":"Deploy ${{ github.sha }}","tags":["deploy","prod"]}' \
+                  || echo "Grafana annotation failed (non-blocking)"
+
                 docker image prune -f
                 exit 0
               fi

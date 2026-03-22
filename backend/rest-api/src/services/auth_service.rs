@@ -249,6 +249,8 @@ impl traits::AuthService for PgAuthService {
 
         self.log_connection(user.id, ip, user_agent).await;
 
+        metrics::counter!("offrii_signups_total").increment(1);
+
         Ok(AuthResponse {
             tokens,
             user: UserResponse::from(&user),
@@ -346,6 +348,8 @@ impl traits::AuthService for PgAuthService {
             .map_err(AppError::Internal)?;
 
         self.log_connection(user.id, ip, user_agent).await;
+
+        metrics::counter!("offrii_logins_total").increment(1);
 
         Ok(AuthResponse {
             tokens,

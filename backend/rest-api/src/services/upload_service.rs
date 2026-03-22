@@ -119,6 +119,9 @@ impl traits::UploadService for R2UploadService {
             .map_err(|e| AppError::Internal(anyhow::anyhow!("R2 upload failed: {e}")))?;
 
         let url = format!("{}/{}", self.public_url.trim_end_matches('/'), key);
+
+        metrics::counter!("offrii_uploads_total").increment(1);
+
         Ok(url)
     }
 

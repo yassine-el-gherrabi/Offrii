@@ -320,6 +320,8 @@ impl traits::ItemService for PgItemService {
             });
         }
 
+        metrics::counter!("offrii_items_created_total").increment(1);
+
         Ok(ItemResponse::from(item))
     }
 

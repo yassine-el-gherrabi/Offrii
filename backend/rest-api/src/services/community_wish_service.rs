@@ -446,6 +446,8 @@ impl traits::CommunityWishService for PgCommunityWishService {
             links,
         );
 
+        metrics::counter!("offrii_community_wishes_created_total").increment(1);
+
         Ok(MyWishResponse {
             id: wish.id,
             title: wish.title,

@@ -177,6 +177,8 @@ impl traits::WishMessageService for PgWishMessageService {
             }
         }
 
+        metrics::counter!("offrii_wish_messages_sent_total").increment(1);
+
         Ok(MessageResponse {
             id: msg.id,
             sender_display_name: sender_name,

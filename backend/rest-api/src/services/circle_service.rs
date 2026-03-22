@@ -572,6 +572,8 @@ impl traits::CircleService for PgCircleService {
             .await
             .map_err(AppError::Internal)?;
 
+        metrics::counter!("offrii_circles_created_total").increment(1);
+
         Ok(CircleResponse {
             id: circle.id,
             name: circle.name,
