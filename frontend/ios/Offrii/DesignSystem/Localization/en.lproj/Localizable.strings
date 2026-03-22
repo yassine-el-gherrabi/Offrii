@@ -823,6 +823,10 @@
 "profile.memberSince" = "Member since %@";
 "profile.myAccount" = "My account";
 "profile.notifications" = "Notifications";
+"profile.appearance" = "Appearance";
+"profile.appearance.system" = "System";
+"profile.appearance.light" = "Light";
+"profile.appearance.dark" = "Dark";
 "profile.notifications.push" = "Push notifications";
 "profile.notifications.on" = "Enabled";
 "profile.notifications.off" = "Disabled";

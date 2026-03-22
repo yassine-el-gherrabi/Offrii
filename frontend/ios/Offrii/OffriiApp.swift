@@ -7,6 +7,15 @@ struct OffriiApp: App {
     @State private var authManager = AuthManager()
     @State private var router = AppRouter()
     @State private var tipManager = OnboardingTipManager()
+    @AppStorage("appearanceMode") private var appearanceMode: String = "system"
+
+    private var colorScheme: ColorScheme? {
+        switch appearanceMode {
+        case "light": return .light
+        case "dark": return .dark
+        default: return nil
+        }
+    }
 
     var body: some Scene {
         WindowGroup {
@@ -48,6 +57,7 @@ struct OffriiApp: App {
             .animation(OffriiAnimation.modal, value: router.currentScreen)
             .environment(authManager)
             .environment(router)
+            .preferredColorScheme(colorScheme)
             .onAppear {
                 appDelegate.router = router
             }

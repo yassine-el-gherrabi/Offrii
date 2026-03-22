@@ -100,6 +100,14 @@ struct ProfileView: View {
                         }
                     }
 
+                    // Section 6: Apparence
+                    profileSection(
+                        title: NSLocalizedString("profile.appearance", comment: ""),
+                        icon: "paintbrush.fill"
+                    ) {
+                        AppearancePicker()
+                    }
+
                     // Section 7: Données & confidentialité
                     profileSection(
                         title: NSLocalizedString("profile.dataPrivacy", comment: ""),
@@ -620,5 +628,22 @@ struct ProfileView: View {
                 UIApplication.shared.registerForRemoteNotifications()
             }
         }
+    }
+}
+
+// MARK: - Appearance Picker
+
+struct AppearancePicker: View {
+    @AppStorage("appearanceMode") private var mode: String = "system"
+
+    var body: some View {
+        Picker("", selection: $mode) {
+            Text(NSLocalizedString("profile.appearance.system", comment: "")).tag("system")
+            Text(NSLocalizedString("profile.appearance.light", comment: "")).tag("light")
+            Text(NSLocalizedString("profile.appearance.dark", comment: "")).tag("dark")
+        }
+        .pickerStyle(.segmented)
+        .padding(.horizontal, OffriiTheme.spacingBase)
+        .padding(.vertical, OffriiTheme.spacingSM)
     }
 }
